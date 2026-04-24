@@ -1,0 +1,10 @@
+REM opens run
+DELAY 800
+GUI r
+DELAY 500
+STRING notepad
+ENTER
+DELAY 700
+STRING Spectre BadUSB test
+ENTER
+STRING Hello from Spectre.

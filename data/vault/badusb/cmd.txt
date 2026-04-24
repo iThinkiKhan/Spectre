@@ -1,0 +1,9 @@
+REM opens cmd
+DELAY 800
+GUI r
+DELAY 500
+STRING cmd
+ENTER
+DELAY 700
+STRING echo Spectre ready
+ENTER

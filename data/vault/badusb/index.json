@@ -1,0 +1,21 @@
+{
+  "vault_schema": 1,
+  "kind": "badusb_scripts",
+  "count": 2,
+  "scripts": [
+    {
+      "name": "Notepad test",
+      "file": "notepad.txt",
+      "desc": "Open Run and type into Notepad",
+      "lines": 8,
+      "valid": true
+    },
+    {
+      "name": "CMD echo",
+      "file": "cmd.txt",
+      "desc": "Open cmd and echo status",
+      "lines": 7,
+      "valid": true
+    }
+  ]
+}
