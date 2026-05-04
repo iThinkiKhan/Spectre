@@ -1,4 +1,4 @@
-## Responsible use
+ Responsible use
 
 Spectre is a security research, field-observation, and learning platform.
 
