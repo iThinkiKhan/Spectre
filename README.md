@@ -58,6 +58,20 @@ It is the cheapest homemade cyberpunk field lab out there, and now you can have 
 
 ---
 
+## Device
+
+<p align="center">
+  <img src="docs/assets/spectre_hero.jpg" width="260">
+  <img src="docs/assets/spectre_menu.jpg" width="260">
+  <img src="docs/assets/spectre_pwny.jpg" width="260">
+</p>
+
+<p align="center">
+  <sub>
+  Spectre running Sub-GHz recon, mission launcher, and PWNY mode.
+  </sub>
+</p>
+
 ## Designed as a system
 
 Spectre is not a pile of demos bolted onto an ESP32.
