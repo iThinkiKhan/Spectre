@@ -1,10 +1,17 @@
- Responsible use
+<details>
+<summary><b>Responsible use</b></summary>
 
+<br>
+
+<sub>
 Spectre is a security research, field-observation, and learning platform.
 
 Use it only with hardware, systems, networks, and radio environments where you have permission to test or observe. Some features are intended for controlled lab use.
 
 The purpose of this project is embedded engineering, wireless research, RF mapping, and operator tooling — not unauthorized access or disruption.
+</sub>
+
+</details>
 
 ---
 
