@@ -1,2 +1,3 @@
 # Spectre
-Spectre is a pocket-sized field intelligence platform that extends a stationary RF sensor network into the real world. Cheap, extensible, and open source. The coolest RF gadget for under 20 bucks.
+
+Spectre is a cyberpunk field node that extends a stationary RF sensor network with GPS-tagged collection, autonomous sync, companion-assisted enrichment, and a modular radio toolkit for real-world wireless reconnaissance.
