@@ -278,17 +278,9 @@ The goal is not just to work. The goal is to feel like real field gear.
 
 ## Hardware
 
-Spectre targets inexpensive ESP32-S3 display hardware.
+Spectre targets inexpensive ESP32-S3 display hardware. Lilygo Tdisplay S3 with case.
 
-Current target:
-
-- ESP32-S3
-- 16 MB flash
-- PSRAM
-- ST7789 display
-- JST LiPo support
-- GPIO expansion
-- optional radio/sensor modules
+<img width="596" height="424" alt="image" src="https://github.com/user-attachments/assets/92c65863-c8d7-4b9b-be01-310be4d8e23c" />
 
 The basic idea: start with a cheap board, then expand it into whatever field node you want.
 
