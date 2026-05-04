@@ -1,0 +1,13 @@
+
+
+{
+  "name": "opendroneid-core-c",
+  "version": "0.0.0-local",
+  "build": {
+    "includeDir": "include",
+    "srcDir": "src"
+  }
+}
+
+
+

@@ -1,69 +1,61 @@
-# Prerequisites
-*.d
+# Local secrets / provisioning
+src/secrets.h
+**/secrets.h
+*.secret
+*.secrets
+*.env
+.env
+.env.*
+!.env.example
 
-# Compiled Object files
-*.slo
-*.lo
-*.o
-*.obj
-
-# Precompiled Headers
-*.gch
-*.pch
-
-# Linker files
-*.ilk
-
-# Debugger Files
-*.pdb
-
-# Compiled Dynamic libraries
-*.so
-*.dylib
-*.dll
-*.so.*
-
-
-# Fortran module files
-*.mod
-*.smod
-
-# Compiled Static libraries
-*.lai
-*.la
-*.a
-*.lib
-
-# Executables
-*.exe
-*.out
-*.app
-
-# Build directories
+# PlatformIO / build output
+.pio/
+.pio_build/
+.pio_build_check/
 build/
-Build/
-build-*/
+dist/
+*.bin
+*.elf
+*.map
 
-# CMake generated files
-CMakeFiles/
-CMakeCache.txt
-cmake_install.cmake
-Makefile
-install_manifest.txt
-compile_commands.json
+# React Native / Android / iOS generated output
+companion_app/node_modules/
+companion_app/android/.gradle/
+companion_app/android/app/.cxx/
+companion_app/android/app/build/
+companion_app/ios/Pods/
+companion_app/ios/.xcode.env
 
-# Temporary files
-*.tmp
+# Editor / local machine files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Logs, captures, exports, and field data
+logs/
+captures/
+exports/
+data/
+spool/
+littlefs/
+*.pcap
+*.pcapng
+*.csv
+*.jsonl
 *.log
-*.bak
-*.swp
+*.db
+*.sqlite
+*.sqlite3
 
-# vcpkg
-vcpkg_installed/
-
-# debug information files
-*.dwo
-
-# test output & cache
-Testing/
+# Local debug dumps / backups
 .cache/
+.claude/
+drafts/
+crash/
+crashes/
+debug/
+tmp/
+temp/
+spectre_full_*.txt
+*.bak

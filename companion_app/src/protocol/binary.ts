@@ -1,0 +1,130 @@
+/* eslint-disable no-bitwise */
+
+import type {
+  EnrichmentRecord,
+  EventBatchRecord,
+  PhoneControlFrameV1,
+  PhoneGpsFrameV1,
+} from './types';
+import {base64ToBytes, bytesToBase64, utf8ToBytes} from './base64';
+import {
+  ENRICHMENT_RECORD_SIZE,
+  EVENT_BATCH_RECORD_SIZE,
+  PHONE_CONTROL_FRAME_SIZE,
+  PHONE_GPS_FRAME_SIZE,
+} from './contracts';
+
+export const PHONE_GPS_FLAG_VALID = 0x01;
+export const PHONE_GPS_FLAG_TRUSTED_TIME = 0x02;
+
+export const PHONE_CONTROL_FLAG_WG_ACTIVE = 0x01;
+export const PHONE_CONTROL_FLAG_DUMP_REQUEST = 0x02;
+export const PHONE_CONTROL_FLAG_CANCEL = 0x04;
+export const PHONE_CONTROL_FLAG_BATCH_RECEIVED = 0x08;
+
+export function encodePhoneGpsFrame(frame: PhoneGpsFrameV1): string {
+  const bytes = new Uint8Array(PHONE_GPS_FRAME_SIZE);
+  const view = new DataView(bytes.buffer);
+
+  view.setUint8(0, frame.version);
+  view.setInt32(1, frame.latE7, true);
+  view.setInt32(5, frame.lonE7, true);
+  view.setInt32(9, frame.altCm, true);
+  view.setUint16(13, frame.accuracyDm, true);
+  view.setUint32(15, frame.epochUtc, true);
+  view.setUint8(19, frame.flags);
+
+  return bytesToBase64(bytes);
+}
+
+export function encodePhoneControlFrame(frame: PhoneControlFrameV1): string {
+  const bytes = new Uint8Array(PHONE_CONTROL_FRAME_SIZE);
+  const view = new DataView(bytes.buffer);
+
+  view.setUint8(0, frame.version);
+  view.setUint8(1, frame.flags);
+  view.setUint16(2, frame.counter & 0xffff, true);
+
+  return bytesToBase64(bytes);
+}
+
+export function decodeEventBatchRecords(base64Value: string): EventBatchRecord[] {
+  const bytes = base64ToBytes(base64Value);
+  const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+  const records: EventBatchRecord[] = [];
+
+  for (
+    let offset = 0;
+    offset + EVENT_BATCH_RECORD_SIZE <= bytes.length;
+    offset += EVENT_BATCH_RECORD_SIZE
+  ) {
+    records.push({
+      eventId: view.getUint32(offset, true),
+      timestampMs: view.getUint32(offset + 4, true),
+      type: view.getUint8(offset + 8) as EventBatchRecord['type'],
+      status: view.getUint8(offset + 9) as EventBatchRecord['status'],
+      lane: view.getUint8(offset + 10) as EventBatchRecord['lane'],
+      priority: view.getUint8(offset + 11) as EventBatchRecord['priority'],
+    });
+  }
+
+  return records;
+}
+
+export function encodeEventBatchRecords(records: EventBatchRecord[]): string {
+  const bytes = new Uint8Array(records.length * EVENT_BATCH_RECORD_SIZE);
+  const view = new DataView(bytes.buffer);
+
+  records.forEach((record, index) => {
+    const offset = index * EVENT_BATCH_RECORD_SIZE;
+    view.setUint32(offset, record.eventId, true);
+    view.setUint32(offset + 4, record.timestampMs, true);
+    view.setUint8(offset + 8, record.type);
+    view.setUint8(offset + 9, record.status);
+    view.setUint8(offset + 10, record.lane);
+    view.setUint8(offset + 11, record.priority);
+  });
+
+  return bytesToBase64(bytes);
+}
+
+export function encodeEnrichmentRecords(records: EnrichmentRecord[]): string {
+  const bytes = new Uint8Array(records.length * ENRICHMENT_RECORD_SIZE);
+  const view = new DataView(bytes.buffer);
+
+  records.forEach((record, index) => {
+    const offset = index * ENRICHMENT_RECORD_SIZE;
+    view.setUint32(offset, record.eventId, true);
+    view.setInt32(offset + 4, record.latE7, true);
+    view.setInt32(offset + 8, record.lonE7, true);
+    view.setInt32(offset + 12, record.altCm, true);
+    view.setUint16(offset + 16, record.accuracyDm, true);
+    view.setUint32(offset + 18, record.epochUtc, true);
+    view.setUint8(offset + 22, record.flags);
+
+    const tagBytes = utf8ToBytes(record.tag);
+    const tagLength = Math.min(tagBytes.length, 23);
+    bytes.set(tagBytes.subarray(0, tagLength), offset + 23);
+    bytes[offset + 46] = 0;
+  });
+
+  return bytesToBase64(bytes);
+}
+
+export function parseStatusBlob(blob: string): Record<string, string> {
+  return blob
+    .split(';')
+    .map(part => part.trim())
+    .filter(Boolean)
+    .reduce<Record<string, string>>((acc, part) => {
+      const [key, value] = part.split('=');
+      if (key) {
+        acc[key] = value ?? '';
+      }
+      return acc;
+    }, {});
+}
+
+export function isoFromEpoch(epochUtc: number): string {
+  return new Date(epochUtc * 1000).toISOString();
+}

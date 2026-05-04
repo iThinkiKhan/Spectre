@@ -1,0 +1,10 @@
+pluginManagement { includeBuild("../node_modules/@react-native/gradle-plugin") }
+plugins { id("com.facebook.react.settings") }
+def bundledNode = "C:/Users/JimSchneider/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/bin/node.exe"
+def reactNativeCli = file("../node_modules/@react-native-community/cli/build/bin.js").absolutePath
+extensions.configure(com.facebook.react.ReactSettingsExtension) { ex ->
+    ex.autolinkLibrariesFromCommand([bundledNode, reactNativeCli, "config"])
+}
+rootProject.name = 'companion_app'
+include ':app'
+includeBuild('../node_modules/@react-native/gradle-plugin')
