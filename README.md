@@ -1,10 +1,17 @@
-## Responsible use
+<details>
+<summary><b>Responsible use</b></summary>
 
+<br>
+
+<sub>
 Spectre is a security research, field-observation, and learning platform.
 
 Use it only with hardware, systems, networks, and radio environments where you have permission to test or observe. Some features are intended for controlled lab use.
 
 The purpose of this project is embedded engineering, wireless research, RF mapping, and operator tooling — not unauthorized access or disruption.
+</sub>
+
+</details>
 
 ---
 
@@ -47,15 +54,29 @@ Spectre is a pocket-sized field intelligence platform for extending a stationary
 
 It collects wireless activity in the field, tags it with location and mission context, stores it locally, and syncs it back home to enrich a larger RF database. With the companion phone app, Spectre can use GPS, relay storage, provide operator input, and bridge data through MQTT during extended missions. Back at base, collected data can feed map overlays, trilateration workflows, drone tracking, and long-term RF environment analysis.
 
-It is the cheapest homemade cyberpunk field lab you can actually build.
+It is the cheapest homemade cyberpunk field lab out there, and now you can have one too. RF sensor network and custom RF database not included.
 
 ---
+
+## Device
+
+<p align="center">
+  <img src="docs/assets/spectre_hero.jpg" width="260">
+  <img src="docs/assets/spectre_menu.jpg" width="260">
+  <img src="docs/assets/spectre_pwny.jpg" width="260">
+</p>
+
+<p align="center">
+  <sub>
+  Spectre running Sub-GHz recon, mission launcher, and PWNY mode.
+  </sub>
+</p>
 
 ## Designed as a system
 
 Spectre is not a pile of demos bolted onto an ESP32.
 
-Every major subsystem was built around the same field workflow. The storage engine exists because field data needs to survive long runtimes. The companion app exists because mobile GPS, relay capability, and operator input make the stationary network smarter. The custom encrypted BLE layer exists because the phone link is meant to be operational without becoming an Android app. The UI theme exists because its fun, and cool. It also let me use LVGL for the first time - TFT is lame.
+Every major subsystem was built around the same field work idea. The storage engine exists because we only have 8mb of flash to work with in LittleFS, and I want to survive long runtimes. The companion app exists because mobile GPS, relay capability, and operator input make the stationary network smarter. The custom encrypted BLE layer exists because the phone link is meant to be operational without becoming an Android developer. The UI theme exists because its fun, and cool. It also let me use LVGL for the first time - TFT is out.
 
 Nothing here is an afterthought. Spectre is meant to be used by me personally, and there is effort and design in all of it. Figure out how to make it better, and let me know!
 
@@ -95,11 +116,11 @@ Instead of treating field work as a separate activity, Spectre makes it part of 
 
 ### Companion Enrichment
 
-The Android companion can provide GPS, relay data, extend storage, provide text input, support BadUSB script write/upload workflows, and bridge to MQTT.
+The Android companion can provide GPS, relay data, extend storage, provide text input, support BadUSB script write/upload workflows, and bridge to MQTT in case 20k records isnt enough for your mission.
 
 Spectre discovers the phone, connects, authenticates, encrypts the session, exchanges batches, and writes enriched records back to storage.
 
-The companion link is not just “BLE connected, good enough.” Spectre uses a custom app-layer trust model with modern cryptography so the phone can act as part of the platform without pretending the radio connection alone is the security boundary.
+The companion link is not just “BLE connected, good enough.” Spectre uses a custom app-layer trust model with modern cryptography so the phone can act as part of the platform without exposing your phone to anyone who may be listening. Weirdos.
 
 > **18-record encrypted BLE enrichment batch sent, received, and written back to storage in roughly 500 ms.**
 
