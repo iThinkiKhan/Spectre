@@ -61,9 +61,9 @@ It is the cheapest homemade cyberpunk field lab out there, and now you can have 
 ## Device
 
 <p align="center">
-  <img src="docs/assets/spectre_hero.jpg" width="260">
-  <img src="docs/assets/spectre_menu.jpg" width="260">
-  <img src="docs/assets/spectre_pwny.jpg" width="260">
+  <img src="docs/assets/spectre_hardware.jpg" width="260">
+  <img src="docs/assets/MissionPopOut.jpg" width="260">
+  <img src="docs/assets/PWNY_mission-screen.jpg" width="260">
 </p>
 
 <p align="center">
