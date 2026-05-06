@@ -448,6 +448,7 @@ static bool _applyPhoneEnrichmentBatch(const PendingEnrichment* records,
                                        uint32_t& outApplied,
                                        uint32_t& outFailed,
                                        uint32_t& outStorageMs);
+static PhoneStorageFrameV1 _buildPhoneStorageFrame();
 
 enum PhoneProbeReason : uint8_t {
     PHONE_PROBE_BOOT = 0,
@@ -482,6 +483,7 @@ struct CompanionScheduler {
     uint32_t lastSeenMs = 0;
     uint32_t lastProbeMs = 0;
     uint32_t lastEnrichMs = 0;
+    uint32_t lastStoragePublishMs = 0;
     uint32_t lastHighValueWifiMs = 0;
 
     uint32_t pendingItems = 0;
@@ -527,6 +529,7 @@ static constexpr uint32_t PHONE_BOOT_RETRY_SCHEDULE_MS[] = {
 static constexpr uint32_t WIFI_LULL_MIN_MS = 30000UL;
 static constexpr uint32_t PHONE_PROBE_MIN_GAP_MS = 120000UL;
 static constexpr uint32_t PHONE_AVAILABILITY_TTL_MS = 300000UL;
+static constexpr uint32_t PHONE_STORAGE_PUBLISH_MIN_MS = 15000UL;
 
 // Probe absence backoff ladder.
 // After PROBE_BACKOFF_MISS_LIMIT[stage] consecutive misses the scheduler
@@ -728,6 +731,62 @@ static void refreshCompanionPending(CompanionScheduler& companion, bool force) {
     companion.lastPendingRefreshMs = now;
 }
 
+static PhoneStorageFrameV1 _buildPhoneStorageFrame() {
+    PhoneStorageFrameV1 frame = {};
+    frame.version = COMPANION_PROTOCOL_VERSION;
+
+    STATE_READ_BEGIN();
+    frame.flags =
+        (g_state.storageSummaryValid ? PHONE_STORAGE_FLAG_VALID : 0) |
+        (g_state.uploadActive ? PHONE_STORAGE_FLAG_UPLOAD_ACTIVE : 0) |
+        (g_state.storageNearlyFull ? PHONE_STORAGE_FLAG_NEARLY_FULL : 0) |
+        (g_state.storageFull ? PHONE_STORAGE_FLAG_FULL : 0) |
+        (g_state.storageOverrun ? PHONE_STORAGE_FLAG_OVERRUN : 0);
+    frame.storageMode = g_state.storageMode;
+    frame.retentionPolicy = g_state.storagePolicy;
+    frame.usedPct = g_state.storageUsedPct;
+    frame.freeBytes = g_state.storageFreeBytes;
+    frame.missionTotal = g_state.storageMissionTotal;
+    frame.noiseTotal = g_state.storageNoiseTotal;
+    frame.p0Total = g_state.storageP0Total;
+    frame.p1Total = g_state.storageP1Total;
+    frame.p2Total = g_state.storageP2Total;
+    frame.p3Total = g_state.storageP3Total;
+    frame.pendingUploadMission = g_state.storagePendingUploadMission;
+    frame.pendingUploadNoise = g_state.storagePendingUploadNoise;
+    frame.pendingEnrichMission = g_state.storagePendingEnrichMission;
+    frame.pendingEnrichNoise = g_state.storagePendingEnrichNoise;
+    frame.enrichmentDeltas = g_state.storageEnrichmentDeltas;
+    frame.firstEventId = g_state.storageFirstEventId;
+    frame.lastEventId = g_state.storageLastEventId;
+    frame.updatedMs = g_state.storageSummaryUpdatedMs;
+    STATE_READ_END();
+
+    return frame;
+}
+
+static void publishPhoneStorageSnapshotIfDue(CompanionScheduler& cs, bool force = false) {
+    if (!cs.enabled || !BLE_MGR.isPhoneStorageReady()) {
+        return;
+    }
+
+    if (!RADIO_ARB.isOwner(RADIO_BLE_GPS) ||
+        RADIO_ARB.currentOwner() == RADIO_WIFI_UPLOAD) {
+        return;
+    }
+
+    const uint32_t now = millis();
+    if (!force &&
+        cs.lastStoragePublishMs != 0 &&
+        now - cs.lastStoragePublishMs < PHONE_STORAGE_PUBLISH_MIN_MS) {
+        return;
+    }
+
+    if (BLE_MGR.publishStorageSnapshot(_buildPhoneStorageFrame())) {
+        cs.lastStoragePublishMs = now;
+    }
+}
+
 static bool shouldRunPhoneProbe(const CompanionScheduler& cs) {
     if (!cs.enabled) {
         return false;
@@ -790,6 +849,11 @@ static bool requestPhoneProbeLease(CompanionScheduler& cs,
         reason == PHONE_PROBE_BACKLOG ||
         reason == PHONE_PROBE_OFFLOAD_PREP ||
         reason == PHONE_PROBE_TIME_SYNC;
+
+    if (RADIO_ARB.currentOwner() == RADIO_WIFI_UPLOAD) {
+        DLOG_WARN("BLE", "Phone probe skipped reason=%s upload active", probeReason);
+        return false;
+    }
 
     if (!RADIO_ARB.requestLease(
             RADIO_BLE_GPS,
@@ -854,6 +918,12 @@ static bool requestManualBleTest(const char* reason) {
 
 static bool requestPhoneEnrichmentLease(CompanionScheduler& cs,
                                         const char* reason) {
+    if (RADIO_ARB.currentOwner() == RADIO_WIFI_UPLOAD) {
+        DLOG_WARN("BLE", "Phone enrichment skipped reason=%s upload active",
+                  reason ? reason : "enrich");
+        return false;
+    }
+
     if (!RADIO_ARB.requestLease(
             RADIO_BLE_GPS,
             RadioArbiter::BLE_PHONE_ENRICH_HOLD_MS,
@@ -901,8 +971,6 @@ static bool _buildPendingEnrichmentBatch(EventBatchRecord* out,
         out[i].timestampMs = pending[i].timestampMs;
         out[i].type        = pending[i].type;
         out[i].status      = pending[i].status;
-        out[i].lane        = pending[i].lane;
-        out[i].priority    = pending[i].priority;
     }
 
     return true;
@@ -1150,6 +1218,7 @@ static void serviceEnrichmentPipeline(CompanionScheduler& cs) {
     if (BLE_MGR.isPhoneCompanionReady()) {
         cs.phoneState = COMPANION_PHONE_AVAILABLE;
         cs.lastSeenMs = millis();
+        publishPhoneStorageSnapshotIfDue(cs);
 
         // Consume any in-flight BLE response.
         if (cs.enrichmentRequestIssued) {
@@ -3919,6 +3988,7 @@ void TaskHardware(void* pvParameters) {
                     companion.probeBackoffMissCount = 0;
                     companion.manualProbeRequested = false;
                     refreshCompanionPending(companion, true);
+                    publishPhoneStorageSnapshotIfDue(companion, true);
                     crashBreadcrumbClear(CrashPhase::BACKLOG_PROBE);
                     DLOG_INFO("BLE", "Phone probe succeeded — backoff reset");
 
@@ -4214,5 +4284,3 @@ void setup() {
 void loop() {
     vTaskDelay(portMAX_DELAY);
 }
-
-

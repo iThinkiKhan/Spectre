@@ -5,6 +5,7 @@ import type {
   EventBatchRecord,
   PhoneControlFrameV1,
   PhoneGpsFrameV1,
+  PhoneStorageFrameV1,
 } from './types';
 import {base64ToBytes, bytesToBase64, utf8ToBytes} from './base64';
 import {
@@ -12,6 +13,7 @@ import {
   EVENT_BATCH_RECORD_SIZE,
   PHONE_CONTROL_FRAME_SIZE,
   PHONE_GPS_FRAME_SIZE,
+  PHONE_STORAGE_FRAME_SIZE,
 } from './contracts';
 
 export const PHONE_GPS_FLAG_VALID = 0x01;
@@ -21,6 +23,12 @@ export const PHONE_CONTROL_FLAG_WG_ACTIVE = 0x01;
 export const PHONE_CONTROL_FLAG_DUMP_REQUEST = 0x02;
 export const PHONE_CONTROL_FLAG_CANCEL = 0x04;
 export const PHONE_CONTROL_FLAG_BATCH_RECEIVED = 0x08;
+
+export const PHONE_STORAGE_FLAG_VALID = 0x01;
+export const PHONE_STORAGE_FLAG_UPLOAD_ACTIVE = 0x02;
+export const PHONE_STORAGE_FLAG_NEARLY_FULL = 0x04;
+export const PHONE_STORAGE_FLAG_FULL = 0x08;
+export const PHONE_STORAGE_FLAG_OVERRUN = 0x10;
 
 export function encodePhoneGpsFrame(frame: PhoneGpsFrameV1): string {
   const bytes = new Uint8Array(PHONE_GPS_FRAME_SIZE);
@@ -48,6 +56,46 @@ export function encodePhoneControlFrame(frame: PhoneControlFrameV1): string {
   return bytesToBase64(bytes);
 }
 
+export function decodePhoneStorageFrame(
+  base64Value: string,
+): PhoneStorageFrameV1 {
+  const bytes = base64ToBytes(base64Value);
+  if (bytes.length !== PHONE_STORAGE_FRAME_SIZE) {
+    throw new Error(`Storage frame must be ${PHONE_STORAGE_FRAME_SIZE} bytes`);
+  }
+
+  const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+  const flags = view.getUint8(1);
+
+  return {
+    version: view.getUint8(0),
+    flags,
+    storageValid: !!(flags & PHONE_STORAGE_FLAG_VALID),
+    uploadActive: !!(flags & PHONE_STORAGE_FLAG_UPLOAD_ACTIVE),
+    storageNearlyFull: !!(flags & PHONE_STORAGE_FLAG_NEARLY_FULL),
+    storageFull: !!(flags & PHONE_STORAGE_FLAG_FULL),
+    storageOverrun: !!(flags & PHONE_STORAGE_FLAG_OVERRUN),
+    storageMode: view.getUint8(2),
+    retentionPolicy: view.getUint8(3),
+    usedPct: view.getUint16(4, true),
+    freeBytes: view.getUint32(8, true),
+    missionTotal: view.getUint32(12, true),
+    noiseTotal: view.getUint32(16, true),
+    p0Total: view.getUint32(20, true),
+    p1Total: view.getUint32(24, true),
+    p2Total: view.getUint32(28, true),
+    p3Total: view.getUint32(32, true),
+    pendingUploadMission: view.getUint32(36, true),
+    pendingUploadNoise: view.getUint32(40, true),
+    pendingEnrichMission: view.getUint32(44, true),
+    pendingEnrichNoise: view.getUint32(48, true),
+    enrichmentDeltas: view.getUint32(52, true),
+    firstEventId: view.getUint32(56, true),
+    lastEventId: view.getUint32(60, true),
+    updatedMs: view.getUint32(64, true),
+  };
+}
+
 export function decodeEventBatchRecords(base64Value: string): EventBatchRecord[] {
   const bytes = base64ToBytes(base64Value);
   const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
@@ -63,8 +111,8 @@ export function decodeEventBatchRecords(base64Value: string): EventBatchRecord[]
       timestampMs: view.getUint32(offset + 4, true),
       type: view.getUint8(offset + 8) as EventBatchRecord['type'],
       status: view.getUint8(offset + 9) as EventBatchRecord['status'],
-      lane: view.getUint8(offset + 10) as EventBatchRecord['lane'],
-      priority: view.getUint8(offset + 11) as EventBatchRecord['priority'],
+      lane: 1,
+      priority: 3,
     });
   }
 
@@ -81,8 +129,6 @@ export function encodeEventBatchRecords(records: EventBatchRecord[]): string {
     view.setUint32(offset + 4, record.timestampMs, true);
     view.setUint8(offset + 8, record.type);
     view.setUint8(offset + 9, record.status);
-    view.setUint8(offset + 10, record.lane);
-    view.setUint8(offset + 11, record.priority);
   });
 
   return bytesToBase64(bytes);

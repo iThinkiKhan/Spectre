@@ -2,7 +2,8 @@ import {utf8ToBytes} from './base64';
 
 export const PHONE_GPS_FRAME_SIZE = 20;
 export const PHONE_CONTROL_FRAME_SIZE = 4;
-export const EVENT_BATCH_RECORD_SIZE = 12;
+export const PHONE_STORAGE_FRAME_SIZE = 68;
+export const EVENT_BATCH_RECORD_SIZE = 10;
 export const ENRICHMENT_RECORD_SIZE = 47;
 export const BADUSB_UPLOAD_PROTOCOL_VERSION = 1;
 export const BADUSB_UPLOAD_COMMAND_MAX_BYTES = 192;

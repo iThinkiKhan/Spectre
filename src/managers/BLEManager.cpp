@@ -514,6 +514,7 @@ void BLEManager::shutdown() {
     _metaRemoteChar = nullptr;
     _eventBatchRemoteChar = nullptr;
     _enrichmentRemoteChar = nullptr;
+    _storageRemoteChar = nullptr;
     _server = nullptr;
     _textService = nullptr;
     _promptChar = nullptr;
@@ -829,6 +830,11 @@ bool BLEManager::requestCompanionLink(const char* reason, bool allowCachedReconn
         return false;
     }
 
+    if (RADIO_ARB.currentOwner() == RADIO_WIFI_UPLOAD) {
+        DLOG_WARN(TAG, "companion link rejected: upload active");
+        return false;
+    }
+
     if (_state == BLE_SUBSCRIBED) {
         return true;
     }
@@ -898,6 +904,11 @@ bool BLEManager::requestEnrichmentBatch(const EventBatchRecord* records, size_t 
         return false;
     }
 
+    if (RADIO_ARB.currentOwner() == RADIO_WIFI_UPLOAD) {
+        DLOG_WARN(TAG, "enrichment request rejected: upload active");
+        return false;
+    }
+
     if (!_begun || !_radioEnabled || _state != BLE_SUBSCRIBED) {
         DLOG_WARN(TAG, "enrichment request rejected: link not ready");
         return false;
@@ -942,6 +953,54 @@ bool BLEManager::requestEnrichmentBatch(const EventBatchRecord* records, size_t 
     DLOG_INFO(TAG, "enrichment request queued count=%u bytes=%u",
               static_cast<unsigned>(count),
               static_cast<unsigned>(payloadLen));
+    return true;
+}
+
+bool BLEManager::publishStorageSnapshot(const PhoneStorageFrameV1& frame) {
+    if (RADIO_ARB.currentOwner() == RADIO_WIFI_UPLOAD) {
+        DLOG_WARN(TAG, "storage snapshot skipped: upload active");
+        return false;
+    }
+
+    if (!_begun || !_radioEnabled || _state != BLE_SUBSCRIBED) {
+        return false;
+    }
+
+    if (!_storageRemoteChar) {
+        return false;
+    }
+
+    if (!_storageRemoteChar->canWrite() && !_storageRemoteChar->canWriteNoResponse()) {
+        DLOG_WARN(TAG, "storage snapshot skipped: storage char not writable");
+        return false;
+    }
+
+    size_t secureTxLen = 0;
+    if (!_secureSession.encrypt(PHONE_SECURE_CHANNEL_STORAGE,
+                                reinterpret_cast<const uint8_t*>(&frame),
+                                sizeof(frame),
+                                _storageSecureTxBuf,
+                                sizeof(_storageSecureTxBuf),
+                                secureTxLen)) {
+        DLOG_WARN(TAG, "storage snapshot encrypt failed: %s",
+                  _secureSession.lastError() ? _secureSession.lastError() : "-");
+        return false;
+    }
+
+    const bool ok = _storageRemoteChar->writeValue(_storageSecureTxBuf, secureTxLen, true);
+    if (!ok) {
+        DLOG_WARN(TAG, "storage snapshot write failed sealed=%u",
+                  static_cast<unsigned>(secureTxLen));
+        return false;
+    }
+
+    DLOG_INFO(TAG,
+              "storage snapshot sent pendingUp=%lu/%lu pendingEnrich=%lu/%lu usedPct=%u",
+              static_cast<unsigned long>(frame.pendingUploadMission),
+              static_cast<unsigned long>(frame.pendingUploadNoise),
+              static_cast<unsigned long>(frame.pendingEnrichMission),
+              static_cast<unsigned long>(frame.pendingEnrichNoise),
+              static_cast<unsigned>(frame.usedPct));
     return true;
 }
 
@@ -1227,6 +1286,13 @@ void BLEManager::_resetState() {
 
 void BLEManager::_startScanWindow() {
     if (!_scan || _scanActive) {
+        return;
+    }
+
+    if (RADIO_ARB.currentOwner() == RADIO_WIFI_UPLOAD) {
+        DLOG_WARN(TAG, "scan skipped: upload active");
+        _state = BLE_IDLE;
+        _nextActionMs = millis() + SCAN_GAP_MS;
         return;
     }
 
@@ -1593,6 +1659,12 @@ void BLEManager::_doControlPollJob() {
 
 void BLEManager::_doEnrichmentSendJob() {
     _enrichmentSendQueued = false;
+
+    if (RADIO_ARB.currentOwner() == RADIO_WIFI_UPLOAD) {
+        DLOG_WARN(TAG, "enrichment send failed: upload active");
+        _failEnrichment("upload_active");
+        return;
+    }
 
     if (!_eventBatchRemoteChar || !_client || !_client->isConnected()) {
         DLOG_WARN(TAG, "enrichment send failed: link down");
@@ -2007,6 +2079,7 @@ bool BLEManager::_bindRemoteCharacteristics() {
     _eventBatchRemoteChar = _remoteService->getCharacteristic(PHONE_EVENT_BATCH_UUID);
     _enrichmentRemoteChar = _remoteService->getCharacteristic(PHONE_ENRICHMENT_UUID);
     _authRemoteChar = _remoteService->getCharacteristic(PHONE_AUTH_CHAR_UUID);
+    _storageRemoteChar = _remoteService->getCharacteristic(PHONE_STORAGE_CHAR_UUID);
 
     if (!_authRemoteChar ||
         !_authRemoteChar->canWrite() ||
@@ -2095,13 +2168,14 @@ bool BLEManager::_bindRemoteCharacteristics() {
     _state = BLE_SUBSCRIBED;
     const uint16_t mtu = (_client && _client->isConnected()) ? _client->getMTU() : 0;
     const uint16_t attPayload = (mtu > 3) ? static_cast<uint16_t>(mtu - 3) : 0;
-    DLOG_INFO(TAG, "remote bound gps=%d ctrl=%d meta=%d batch=%d enrich=%d auth=%d notify(gps=%d ctrl=%d enrich=%d auth=%d) mtu=%u attPayload=%u",
+    DLOG_INFO(TAG, "remote bound gps=%d ctrl=%d meta=%d batch=%d enrich=%d auth=%d storage=%d notify(gps=%d ctrl=%d enrich=%d auth=%d) mtu=%u attPayload=%u",
               _gpsRemoteChar ? 1 : 0,
               _controlRemoteChar ? 1 : 0,
               _metaRemoteChar ? 1 : 0,
               _eventBatchRemoteChar ? 1 : 0,
               _enrichmentRemoteChar ? 1 : 0,
               _authRemoteChar ? 1 : 0,
+              _storageRemoteChar ? 1 : 0,
               _gpsNotifyEnabled ? 1 : 0,
               _controlNotifyEnabled ? 1 : 0,
               _enrichmentNotifyEnabled ? 1 : 0,
@@ -2274,6 +2348,7 @@ void BLEManager::_clearRemoteHandles() {
     _eventBatchRemoteChar = nullptr;
     _enrichmentRemoteChar = nullptr;
     _authRemoteChar = nullptr;
+    _storageRemoteChar = nullptr;
     _gpsNotifyEnabled = false;
     _controlNotifyEnabled = false;
     _enrichmentNotifyEnabled = false;

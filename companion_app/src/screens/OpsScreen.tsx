@@ -133,6 +133,13 @@ function formatBytes(value?: number | null) {
   return `${(value / 1024).toFixed(1)}KB`;
 }
 
+function formatCount(value?: number | null) {
+  if (typeof value !== 'number' || !Number.isFinite(value)) {
+    return '--';
+  }
+  return String(Math.round(value));
+}
+
 function progressFraction(current: number, total: number) {
   if (total <= 0) {
     return 0;
@@ -211,6 +218,11 @@ export function OpsScreen() {
     spectre.lastPublishedBatch?.bytes ?? peripheral.lastBatchBytes ?? 0;
   const lastTransferAt =
     spectre.lastPublishedBatch?.sentAt ?? peripheral.lastBatchReceivedAt;
+  const storage = spectre.storageSnapshot;
+  const pendingUpload =
+    (storage?.pendingUploadMission ?? 0) + (storage?.pendingUploadNoise ?? 0);
+  const pendingEnrich =
+    (storage?.pendingEnrichMission ?? 0) + (storage?.pendingEnrichNoise ?? 0);
   const targetPath = normalizedDraft
     ? `/config/vault/badusb/${normalizedDraft.fileName}`
     : '/config/vault/badusb';
@@ -657,6 +669,31 @@ export function OpsScreen() {
           </Text>
         </View>
 
+        <View style={styles.buttonRow}>
+          <Pressable
+            style={[
+              styles.primaryButton,
+              !spectre.permissions.allGranted ? styles.buttonDisabled : null,
+            ]}
+            disabled={!spectre.permissions.allGranted}
+            onPress={() => {
+              spectre.startFieldMode().catch(() => {});
+            }}>
+            <Text style={styles.primaryText}>Start Field Mode</Text>
+          </Pressable>
+          <Pressable
+            style={[
+              styles.secondaryButton,
+              !peripheral.running ? styles.buttonDisabled : null,
+            ]}
+            disabled={!peripheral.running}
+            onPress={() => {
+              spectre.stopFieldMode().catch(() => {});
+            }}>
+            <Text style={styles.secondaryText}>Stop Field Mode</Text>
+          </Pressable>
+        </View>
+
         <View style={styles.peripheralGrid}>
           <PeripheralMetric
             label="Last connect"
@@ -695,6 +732,40 @@ export function OpsScreen() {
             detail={`${peripheral.totalBatchRecords ?? 0} records / ${formatBytes(
               peripheral.totalBatchBytes,
             )}`}
+          />
+          <PeripheralMetric
+            label="Storage used"
+            value={storage ? `${storage.usedPct}%` : '--'}
+            detail={storage ? `${formatBytes(storage.freeBytes)} free` : 'no snapshot'}
+          />
+          <PeripheralMetric
+            label="Pending upload"
+            value={formatCount(storage ? pendingUpload : null)}
+            detail={
+              storage
+                ? `mission ${formatCount(storage.pendingUploadMission)} / noise ${formatCount(storage.pendingUploadNoise)}`
+                : 'waiting'
+            }
+          />
+          <PeripheralMetric
+            label="Pending enrich"
+            value={formatCount(storage ? pendingEnrich : null)}
+            detail={
+              storage
+                ? `mission ${formatCount(storage.pendingEnrichMission)} / noise ${formatCount(storage.pendingEnrichNoise)}`
+                : 'waiting'
+            }
+          />
+          <PeripheralMetric
+            label="Event totals"
+            value={formatCount(
+              storage ? storage.missionTotal + storage.noiseTotal : null,
+            )}
+            detail={
+              storage
+                ? `P0 ${formatCount(storage.p0Total)} / P1 ${formatCount(storage.p1Total)} / P2 ${formatCount(storage.p2Total)} / P3 ${formatCount(storage.p3Total)}`
+                : 'waiting'
+            }
           />
         </View>
 

@@ -2000,7 +2000,6 @@ bool StorageManager::getUploadEventBatchForSession(const char* sessionIdOverride
             String(sessionIdOverride) : SESS.getId();
     if (!sessionId.length()) return true;
     if (_uploadIndexResident &&
-        !_uploadIndexDirty &&
         _getUploadEventBatchForSessionFromIndex(sessionId, sinceId, maxCount, out)) {
         return true;
     }
@@ -5109,11 +5108,9 @@ bool StorageManager::wipeNonVaultStorage() {
     _spoolIndexPendingWrites = 0;
     _spoolIndex = {};
     _binaryLastSessionBySegment.clear();
-    _uploadIndexBySegment.clear();
     _uploadIndexBySession.clear();
     _uploadIndexSessions.clear();
     _uploadIndexStats = {};
-    _uploadIndexDirty = false;
 
     bool ok = true;
     ok &= _removeTree(PATH_LOGS);
@@ -5644,8 +5641,6 @@ bool StorageManager::_validateUploadIndexRecord(const UploadIndexRecordV1& rec,
 }
 
 void StorageManager::_addUploadPtrToMemory(const UploadIndexRecordV1& rec) {
-    _uploadIndexBySegment[rec.segmentId].push_back(rec);
-
     if (!rec.sessionId[0]) {
         return;
     }
@@ -5668,15 +5663,12 @@ void StorageManager::_releaseUploadIndexMemory(const char* reason) {
         _uploadIndexResident ||
         indexed != 0 ||
         sessions != 0 ||
-        !_uploadIndexBySegment.empty() ||
         !_uploadIndexBySession.empty();
 
-    std::map<uint32_t, std::vector<UploadIndexRecordV1>>().swap(_uploadIndexBySegment);
     std::map<String, std::vector<UploadIndexRecordV1>>().swap(_uploadIndexBySession);
     std::vector<String>().swap(_uploadIndexSessions);
     _uploadIndexStats = {};
     _uploadIndexResident = false;
-    _uploadIndexDirty = false;
 
     if (hadResidentState) {
         DLOG_INFO("STORAGE",
@@ -5685,116 +5677,6 @@ void StorageManager::_releaseUploadIndexMemory(const char* reason) {
                   static_cast<unsigned long>(indexed),
                   static_cast<unsigned long>(sessions));
     }
-}
-
-bool StorageManager::_loadUploadIndexSegment(uint32_t segmentId) {
-    const String path = _uploadIndexPath(segmentId);
-    File f = LittleFS.open(path, "r");
-    if (!f) {
-        DLOG_WARN("STORAGE",
-                  "Upload index open failed seg=%lu path=%s",
-                  static_cast<unsigned long>(segmentId),
-                  path.c_str());
-        _uploadIndexDirty = true;
-        return false;
-    }
-
-    const size_t recordSize = sizeof(UploadIndexRecordV1);
-    uint32_t loadedRecords = 0;
-    while (static_cast<size_t>(f.available()) >= recordSize) {
-        UploadIndexRecordV1 rec;
-        memset(&rec, 0, sizeof(rec));
-
-        const size_t got = f.readBytes(reinterpret_cast<char*>(&rec), recordSize);
-        if (got != recordSize) {
-            _uploadIndexStats.badRecords++;
-            _uploadIndexDirty = true;
-            break;
-        }
-
-        if (!_validateUploadIndexRecord(rec, segmentId)) {
-            _uploadIndexStats.badRecords++;
-            _uploadIndexDirty = true;
-            continue;
-        }
-
-        _addUploadPtrToMemory(rec);
-        _uploadIndexStats.indexedEvents++;
-        loadedRecords++;
-    }
-
-    if (static_cast<size_t>(f.available()) > 0) {
-        _uploadIndexStats.badRecords++;
-        _uploadIndexDirty = true;
-    }
-
-    f.close();
-
-    const SpoolSegmentInfo* seg = _findSegmentInfo(segmentId);
-    if (seg && seg->summaryValid && loadedRecords != seg->eventCount) {
-        DLOG_WARN("STORAGE",
-                  "Upload index stale seg=%lu indexed=%lu storedEvents=%lu",
-                  static_cast<unsigned long>(segmentId),
-                  static_cast<unsigned long>(loadedRecords),
-                  static_cast<unsigned long>(seg->eventCount));
-        _uploadIndexStats.badRecords++;
-        _uploadIndexDirty = true;
-        return false;
-    }
-
-    return true;
-}
-
-bool StorageManager::_loadUploadIndex() {
-    _uploadIndexBySegment.clear();
-    _uploadIndexBySession.clear();
-    _uploadIndexSessions.clear();
-    _uploadIndexStats = {};
-    _uploadIndexDirty = false;
-    _uploadIndexResident = true;
-
-    for (const auto& seg : _spoolIndex.segments) {
-        if (seg.segmentId == 0) {
-            continue;
-        }
-
-        _uploadIndexStats.segmentsScanned++;
-        const String path = _uploadIndexPath(seg.segmentId);
-        if (!LittleFS.exists(path)) {
-            DLOG_WARN("STORAGE",
-                      "Upload index missing sidecar seg=%lu",
-                      static_cast<unsigned long>(seg.segmentId));
-            _uploadIndexStats.missingSidecars++;
-            _uploadIndexDirty = true;
-            continue;
-        }
-
-        if (!_loadUploadIndexSegment(seg.segmentId)) {
-            _uploadIndexDirty = true;
-        }
-    }
-
-    for (auto& kv : _uploadIndexBySession) {
-        std::sort(kv.second.begin(),
-                  kv.second.end(),
-                  [](const UploadIndexRecordV1& a,
-                     const UploadIndexRecordV1& b) {
-                      return a.eventId < b.eventId;
-                  });
-    }
-
-    _uploadIndexStats.sessions = static_cast<uint32_t>(_uploadIndexSessions.size());
-    _uploadIndexStats.dirty = _uploadIndexDirty;
-
-    DLOG_INFO("STORAGE",
-              "Upload index ready segs=%lu indexed=%lu sessions=%lu missing=%lu bad=%lu dirty=%u",
-              static_cast<unsigned long>(_uploadIndexStats.segmentsScanned),
-              static_cast<unsigned long>(_uploadIndexStats.indexedEvents),
-              static_cast<unsigned long>(_uploadIndexStats.sessions),
-              static_cast<unsigned long>(_uploadIndexStats.missingSidecars),
-              static_cast<unsigned long>(_uploadIndexStats.badRecords),
-              _uploadIndexStats.dirty ? 1U : 0U);
-    return true;
 }
 
 bool StorageManager::_rebuildUploadIndexSegment(const SpoolSegmentInfo& seg) {
@@ -5970,19 +5852,14 @@ bool StorageManager::_rebuildUploadIndexSegment(const SpoolSegmentInfo& seg) {
 }
 
 bool StorageManager::_rebuildUploadIndex() {
-    _uploadIndexBySegment.clear();
     _uploadIndexBySession.clear();
     _uploadIndexSessions.clear();
     _uploadIndexStats = {};
-    _uploadIndexDirty = false;
     _uploadIndexResident = true;
 
     bool ok = true;
     for (const auto& seg : _spoolIndex.segments) {
-        _uploadIndexStats.segmentsScanned++;
         if (!_rebuildUploadIndexSegment(seg)) {
-            _uploadIndexStats.badRecords++;
-            _uploadIndexDirty = true;
             ok = false;
         }
     }
@@ -5997,7 +5874,6 @@ bool StorageManager::_rebuildUploadIndex() {
     }
 
     _uploadIndexStats.sessions = static_cast<uint32_t>(_uploadIndexSessions.size());
-    _uploadIndexStats.dirty = _uploadIndexDirty;
 
     return ok;
 }
@@ -6789,18 +6665,14 @@ bool StorageManager::_getUploadEventBatchForSessionFromIndex(const String& sessi
         const uint32_t segmentId = selected[selectedIndex].segmentId;
         const SpoolSegmentInfo* seg = _findSegmentInfo(segmentId);
         if (!seg) {
-            _uploadIndexDirty = true;
-            _uploadIndexStats.badRecords++;
-            _uploadIndexStats.dirty = true;
+            _releaseUploadIndexMemory("index_missing_segment");
             return false;
         }
 
         const String path = _spoolSegmentPathForFormat(segmentId, seg->format);
         File f = LittleFS.open(path, "r");
         if (!f) {
-            _uploadIndexDirty = true;
-            _uploadIndexStats.badRecords++;
-            _uploadIndexStats.dirty = true;
+            _releaseUploadIndexMemory("index_spool_open_failed");
             return false;
         }
 
@@ -6815,9 +6687,7 @@ bool StorageManager::_getUploadEventBatchForSessionFromIndex(const String& sessi
 
         if (!headerOk) {
             f.close();
-            _uploadIndexDirty = true;
-            _uploadIndexStats.badRecords++;
-            _uploadIndexStats.dirty = true;
+            _releaseUploadIndexMemory("index_spool_header_invalid");
             return false;
         }
 
@@ -6899,9 +6769,7 @@ bool StorageManager::_getUploadEventBatchForSessionFromIndex(const String& sessi
                           static_cast<unsigned long>(ptr.offset),
                           static_cast<unsigned long>(ptr.len));
                 f.close();
-                _uploadIndexDirty = true;
-                _uploadIndexStats.badRecords++;
-                _uploadIndexStats.dirty = true;
+                _releaseUploadIndexMemory("index_read_failed");
                 return false;
             }
 
@@ -7491,102 +7359,6 @@ bool StorageManager::_decodeBinarySpoolRecordBody(uint32_t segmentId,
     return true;
 }
 
-bool StorageManager::_readIndexedSpoolRecord(const UploadIndexRecordV1& ptr,
-                                             DecodedSpoolRecord& out) const {
-    out.recordType = SPOOL_REC_UNKNOWN;
-    out.eventId = 0;
-    out.sessionId = "";
-    out.doc.clear();
-
-    const SpoolSegmentInfo* seg = _findSegmentInfo(ptr.segmentId);
-    if (!seg || !_validateUploadIndexRecord(ptr, ptr.segmentId)) {
-        return false;
-    }
-
-    const String path = _spoolSegmentPathForFormat(ptr.segmentId, seg->format);
-    File f = LittleFS.open(path, "r");
-    if (!f) {
-        return false;
-    }
-
-    if (ptr.offset >= static_cast<uint32_t>(f.size()) ||
-        ptr.len == 0 ||
-        ptr.offset + ptr.len > static_cast<uint32_t>(f.size())) {
-        f.close();
-        return false;
-    }
-
-    if (seg->format == SPOOL_SEGMENT_BIN_V2) {
-        SpoolBin::SegmentHeaderV2 hdr;
-        if (!SpoolBin::readSegmentHeaderV2(f, hdr) ||
-            hdr.magic != SpoolBin::SEGMENT_MAGIC ||
-            hdr.version != 2 ||
-            !f.seek(ptr.offset)) {
-            f.close();
-            return false;
-        }
-
-        SpoolBin::RecordPrefix prefix;
-        if (!SpoolBin::readBytes(f, &prefix, sizeof(prefix))) {
-            f.close();
-            return false;
-        }
-
-        const uint32_t encodedLen =
-            static_cast<uint32_t>(sizeof(prefix)) +
-            static_cast<uint32_t>(prefix.length);
-        if (encodedLen != ptr.len) {
-            f.close();
-            return false;
-        }
-
-        std::vector<uint8_t> body(prefix.length);
-        if (prefix.length > 0 &&
-            !SpoolBin::readBytes(f, body.data(), prefix.length)) {
-            f.close();
-            return false;
-        }
-        f.close();
-
-        if (!_decodeBinarySpoolRecordBody(ptr.segmentId,
-                                          prefix.type,
-                                          body.data(),
-                                          body.size(),
-                                          hdr.createdMs,
-                                          String(ptr.sessionId),
-                                          out)) {
-            return false;
-        }
-    } else {
-        if (!f.seek(ptr.offset)) {
-            f.close();
-            return false;
-        }
-
-        std::vector<char> buf(ptr.len + 1U, '\0');
-        const size_t got = f.readBytes(buf.data(), ptr.len);
-        f.close();
-        if (got != ptr.len) {
-            return false;
-        }
-
-        JsonDocument doc;
-        DeserializationError err = deserializeJson(doc, buf.data());
-        if (err) {
-            return false;
-        }
-
-        out.recordType = SPOOL_REC_EVENT;
-        out.eventId = doc["id"] | 0U;
-        out.sessionId = String((const char*)(doc[F_SESSION] | doc["session_id"] | ""));
-        out.doc.set(doc.as<JsonVariantConst>());
-    }
-
-    return out.recordType == SPOOL_REC_EVENT &&
-           out.eventId == ptr.eventId &&
-           out.sessionId == String(ptr.sessionId);
-}
-
 bool StorageManager::_loadSpoolEnrichmentsForSession(
     const String& sessionId,
     std::vector<SpoolEnrichmentDelta>& enrichments) const {
@@ -8152,7 +7924,6 @@ bool StorageManager::_removeSpoolSegmentFile(uint32_t segmentId) {
     const String indexPath = _uploadIndexPath(segmentId);
 
     auto removeIndex = [&]() {
-        _uploadIndexBySegment.erase(segmentId);
         if (LittleFS.exists(indexPath) && !LittleFS.remove(indexPath)) {
             DLOG_WARN("STORAGE",
                       "Upload index sidecar remove failed seg=%lu path=%s",

@@ -6,7 +6,7 @@
 // Feature flags
 // -----------------------------------------------------------------------------
 
-#define PHONE_COMPANION_ENABLED     false
+#define PHONE_COMPANION_ENABLED     true
 // Boot-time BLE probe (8 s → 2 m → 5 m → 10 m → 30 m retry ladder).
 #define PHONE_COMPANION_BOOT_PROBE  false
 #define PHONE_COMPANION_AUTO_ENRICH false
@@ -50,7 +50,7 @@
 #define MQTT_FAILED_BACKOFF_MS        SPECTRE_SECONDS_TO_MS(MQTT_FAILED_BACKOFF_SEC)
 #define MQTT_POISON_FAIL_LIMIT        3
 
-#define MQTT_UPLOAD_READY_THRESHOLD   900
+#define MQTT_UPLOAD_READY_THRESHOLD   5000
 
 // ── Upload slice / batch tuning ───────────────────────────────────────────────
 //
@@ -78,7 +78,7 @@
 #define MQTT_DUMP_FETCH_BATCH_SIZE    16   // records loaded per storage scan
 #define MQTT_DUMP_RECORDS_PER_SLICE    4   // max publish calls per yield
 #define MQTT_DUMP_SLICE_BUDGET_MS     25   // cooperative yield deadline (ms)
-#define MQTT_DUMP_CHECKPOINT_EVERY_N  150   // watermark flush cadence (events)
+#define MQTT_DUMP_CHECKPOINT_EVERY_N  250   // watermark flush cadence (events)
 
 // Upload radio lease sizing.
 //

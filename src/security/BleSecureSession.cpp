@@ -131,7 +131,7 @@ void makeNonce(const uint8_t base[GCM_IV_SIZE],
 
 bool validChannel(uint8_t channel) {
     return channel >= PHONE_SECURE_CHANNEL_GPS &&
-           channel <= PHONE_SECURE_CHANNEL_ENRICHMENT;
+           channel <= PHONE_SECURE_CHANNEL_STORAGE;
 }
 }
 

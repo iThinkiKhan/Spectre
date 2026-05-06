@@ -19,6 +19,34 @@ export interface PhoneControlFrameV1 {
   counter: number;
 }
 
+export interface PhoneStorageFrameV1 {
+  version: number;
+  flags: number;
+  storageValid: boolean;
+  uploadActive: boolean;
+  storageNearlyFull: boolean;
+  storageFull: boolean;
+  storageOverrun: boolean;
+  storageMode: number;
+  retentionPolicy: number;
+  usedPct: number;
+  freeBytes: number;
+  missionTotal: number;
+  noiseTotal: number;
+  p0Total: number;
+  p1Total: number;
+  p2Total: number;
+  p3Total: number;
+  pendingUploadMission: number;
+  pendingUploadNoise: number;
+  pendingEnrichMission: number;
+  pendingEnrichNoise: number;
+  enrichmentDeltas: number;
+  firstEventId: number;
+  lastEventId: number;
+  updatedMs: number;
+}
+
 export interface EventBatchRecord {
   eventId: number;
   timestampMs: number;

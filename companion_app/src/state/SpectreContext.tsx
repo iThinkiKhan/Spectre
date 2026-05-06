@@ -39,6 +39,7 @@ import {
   SpectrePeripheralBridge,
   type LocationFix,
   type PeripheralState,
+  type PeripheralStorageSnapshot,
 } from '../services/peripheral/SpectrePeripheralBridge';
 import {
   EnrichmentService,
@@ -124,6 +125,7 @@ type SpectreContextValue = {
   promptState: SpectrePromptState;
   statusSummary: SpectreStatusSummary;
   peripheralState: PeripheralState;
+  storageSnapshot: PeripheralStorageSnapshot | null;
   locationMode: LocationMode;
   activeLocation: ActiveLocationFix | null;
   deviceLocation: ActiveLocationFix | null;
@@ -136,6 +138,8 @@ type SpectreContextValue = {
   badUsbUploadState: BadUsbUploadState;
   logs: LogEntry[];
   requestPermissions: () => Promise<void>;
+  startFieldMode: () => Promise<void>;
+  stopFieldMode: () => Promise<void>;
   scanForDevices: () => Promise<void>;
   connectToDevice: (deviceId: string) => Promise<void>;
   disconnect: () => Promise<void>;
@@ -186,6 +190,9 @@ const EMPTY_PERIPHERAL_STATE: PeripheralState = {
   lastBatchPeer: null,
   lastBatchBytes: 0,
   lastBatchRecords: 0,
+  lastStorageReceivedAt: null,
+  lastStoragePeer: null,
+  storageBase64: null,
   totalBatchesReceived: 0,
   totalBatchBytes: 0,
   totalBatchRecords: 0,
@@ -425,6 +432,8 @@ export function SpectreProvider({children}: {children: React.ReactNode}) {
   const [peripheralState, setPeripheralState] = useState<PeripheralState>(
     EMPTY_PERIPHERAL_STATE,
   );
+  const [storageSnapshot, setStorageSnapshot] =
+    useState<PeripheralStorageSnapshot | null>(null);
   const [locationMode, setLocationMode] = useState<LocationMode>('device');
   const [deviceLocation, setDeviceLocation] =
     useState<ActiveLocationFix | null>(null);
@@ -635,6 +644,50 @@ export function SpectreProvider({children}: {children: React.ReactNode}) {
     );
   };
 
+  const startFieldMode = async () => {
+    if (!permissions.allGranted) {
+      appendLog('Grant Android Bluetooth permissions before Field Mode', 'warn');
+      return;
+    }
+
+    const bridge = peripheralRef.current;
+    if (!bridge) {
+      appendLog('Peripheral bridge unavailable for Field Mode', 'error');
+      return;
+    }
+
+    try {
+      const state = await bridge.start({
+        metadata: startupConfigRef.current.metadata,
+        gpsBase64: startupConfigRef.current.gpsBase64,
+        controlBase64: startupConfigRef.current.controlBase64,
+        enrichmentBase64: '',
+        advertiseMode: 'uuidOnly',
+      });
+      setPeripheralState(state);
+      appendLog('Field Mode foreground service started');
+    } catch (error: any) {
+      appendLog(error?.message || 'Failed to start Field Mode', 'error');
+      throw error;
+    }
+  };
+
+  const stopFieldMode = async () => {
+    const bridge = peripheralRef.current;
+    if (!bridge) {
+      return;
+    }
+
+    try {
+      const state = await bridge.stop();
+      setPeripheralState(state);
+      appendLog('Field Mode stopped');
+    } catch (error: any) {
+      appendLog(error?.message || 'Failed to stop Field Mode', 'error');
+      throw error;
+    }
+  };
+
   startupConfigRef.current = {
     metadata,
     gpsBase64,
@@ -726,6 +779,9 @@ export function SpectreProvider({children}: {children: React.ReactNode}) {
         const source = payload.mock ? 'mock' : 'spectre';
         enrichmentRef.current?.ingest(payload, source);
       },
+      onStorageSnapshotReceived: snapshot => {
+        setStorageSnapshot(snapshot);
+      },
       onLog: message => {
         appendLog(message);
       },
@@ -749,31 +805,6 @@ export function SpectreProvider({children}: {children: React.ReactNode}) {
       swallowPromise(peripheral?.stop());
     };
   }, []);
-
-  useEffect(() => {
-    if (!permissions.allGranted) {
-      return;
-    }
-
-    const bridge = peripheralRef.current;
-    if (!bridge) {
-      return;
-    }
-
-    swallowPromise(
-      bridge
-        .start({
-          metadata: startupConfigRef.current.metadata,
-          gpsBase64: startupConfigRef.current.gpsBase64,
-          controlBase64: startupConfigRef.current.controlBase64,
-          enrichmentBase64: '',
-          advertiseMode: 'uuidOnly',
-        })
-        .catch(error => {
-          appendLog(error?.message || 'Failed to start Spectre peripheral', 'error');
-        }),
-    );
-  }, [permissions.allGranted]);
 
   useEffect(() => {
     if (!permissions.allGranted || locationMode !== 'device') {
@@ -822,6 +853,7 @@ export function SpectreProvider({children}: {children: React.ReactNode}) {
     promptState,
     statusSummary,
     peripheralState,
+    storageSnapshot,
     locationMode,
     activeLocation,
     deviceLocation,
@@ -842,6 +874,8 @@ export function SpectreProvider({children}: {children: React.ReactNode}) {
         appendLog('Bluetooth, advertise, and location permissions granted');
       }
     },
+    startFieldMode,
+    stopFieldMode,
     scanForDevices: async () => {
       try {
         await bleRef.current?.scanForSpectre();

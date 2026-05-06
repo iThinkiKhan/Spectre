@@ -37,6 +37,7 @@ class SpectreSecureSession(
     const val CHANNEL_META = 0x03
     const val CHANNEL_EVENT_BATCH = 0x04
     const val CHANNEL_ENRICHMENT = 0x05
+    const val CHANNEL_STORAGE = 0x06
 
     private const val KEY_ALIAS = "spectre.phone.p256.signing.v1"
     private const val PROTOCOL_VERSION = 1
@@ -472,7 +473,7 @@ class SpectreSecureSession(
   }
 
   private fun validChannel(channel: Int): Boolean =
-    channel in CHANNEL_GPS..CHANNEL_ENRICHMENT
+    channel in CHANNEL_GPS..CHANNEL_STORAGE
 
   private fun writeLe32(out: ByteArray, offset: Int, value: Int) {
     out[offset] = (value and 0xFF).toByte()

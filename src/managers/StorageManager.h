@@ -247,12 +247,8 @@ static_assert(sizeof(UploadIndexRecordV1) == 68,
               "UploadIndexRecordV1 must stay fixed-size");
 
 struct UploadIndexStats {
-    uint32_t segmentsScanned = 0;
     uint32_t indexedEvents = 0;
     uint32_t sessions = 0;
-    uint32_t missingSidecars = 0;
-    uint32_t badRecords = 0;
-    bool dirty = false;
 };
 
 struct SpoolIndex {
@@ -514,7 +510,6 @@ private:
     // persist the spool index + event meta.
     bool        _uploadBatchActive = false;
     bool        _uploadBatchDirty  = false;
-    bool        _uploadIndexDirty   = false;
     bool        _uploadIndexResident = false;
     bool        _uploadBatchNeedsRescan = false;
     // When summary metadata is observed invalid during a busy radio window,
@@ -529,7 +524,6 @@ private:
     std::vector<DedupWindowEntry> _dedupWindow;
     std::vector<HandshakeProgress> _handshakeWindow;
     std::map<uint32_t, String> _binaryLastSessionBySegment;
-    std::map<uint32_t, std::vector<UploadIndexRecordV1>> _uploadIndexBySegment;
     std::map<String, std::vector<UploadIndexRecordV1>> _uploadIndexBySession;
     std::vector<String> _uploadIndexSessions;
     UploadIndexStats _uploadIndexStats;
@@ -571,8 +565,6 @@ private:
     String _spoolSegmentPathForFormat(uint32_t segmentId, uint8_t format) const;
     bool _ensureSpoolReady();
     bool _loadSpoolIndex();
-    bool _loadUploadIndex();
-    bool _loadUploadIndexSegment(uint32_t segmentId);
     bool _rebuildUploadIndex();
     bool _rebuildUploadIndexSegment(const SpoolSegmentInfo& seg);
     bool _validateUploadIndexRecord(const UploadIndexRecordV1& rec,
@@ -635,8 +627,6 @@ private:
                                                  uint32_t sinceId,
                                                  int maxCount,
                                                  JsonDocument& out);
-    bool _readIndexedSpoolRecord(const UploadIndexRecordV1& ptr,
-                                 DecodedSpoolRecord& out) const;
     bool _decodeBinarySpoolRecordBody(uint32_t segmentId,
                                       uint8_t recordType,
                                       const uint8_t* data,

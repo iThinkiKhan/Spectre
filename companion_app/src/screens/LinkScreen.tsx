@@ -64,6 +64,13 @@ function formatBytes(value?: number | null) {
   return `${(value / 1024).toFixed(1)}KB`;
 }
 
+function formatCount(value?: number | null) {
+  if (typeof value !== 'number' || !Number.isFinite(value)) {
+    return '--';
+  }
+  return String(Math.round(value));
+}
+
 function TelemetryTile({
   label,
   value,
@@ -108,6 +115,11 @@ export function LinkScreen() {
   const lastBatchAt =
     spectre.lastPublishedBatch?.sentAt ??
     spectre.peripheralState.lastBatchReceivedAt;
+  const storage = spectre.storageSnapshot;
+  const pendingUpload =
+    (storage?.pendingUploadMission ?? 0) + (storage?.pendingUploadNoise ?? 0);
+  const pendingEnrich =
+    (storage?.pendingEnrichMission ?? 0) + (storage?.pendingEnrichNoise ?? 0);
 
   const troubleshooting: string[] = [];
   if (!spectre.permissions.allGranted) {
@@ -207,6 +219,49 @@ export function LinkScreen() {
             value={lastBatchRecords > 0 ? `${lastBatchRecords} records` : 'none'}
             detail={`${formatBytes(lastBatchBytes)} - ${formatRelativeTime(lastBatchAt)}`}
           />
+          <TelemetryTile
+            label="Storage"
+            value={storage ? `${storage.usedPct}% used` : 'waiting'}
+            detail={
+              storage
+                ? `up ${formatCount(pendingUpload)} / enrich ${formatCount(pendingEnrich)}`
+                : 'no snapshot yet'
+            }
+          />
+          <TelemetryTile
+            label="Events"
+            value={storage ? formatCount(storage.missionTotal + storage.noiseTotal) : '--'}
+            detail={
+              storage
+                ? `mission ${formatCount(storage.missionTotal)} / noise ${formatCount(storage.noiseTotal)}`
+                : 'counts unavailable'
+            }
+          />
+        </View>
+
+        <View style={styles.buttonRow}>
+          <Pressable
+            style={[
+              styles.primaryButton,
+              !spectre.permissions.allGranted ? styles.buttonDisabled : null,
+            ]}
+            disabled={!spectre.permissions.allGranted}
+            onPress={() => {
+              spectre.startFieldMode().catch(() => {});
+            }}>
+            <Text style={styles.primaryText}>Start Field Mode</Text>
+          </Pressable>
+          <Pressable
+            style={[
+              styles.secondaryButton,
+              !spectre.peripheralState.running ? styles.buttonDisabled : null,
+            ]}
+            disabled={!spectre.peripheralState.running}
+            onPress={() => {
+              spectre.stopFieldMode().catch(() => {});
+            }}>
+            <Text style={styles.secondaryText}>Stop Field Mode</Text>
+          </Pressable>
         </View>
       </FieldPanel>
 
@@ -470,6 +525,9 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     letterSpacing: 0.8,
     fontFamily: theme.fonts.label,
+  },
+  buttonDisabled: {
+    opacity: 0.38,
   },
   sectionMeta: {
     color: theme.colors.amber,

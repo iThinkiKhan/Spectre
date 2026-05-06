@@ -5,6 +5,8 @@ import {
   type EmitterSubscription,
 } from 'react-native';
 import {base64ToBytes} from '../../protocol/base64';
+import {decodePhoneStorageFrame} from '../../protocol/binary';
+import type {PhoneStorageFrameV1} from '../../protocol/types';
 
 type NativePeripheralModule = {
   startServer(config: {
@@ -50,6 +52,9 @@ export type PeripheralState = {
   lastBatchPeer?: string | null;
   lastBatchBytes?: number;
   lastBatchRecords?: number;
+  lastStorageReceivedAt?: number | null;
+  lastStoragePeer?: string | null;
+  storageBase64?: string | null;
   totalBatchesReceived?: number;
   totalBatchBytes?: number;
   totalBatchRecords?: number;
@@ -64,6 +69,10 @@ export type PeripheralEventBatch = {
   mock?: boolean;
 };
 
+export type PeripheralStorageSnapshot = PhoneStorageFrameV1 & {
+  receivedAt: number;
+};
+
 export type LocationFix = {
   lat: number;
   lon: number;
@@ -76,6 +85,7 @@ export type LocationFix = {
 export type SpectrePeripheralListener = {
   onStateChange?: (state: PeripheralState) => void;
   onEventBatchReceived?: (event: PeripheralEventBatch) => void;
+  onStorageSnapshotReceived?: (snapshot: PeripheralStorageSnapshot) => void;
   onLog?: (message: string) => void;
 };
 
@@ -142,7 +152,15 @@ export class SpectrePeripheralBridge {
       };
     }
 
-    return nativeModule.stopServer();
+    const state = await nativeModule.stopServer();
+    this.listener?.onStateChange?.({
+      ...state,
+      moduleAvailable: true,
+    });
+    return {
+      ...state,
+      moduleAvailable: true,
+    };
   }
 
   async updateMetadata(metadata: string) {
@@ -225,6 +243,19 @@ export class SpectrePeripheralBridge {
       }),
       eventEmitter.addListener('SpectrePeripheralEventBatch', payload => {
         this.listener?.onEventBatchReceived?.(payload);
+      }),
+      eventEmitter.addListener('SpectrePeripheralStorage', payload => {
+        try {
+          const snapshot = decodePhoneStorageFrame(payload.base64);
+          this.listener?.onStorageSnapshotReceived?.({
+            ...snapshot,
+            receivedAt: payload.receivedAt ?? Date.now(),
+          });
+        } catch (error: any) {
+          this.listener?.onLog?.(
+            error?.message || 'Storage snapshot decode failed',
+          );
+        }
       }),
       eventEmitter.addListener('SpectrePeripheralLog', payload => {
         const message =

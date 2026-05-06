@@ -114,10 +114,13 @@ public:
     bool isPhoneEnrichmentReady() const { return _state == BLE_SUBSCRIBED &&
                                                  _eventBatchRemoteChar != nullptr &&
                                                  _enrichmentRemoteChar != nullptr; }
+    bool isPhoneStorageReady()    const { return _state == BLE_SUBSCRIBED &&
+                                                 _storageRemoteChar != nullptr; }
 
     // Full-feature check (alias for isPhoneEnrichmentReady).
     // Kept for backward compatibility with existing call sites.
     bool isPhoneCompanionReady() const;
+    bool publishStorageSnapshot(const PhoneStorageFrameV1& frame);
 
     // One-shot trigger for MQTT layer
     bool consumeWireGuardDumpTrigger();
@@ -457,6 +460,8 @@ private:
     size_t    _eventBatchTxLen = 0;
     uint8_t   _eventBatchSecureTxBuf[ENRICHMENT_MAX_RECORDS * EVENT_BATCH_RECORD_SIZE +
                                       PHONE_SECURE_ENVELOPE_OVERHEAD];
+    uint8_t   _storageSecureTxBuf[PHONE_STORAGE_FRAME_SIZE +
+                                   PHONE_SECURE_ENVELOPE_OVERHEAD];
     uint8_t   _enrichmentRxBuf[ENRICHMENT_MAX_RECORDS * ENRICHMENT_RECORD_SIZE];
     size_t    _enrichmentRxLen = 0;
     size_t    _enrichmentExpectedCount = 0;
@@ -489,6 +494,7 @@ private:
     NimBLERemoteCharacteristic* _eventBatchRemoteChar = nullptr;
     NimBLERemoteCharacteristic* _enrichmentRemoteChar = nullptr;
     NimBLERemoteCharacteristic* _authRemoteChar = nullptr;
+    NimBLERemoteCharacteristic* _storageRemoteChar = nullptr;
     BleSecureSession            _secureSession;
     uint8_t                     _authChallengeBuf[PHONE_AUTH_FRAME_SIZE] = {};
     uint8_t                     _authResponseBuf[PHONE_AUTH_FRAME_SIZE] = {};

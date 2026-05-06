@@ -227,9 +227,9 @@ const char* RadioArbiter::ownerName(RadioOwner owner) {
 
 uint8_t RadioArbiter::_priorityFor(RadioOwner owner) const {
     switch (owner) {
-        case RADIO_BLE_TEXT:     return 200;
-        case RADIO_BLE_GPS:      return 180;
-        case RADIO_WIFI_UPLOAD:  return 160;
+        case RADIO_WIFI_UPLOAD:  return 220;
+        case RADIO_BLE_TEXT:     return 180;
+        case RADIO_BLE_GPS:      return 160;
         case RADIO_WIFI_PMKID:   return 140;
         case RADIO_WIFI_SCAN:    return 120;
         case RADIO_WIFI_CAPTURE: return 100;

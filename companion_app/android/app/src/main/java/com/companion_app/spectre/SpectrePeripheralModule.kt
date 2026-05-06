@@ -60,6 +60,8 @@ class SpectrePeripheralModule(
       UUID.fromString("84f03a80-6d7b-4d4d-9a64-6b2d6f3a0006")
     private val PHONE_AUTH_UUID =
       UUID.fromString("84f03a80-6d7b-4d4d-9a64-6b2d6f3a0007")
+    private val PHONE_STORAGE_UUID =
+      UUID.fromString("84f03a80-6d7b-4d4d-9a64-6b2d6f3a0008")
     private val CCCD_UUID =
       UUID.fromString("00002902-0000-1000-8000-00805f9b34fb")
 
@@ -91,7 +93,8 @@ class SpectrePeripheralModule(
     // reassemble for this protocol, so send deterministic ATT-sized chunks.
     private const val DEFAULT_NOTIFICATION_PAYLOAD_BYTES = 20
     private const val MAX_NOTIFICATION_PAYLOAD_BYTES = 180
-    private const val EVENT_BATCH_RECORD_SIZE = 12
+    private const val PHONE_STORAGE_FRAME_SIZE = 68
+    private const val EVENT_BATCH_RECORD_SIZE = 10
     private const val PHONE_EVENT_BATCH_MAX_RECORDS = 512
     private const val PHONE_EVENT_BATCH_MAX_BYTES =
       PHONE_EVENT_BATCH_MAX_RECORDS * EVENT_BATCH_RECORD_SIZE
@@ -126,6 +129,7 @@ class SpectrePeripheralModule(
   private var eventBatchCharacteristic: BluetoothGattCharacteristic? = null
   private var enrichmentCharacteristic: BluetoothGattCharacteristic? = null
   private var authCharacteristic: BluetoothGattCharacteristic? = null
+  private var storageCharacteristic: BluetoothGattCharacteristic? = null
   private val secureSession = SpectreSecureSession(::emitLog)
 
   private var gpsBytes = ByteArray(0)
@@ -133,6 +137,7 @@ class SpectrePeripheralModule(
   private var metadataBytes = ByteArray(0)
   private var eventBatchBytes = ByteArray(0)
   private var enrichmentBytes = ByteArray(0)
+  private var storageBytes = ByteArray(0)
   private var advertising = false
   private var advertiseMode = AdvertisePayloadMode.SERVICE_UUID_WITH_NAME_SCAN_RESPONSE
   private var preferredAdvertiseMode = AdvertisePayloadMode.SERVICE_UUID_WITH_NAME_SCAN_RESPONSE
@@ -145,6 +150,8 @@ class SpectrePeripheralModule(
   private var lastBatchPeerLabel: String? = null
   private var lastBatchBytes = 0
   private var lastBatchRecords = 0
+  private var lastStorageReceivedAtMs = 0L
+  private var lastStoragePeerLabel: String? = null
   private var totalBatchesReceived = 0
   private var totalBatchBytes = 0
   private var totalBatchRecords = 0
@@ -152,6 +159,7 @@ class SpectrePeripheralModule(
   private val negotiatedMtuByAddress = mutableMapOf<String, Int>()
   private val preparedAuthByAddress = mutableMapOf<String, ByteArray>()
   private val preparedEventBatchByAddress = mutableMapOf<String, ByteArray>()
+  private val preparedStorageByAddress = mutableMapOf<String, ByteArray>()
   private val readEnvelopeByPeerAndCharacteristic = mutableMapOf<String, ByteArray>()
   private val notificationQueue = ArrayDeque<PendingNotification>()
   private var notificationInFlight: PendingNotification? = null
@@ -237,6 +245,7 @@ class SpectrePeripheralModule(
     negotiatedMtuByAddress.clear()
     preparedAuthByAddress.clear()
     preparedEventBatchByAddress.clear()
+    preparedStorageByAddress.clear()
     readEnvelopeByPeerAndCharacteristic.clear()
     notificationQueue.clear()
     notificationInFlight = null
@@ -249,6 +258,7 @@ class SpectrePeripheralModule(
     eventBatchCharacteristic = null
     enrichmentCharacteristic = null
     authCharacteristic = null
+    storageCharacteristic = null
     secureSession.reset()
     advertising = false
     advertiseStartSucceeded = false
@@ -430,6 +440,18 @@ class SpectrePeripheralModule(
     ).also { characteristic ->
       characteristic.addDescriptor(cccdDescriptor())
       characteristic.value = enrichmentBytes
+      service.addCharacteristic(characteristic)
+    }
+
+    storageCharacteristic = BluetoothGattCharacteristic(
+      PHONE_STORAGE_UUID,
+      BluetoothGattCharacteristic.PROPERTY_READ or
+        BluetoothGattCharacteristic.PROPERTY_WRITE or
+        BluetoothGattCharacteristic.PROPERTY_WRITE_NO_RESPONSE,
+      BluetoothGattCharacteristic.PERMISSION_READ or
+        BluetoothGattCharacteristic.PERMISSION_WRITE,
+    ).also { characteristic ->
+      characteristic.value = storageBytes
       service.addCharacteristic(characteristic)
     }
 
@@ -805,6 +827,7 @@ class SpectrePeripheralModule(
       PHONE_EVENT_BATCH_UUID -> "eventBatch"
       PHONE_ENRICHMENT_UUID -> "enrichment"
       PHONE_AUTH_UUID -> "auth"
+      PHONE_STORAGE_UUID -> "storage"
       else -> characteristic.uuid.toString()
     }
 
@@ -815,6 +838,7 @@ class SpectrePeripheralModule(
       PHONE_METADATA_UUID -> SpectreSecureSession.CHANNEL_META
       PHONE_EVENT_BATCH_UUID -> SpectreSecureSession.CHANNEL_EVENT_BATCH
       PHONE_ENRICHMENT_UUID -> SpectreSecureSession.CHANNEL_ENRICHMENT
+      PHONE_STORAGE_UUID -> SpectreSecureSession.CHANNEL_STORAGE
       else -> null
     }
 
@@ -842,6 +866,9 @@ class SpectrePeripheralModule(
       putString("lastBatchPeer", lastBatchPeerLabel)
       putInt("lastBatchBytes", lastBatchBytes)
       putInt("lastBatchRecords", lastBatchRecords)
+      putNullableTimestamp("lastStorageReceivedAt", lastStorageReceivedAtMs)
+      putString("lastStoragePeer", lastStoragePeerLabel)
+      putString("storageBase64", if (storageBytes.isEmpty()) null else encodeBase64(storageBytes))
       putInt("totalBatchesReceived", totalBatchesReceived)
       putInt("totalBatchBytes", totalBatchBytes)
       putInt("totalBatchRecords", totalBatchRecords)
@@ -874,6 +901,17 @@ class SpectrePeripheralModule(
   private fun emitEventBatch(base64Payload: String, payloadSize: Int) {
     emitEvent(
       "SpectrePeripheralEventBatch",
+      Arguments.createMap().apply {
+        putString("base64", base64Payload)
+        putInt("length", payloadSize)
+        putDouble("receivedAt", System.currentTimeMillis().toDouble())
+      },
+    )
+  }
+
+  private fun emitStorageSnapshot(base64Payload: String, payloadSize: Int) {
+    emitEvent(
+      "SpectrePeripheralStorage",
       Arguments.createMap().apply {
         putString("base64", base64Payload)
         putInt("length", payloadSize)
@@ -1003,6 +1041,12 @@ class SpectrePeripheralModule(
     clearReadEnvelopeCache(PHONE_EVENT_BATCH_UUID)
   }
 
+  private fun mergeStorage(offset: Int, value: ByteArray) {
+    storageBytes = mergeBytes(storageBytes, offset, value)
+    storageCharacteristic?.value = storageBytes
+    clearReadEnvelopeCache(PHONE_STORAGE_UUID)
+  }
+
   private fun commitEventBatch(device: BluetoothDevice, bytes: ByteArray) {
     if (
       bytes.isEmpty() ||
@@ -1028,6 +1072,22 @@ class SpectrePeripheralModule(
     )
     emitState(stateMap())
     emitEventBatch(encodeBase64(eventBatchBytes), eventBatchBytes.size)
+  }
+
+  private fun commitStorageFrame(device: BluetoothDevice, bytes: ByteArray) {
+    if (bytes.size != PHONE_STORAGE_FRAME_SIZE) {
+      emitLog("storage snapshot dropped peer=${addressLabel(device)} bytes=${bytes.size}")
+      return
+    }
+
+    storageBytes = bytes
+    storageCharacteristic?.value = storageBytes
+    clearReadEnvelopeCache(PHONE_STORAGE_UUID)
+    lastStorageReceivedAtMs = System.currentTimeMillis()
+    lastStoragePeerLabel = addressLabel(device)
+    emitLog("storage snapshot accepted peer=${addressLabel(device)} bytes=${bytes.size}")
+    emitState(stateMap())
+    emitStorageSnapshot(encodeBase64(storageBytes), storageBytes.size)
   }
 
   private fun clearReadEnvelopeCache(uuid: UUID? = null) {
@@ -1106,6 +1166,7 @@ class SpectrePeripheralModule(
         negotiatedMtuByAddress.remove(device.address)
         preparedAuthByAddress.remove(device.address)
         preparedEventBatchByAddress.remove(device.address)
+        preparedStorageByAddress.remove(device.address)
         readEnvelopeByPeerAndCharacteristic.keys
           .filter { it.startsWith("${device.address}|") }
           .forEach { readEnvelopeByPeerAndCharacteristic.remove(it) }
@@ -1183,6 +1244,7 @@ class SpectrePeripheralModule(
           PHONE_METADATA_UUID -> metadataBytes
           PHONE_EVENT_BATCH_UUID -> eventBatchBytes
           PHONE_ENRICHMENT_UUID -> enrichmentBytes
+          PHONE_STORAGE_UUID -> storageBytes
           else -> ByteArray(0)
         }
         if (channel == null) {
@@ -1327,6 +1389,40 @@ class SpectrePeripheralModule(
             return
           }
         }
+      } else if (characteristic.uuid == PHONE_STORAGE_UUID) {
+        if (preparedWrite) {
+          val merged = mergeBytes(
+            preparedStorageByAddress[device.address] ?: ByteArray(0),
+            offset,
+            value,
+          )
+          preparedStorageByAddress[device.address] = merged
+          emitLog(
+            "storage prepared peer=${addressLabel(device)} offset=$offset chunk=${value.size} total=${merged.size}"
+          )
+        } else {
+          try {
+            val plaintext = secureSession.decrypt(
+              SpectreSecureSession.CHANNEL_STORAGE,
+              value,
+            )
+            mergeStorage(offset, plaintext)
+            commitStorageFrame(device, storageBytes)
+          } catch (error: Exception) {
+            emitLog("storage decrypt failed peer=${addressLabel(device)} bytes=${value.size} error=${error.message}")
+            if (responseNeeded) {
+              gattServer?.sendResponse(
+                device,
+                requestId,
+                GATT_INSUFFICIENT_AUTHORIZATION_STATUS,
+                offset,
+                null,
+              )
+            }
+            gattServer?.cancelConnection(device)
+            return
+          }
+        }
       }
 
       if (responseNeeded) {
@@ -1388,6 +1484,40 @@ class SpectrePeripheralModule(
       if (!isAuthorized(device)) {
         rejectUnauthorized(device, requestId, 0, "executeWrite")
         return
+      }
+
+      val stagedStorage = preparedStorageByAddress.remove(device.address)
+      if (execute && stagedStorage != null) {
+        try {
+          val plaintext = secureSession.decrypt(
+            SpectreSecureSession.CHANNEL_STORAGE,
+            stagedStorage,
+          )
+          emitLog("storage execute peer=${addressLabel(device)} sealed=${stagedStorage.size} plain=${plaintext.size}")
+          commitStorageFrame(device, plaintext)
+        } catch (error: Exception) {
+          emitLog("storage execute decrypt failed peer=${addressLabel(device)} bytes=${stagedStorage.size} error=${error.message}")
+          gattServer?.sendResponse(
+            device,
+            requestId,
+            GATT_INSUFFICIENT_AUTHORIZATION_STATUS,
+            0,
+            null,
+          )
+          gattServer?.cancelConnection(device)
+          return
+        }
+
+        gattServer?.sendResponse(
+          device,
+          requestId,
+          BluetoothGatt.GATT_SUCCESS,
+          0,
+          null,
+        )
+        return
+      } else if (stagedStorage != null) {
+        emitLog("storage execute cancelled peer=${addressLabel(device)} bytes=${stagedStorage.size}")
       }
 
       val staged = preparedEventBatchByAddress.remove(device.address)
