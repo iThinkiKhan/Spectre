@@ -1,61 +1,27 @@
-# Local secrets / provisioning
+.pio
+.vscode/.browse.c_cpp.db*
+.vscode/c_cpp_properties.json
+.vscode/launch.json
+.vscode/ipch
 src/secrets.h
-**/secrets.h
-*.secret
-*.secrets
-*.env
-.env
-.env.*
-!.env.example
 
-# PlatformIO / build output
-.pio/
+# Full-codebase snapshot files (reference blobs, not source)
+spectre_full_*.txt
+
+# Build output and caches
+.buildcheck.err.log
+.buildcheck.out.log
+.buildcheck.*.log
+.cache/
 .pio_build/
 .pio_build_check/
-build/
-dist/
-*.bin
-*.elf
-*.map
 
-# React Native / Android / iOS generated output
+# Companion app dependencies
 companion_app/node_modules/
-companion_app/android/.gradle/
-companion_app/android/app/.cxx/
-companion_app/android/app/build/
-companion_app/ios/Pods/
-companion_app/ios/.xcode.env
+companion_app/android/build/
+companion_app/ios/build/
+companion_app/.gradle/
+companion-app-scaffold/node_modules/
 
-# Editor / local machine files
-.vscode/
-.idea/
-.DS_Store
-Thumbs.db
-
-# Logs, captures, exports, and field data
-logs/
-captures/
-exports/
-data/
-spool/
-littlefs/
-*.pcap
-*.pcapng
-*.csv
-*.jsonl
-*.log
-*.db
-*.sqlite
-*.sqlite3
-
-# Local debug dumps / backups
-.cache/
-.claude/
-drafts/
-crash/
-crashes/
-debug/
-tmp/
-temp/
-spectre_full_*.txt
-*.bak
+# Windows path artifacts
+C:/

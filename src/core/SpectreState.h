@@ -1,5 +1,3 @@
-
-
 #pragma once
 #include <Arduino.h>
 #include <freertos/FreeRTOS.h>
@@ -46,7 +44,6 @@ enum PowerState : uint8_t {
 };
 
 struct SpectreState {
-    // LoRa
     int     loraRSSI        = 0;
     int     loraSNR         = 0;
     int     loraPacketCount = 0;
@@ -59,7 +56,6 @@ struct SpectreState {
     char    subGhzModule[24] = "";
     uint32_t subGhzFrequencyHz = 0;
 
-    // WiFi
     bool     wifiConnected     = false;
     char     wifiSSID[32]      = "";
     int      wifiNetworkCount  = 0;
@@ -75,7 +71,7 @@ struct SpectreState {
     int      wifiListScroll    = 0;
     bool     missionListActive = false;
     int      missionListScroll = 0;
-    // BadUSB
+
     bool     badUsbListActive      = false;
     int      badUsbListSelected    = 0;
     int      badUsbListScroll      = 0;
@@ -109,24 +105,20 @@ struct SpectreState {
     WiFiNetworkSnapshot wifiSnap[WIFI_SNAP_COUNT];
     int wifiSnapCount = 0;
 
-    // MQTT / sync
     bool    kaliSyncAvailable   = false;
     bool    kaliSyncPending     = false;
     int     sessionFilesPending = 0;
 
-    // Session stats
     int     sessionNetworks     = 0;
     int     sessionDevices      = 0;
     int     sessionProbes       = 0;
     int     sessionPMKIDs       = 0;
     int     sessionDrones       = 0;
 
-    // Drone
     int     droneCount          = 0;
     char    lastDroneID[32]     = "";
     bool    droneAlert          = false;
 
-    // BLE
     bool     bleConnected      = false;
     char     bleDeviceName[32] = "";
     uint8_t  companionEnabled  = 0;   // 0/1
@@ -135,7 +127,6 @@ struct SpectreState {
     uint32_t companionPending  = 0;
     uint32_t companionLastSeenMs = 0;
 
-    // GPS
     bool     gpsAvailable      = false;
     float    gpsLat            = 0.0f;
     float    gpsLon            = 0.0f;
@@ -145,17 +136,14 @@ struct SpectreState {
     char     gpsTimeISO[24]    = "";
     bool     gpsValid          = false;
 
-    // Text input
     bool     textInputPending   = false;
     char     textInputPrompt[24] = "";
     char     textInputResult[64] = "";
     bool     textInputReady     = false;
     char     wifiConnectPass[64] = "";
 
-    // WireGuard
     bool     wgDumpTriggered   = false;
 
-    // System
     int      battPercent       = 0;
     float    battVoltage       = 0.0f;
     uint16_t battVoltageMv     = 0;
@@ -247,13 +235,10 @@ struct SpectreState {
     bool        hwInitDone      = false;
     bool        debriefActive   = false;
 
-    // Antenna
     bool    antennaExternal = true;
 
-    // Radio
     uint8_t radioOwner = 0;  // matches RadioOwner enum
 
-    // Pwny mode display state
     struct PwnyTargetDisplay {
         char    ssid[24]       = "";
         int16_t score          = 0;
@@ -268,7 +253,7 @@ struct SpectreState {
         uint8_t attackCount    = 0;
         uint8_t phase          = 0;     // 0=passive 1=deauth 2=cooldown 3=done
     };
-    PwnyTargetDisplay pwnyTargets[8];   // expanded from 4
+    PwnyTargetDisplay pwnyTargets[8];
     uint8_t           pwnyTargetCount  = 0;
     char              pwnyStatus[48]   = "IDLE";
     uint8_t           pwnyCurrentIdx   = 0;
@@ -276,11 +261,9 @@ struct SpectreState {
     uint16_t          pwnyTotalAttempts = 0;
     uint32_t          pwnySessionMs    = 0; // millis when pwny started
 
-    // Session tagging
     char    sessionTag[32]       = "";
     bool    sessionTagSet        = false;
 
-    // Known locations (loaded from config)
     struct KnownLocation {
         char  tag[24];
         float lat;
@@ -292,15 +275,10 @@ struct SpectreState {
     int           knownLocCount = 0;
 };
 
-// Global state + spinlock
 extern SpectreState g_state;
 extern portMUX_TYPE g_stateMux;
 
-// Convenience macros for safe state access
 #define STATE_READ_BEGIN()  portENTER_CRITICAL(&g_stateMux)
 #define STATE_READ_END()    portEXIT_CRITICAL(&g_stateMux)
 #define STATE_WRITE_BEGIN() portENTER_CRITICAL(&g_stateMux)
 #define STATE_WRITE_END()   portEXIT_CRITICAL(&g_stateMux)
-
-
-

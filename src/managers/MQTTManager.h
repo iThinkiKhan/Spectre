@@ -104,6 +104,7 @@ private:
         DumpPhase phase = DUMP_PHASE_IDLE;
         size_t sessionIndex = 0;
         uint32_t sinceId = 0;
+        uint32_t maxEventsThisLease = 0;
         bool phaseStarted = false;
         bool healthDone = false;
         bool censusDone = false;
@@ -115,11 +116,18 @@ private:
         bool firstEventDocBuiltLogged = false;
         bool firstEventPublishBeginLogged = false;
         bool firstEventPublishEndLogged = false;
+        bool sinceIdInitialized = false;
         // Session list for DUMP_PHASE_EVENTS. Kept here (not static local) so
         // that _dumpCtx = {} at dump start properly destructs the Strings and
         // releases the vector's backing allocation. A static local would retain
         // peak capacity across cycles and fragment the heap.
         std::vector<String> sessionIds;
+        // Cached batch: filled once per storage scan; drained record-by-record
+        // over subsequent slice calls without re-scanning storage.  Reset to
+        // zero when a batch is exhausted; the next iteration refills it.
+        JsonDocument cachedBatch;
+        uint16_t     cachedBatchIndex = 0;
+        uint16_t     cachedBatchCount = 0;
     };
 
     WiFiClient    _wifiClient;

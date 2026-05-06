@@ -1,5 +1,3 @@
-
-
 #pragma once
 
 #include <Arduino.h>
@@ -63,6 +61,3 @@ inline const char* sessionContextLabel(RunContext context,
             return "UNKNOWN";
     }
 }
-
-
-

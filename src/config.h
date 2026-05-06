@@ -10,11 +10,11 @@
 
 // Phone app
 // Master switch: device-side companion support is compiled/allowed.
-#define PHONE_COMPANION_ENABLED     true
+#define PHONE_COMPANION_ENABLED     false
 // Boot-time BLE probe (8 s → 2 m → 5 m → 10 m → 30 m retry ladder).
-#define PHONE_COMPANION_BOOT_PROBE  true
+#define PHONE_COMPANION_BOOT_PROBE  false
 // Automatic enrichment when the pending-item backlog exceeds threshold.
-#define PHONE_COMPANION_AUTO_ENRICH true
+#define PHONE_COMPANION_AUTO_ENRICH false
 // Pending event count that triggers automatic phone enrichment.
 // Keep this below MQTT_UPLOAD_READY_THRESHOLD so records can be enriched
 // before normal MQTT upload drains the spool.
@@ -40,7 +40,7 @@
 // Serial "ble smoke" command: suspend WiFi, run NimBLE init/deinit, report heap.
 // Confirmed working 2026-04-26. Gate it off so the command isn't accidentally
 // triggered in the field; flip to true only when debugging BLE bring-up.
-#define BLE_SMOKE_ENABLED           false
+#define BLE_SMOKE_ENABLED           true
 
 // Safety gate: passive Pwny capture remains available, but active deauth is
 // disabled unless explicitly enabled here or manually requested from the UI.
@@ -62,14 +62,37 @@
 #define MQTT_FAILED_BACKOFF_SEC       300UL
 #define MQTT_FAILED_BACKOFF_MS        SPECTRE_SECONDS_TO_MS(MQTT_FAILED_BACKOFF_SEC)
 #define MQTT_POISON_FAIL_LIMIT        3
+
 // Pending upload count that triggers normal MQTT dump.
-// Keep this comfortably above PHONE_COMPANION_ENRICH_THRESHOLD.
 #define MQTT_UPLOAD_READY_THRESHOLD   1000
 
-// Events fetched from spool storage and published in a single dump slice.
-// Each slice runs synchronously on TaskHardware; keep this small enough
-// that the task does not stall the watchdog between slices.
-#define MQTT_DUMP_EVENTS_PER_SLICE    15
+// ── Upload slice / batch tuning ───────────────────────────────────────────────
+//
+// MQTT upload runs in cooperative slices on TaskHardware.  Each call to
+// _runDumpSlice() does one of two things:
+//
+//   FETCH  — scan spool storage once, cache FETCH_BATCH_SIZE records in RAM,
+//            then yield (return false).  One scan ≈ 500 ms on a cold spool.
+//
+//   PROCESS — publish up to RECORDS_PER_SLICE cached records, then yield when
+//            either the record budget or SLICE_BUDGET_MS is exceeded.
+//
+// Because fetch and process alternate, raising FETCH_BATCH_SIZE amortises the
+// 500 ms scan cost across more publishes.  RECORDS_PER_SLICE and
+// SLICE_BUDGET_MS bound how long a single process call holds the CPU.
+//
+// Rule of thumb: FETCH_BATCH_SIZE ≥ 2 × RECORDS_PER_SLICE so each scan
+// pays for at least two full process calls before the next scan.
+//
+// Durable checkpoints flush upload watermarks to flash every
+// CHECKPOINT_EVERY_N published events so a crash-loop cannot lose more than
+// that many records' worth of upload progress.  Flushing costs ~10–30 ms of
+// LittleFS activity mid-radio; set this low enough to keep recovery windows
+// short, high enough to avoid hammering flash on large uploads.
+#define MQTT_DUMP_FETCH_BATCH_SIZE    16   // records loaded per storage scan
+#define MQTT_DUMP_RECORDS_PER_SLICE    4   // max publish calls per yield
+#define MQTT_DUMP_SLICE_BUDGET_MS     25   // cooperative yield deadline (ms)
+#define MQTT_DUMP_CHECKPOINT_EVERY_N  150   // watermark flush cadence (events)
 
 // Upload radio lease sizing.
 //

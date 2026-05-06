@@ -1,5 +1,3 @@
-
-
 #include "SpoolBinaryCodec.h"
 
 namespace SpoolBin {
@@ -80,7 +78,8 @@ bool appendRecordV2(const String& path,
                     const uint8_t* payload,
                     uint16_t length,
                     uint32_t eventId,
-                    SegmentHeaderV2* outHeader) {
+                    SegmentHeaderV2* outHeader,
+                    AppendRecordLocation* outLoc) {
     File f = LittleFS.open(path, "r+");
     if (!f) return false;
 
@@ -95,7 +94,8 @@ bool appendRecordV2(const String& path,
         return false;
     }
 
-    if (!f.seek(f.size())) {
+    const uint32_t writeOffset = static_cast<uint32_t>(f.size());
+    if (!f.seek(writeOffset)) {
         f.close();
         return false;
     }
@@ -115,8 +115,10 @@ bool appendRecordV2(const String& path,
         return false;
     }
 
+    const uint32_t encodedLen = static_cast<uint32_t>(sizeof(prefix)) + static_cast<uint32_t>(length);
+
     hdr.recordCount++;
-    hdr.bodyBytes += static_cast<uint32_t>(sizeof(prefix)) + static_cast<uint32_t>(length);
+    hdr.bodyBytes += encodedLen;
 
     if (eventId != 0) {
         if (hdr.firstEventId == 0 || eventId < hdr.firstEventId) {
@@ -134,6 +136,11 @@ bool appendRecordV2(const String& path,
 
     if (outHeader) {
         *outHeader = hdr;
+    }
+
+    if (outLoc) {
+        outLoc->offset = writeOffset;
+        outLoc->len    = encodedLen;
     }
 
     f.close();

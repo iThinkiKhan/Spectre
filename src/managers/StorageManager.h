@@ -1,5 +1,3 @@
-
-
 #pragma once
 #include <Arduino.h>
 #include <LittleFS.h>
@@ -12,6 +10,10 @@
 #include "../core/SpectreState.h"
 #include "../data/Schema.h"
 #include "TimeService.h"
+
+namespace SpoolBin {
+struct AppendRecordLocation;
+}
 
 // OWNERSHIP CONTRACT
 // - TaskHardware is the sole mutator of persistent storage state.
@@ -228,6 +230,34 @@ struct PendingEventDescriptor {
     uint16_t valueScore = 0;
 };
 
+static constexpr uint32_t UIX_MAGIC = 0x00584955UL; // "UIX\0"
+static constexpr uint16_t UIX_RECORD_LEN_V1 = 68;
+
+struct UploadIndexRecordV1 {
+    uint32_t magic = UIX_MAGIC;
+    uint8_t  version = 1;
+    uint8_t  reserved0 = 0;
+    uint16_t recordLen = UIX_RECORD_LEN_V1;
+    uint32_t segmentId = 0;
+    uint32_t offset = 0;
+    uint32_t len = 0;
+    uint32_t eventId = 0;
+    char     sessionId[40] = "";
+    uint32_t crc = 0;
+};
+
+static_assert(sizeof(UploadIndexRecordV1) == 68,
+              "UploadIndexRecordV1 must stay fixed-size");
+
+struct UploadIndexStats {
+    uint32_t segmentsScanned = 0;
+    uint32_t indexedEvents = 0;
+    uint32_t sessions = 0;
+    uint32_t missingSidecars = 0;
+    uint32_t badRecords = 0;
+    bool dirty = false;
+};
+
 struct SpoolIndex {
     uint32_t version = 1;
     uint8_t format = SPOOL_SEGMENT_JSONL;
@@ -284,13 +314,11 @@ public:
 
     bool logProbe(const String& mac, const String& ssid, int rssi);
 
-    // Compatibility wrappers: return event ID or 0
     uint32_t appendEvent(const char* type, const char* payloadJson,
                          const char* sessionId = nullptr);
     uint32_t appendEvent(const char* type, JsonObjectConst payload,
                          const char* sessionId = nullptr);
 
-    // Detailed API: tells caller what actually happened
     AppendEventResult appendEventDetailed(const char* type, const char* payloadJson,
                                          const char* sessionId = nullptr);
     AppendEventResult appendEventDetailed(const char* type, JsonObjectConst payload,
@@ -331,10 +359,14 @@ public:
 
     // Batch mode: while active, markEventUploaded/markEventsUploaded update
     // the in-memory watermark only — no LittleFS writes. The flush happens on
-    // endUploadBatch(). Use this to keep flash writes out of an active-radio
-    // window during MQTT upload (brownout mitigation).
+    // endUploadBatch() (or flushUploadCheckpoint() mid-upload).
     void     beginUploadBatch();
     bool     endUploadBatch();
+    // Flush watermarks to flash while keeping the batch open and the radio
+    // lease held. Safe to call mid-upload; does NOT violate the no-write-
+    // during-radio contract because the caller accepts the brownout risk in
+    // exchange for crash-safe upload progress.
+    bool     flushUploadCheckpoint();
     bool     isUploadBatchActive() const { return _uploadBatchActive; }
     bool     isUploadBatchDirty() const { return _uploadBatchDirty; }
     bool     compactUploadedEventFiles(const char* sessionId = nullptr);
@@ -409,17 +441,14 @@ public:
                                     const char* ssid,
                                     uint8_t messageNumber);
 
-    // ── Phase 7: field maintenance / diagnostic serial commands ───────────
-    // Each method is safe to call any time storage is ready and prints its
-    // result directly to Serial (prefixed "[SPOOL]") for USB console use.
-    void spoolAuditToSerial(bool repair);        // read-only scan or full repair
-    void spoolDiagToSerial();                    // counters, segment list, flags
-    void spoolQuarantineListToSerial();          // list files in /spool_bad
-    void spoolQuarantineMetaToSerial();          // pretty-print quarantine JSON
-    bool spoolQuarantineClear();                 // delete all quarantine files
+    // Each method prints directly to Serial (prefixed "[SPOOL]") for USB console use.
+    void spoolAuditToSerial(bool repair);
+    void spoolDiagToSerial();
+    void spoolQuarantineListToSerial();
+    void spoolQuarantineMetaToSerial();
+    bool spoolQuarantineClear();
 
-    // ── Spool audit / quarantine types (public so file-scope helpers in the
-    //    .cpp can reference them without friend declarations) ──────────────
+    // Public so file-scope helpers in the .cpp can reference without friend declarations.
     enum class SpoolCorruptionReason : uint8_t {
         NONE = 0,
         SEGMENT_OPEN_FAILED,
@@ -491,6 +520,7 @@ private:
     // persist the spool index + event meta.
     bool        _uploadBatchActive = false;
     bool        _uploadBatchDirty  = false;
+    bool        _uploadIndexDirty   = false;
     bool        _uploadBatchNeedsRescan = false;
     // When summary metadata is observed invalid during a busy radio window,
     // defer rebuilding until a quiet maintenance pass can service it.
@@ -504,6 +534,10 @@ private:
     std::vector<DedupWindowEntry> _dedupWindow;
     std::vector<HandshakeProgress> _handshakeWindow;
     std::map<uint32_t, String> _binaryLastSessionBySegment;
+    std::map<uint32_t, std::vector<UploadIndexRecordV1>> _uploadIndexBySegment;
+    std::map<String, std::vector<UploadIndexRecordV1>> _uploadIndexBySession;
+    std::vector<String> _uploadIndexSessions;
+    UploadIndexStats _uploadIndexStats;
 
     static constexpr uint32_t DEDUP_WINDOW_MS = 5UL * 60UL * 1000UL;
     static constexpr uint32_t HANDSHAKE_WINDOW_MS = 15UL * 60UL * 1000UL;
@@ -534,14 +568,21 @@ private:
     bool   _loadEventMeta();
     bool   _persistEventMeta(bool force = false);
     void   _initDefaultConfig();
-        // Spool backend
     String _spoolDir() const;
     String _spoolIndexPath() const;
     String _spoolSegmentPath(uint32_t segmentId) const;
     String _spoolBinarySegmentPath(uint32_t segmentId) const;
+    String _uploadIndexPath(uint32_t segmentId) const;
     String _spoolSegmentPathForFormat(uint32_t segmentId, uint8_t format) const;
     bool _ensureSpoolReady();
     bool _loadSpoolIndex();
+    bool _loadUploadIndex();
+    bool _loadUploadIndexSegment(uint32_t segmentId);
+    bool _rebuildUploadIndex();
+    bool _rebuildUploadIndexSegment(const SpoolSegmentInfo& seg);
+    bool _validateUploadIndexRecord(const UploadIndexRecordV1& rec,
+                                    uint32_t expectedSegmentId) const;
+    void _addUploadPtrToMemory(const UploadIndexRecordV1& rec);
     // force=true guarantees an immediate write. force=false is the hot-path
     // mode — it throttles to ~5s and defers while an upload batch is active.
     bool _persistSpoolIndex(bool force = false);
@@ -552,6 +593,12 @@ private:
     uint32_t _uploadedWatermarkForSession(const String& sessionId) const;
     void _setUploadedWatermarkForSession(const String& sessionId, uint32_t eventId);
     bool _appendSpoolRecord(JsonDocument& doc, uint32_t* outEventId = nullptr);
+    bool _appendUploadIndexRecord(uint32_t segmentId,
+                                  uint32_t offset,
+                                  uint32_t len,
+                                  uint32_t eventId,
+                                  const char* sessionId,
+                                  JsonObjectConst event);
     bool _appendSpoolEnrichmentDelta(const String& sessionId,
                                      uint32_t eventId,
                                      float lat, float lon,
@@ -594,6 +641,19 @@ private:
                                            uint32_t sinceId,
                                            int maxCount,
                                            JsonDocument& out);
+    bool _getUploadEventBatchForSessionFromIndex(const String& sessionId,
+                                                 uint32_t sinceId,
+                                                 int maxCount,
+                                                 JsonDocument& out);
+    bool _readIndexedSpoolRecord(const UploadIndexRecordV1& ptr,
+                                 DecodedSpoolRecord& out) const;
+    bool _decodeBinarySpoolRecordBody(uint32_t segmentId,
+                                      uint8_t recordType,
+                                      const uint8_t* data,
+                                      size_t len,
+                                      uint32_t tsBase,
+                                      const String& sessionSeed,
+                                      DecodedSpoolRecord& out) const;
     bool _forEachResolvedEventForSession(const String& sessionId,
                                          uint32_t sinceId,
                                          int maxCount,
@@ -629,7 +689,10 @@ private:
                                       StoragePressureMode newMode);
     void _maybeCompactForPressure(StoragePressureMode oldMode,
                                   StoragePressureMode newMode);
-    bool _appendSegmentRecord(SpoolSegmentInfo& seg, JsonDocument& doc, uint32_t* outEventId);
+    bool _appendSegmentRecord(SpoolSegmentInfo& seg,
+                              JsonDocument& doc,
+                              uint32_t* outEventId = nullptr,
+                              SpoolBin::AppendRecordLocation* outLoc = nullptr);
     bool _scanSegmentRecords(uint32_t segmentId,
                          std::function<bool(const DecodedSpoolRecord&)> cb) const;
     bool _scanJsonlSegmentRecords(uint32_t segmentId,
@@ -638,51 +701,26 @@ private:
                                std::function<bool(const DecodedSpoolRecord&)> cb) const;
     const char* _segmentFormatText(uint8_t format) const;
 
-    // Spool audit / quarantine helpers
-    // Full scan of the active spool: validate every segment and every record.
-    // When repair=true, bad records are skipped and unrecoverable segments are
-    // moved to /spool_bad before being removed from the index.
     bool _auditAndRepairSpool(const char* reason, bool repair, SpoolAuditResult* out);
-
-    // Scan one segment during an audit pass. Returns false only when the
-    // segment itself is unreadable (unrecoverable); per-record errors are
-    // counted but do not make this return false when recoverable.
     bool _scanSegmentForAudit(SpoolSegmentInfo& rebuilt,
                               SpoolAuditResult& audit,
                               std::vector<String>& rebuiltSessions,
                               bool repair);
-
-    // Move segment file to /spool_bad/logs and write a metadata JSON under
-    // /spool_bad/meta. Does NOT remove the segment from _spoolIndex.segments;
-    // the caller is responsible for excluding it after this call returns.
+    // Does NOT remove the segment from _spoolIndex.segments; caller excludes it.
     bool _quarantineSpoolSegment(uint32_t segmentId,
                                  SpoolCorruptionReason reason,
                                  const char* detail);
-
-    // Write the metadata JSON companion for a quarantined segment.
     bool _writeQuarantineMeta(uint32_t segmentId,
                               SpoolCorruptionReason reason,
                               const char* detail,
                               const String& originalPath,
                               const String& quarantinePath,
                               const String& metaPath);
-
-    // Returns true when a quarantine metadata file already exists for segmentId.
     bool _isSegmentQuarantined(uint32_t segmentId) const;
-
-    // Emit a structured INFO log summarising the completed audit pass.
     void _logSpoolAuditResult(const char* reason, const SpoolAuditResult& audit);
-
-    // Phase 9: lightweight post-operation invariant check (no I/O, no scan).
-    // Returns true when all invariants hold. When they don't and repairIfBad
-    // is false, sets _spoolAuditRepairRequired so checkHealth() runs a repair
-    // on the next quiet window. When repairIfBad is true, runs the full audit
-    // immediately (only for manual repair commands).
+    // No I/O, no scan. Sets _spoolAuditRepairRequired when invariants fail and
+    // repairIfBad is false; runs the full audit immediately when repairIfBad is true.
     bool _checkSpoolInvariants(const char* reason, bool repairIfBad);
 };
 
 #define STORAGE StorageManager::getInstance()
-
-
-
-

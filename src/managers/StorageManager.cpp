@@ -461,6 +461,23 @@ static bool _readStringFromBytes(const uint8_t*& p, const uint8_t* end, String& 
     return true;
 }
 
+static uint32_t _crc32Bytes(const uint8_t* data, size_t len) {
+    uint32_t crc = 0xFFFFFFFFUL;
+    for (size_t i = 0; i < len; i++) {
+        crc ^= data[i];
+        for (uint8_t bit = 0; bit < 8; bit++) {
+            const uint32_t mask = 0U - (crc & 1U);
+            crc = (crc >> 1) ^ (0xEDB88320UL & mask);
+        }
+    }
+    return ~crc;
+}
+
+static uint32_t _uploadIndexRecordHash(const UploadIndexRecordV1& record) {
+    return _crc32Bytes(reinterpret_cast<const uint8_t*>(&record),
+                       sizeof(record) - sizeof(record.crc));
+}
+
 static int32_t _floatToE7(float v) {
     return static_cast<int32_t>(v * 10000000.0f);
 }
@@ -1114,7 +1131,7 @@ static const char* _spoolCorruptionReasonText(StorageManager::SpoolCorruptionRea
 
 static String _spoolQuarantineLogPath(uint32_t segmentId, uint8_t format) {
     char buf[80];
-    const char* ext = (format == SPOOL_SEGMENT_BIN_V2) ? ".sp2" : ".jsonl";
+    const char* ext = (format == SPOOL_SEGMENT_BIN_V2) ? ".bin" : ".jsonl";
     snprintf(buf, sizeof(buf), "%s/seg_%06lu%s",
              PATH_SPOOL_BAD_LOGS,
              static_cast<unsigned long>(segmentId),
@@ -1179,6 +1196,26 @@ bool StorageManager::begin() {
     }
 
     _checkSpoolInvariants("boot_post_audit", false);
+
+    // The boot audit uses the fast binary-meta scanner which cannot populate
+    // priority/lane/timestamp stats, so it leaves all BIN_V2 segments with
+    // summaryValid=false.  Rebuild here while the radio arbiter hasn't started
+    // yet; _servicePendingSpoolSummaryRebuild() requires radio idle (NONE) and
+    // would be blocked indefinitely once WiFi capture starts at hardware init.
+    if (_hasInvalidSpoolSummaries()) {
+        DLOG_INFO("STORAGE", "Post-audit summary rebuild");
+        _rebuildInvalidSegmentSummaries(false);
+    }
+
+    _loadUploadIndex();
+    if (_uploadIndexDirty) {
+        DLOG_INFO("STORAGE", "Upload index dirty after load; rebuilding sidecars");
+        if (_rebuildUploadIndex()) {
+            _loadUploadIndex();
+        } else {
+            DLOG_WARN("STORAGE", "Upload index rebuild failed; scan fallback remains enabled");
+        }
+    }
 
     if (!loadConfig()) {
         DLOG_WARN("STORAGE", "Settings unavailable, using defaults");
@@ -1982,8 +2019,15 @@ bool StorageManager::getUploadEventBatchForSession(const char* sessionIdOverride
         (sessionIdOverride && sessionIdOverride[0]) ?
             String(sessionIdOverride) : SESS.getId();
     if (!sessionId.length()) return true;
-    // Reuse the existing materialized batch path so preexisting enrichment
-    // deltas are folded into the upload payload without changing paging.
+    if (!_uploadIndexDirty &&
+        _getUploadEventBatchForSessionFromIndex(sessionId, sinceId, maxCount, out)) {
+        return true;
+    }
+
+    DLOG_WARN("STORAGE",
+              "Upload index unavailable; falling back to spool scan session=%s since=%lu",
+              sessionId.c_str(),
+              static_cast<unsigned long>(sinceId));
     return _getEventBatchForSessionFromSpool(sessionId, sinceId, maxCount, out);
 }
 
@@ -2519,6 +2563,31 @@ bool StorageManager::endUploadBatch() {
     refreshStorageUiState();
     _logSpoolDiagnostics("upload_batch_flush");
     _checkSpoolInvariants("upload_batch_end", false);
+    return ok;
+}
+
+bool StorageManager::flushUploadCheckpoint() {
+    if (!_ready)               return false;
+    if (!_uploadBatchActive)   return true;
+    if (!_uploadBatchDirty)    return true;
+
+    // Intentionally mid-radio: caller accepts the brownout trade-off in
+    // exchange for durable mid-upload progress.  Batch stays open.
+    const bool needsRescan = _uploadBatchNeedsRescan;
+    _uploadBatchDirty       = false;
+    _uploadBatchNeedsRescan = false;
+
+    bool ok = _persistSpoolIndex(true);
+    if (!ok) {
+        DLOG_WARN("STORAGE", "Upload checkpoint flush: spool index persist failed");
+    }
+
+    if (needsRescan) {
+        _pendingEventCount = _rescanPendingEventCountFromSpool();
+        _spoolIndex.pendingTotal = _pendingEventCount;
+    }
+    _pendingCountDirty = false;
+    _persistEventMeta(true);
     return ok;
 }
 
@@ -3280,7 +3349,8 @@ bool StorageManager::_scanBinarySegmentRecords(
 
 bool StorageManager::_appendSegmentRecord(SpoolSegmentInfo& seg,
                                           JsonDocument& doc,
-                                          uint32_t* outEventId) {
+                                          uint32_t* outEventId,
+                                          SpoolBin::AppendRecordLocation* outLoc) {
     switch (seg.format) {
         case SPOOL_SEGMENT_BIN_V2: {
             const uint32_t recordId = doc["id"] | 0U;
@@ -3512,6 +3582,7 @@ bool StorageManager::_appendSegmentRecord(SpoolSegmentInfo& seg,
             // sanity
             if (body.size() <= eventFlagsOffset + 1) return false;
 
+            SpoolBin::AppendRecordLocation loc{};
             SpoolBin::SegmentHeaderV2 hdr;
             if (!SpoolBin::appendRecordV2(
                     _spoolBinarySegmentPath(seg.segmentId),
@@ -3519,9 +3590,24 @@ bool StorageManager::_appendSegmentRecord(SpoolSegmentInfo& seg,
                     body.data(),
                     static_cast<uint16_t>(body.size()),
                     recordId,
-                    &hdr)) {
+                    &hdr,
+                    &loc)) {
                 return false;
             }
+
+            if (outLoc) {
+                *outLoc = loc;
+            }
+
+            DLOG_DEBUG("STORAGE",
+                "append loc event=%lu seg=%lu off=%lu len=%lu session=%s lane=%u prio=%u",
+                static_cast<unsigned long>(recordId),
+                static_cast<unsigned long>(seg.segmentId),
+                static_cast<unsigned long>(loc.offset),
+                static_cast<unsigned long>(loc.len),
+                sessionId.c_str(),
+                static_cast<unsigned>(lane),
+                static_cast<unsigned>(prio));
 
             seg.firstEventId = hdr.firstEventId;
             seg.lastEventId = hdr.lastEventId;
@@ -3539,7 +3625,20 @@ bool StorageManager::_appendSegmentRecord(SpoolSegmentInfo& seg,
             const uint32_t eventId = doc["id"] | 0U;
             const String path = _spoolSegmentPath(seg.segmentId);
 
-            if (!_appendJsonLine(path, doc)) return false;
+            File f = LittleFS.open(path, "a");
+            if (!f) return false;
+            const uint32_t writeOffset = f.size();
+            const size_t written = serializeJson(doc, f);
+            if (f.print('\n') != 1) {
+                f.close();
+                return false;
+            }
+            f.close();
+
+            if (outLoc) {
+                outLoc->offset = writeOffset;
+                outLoc->len = static_cast<uint32_t>(written + 1U);
+            }
 
             if (seg.recordCount == 0) seg.firstEventId = eventId;
             seg.lastEventId = eventId;
@@ -4112,6 +4211,33 @@ bool StorageManager::_auditAndRepairSpool(const char* reason,
         if (_isSegmentQuarantined(seg.segmentId)) {
             audit.quarantinedSegments++;
             segmentChanged = true;
+            continue;
+        }
+
+        const String segmentPath =
+            _spoolSegmentPathForFormat(seg.segmentId, seg.format);
+        if (!LittleFS.exists(segmentPath)) {
+            audit.unreadableSegments++;
+            audit.hadFatalSegmentError = true;
+
+            if (repair) {
+                DLOG_WARN("STORAGE",
+                          "Spool audit dropping missing segment seg=%lu path=%s",
+                          static_cast<unsigned long>(seg.segmentId),
+                          segmentPath.c_str());
+                const String indexPath = _uploadIndexPath(seg.segmentId);
+                if (LittleFS.exists(indexPath) && !LittleFS.remove(indexPath)) {
+                    DLOG_WARN("STORAGE",
+                              "Upload index sidecar remove failed missing seg=%lu path=%s",
+                              static_cast<unsigned long>(seg.segmentId),
+                              indexPath.c_str());
+                }
+                segmentChanged = true;
+                audit.repaired = true;
+                continue;
+            }
+
+            repairedSegments.push_back(seg);
             continue;
         }
 
@@ -4961,6 +5087,11 @@ bool StorageManager::wipeNonVaultStorage() {
     _spoolIndexPendingWrites = 0;
     _spoolIndex = {};
     _binaryLastSessionBySegment.clear();
+    _uploadIndexBySegment.clear();
+    _uploadIndexBySession.clear();
+    _uploadIndexSessions.clear();
+    _uploadIndexStats = {};
+    _uploadIndexDirty = false;
 
     bool ok = true;
     ok &= _removeTree(PATH_LOGS);
@@ -5304,11 +5435,32 @@ String StorageManager::_spoolSegmentPath(uint32_t segmentId) const {
 }
 
 String StorageManager::_spoolBinarySegmentPath(uint32_t segmentId) const {
-    char buf[48];
-    snprintf(buf, sizeof(buf), "%s/seg_%06lu.sp2",
+    char binPath[48];
+    snprintf(binPath, sizeof(binPath), "%s/seg_%06lu.bin",
              PATH_SPOOL,
              static_cast<unsigned long>(segmentId));
-    return String(buf);
+
+    if (LittleFS.exists(binPath)) {
+        return String(binPath);
+    }
+
+    char legacyPath[48];
+    snprintf(legacyPath, sizeof(legacyPath), "%s/seg_%06lu.sp2",
+             PATH_SPOOL,
+             static_cast<unsigned long>(segmentId));
+
+    if (LittleFS.exists(legacyPath)) {
+        return String(legacyPath);
+    }
+
+    return String(binPath);
+}
+
+String StorageManager::_uploadIndexPath(uint32_t segmentId) const {
+    char path[48];
+    snprintf(path, sizeof(path), "/spool/idx_%06lu.uix",
+             static_cast<unsigned long>(segmentId));
+    return String(path);
 }
 
 String StorageManager::_spoolSegmentPathForFormat(uint32_t segmentId, uint8_t format) const {
@@ -5509,6 +5661,339 @@ bool StorageManager::_loadSpoolIndex() {
     return true;
 }
 
+bool StorageManager::_validateUploadIndexRecord(const UploadIndexRecordV1& rec,
+                                                uint32_t expectedSegmentId) const {
+    if (rec.magic != UIX_MAGIC) return false;
+    if (rec.version != 1) return false;
+    if (rec.segmentId != expectedSegmentId) return false;
+    if (rec.recordLen == 0 || rec.recordLen != UIX_RECORD_LEN_V1) return false;
+    if (rec.len == 0) return false;
+    return rec.crc == _uploadIndexRecordHash(rec);
+}
+
+void StorageManager::_addUploadPtrToMemory(const UploadIndexRecordV1& rec) {
+    _uploadIndexBySegment[rec.segmentId].push_back(rec);
+
+    if (!rec.sessionId[0]) {
+        return;
+    }
+
+    const String sessionId(rec.sessionId);
+    _uploadIndexBySession[sessionId].push_back(rec);
+
+    for (const auto& existing : _uploadIndexSessions) {
+        if (existing == sessionId) {
+            return;
+        }
+    }
+    _uploadIndexSessions.push_back(sessionId);
+}
+
+bool StorageManager::_loadUploadIndexSegment(uint32_t segmentId) {
+    const String path = _uploadIndexPath(segmentId);
+    File f = LittleFS.open(path, "r");
+    if (!f) {
+        DLOG_WARN("STORAGE",
+                  "Upload index open failed seg=%lu path=%s",
+                  static_cast<unsigned long>(segmentId),
+                  path.c_str());
+        _uploadIndexDirty = true;
+        return false;
+    }
+
+    const size_t recordSize = sizeof(UploadIndexRecordV1);
+    while (static_cast<size_t>(f.available()) >= recordSize) {
+        UploadIndexRecordV1 rec;
+        memset(&rec, 0, sizeof(rec));
+
+        const size_t got = f.readBytes(reinterpret_cast<char*>(&rec), recordSize);
+        if (got != recordSize) {
+            _uploadIndexStats.badRecords++;
+            _uploadIndexDirty = true;
+            break;
+        }
+
+        if (!_validateUploadIndexRecord(rec, segmentId)) {
+            _uploadIndexStats.badRecords++;
+            _uploadIndexDirty = true;
+            continue;
+        }
+
+        _addUploadPtrToMemory(rec);
+        _uploadIndexStats.indexedEvents++;
+    }
+
+    if (static_cast<size_t>(f.available()) > 0) {
+        _uploadIndexStats.badRecords++;
+        _uploadIndexDirty = true;
+    }
+
+    f.close();
+    return true;
+}
+
+bool StorageManager::_loadUploadIndex() {
+    _uploadIndexBySegment.clear();
+    _uploadIndexBySession.clear();
+    _uploadIndexSessions.clear();
+    _uploadIndexStats = {};
+    _uploadIndexDirty = false;
+
+    for (const auto& seg : _spoolIndex.segments) {
+        if (seg.segmentId == 0) {
+            continue;
+        }
+
+        _uploadIndexStats.segmentsScanned++;
+        const String path = _uploadIndexPath(seg.segmentId);
+        if (!LittleFS.exists(path)) {
+            DLOG_WARN("STORAGE",
+                      "Upload index missing sidecar seg=%lu",
+                      static_cast<unsigned long>(seg.segmentId));
+            _uploadIndexStats.missingSidecars++;
+            _uploadIndexDirty = true;
+            continue;
+        }
+
+        if (!_loadUploadIndexSegment(seg.segmentId)) {
+            _uploadIndexDirty = true;
+        }
+    }
+
+    for (auto& kv : _uploadIndexBySession) {
+        std::sort(kv.second.begin(),
+                  kv.second.end(),
+                  [](const UploadIndexRecordV1& a,
+                     const UploadIndexRecordV1& b) {
+                      return a.eventId < b.eventId;
+                  });
+    }
+
+    _uploadIndexStats.sessions = static_cast<uint32_t>(_uploadIndexSessions.size());
+    _uploadIndexStats.dirty = _uploadIndexDirty;
+
+    DLOG_INFO("STORAGE",
+              "Upload index ready segs=%lu indexed=%lu sessions=%lu missing=%lu bad=%lu dirty=%u",
+              static_cast<unsigned long>(_uploadIndexStats.segmentsScanned),
+              static_cast<unsigned long>(_uploadIndexStats.indexedEvents),
+              static_cast<unsigned long>(_uploadIndexStats.sessions),
+              static_cast<unsigned long>(_uploadIndexStats.missingSidecars),
+              static_cast<unsigned long>(_uploadIndexStats.badRecords),
+              _uploadIndexStats.dirty ? 1U : 0U);
+    return true;
+}
+
+bool StorageManager::_rebuildUploadIndexSegment(const SpoolSegmentInfo& seg) {
+    if (seg.segmentId == 0) {
+        return true;
+    }
+
+    const String indexPath = _uploadIndexPath(seg.segmentId);
+    if (LittleFS.exists(indexPath) && !LittleFS.remove(indexPath)) {
+        DLOG_WARN("STORAGE", "Upload index rebuild remove failed seg=%lu path=%s",
+                  static_cast<unsigned long>(seg.segmentId),
+                  indexPath.c_str());
+        return false;
+    }
+
+    File indexFile = LittleFS.open(indexPath, "w");
+    if (!indexFile) {
+        DLOG_WARN("STORAGE", "Upload index rebuild open failed seg=%lu path=%s",
+                  static_cast<unsigned long>(seg.segmentId),
+                  indexPath.c_str());
+        return false;
+    }
+
+    auto writePtr = [&](uint32_t offset,
+                        uint32_t len,
+                        uint32_t eventId,
+                        const String& sessionId) -> bool {
+        if (eventId == 0 || !sessionId.length()) {
+            return true;
+        }
+
+        UploadIndexRecordV1 record;
+        memset(&record, 0, sizeof(record));
+        record.magic = UIX_MAGIC;
+        record.version = 1;
+        record.recordLen = UIX_RECORD_LEN_V1;
+        record.segmentId = seg.segmentId;
+        record.offset = offset;
+        record.len = len;
+        record.eventId = eventId;
+        snprintf(record.sessionId, sizeof(record.sessionId), "%s", sessionId.c_str());
+        record.crc = _uploadIndexRecordHash(record);
+
+        if (indexFile.write(reinterpret_cast<const uint8_t*>(&record),
+                            sizeof(record)) != sizeof(record)) {
+            return false;
+        }
+
+        _addUploadPtrToMemory(record);
+        _uploadIndexStats.indexedEvents++;
+        return true;
+    };
+
+    bool ok = true;
+    uint32_t scanned = 0;
+
+    if (seg.format == SPOOL_SEGMENT_BIN_V2) {
+        const String spoolPath = _spoolBinarySegmentPath(seg.segmentId);
+        File spool = LittleFS.open(spoolPath, "r");
+        if (!spool) {
+            indexFile.close();
+            return false;
+        }
+
+        SpoolBin::SegmentHeaderV2 hdr;
+        if (!SpoolBin::readSegmentHeaderV2(spool, hdr) ||
+            hdr.magic != SpoolBin::SEGMENT_MAGIC ||
+            hdr.version != 2 ||
+            !spool.seek(sizeof(SpoolBin::SegmentHeaderV2))) {
+            spool.close();
+            indexFile.close();
+            return false;
+        }
+
+        String lastSession;
+        while (spool.position() < spool.size()) {
+            const uint32_t offset = static_cast<uint32_t>(spool.position());
+            SpoolBin::RecordPrefix prefix;
+            if (!SpoolBin::readBytes(spool, &prefix, sizeof(prefix))) {
+                ok = false;
+                break;
+            }
+
+            const size_t remaining = static_cast<size_t>(spool.size() - spool.position());
+            if (prefix.length > remaining) {
+                ok = false;
+                break;
+            }
+
+            std::vector<uint8_t> body(prefix.length);
+            if (prefix.length > 0 &&
+                !SpoolBin::readBytes(spool, body.data(), prefix.length)) {
+                ok = false;
+                break;
+            }
+
+            BinaryMetaRecord meta;
+            if (!_decodeBinaryMetaRecord(body.data(), body.size(), prefix.type,
+                                         lastSession, meta)) {
+                ok = false;
+                break;
+            }
+
+            if (meta.recordType == SPOOL_REC_EVENT) {
+                const uint32_t len =
+                    static_cast<uint32_t>(sizeof(prefix)) +
+                    static_cast<uint32_t>(prefix.length);
+                if (!writePtr(offset, len, meta.eventId, meta.sessionId)) {
+                    ok = false;
+                    break;
+                }
+            }
+
+            scanned++;
+            if ((scanned & 0x1FU) == 0U) {
+                delay(1);
+            }
+        }
+
+        spool.close();
+    } else {
+        const String spoolPath = _spoolSegmentPath(seg.segmentId);
+        File spool = LittleFS.open(spoolPath, "r");
+        if (!spool) {
+            indexFile.close();
+            return false;
+        }
+
+        while (spool.available()) {
+            const uint32_t offset = static_cast<uint32_t>(spool.position());
+            String line = spool.readStringUntil('\n');
+            const uint32_t len =
+                static_cast<uint32_t>(spool.position()) - offset;
+            line.trim();
+            if (!line.length()) {
+                continue;
+            }
+
+            JsonDocument doc;
+            if (deserializeJson(doc, line)) {
+                ok = false;
+                break;
+            }
+
+            const char* type = doc["type"] | "";
+            if (strcmp(type, "enrich_delta") != 0) {
+                const uint32_t eventId = doc["id"] | 0U;
+                const String sessionId =
+                    String((const char*)(doc[F_SESSION] | doc["session_id"] | ""));
+                if (!writePtr(offset, len, eventId, sessionId)) {
+                    ok = false;
+                    break;
+                }
+            }
+
+            scanned++;
+            if ((scanned & 0x1FU) == 0U) {
+                delay(1);
+            }
+        }
+
+        spool.close();
+    }
+
+    indexFile.flush();
+    indexFile.close();
+
+    if (!ok) {
+        DLOG_WARN("STORAGE", "Upload index rebuild failed seg=%lu",
+                  static_cast<unsigned long>(seg.segmentId));
+    }
+    return ok;
+}
+
+bool StorageManager::_rebuildUploadIndex() {
+    _uploadIndexBySegment.clear();
+    _uploadIndexBySession.clear();
+    _uploadIndexSessions.clear();
+    _uploadIndexStats = {};
+    _uploadIndexDirty = false;
+
+    bool ok = true;
+    for (const auto& seg : _spoolIndex.segments) {
+        _uploadIndexStats.segmentsScanned++;
+        if (!_rebuildUploadIndexSegment(seg)) {
+            _uploadIndexStats.badRecords++;
+            _uploadIndexDirty = true;
+            ok = false;
+        }
+    }
+
+    for (auto& kv : _uploadIndexBySession) {
+        std::sort(kv.second.begin(),
+                  kv.second.end(),
+                  [](const UploadIndexRecordV1& a,
+                     const UploadIndexRecordV1& b) {
+                      return a.eventId < b.eventId;
+                  });
+    }
+
+    _uploadIndexStats.sessions = static_cast<uint32_t>(_uploadIndexSessions.size());
+    _uploadIndexStats.dirty = _uploadIndexDirty;
+
+    DLOG_INFO("STORAGE",
+              "Upload index rebuilt segs=%lu indexed=%lu sessions=%lu bad=%lu dirty=%u",
+              static_cast<unsigned long>(_uploadIndexStats.segmentsScanned),
+              static_cast<unsigned long>(_uploadIndexStats.indexedEvents),
+              static_cast<unsigned long>(_uploadIndexStats.sessions),
+              static_cast<unsigned long>(_uploadIndexStats.badRecords),
+              _uploadIndexStats.dirty ? 1U : 0U);
+    return ok;
+}
+
 bool StorageManager::_openNewSpoolSegment() {
     const uint32_t segmentId = _spoolIndex.nextSegmentId++;
     const uint8_t format = _spoolIndex.format;
@@ -5543,6 +6028,16 @@ bool StorageManager::_openNewSpoolSegment() {
     _spoolIndex.segments.push_back(seg);
     _spoolIndex.activeSegmentId = segmentId;
     _binaryLastSessionBySegment.erase(segmentId);
+    {
+        File idx = LittleFS.open(_uploadIndexPath(segmentId), "w");
+        if (idx) {
+            idx.close();
+        } else {
+            DLOG_WARN("STORAGE", "Upload index sidecar create failed seg=%lu",
+                      static_cast<unsigned long>(segmentId));
+            _uploadIndexDirty = true;
+        }
+    }
     if (_spoolIndex.oldestSegmentId == 0) {
         _spoolIndex.oldestSegmentId = segmentId;
     }
@@ -5607,7 +6102,7 @@ static bool _parseSpoolSegmentFilename(const char* name,
 
     if (strcmp(end, ".jsonl") == 0) {
         outFormat = SPOOL_SEGMENT_JSONL;
-    } else if (strcmp(end, ".sp2") == 0) {
+    } else if (strcmp(end, ".bin") == 0 || strcmp(end, ".sp2") == 0) {
         outFormat = SPOOL_SEGMENT_BIN_V2;
     } else {
         return false;
@@ -5634,10 +6129,10 @@ bool StorageManager::_resyncSpoolIndexFromFilesystem() {
             auto it = onDiskFormat.find(id);
             if (it == onDiskFormat.end()) {
                 onDiskFormat[id] = fmt;
-            } else if (it->second != SPOOL_SEGMENT_BIN_V2 && fmt == SPOOL_SEGMENT_BIN_V2) {
-                // Prefer binary if both exist for the same segment id.
-                it->second = fmt;
-                duplicateJsonToRemove.push_back(id);
+        } else if (it->second != SPOOL_SEGMENT_BIN_V2 && fmt == SPOOL_SEGMENT_BIN_V2) {
+            // Prefer binary if both exist for the same segment id.
+            it->second = fmt;
+            duplicateJsonToRemove.push_back(id);
             } else if (it->second == SPOOL_SEGMENT_BIN_V2 && fmt == SPOOL_SEGMENT_JSONL) {
                 duplicateJsonToRemove.push_back(id);
             }
@@ -5954,17 +6449,32 @@ bool StorageManager::_appendSpoolRecord(JsonDocument& doc, uint32_t* outEventId)
         if (!seg) return false;
     }
 
-    if (!_appendSegmentRecord(*seg, doc, outEventId)) {
+    SpoolBin::AppendRecordLocation loc{};
+    if (!_appendSegmentRecord(*seg, doc, outEventId, &loc)) {
         return false;
     }
 
     const uint32_t eventId =
         outEventId && *outEventId ? *outEventId : (doc["id"] | 0U);
     const uint32_t ts = doc["ts"] | 0U;
-    _updateSegmentSummaryFromEventDoc(*seg,
-                                      doc.as<JsonObjectConst>(),
-                                      eventId,
-                                      ts);
+    const JsonObjectConst eventObj = doc.as<JsonObjectConst>();
+    _updateSegmentSummaryFromEventDoc(*seg, eventObj, eventId, ts);
+
+    const char* sessionId = eventObj[F_SESSION] | eventObj["session_id"] | "";
+    if (eventId != 0 &&
+        !_appendUploadIndexRecord(seg->segmentId,
+                                 loc.offset,
+                                 loc.len,
+                                 eventId,
+                                 sessionId,
+                                 eventObj)) {
+        _uploadIndexDirty = true;
+        DLOG_DEBUG("STORAGE",
+                   "upload index append failed event=%lu seg=%lu path=%s",
+                   static_cast<unsigned long>(eventId),
+                   static_cast<unsigned long>(seg->segmentId),
+                   _uploadIndexPath(seg->segmentId).c_str());
+    }
 
     if (seg->approxBytes >= SPOOL_SEGMENT_TARGET_BYTES) {
         if (!_openNewSpoolSegment()) {
@@ -5982,6 +6492,59 @@ bool StorageManager::_appendSpoolRecord(JsonDocument& doc, uint32_t* outEventId)
         _logSpoolDiagnostics("append_batch");
     }
 
+    return true;
+}
+
+bool StorageManager::_appendUploadIndexRecord(uint32_t segmentId,
+                                              uint32_t offset,
+                                              uint32_t len,
+                                              uint32_t eventId,
+                                              const char* sessionId,
+                                              JsonObjectConst event) {
+    (void)event;
+
+    if (eventId == 0 || !sessionId || !sessionId[0]) {
+        return true;
+    }
+
+    UploadIndexRecordV1 record;
+    memset(&record, 0, sizeof(record));
+    record.magic = UIX_MAGIC;
+    record.version = 1;
+    record.recordLen = UIX_RECORD_LEN_V1;
+    record.segmentId = segmentId;
+    record.offset = offset;
+    record.len = len;
+    record.eventId = eventId;
+    snprintf(record.sessionId, sizeof(record.sessionId), "%s", sessionId);
+    record.crc = _uploadIndexRecordHash(record);
+
+    File f = LittleFS.open(_uploadIndexPath(segmentId), "a");
+    if (!f) {
+        _uploadIndexDirty = true;
+        return false;
+    }
+
+    const size_t written = f.write(reinterpret_cast<const uint8_t*>(&record),
+                                   sizeof(record));
+    f.close();
+    if (written != sizeof(record)) {
+        _uploadIndexDirty = true;
+        return false;
+    }
+
+    _addUploadPtrToMemory(record);
+    _uploadIndexStats.indexedEvents++;
+    _uploadIndexStats.sessions = static_cast<uint32_t>(_uploadIndexSessions.size());
+    _uploadIndexStats.dirty = _uploadIndexDirty;
+
+    DLOG_DEBUG("STORAGE",
+               "upload index append event=%lu seg=%lu off=%lu len=%lu hash=%08lx",
+               static_cast<unsigned long>(eventId),
+               static_cast<unsigned long>(segmentId),
+               static_cast<unsigned long>(offset),
+               static_cast<unsigned long>(len),
+               static_cast<unsigned long>(record.crc));
     return true;
 }
 
@@ -6249,6 +6812,278 @@ bool StorageManager::_forEachResolvedEventForSession(
     return true;
 }
 
+bool StorageManager::_getUploadEventBatchForSessionFromIndex(const String& sessionId,
+                                                             uint32_t sinceId,
+                                                             int maxCount,
+                                                             JsonDocument& out) {
+    out.clear();
+    JsonArray batch = out.to<JsonArray>();
+
+    if (!sessionId.length() || maxCount <= 0) {
+        return true;
+    }
+
+    struct BatchedEvent {
+        uint32_t eventId = 0;
+        JsonDocument doc;
+    };
+
+    auto resetOutRecord = [](DecodedSpoolRecord& rec) {
+        rec.recordType = SPOOL_REC_UNKNOWN;
+        rec.eventId = 0;
+        rec.sessionId = "";
+        rec.doc.clear();
+    };
+
+    std::vector<BatchedEvent> events;
+    events.reserve(static_cast<size_t>(maxCount));
+    std::vector<UploadIndexRecordV1> selected;
+    selected.reserve(static_cast<size_t>(maxCount));
+    std::map<uint32_t, SpoolEnrichmentDelta> enrichById;
+
+    auto sessionIt = _uploadIndexBySession.find(sessionId);
+    if (sessionIt == _uploadIndexBySession.end()) {
+        return true;
+    }
+
+    const auto& ptrs = sessionIt->second;
+    auto ptrIt = std::upper_bound(
+        ptrs.begin(),
+        ptrs.end(),
+        sinceId,
+        [](uint32_t id, const UploadIndexRecordV1& rec) {
+            return id < rec.eventId;
+        });
+
+    for (; ptrIt != ptrs.end() &&
+           selected.size() < static_cast<size_t>(maxCount);
+         ++ptrIt) {
+        selected.push_back(*ptrIt);
+    }
+
+    size_t selectedIndex = 0;
+    while (selectedIndex < selected.size()) {
+        const uint32_t segmentId = selected[selectedIndex].segmentId;
+        const SpoolSegmentInfo* seg = _findSegmentInfo(segmentId);
+        if (!seg) {
+            _uploadIndexDirty = true;
+            _uploadIndexStats.badRecords++;
+            _uploadIndexStats.dirty = true;
+            return false;
+        }
+
+        const String path = _spoolSegmentPathForFormat(segmentId, seg->format);
+        File f = LittleFS.open(path, "r");
+        if (!f) {
+            _uploadIndexDirty = true;
+            _uploadIndexStats.badRecords++;
+            _uploadIndexStats.dirty = true;
+            return false;
+        }
+
+        SpoolBin::SegmentHeaderV2 hdr;
+        bool headerOk = true;
+        if (seg->format == SPOOL_SEGMENT_BIN_V2) {
+            headerOk =
+                SpoolBin::readSegmentHeaderV2(f, hdr) &&
+                hdr.magic == SpoolBin::SEGMENT_MAGIC &&
+                hdr.version == 2;
+        }
+
+        if (!headerOk) {
+            f.close();
+            _uploadIndexDirty = true;
+            _uploadIndexStats.badRecords++;
+            _uploadIndexStats.dirty = true;
+            return false;
+        }
+
+        while (selectedIndex < selected.size() &&
+               selected[selectedIndex].segmentId == segmentId) {
+            const UploadIndexRecordV1& ptr = selected[selectedIndex];
+            DecodedSpoolRecord rec;
+            resetOutRecord(rec);
+
+            bool ok = _validateUploadIndexRecord(ptr, ptr.segmentId) &&
+                      ptr.offset < static_cast<uint32_t>(f.size()) &&
+                      ptr.len != 0 &&
+                      ptr.offset + ptr.len <= static_cast<uint32_t>(f.size());
+
+            if (ok && seg->format == SPOOL_SEGMENT_BIN_V2) {
+                ok = f.seek(ptr.offset);
+
+                SpoolBin::RecordPrefix prefix;
+                if (ok) {
+                    ok = SpoolBin::readBytes(f, &prefix, sizeof(prefix));
+                }
+
+                const uint32_t encodedLen =
+                    static_cast<uint32_t>(sizeof(prefix)) +
+                    static_cast<uint32_t>(prefix.length);
+                if (ok && encodedLen != ptr.len) {
+                    ok = false;
+                }
+
+                std::vector<uint8_t> body;
+                if (ok) {
+                    body.resize(prefix.length);
+                    if (prefix.length > 0) {
+                        ok = SpoolBin::readBytes(f, body.data(), prefix.length);
+                    }
+                }
+
+                if (ok) {
+                    ok = _decodeBinarySpoolRecordBody(ptr.segmentId,
+                                                      prefix.type,
+                                                      body.data(),
+                                                      body.size(),
+                                                      hdr.createdMs,
+                                                      String(ptr.sessionId),
+                                                      rec);
+                }
+            } else if (ok) {
+                ok = f.seek(ptr.offset);
+
+                std::vector<char> buf;
+                if (ok) {
+                    buf.assign(ptr.len + 1U, '\0');
+                    ok = f.readBytes(buf.data(), ptr.len) == ptr.len;
+                }
+
+                if (ok) {
+                    JsonDocument doc;
+                    ok = !deserializeJson(doc, buf.data());
+                    if (ok) {
+                        rec.recordType = SPOOL_REC_EVENT;
+                        rec.eventId = doc["id"] | 0U;
+                        rec.sessionId =
+                            String((const char*)(doc[F_SESSION] | doc["session_id"] | ""));
+                        rec.doc.set(doc.as<JsonVariantConst>());
+                    }
+                }
+            }
+
+            ok = ok &&
+                 rec.recordType == SPOOL_REC_EVENT &&
+                 rec.eventId == ptr.eventId &&
+                 rec.sessionId == sessionId;
+
+            if (!ok) {
+                DLOG_WARN("STORAGE",
+                          "Upload index batch read failed seg=%lu event=%lu off=%lu len=%lu",
+                          static_cast<unsigned long>(ptr.segmentId),
+                          static_cast<unsigned long>(ptr.eventId),
+                          static_cast<unsigned long>(ptr.offset),
+                          static_cast<unsigned long>(ptr.len));
+                f.close();
+                _uploadIndexDirty = true;
+                _uploadIndexStats.badRecords++;
+                _uploadIndexStats.dirty = true;
+                return false;
+            }
+
+            BatchedEvent event;
+            event.eventId = rec.eventId;
+            event.doc.set(rec.doc.as<JsonVariantConst>());
+            events.push_back(std::move(event));
+            selectedIndex++;
+        }
+
+        f.close();
+    }
+
+    if (!events.empty()) {
+        auto selectedIndex = [&](uint32_t eventId) -> int {
+            for (size_t i = 0; i < events.size(); ++i) {
+                if (events[i].eventId == eventId) {
+                    return static_cast<int>(i);
+                }
+            }
+            return -1;
+        };
+
+        for (const auto& seg : _spoolIndex.segments) {
+            const bool summaryReady =
+                seg.summaryValid &&
+                seg.summaryVersion == SPOOL_SEGMENT_SUMMARY_VERSION;
+
+            if (summaryReady && seg.enrichDeltaCount == 0) {
+                continue;
+            }
+
+            const bool ok = _scanSegmentRecords(seg.segmentId,
+                [&](const DecodedSpoolRecord& rec) -> bool {
+                    if (rec.recordType != SPOOL_REC_ENRICH_DELTA ||
+                        !rec.sessionId.length() ||
+                        rec.sessionId != sessionId) {
+                        return true;
+                    }
+
+                    SpoolEnrichmentDelta enrichment;
+                    enrichment.id = rec.doc["event_id"] | 0U;
+                    if (enrichment.id == 0 || selectedIndex(enrichment.id) < 0) {
+                        return true;
+                    }
+
+                    enrichment.lat = rec.doc["lat"] | 0.0f;
+                    enrichment.lon = rec.doc["lon"] | 0.0f;
+                    enrichment.alt = rec.doc["alt"] | 0.0f;
+                    enrichment.acc = rec.doc["acc"] | 0.0f;
+                    enrichment.tag = String((const char*)(rec.doc["tag"] | ""));
+                    enrichment.ts = rec.doc["ts"] | 0U;
+                    enrichById[enrichment.id] = enrichment;
+                    return enrichById.size() < events.size();
+                });
+
+            if (!ok) {
+                return false;
+            }
+
+            if (enrichById.size() >= events.size()) {
+                break;
+            }
+        }
+    }
+
+    const uint32_t watermark = _uploadedWatermarkForSession(sessionId);
+
+    for (const auto& event : events) {
+        JsonObject dst = batch.add<JsonObject>();
+        for (JsonPairConst kv : event.doc.as<JsonObjectConst>()) {
+            dst[kv.key().c_str()].set(kv.value());
+        }
+
+        EventStatus status = EVT_RAW;
+        auto it = enrichById.find(event.eventId);
+        if (it != enrichById.end()) {
+            const SpoolEnrichmentDelta& enrichment = it->second;
+            dst["lat"] = enrichment.lat;
+            dst["lon"] = enrichment.lon;
+            dst["alt"] = enrichment.alt;
+            dst["acc"] = enrichment.acc;
+            if (enrichment.tag.length()) {
+                dst["tag"] = enrichment.tag;
+            }
+            dst["enriched_ts"] = enrichment.ts;
+            dst[F_ENRICH_STATE] =
+                static_cast<uint8_t>(STORAGE_ENRICH_DONE);
+            status = EVT_ENRICHED;
+        } else if (_eventRecordPendingEnrichment(event.doc.as<JsonObjectConst>())) {
+            dst[F_ENRICH_STATE] =
+                static_cast<uint8_t>(STORAGE_ENRICH_PENDING);
+        }
+
+        if (event.eventId <= watermark) {
+            dst["uploaded_ts"] = millis();
+            status = EVT_UPLOADED;
+        }
+
+        dst["status"] = status;
+    }
+
+    return true;
+}
+
 bool StorageManager::_getEventBatchForSessionFromSpool(const String& sessionId,
                                                        uint32_t sinceId,
                                                        int maxCount,
@@ -6395,6 +7230,438 @@ bool StorageManager::_getEventBatchForSessionFromSpool(const String& sessionId,
     }
 
     return true;
+}
+
+bool StorageManager::_decodeBinarySpoolRecordBody(uint32_t segmentId,
+                                                  uint8_t recordType,
+                                                  const uint8_t* data,
+                                                  size_t len,
+                                                  uint32_t tsBase,
+                                                  const String& sessionSeed,
+                                                  DecodedSpoolRecord& out) const {
+    out.recordType = SPOOL_REC_UNKNOWN;
+    out.eventId = 0;
+    out.sessionId = "";
+    out.doc.clear();
+    if (!data && len > 0) {
+        return false;
+    }
+    if (recordType != SpoolBin::REC_EVENT) {
+        return false;
+    }
+
+    const uint8_t* p = data;
+    const uint8_t* end = data + len;
+
+    JsonDocument doc;
+    JsonObject root = doc.to<JsonObject>();
+
+    uint32_t recordId = 0;
+    uint32_t tsDelta = 0;
+    uint8_t sessionMode = BIN_SESSION_INLINE;
+    String sessionId;
+    uint8_t typeCode = BIN_EVT_CUSTOM;
+    String typeStr;
+    uint8_t eventFlags = 0;
+    uint8_t prio = 0;
+    uint8_t lane = 0;
+    uint8_t payloadFamily = BIN_PAYLOAD_JSON_FALLBACK;
+
+    if (!_readUVarintFromBytes(p, end, recordId) ||
+        !_readUVarintFromBytes(p, end, tsDelta)) {
+        return false;
+    }
+
+    if (p >= end) return false;
+    sessionMode = *p++;
+
+    if (sessionMode == BIN_SESSION_SAME_AS_PREV) {
+        sessionId = sessionSeed;
+    } else {
+        if (!_readStringFromBytes(p, end, sessionId)) {
+            return false;
+        }
+    }
+
+    if (p >= end) return false;
+    typeCode = *p++;
+
+    if (typeCode == BIN_EVT_CUSTOM) {
+        if (!_readStringFromBytes(p, end, typeStr)) {
+            return false;
+        }
+    } else {
+        typeStr = _binaryEventTypeStringFromCode(typeCode);
+    }
+
+    if (p >= end) return false;
+    eventFlags = *p++;
+
+    if (p >= end) return false;
+    payloadFamily = *p++;
+
+    root["id"] = recordId;
+    const uint32_t ts = _timestampFromBaseDelta(tsDelta, tsBase);
+    root["ts"] = ts;
+    root["type"] = typeStr;
+    root[F_SESSION] = sessionId;
+    {
+        char tsIso[24] = {};
+        TIME_SVC.formatIsoForMillis(ts, tsIso, sizeof(tsIso));
+        root[F_TIMESTAMP_ISO] = tsIso;
+    }
+
+    if (payloadFamily == BIN_PAYLOAD_PROBE_DEVICE) {
+        String mac;
+        String ssid;
+        String ieFingerprint;
+        String probeSetHash;
+        int32_t rssi = 0;
+        uint32_t channel = 0;
+        bool isBroadcast = false;
+        bool isRandomMac = false;
+
+        if (p >= end) return false;
+        const uint8_t flags = *p++;
+
+        uint8_t lastOui[3] = {0, 0, 0};
+        bool hasLastOui = false;
+
+        if (!_readMacFieldFromBytes(p, end, mac, lastOui, hasLastOui)) {
+            DLOG_WARN("STORAGE", "Indexed binary probe/device MAC decode failed seg=%lu",
+                      static_cast<unsigned long>(segmentId));
+            return false;
+        }
+
+        if ((flags & 0x01) && !_readStringFromBytes(p, end, ssid)) return false;
+        if ((flags & 0x02) && !_readZigZag32FromBytes(p, end, rssi)) return false;
+
+        root["mac"] = mac;
+        if (flags & 0x01) {
+            if (typeStr == "probe") root["probed_ssid"] = ssid;
+            else root["ssid"] = ssid;
+        }
+        if (flags & 0x02) root["rssi"] = rssi;
+        if (flags & 0x04) {
+            if (!_readUVarintFromBytes(p, end, channel)) return false;
+            root["channel"] = channel;
+        }
+        if (flags & 0x08) {
+            if (!_readStringFromBytes(p, end, ieFingerprint)) return false;
+            root["ie_fingerprint"] = ieFingerprint;
+        }
+        if (flags & 0x10) {
+            if (!_readStringFromBytes(p, end, probeSetHash)) return false;
+            root["probe_set_hash"] = probeSetHash;
+        }
+        if (flags & 0x20) {
+            if (p >= end) return false;
+            isRandomMac = (*p++ != 0);
+            root["is_random_mac"] = isRandomMac ? 1 : 0;
+        }
+        if (flags & 0x40) {
+            if (p >= end) return false;
+            isBroadcast = (*p++ != 0);
+            root["is_broadcast"] = isBroadcast ? 1 : 0;
+        }
+
+    } else if (payloadFamily == BIN_PAYLOAD_PMKID) {
+        String ap;
+        String sta;
+        String ssid;
+        String pmkidHex;
+        String hashcatLine;
+        int32_t rssi = 0;
+
+        if (p >= end) return false;
+        const uint8_t flags = *p++;
+
+        uint8_t lastOui[3] = {0, 0, 0};
+        bool hasLastOui = false;
+
+        if (!_readMacFieldFromBytes(p, end, ap, lastOui, hasLastOui) ||
+            !_readMacFieldFromBytes(p, end, sta, lastOui, hasLastOui)) {
+            DLOG_WARN("STORAGE", "Indexed binary pmkid MAC decode failed seg=%lu",
+                      static_cast<unsigned long>(segmentId));
+            return false;
+        }
+
+        if ((flags & 0x01) && !_readStringFromBytes(p, end, ssid)) return false;
+
+        root["ap"] = ap;
+        root["sta"] = sta;
+        root["bssid"] = ap;
+        root["client_mac"] = sta;
+        if (flags & 0x01) root["ssid"] = ssid;
+
+        if (flags & 0x02) {
+            if (!_readZigZag32FromBytes(p, end, rssi)) return false;
+            root["rssi"] = rssi;
+        }
+        if (flags & 0x04) {
+            if (!_readStringFromBytes(p, end, pmkidHex)) return false;
+            root["pmkid_hex"] = pmkidHex;
+        }
+        if (flags & 0x08) {
+            if (!_readStringFromBytes(p, end, hashcatLine)) return false;
+            root["hashcat_line"] = hashcatLine;
+        }
+
+    } else if (payloadFamily == BIN_PAYLOAD_HANDSHAKE) {
+        String ap;
+        String sta;
+        String ssid;
+        uint32_t frameMask = 0;
+        uint32_t messageNumber = 0;
+
+        if (p >= end) return false;
+        const uint8_t flags = *p++;
+
+        uint8_t lastOui[3] = {0, 0, 0};
+        bool hasLastOui = false;
+
+        if (!_readMacFieldFromBytes(p, end, ap, lastOui, hasLastOui) ||
+            !_readMacFieldFromBytes(p, end, sta, lastOui, hasLastOui)) {
+            DLOG_WARN("STORAGE", "Indexed binary handshake MAC decode failed seg=%lu",
+                      static_cast<unsigned long>(segmentId));
+            return false;
+        }
+
+        if ((flags & 0x01) && !_readStringFromBytes(p, end, ssid)) return false;
+        if (!_readUVarintFromBytes(p, end, frameMask)) return false;
+
+        root["ap"] = ap;
+        root["sta"] = sta;
+        root["bssid"] = ap;
+        root["client"] = sta;
+        if (flags & 0x01) root["ssid"] = ssid;
+        root["frame_mask"] = frameMask;
+        root["event_type"] = "handshake";
+
+        if (flags & 0x02) {
+            int32_t rssi = 0;
+            if (!_readZigZag32FromBytes(p, end, rssi)) return false;
+            root["rssi"] = rssi;
+        }
+        if (flags & 0x04) {
+            if (!_readUVarintFromBytes(p, end, messageNumber)) return false;
+            root["message"] = messageNumber;
+            root["msg"] = messageNumber;
+        }
+
+    } else if (payloadFamily == BIN_PAYLOAD_DRONE) {
+        String droneId;
+        String mac;
+        String protocol;
+        int32_t latitudeE7 = 0;
+        int32_t longitudeE7 = 0;
+        uint32_t channel = 0;
+        uint8_t lastOui[3] = {0, 0, 0};
+        bool hasLastOui = false;
+
+        if (p >= end) return false;
+        const uint8_t flags = *p++;
+
+        if ((flags & 0x01) && !_readStringFromBytes(p, end, droneId)) return false;
+        if ((flags & 0x02) &&
+            !_readMacFieldFromBytes(p, end, mac, lastOui, hasLastOui)) {
+            return false;
+        }
+        if (flags & 0x04) {
+            int32_t rssi = 0;
+            if (!_readZigZag32FromBytes(p, end, rssi)) return false;
+            root["rssi"] = rssi;
+        }
+        if (flags & 0x08) {
+            if (!_readUVarintFromBytes(p, end, channel)) return false;
+            root["channel"] = channel;
+        }
+        if (flags & 0x10) {
+            if (!_readStringFromBytes(p, end, protocol)) return false;
+            root["protocol"] = protocol;
+        }
+        if (flags & 0x20) {
+            if (!_readZigZag32FromBytes(p, end, latitudeE7) ||
+                !_readZigZag32FromBytes(p, end, longitudeE7)) {
+                return false;
+            }
+            root["latitude"] = _e7ToFloat(latitudeE7);
+            root["longitude"] = _e7ToFloat(longitudeE7);
+        }
+        if (flags & 0x40) {
+            uint32_t altitudeCenti = 0;
+            if (!_readUVarintFromBytes(p, end, altitudeCenti)) return false;
+            root["altitude_m"] = _centiToFloat(altitudeCenti);
+        }
+        if (flags & 0x80) {
+            uint32_t speedCenti = 0;
+            if (!_readUVarintFromBytes(p, end, speedCenti)) return false;
+            root["speed"] = _centiToFloat(speedCenti);
+        }
+
+        if (flags & 0x01) root["drone_id"] = droneId;
+        if (flags & 0x02) root["mac"] = mac;
+
+    } else if (payloadFamily == BIN_PAYLOAD_FIELD_MAP) {
+        if (!_readBinaryFieldMapFromBytes(p, end, root)) {
+            DLOG_WARN("STORAGE", "Indexed binary field map decode failed seg=%lu",
+                      static_cast<unsigned long>(segmentId));
+            return false;
+        }
+
+    } else if (payloadFamily == BIN_PAYLOAD_JSON_FALLBACK) {
+        if (eventFlags & BIN_EVENT_HAS_PAYLOAD) {
+            String payloadJson;
+            if (!_readStringFromBytes(p, end, payloadJson)) {
+                return false;
+            }
+
+            if (payloadJson.length()) {
+                JsonDocument payloadDoc;
+                DeserializationError err = deserializeJson(payloadDoc, payloadJson);
+                if (err || !payloadDoc.is<JsonObject>()) {
+                    return false;
+                }
+
+                for (JsonPairConst kv : payloadDoc.as<JsonObjectConst>()) {
+                    root[kv.key().c_str()].set(kv.value());
+                }
+            }
+        }
+
+    } else {
+        DLOG_WARN("STORAGE", "Indexed binary unknown payload family seg=%lu family=%u",
+                  static_cast<unsigned long>(segmentId),
+                  static_cast<unsigned>(payloadFamily));
+        return false;
+    }
+
+    if (eventFlags & BIN_EVENT_HAS_FIELDS) {
+        if (!_readBinaryFieldMapFromBytes(p, end, root)) {
+            DLOG_WARN("STORAGE", "Indexed binary extension decode failed seg=%lu",
+                      static_cast<unsigned long>(segmentId));
+            return false;
+        }
+    }
+
+    const String eventTypeStr = String((const char*)(root["event_type"] | ""));
+    prio = _defaultPriorityForBinaryType(typeStr, eventTypeStr);
+    lane = _defaultLaneForBinaryType(typeStr, eventTypeStr);
+
+    if (eventFlags & BIN_EVENT_HAS_PRIO) {
+        if (p >= end) return false;
+        prio = *p++;
+    }
+    if (eventFlags & BIN_EVENT_HAS_LANE) {
+        if (p >= end) return false;
+        lane = *p++;
+    }
+
+    root["prio"] = prio;
+    root["lane"] = lane;
+    root["lane_name"] = _laneText(static_cast<StorageLane>(lane));
+
+    out.recordType = SPOOL_REC_EVENT;
+    out.eventId = recordId;
+    out.sessionId = sessionId;
+    out.doc.set(doc.as<JsonVariantConst>());
+    return true;
+}
+
+bool StorageManager::_readIndexedSpoolRecord(const UploadIndexRecordV1& ptr,
+                                             DecodedSpoolRecord& out) const {
+    out.recordType = SPOOL_REC_UNKNOWN;
+    out.eventId = 0;
+    out.sessionId = "";
+    out.doc.clear();
+
+    const SpoolSegmentInfo* seg = _findSegmentInfo(ptr.segmentId);
+    if (!seg || !_validateUploadIndexRecord(ptr, ptr.segmentId)) {
+        return false;
+    }
+
+    const String path = _spoolSegmentPathForFormat(ptr.segmentId, seg->format);
+    File f = LittleFS.open(path, "r");
+    if (!f) {
+        return false;
+    }
+
+    if (ptr.offset >= static_cast<uint32_t>(f.size()) ||
+        ptr.len == 0 ||
+        ptr.offset + ptr.len > static_cast<uint32_t>(f.size())) {
+        f.close();
+        return false;
+    }
+
+    if (seg->format == SPOOL_SEGMENT_BIN_V2) {
+        SpoolBin::SegmentHeaderV2 hdr;
+        if (!SpoolBin::readSegmentHeaderV2(f, hdr) ||
+            hdr.magic != SpoolBin::SEGMENT_MAGIC ||
+            hdr.version != 2 ||
+            !f.seek(ptr.offset)) {
+            f.close();
+            return false;
+        }
+
+        SpoolBin::RecordPrefix prefix;
+        if (!SpoolBin::readBytes(f, &prefix, sizeof(prefix))) {
+            f.close();
+            return false;
+        }
+
+        const uint32_t encodedLen =
+            static_cast<uint32_t>(sizeof(prefix)) +
+            static_cast<uint32_t>(prefix.length);
+        if (encodedLen != ptr.len) {
+            f.close();
+            return false;
+        }
+
+        std::vector<uint8_t> body(prefix.length);
+        if (prefix.length > 0 &&
+            !SpoolBin::readBytes(f, body.data(), prefix.length)) {
+            f.close();
+            return false;
+        }
+        f.close();
+
+        if (!_decodeBinarySpoolRecordBody(ptr.segmentId,
+                                          prefix.type,
+                                          body.data(),
+                                          body.size(),
+                                          hdr.createdMs,
+                                          String(ptr.sessionId),
+                                          out)) {
+            return false;
+        }
+    } else {
+        if (!f.seek(ptr.offset)) {
+            f.close();
+            return false;
+        }
+
+        std::vector<char> buf(ptr.len + 1U, '\0');
+        const size_t got = f.readBytes(buf.data(), ptr.len);
+        f.close();
+        if (got != ptr.len) {
+            return false;
+        }
+
+        JsonDocument doc;
+        DeserializationError err = deserializeJson(doc, buf.data());
+        if (err) {
+            return false;
+        }
+
+        out.recordType = SPOOL_REC_EVENT;
+        out.eventId = doc["id"] | 0U;
+        out.sessionId = String((const char*)(doc[F_SESSION] | doc["session_id"] | ""));
+        out.doc.set(doc.as<JsonVariantConst>());
+    }
+
+    return out.recordType == SPOOL_REC_EVENT &&
+           out.eventId == ptr.eventId &&
+           out.sessionId == String(ptr.sessionId);
 }
 
 bool StorageManager::_loadSpoolEnrichmentsForSession(
@@ -6959,8 +8226,20 @@ bool StorageManager::_removeSpoolSegmentFile(uint32_t segmentId) {
     const String path = _spoolSegmentPathForFormat(
     segmentId,
     seg ? seg->format : static_cast<uint8_t>(SPOOL_SEGMENT_JSONL));
+    const String indexPath = _uploadIndexPath(segmentId);
+
+    auto removeIndex = [&]() {
+        _uploadIndexBySegment.erase(segmentId);
+        if (LittleFS.exists(indexPath) && !LittleFS.remove(indexPath)) {
+            DLOG_WARN("STORAGE",
+                      "Upload index sidecar remove failed seg=%lu path=%s",
+                      static_cast<unsigned long>(segmentId),
+                      indexPath.c_str());
+        }
+    };
 
     if (!LittleFS.exists(path)) {
+        removeIndex();
         return true;
     }
 
@@ -6968,6 +8247,7 @@ bool StorageManager::_removeSpoolSegmentFile(uint32_t segmentId) {
     // Retry a few times with a short yield before giving up.
     for (int attempt = 1; attempt <= 4; ++attempt) {
         if (LittleFS.remove(path)) {
+            removeIndex();
             if (attempt > 1) {
                 DLOG_INFO("STORAGE",
                           "Spool segment remove recovered seg=%lu attempt=%d",
@@ -7647,6 +8927,3 @@ void StorageManager::_initDefaultConfig() {
     _config.mqttPassword = "";
     _config.mqttTopicBase = SPECTRE_MQTT_TOPIC_BASE;
 }
-
-
-

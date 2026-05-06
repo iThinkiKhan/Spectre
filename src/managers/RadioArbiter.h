@@ -1,5 +1,3 @@
-
-
 #pragma once
 
 #include <Arduino.h>
@@ -118,4 +116,3 @@ private:
 };
 
 extern RadioArbiter RADIO_ARB;
-

@@ -1,11 +1,11 @@
-
-
 #include "RadioArbiter.h"
 
+#include "../core/CrashBreadcrumb.h"
 #include "../core/DebugLog.h"
 #include "../core/SpectreState.h"
 #include "BLEManager.h"
 #include "MQTTManager.h"
+#include "StorageManager.h"
 #include "WiFiManager.h"
 
 namespace {
@@ -325,6 +325,12 @@ void RadioArbiter::_commitOwnerState(RadioOwner owner,
     strlcpy(_reason, reason ? reason : "", sizeof(_reason));
     _lastSwitchMs = millis();
     _log("grant", owner, reason ? reason : "grant", holdMs);
+
+    if (owner == RADIO_WIFI_CAPTURE) {
+        crashCheckpoint(CrashPhase::WIFI_CAPTURE,
+                        static_cast<uint8_t>(owner),
+                        STORAGE.isReady() ? STORAGE.getPendingEventCount() : 0U);
+    }
 }
 
 bool RadioArbiter::_startOwner(RadioOwner owner, const char* reason) {
@@ -368,6 +374,9 @@ bool RadioArbiter::_startOwner(RadioOwner owner, const char* reason) {
 void RadioArbiter::_stopOwner(RadioOwner owner, const char* reason) {
     switch (owner) {
         case RADIO_WIFI_CAPTURE:
+            WIFI_MGR.pauseRadio();
+            crashBreadcrumbClear(CrashPhase::WIFI_CAPTURE);
+            break;
         case RADIO_WIFI_SCAN:
         case RADIO_WIFI_PMKID:
         case RADIO_WIFI_UPLOAD:
@@ -516,4 +525,3 @@ void RadioArbiter::_log(const char* action,
               static_cast<unsigned long>(holdMs),
               safeReason);
 }
-

@@ -1,5 +1,3 @@
-
-
 #pragma once
 #include <Arduino.h>
 #include <lvgl.h>
@@ -130,7 +128,6 @@ private:
     lv_obj_t*   _sysContent   = nullptr;
     lv_obj_t*   _sysLivePanel = nullptr;
     lv_obj_t*   _debriefPanel = nullptr;
-
 
     // ─── Animation objects ────────────────────────────────────────
     lv_obj_t*   _divCanvas      = nullptr;
@@ -296,4 +293,3 @@ private:
                                const char* statusText);
     void _syncActionHintsFromState();
 };
-

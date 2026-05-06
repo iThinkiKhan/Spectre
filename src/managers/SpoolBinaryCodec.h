@@ -51,12 +51,18 @@ bool readVarintZigZag(File& f, int32_t& out);
 bool readSegmentHeaderV2(File& f, SegmentHeaderV2& hdr);
 bool writeSegmentHeaderV2(File& f, const SegmentHeaderV2& hdr);
 
+struct AppendRecordLocation {
+    uint32_t offset = 0;
+    uint32_t len    = 0;
+};
+
 bool appendRecordV2(const String& path,
                     uint8_t recType,
                     const uint8_t* payload,
                     uint16_t length,
                     uint32_t eventId,
-                    SegmentHeaderV2* outHeader = nullptr);
+                    SegmentHeaderV2* outHeader = nullptr,
+                    AppendRecordLocation* outLoc = nullptr);
 
 // Append one record to an already-open file at its current write position.
 // Updates hdr counters in memory but does NOT write hdr back to disk —

@@ -1,5 +1,4 @@
 
-
 #include "MQTTManager.h"
 #include <LittleFS.h>
 #include <ArduinoJson.h>
@@ -114,6 +113,9 @@ const char* _legacyEventTypeFromQueueName(const String& name) {
     return nullptr;
 }
 
+constexpr uint32_t kUploadFetchSlowInfoMs = 250;
+constexpr uint32_t kUploadFetchSlowWarnMs = 500;
+
 uint32_t _extractLegacyEventIdFromQueueName(const String& name) {
     const int firstUnderscore = name.indexOf('_');
     if (firstUnderscore < 0) {
@@ -181,9 +183,10 @@ bool _stateRequiresUploadLease(MQTTState state) {
            state == MQTT_DUMPING;
 }
 
-// Slice size comes from config.h so publishing can stay cooperative without
-// turning one upload lease into multiple upload windows.
-static constexpr int kDumpEventsPerSlice = MQTT_DUMP_EVENTS_PER_SLICE;
+static constexpr uint32_t kDumpSliceBudgetMs       = MQTT_DUMP_SLICE_BUDGET_MS;
+static constexpr uint8_t  kDumpMaxRecordsPerSlice  = MQTT_DUMP_RECORDS_PER_SLICE;
+static constexpr uint8_t  kFetchBatchSize          = MQTT_DUMP_FETCH_BATCH_SIZE;
+static constexpr uint16_t kDurableCheckpointEveryN = MQTT_DUMP_CHECKPOINT_EVERY_N;
 
 bool _uploadPausedByMission() {
     RunContext context = RUN_CONTEXT_GENERAL;
@@ -519,15 +522,18 @@ void MQTTManager::_startDumpPlan() {
     _dumpCtx.sessionIndex = 0;
     _dumpCtx.sinceId = 0;
     _dumpCtx.phaseStarted = false;
+    // Snapshot for diagnostics — no hard cap; upload is bounded by lease time.
+    _dumpCtx.maxEventsThisLease =
+        STORAGE.isReady() ? static_cast<uint32_t>(STORAGE.getPendingEventCount()) : 0U;
 
     crashCheckpoint(CrashPhase::MQTT_DUMPING,
                     static_cast<uint8_t>(RADIO_ARB.currentOwner()),
                     static_cast<uint32_t>(_queuedRecords));
 
-    DLOG_INFO("MQTT", "Dump start — %d records, lease=%lus",
+    DLOG_INFO("MQTT", "Dump start — pending=%d lease=%lus leaseMax=%u",
               _queuedRecords,
-              static_cast<unsigned long>(_uploadLeaseHoldMs / 1000UL));
-    DLOG_INFO("MQTT", "Publishing %d pending records", _queuedRecords);
+              static_cast<unsigned long>(_uploadLeaseHoldMs / 1000UL),
+              static_cast<unsigned>(_dumpCtx.maxEventsThisLease));
 
     _setUploadUiState(true, "UPLOADING", 0,
                       static_cast<uint32_t>(_queuedRecords), true);
@@ -554,246 +560,331 @@ bool MQTTManager::_runDumpSlice() {
 
             if (!_dumpCtx.phaseStarted) {
                 sessionIds.clear();
+                const uint32_t listT0 = millis();
                 STORAGE.listEventSessions(sessionIds);
-                sessionIds.erase(
-                    std::remove_if(sessionIds.begin(),
-                                   sessionIds.end(),
-                                   [](const String& sessionId) {
-                                       return STORAGE.getPendingEventCountForSession(sessionId.c_str()) == 0;
-                                   }),
-                    sessionIds.end());
-                DLOG_INFO("MQTT",
-                          "Pending upload sessions=%u",
-                          static_cast<unsigned>(sessionIds.size()));
+                const uint32_t listDt = millis() - listT0;
+                DLOG_WARN("MQTT", "Upload sessions listed=%u ms=%lu",
+                          static_cast<unsigned>(sessionIds.size()),
+                          static_cast<unsigned long>(listDt));
                 _dumpCtx.sessionIndex = 0;
                 _dumpCtx.sinceId = 0;
                 _dumpCtx.phaseStarted = true;
             }
 
-            while (_dumpCtx.sessionIndex < sessionIds.size()) {
-                _refreshUploadLease("mqtt_batch", _uploadLeaseHoldMs);
+            const uint32_t sliceStartMs = millis();
+            uint8_t recordsThisSlice = 0;
+            JsonDocument publishDoc;
 
-                // ── per-batch liveness ──────────────────────────────────────
-                // Drive the TCP stack before each storage scan so broker ACKs
-                // are drained and the send buffer stays clear.  If the broker
-                // has dropped, attempt an immediate reconnect here rather than
-                // waiting for a publish failure to discover it.
-                if (_mqtt.connected()) {
+            while (_dumpCtx.sessionIndex < sessionIds.size()) {
+                // Time budget
+                if ((millis() - sliceStartMs) >= kDumpSliceBudgetMs) {
                     _mqtt.loop();
-                    _dumpSlicePause();
-                } else {
-                    DLOG_WARN("MQTT",
-                              "Broker disconnected before batch fetch — reconnecting");
-                    if (!_connectBroker()) {
-                        DLOG_WARN("MQTT", "Mid-dump reconnect failed at batch boundary");
-                        _lastFailed++;
-                        _dumpCtx.phase = DUMP_PHASE_FAILED;
-                        return true;
-                    }
+                    return false;
+                }
+
+                // Record limit per slice
+                if (recordsThisSlice >= kDumpMaxRecordsPerSlice) {
+                    _mqtt.loop();
+                    return false;
                 }
 
                 const String& sessionId = sessionIds[_dumpCtx.sessionIndex];
-                JsonDocument batchDoc;
-                JsonDocument publishDoc;
 
-                if (_dumpCtx.sinceId == 0) {
-                    _dumpCtx.sinceId =
-                        STORAGE.getLastUploadedEventId(sessionId.c_str());
-                }
+                // ── FETCH PHASE ───────────────────────────────────────────
+                // When the cache is empty scan storage once and yield.
+                // Subsequent calls drain the cached records without re-scanning.
+                if (_dumpCtx.cachedBatchCount == 0) {
+                    if (!_dumpCtx.sinceIdInitialized) {
+                        _dumpCtx.sinceId =
+                            STORAGE.getLastUploadedEventId(sessionId.c_str());
+                        _dumpCtx.sinceIdInitialized = true;
+                    }
 
-                if (!_dumpCtx.firstEventFetchLogged) {
-                    DLOG_INFO("MQTT",
-                              "First event batch fetch session=%s since=%lu",
-                              sessionId.c_str(),
-                              static_cast<unsigned long>(_dumpCtx.sinceId));
-                    _dumpCtx.firstEventFetchLogged = true;
-                }
-
-                batchDoc.clear();
-                if (!STORAGE.getUploadEventBatchForSession(sessionId.c_str(),
-                                                           _dumpCtx.sinceId,
-                                                           kDumpEventsPerSlice,
-                                                           batchDoc)) {
-                    _lastFailed++;
-                    DLOG_WARN("MQTT", "Failed to read upload batch for session %s",
-                              sessionId.c_str());
-                    _dumpCtx.phase = DUMP_PHASE_FAILED;
-                    return true;
-                }
-
-                JsonArray batch = batchDoc.as<JsonArray>();
-                if (batch.isNull() || batch.size() == 0) {
-                    _dumpCtx.sessionIndex++;
-                    _dumpCtx.sinceId = 0;
-                    continue;
-                }
-
-                for (JsonVariant recordVariant : batch) {
-                    JsonObject record = recordVariant.as<JsonObject>();
-                    if (record.isNull()) {
-                        _lastFailed++;
+                    _refreshUploadLease("mqtt_batch", _uploadLeaseHoldMs);
+                    if (_mqtt.connected()) {
+                        _mqtt.loop();
+                        _dumpSlicePause();
+                    } else {
                         DLOG_WARN("MQTT",
-                                  "Upload batch record malformed session=%s since=%lu",
-                                  sessionId.c_str(),
-                                  static_cast<unsigned long>(_dumpCtx.sinceId));
-                        _dumpCtx.phase = DUMP_PHASE_FAILED;
-                        return true;
-                    }
-
-                    publishDoc.clear();
-
-                    const uint32_t eventId = record["id"] | 0U;
-                    if (eventId == 0) {
-                        _lastFailed++;
-                        DLOG_WARN("MQTT",
-                                  "Upload batch record missing event id for session=%s since=%lu",
-                                  sessionId.c_str(),
-                                  static_cast<unsigned long>(_dumpCtx.sinceId));
-                        _dumpCtx.phase = DUMP_PHASE_FAILED;
-                        return true;
-                    }
-
-                    const char* type = record["type"] | "event";
-                    const String topic = _mqttTopicForEventType(type);
-
-                    if (!_dumpCtx.firstEventFetchedOkLogged) {
-                        DLOG_INFO("MQTT",
-                                  "First event fetched ok eventId=%lu type=%s",
-                                  static_cast<unsigned long>(eventId),
-                                  type);
-                        _dumpCtx.firstEventFetchedOkLogged = true;
-                    }
-
-                    if (!_dumpCtx.firstEventValidatedLogged) {
-                        DLOG_INFO("MQTT", "First event validated");
-                        _dumpCtx.firstEventValidatedLogged = true;
-                    }
-
-                    _copyEventRecordForPublish(record, publishDoc);
-
-                    if (!_dumpCtx.firstEventDocBuiltLogged) {
-                        DLOG_INFO("MQTT", "First event doc built");
-                        _dumpCtx.firstEventDocBuiltLogged = true;
-                    }
-
-                    if (!_dumpCtx.firstEventPublishBeginLogged) {
-                        DLOG_INFO("MQTT", "First event publish begin");
-                        _dumpCtx.firstEventPublishBeginLogged = true;
-                    }
-
-                    _refreshUploadLease("mqtt_publish", _uploadLeaseHoldMs);
-
-                    // ── proactive connection check before each publish ──────
-                    // Don't wait for publish() to discover the broker is gone;
-                    // reconnect now so we avoid the 13-second TCP-connect stall
-                    // that results from hitting the retry path with a dead link.
-                    if (!_mqtt.connected()) {
-                        DLOG_WARN("MQTT",
-                                  "Broker disconnected before event=%lu — reconnecting",
-                                  static_cast<unsigned long>(eventId));
+                                  "Broker disconnected before batch fetch — reconnecting");
                         if (!_connectBroker()) {
-                            DLOG_WARN("MQTT", "Reconnect failed before publish event=%lu",
-                                      static_cast<unsigned long>(eventId));
+                            DLOG_WARN("MQTT",
+                                      "Mid-dump reconnect failed at batch boundary");
                             _lastFailed++;
                             _dumpCtx.phase = DUMP_PHASE_FAILED;
                             return true;
                         }
-                        _mqtt.loop();
                     }
 
-                    if (!_publishJson(topic.c_str(), publishDoc, false, eventId)) {
-                        const bool samePoisonRecord =
-                            (_lastPoisonEventId == eventId &&
-                             _lastPoisonSessionId == sessionId);
-                        _lastPoisonEventId = eventId;
-                        _lastPoisonSessionId = sessionId;
-                        _lastPoisonEventFailures = samePoisonRecord
-                            ? static_cast<uint8_t>(_lastPoisonEventFailures + 1)
-                            : 1;
-
-                        const size_t payloadBytes = measureJson(publishDoc);
-                        const char* payloadSessionId = publishDoc["session_id"] | "";
-                        const char* payloadTs = publishDoc["ts"] | "";
-                        const char* payloadSensor = publishDoc["sensor"] | "";
-                        DLOG_WARN("MQTT",
-                                  "Publish failed for session=%s event=%lu type=%s"
-                                  " topic=%s payload=%u sessionField=%d tsField=%d sensorField=%d"
-                                  " mqttState=%d connected=%d poisonFails=%u/%u",
+                    if (!_dumpCtx.firstEventFetchLogged) {
+                        DLOG_INFO("MQTT",
+                                  "First event batch fetch session=%s since=%lu",
                                   sessionId.c_str(),
-                                  static_cast<unsigned long>(eventId),
-                                  type,
-                                  topic.c_str(),
-                                  static_cast<unsigned>(payloadBytes),
-                                  payloadSessionId[0] ? 1 : 0,
-                                  payloadTs[0] ? 1 : 0,
-                                  payloadSensor[0] ? 1 : 0,
-                                  _mqtt.state(),
-                                  _mqtt.connected() ? 1 : 0,
-                                  static_cast<unsigned>(_lastPoisonEventFailures),
-                                  static_cast<unsigned>(MQTT_POISON_FAIL_LIMIT));
-
-                        if (_lastPoisonEventFailures >= MQTT_POISON_FAIL_LIMIT) {
-                            if (STORAGE.markEventUploaded(eventId, sessionId.c_str())) {
-                                DLOG_WARN("MQTT",
-                                          "Quarantined poison event session=%s event=%lu after %u failures",
-                                          sessionId.c_str(),
-                                          static_cast<unsigned long>(eventId),
-                                          static_cast<unsigned>(_lastPoisonEventFailures));
-                                _dumpCtx.sinceId = eventId;
-                                _lastPoisonEventId = 0;
-                                _lastPoisonSessionId = "";
-                                _lastPoisonEventFailures = 0;
-                                continue;
-                            }
-
-                            DLOG_WARN("MQTT",
-                                      "Quarantine mark failed for session=%s event=%lu",
-                                      sessionId.c_str(),
-                                      static_cast<unsigned long>(eventId));
-                        }
-
-                        _lastFailed++;
-                        _dumpCtx.phase = DUMP_PHASE_FAILED;
-                        return true;
+                                  static_cast<unsigned long>(_dumpCtx.sinceId));
+                        _dumpCtx.firstEventFetchLogged = true;
                     }
 
-                    if (!_dumpCtx.firstEventPublishEndLogged) {
-                        DLOG_INFO("MQTT", "First event publish end");
-                        _dumpCtx.firstEventPublishEndLogged = true;
-                    }
+                    _dumpCtx.cachedBatch.clear();
+                    const uint32_t fetchT0 = millis();
+                    const bool fetchOk = STORAGE.getUploadEventBatchForSession(
+                        sessionId.c_str(), _dumpCtx.sinceId,
+                        kFetchBatchSize, _dumpCtx.cachedBatch);
+                    const uint32_t fetchDt = millis() - fetchT0;
 
-                    if (_mqtt.connected()) {
-                        _mqtt.loop();
-                    }
-                    _dumpSlicePause();
-
-                    if (!STORAGE.markEventUploaded(eventId, sessionId.c_str())) {
-                        _lastFailed++;
+                    if (fetchDt >= kUploadFetchSlowWarnMs) {
                         DLOG_WARN("MQTT",
-                                  "Failed to mark uploaded event=%lu session=%s",
-                                  static_cast<unsigned long>(eventId),
+                                  "Upload batch fetch slow session=%s since=%lu ms=%lu",
+                                  sessionId.c_str(),
+                                  static_cast<unsigned long>(_dumpCtx.sinceId),
+                                  static_cast<unsigned long>(fetchDt));
+                    } else if (fetchDt >= kUploadFetchSlowInfoMs) {
+                        DLOG_INFO("MQTT",
+                                  "Upload batch fetch slower than usual session=%s since=%lu ms=%lu",
+                                  sessionId.c_str(),
+                                  static_cast<unsigned long>(_dumpCtx.sinceId),
+                                  static_cast<unsigned long>(fetchDt));
+                    }
+
+                    if (!fetchOk) {
+                        _lastFailed++;
+                        DLOG_WARN("MQTT", "Failed to read upload batch for session %s",
                                   sessionId.c_str());
                         _dumpCtx.phase = DUMP_PHASE_FAILED;
                         return true;
                     }
 
-                    _dumpCtx.sinceId = eventId;
-                    _lastPublished++;
-                    _refreshUploadLease("mqtt_progress", _uploadLeaseHoldMs);
+                    JsonArray arr = _dumpCtx.cachedBatch.as<JsonArray>();
+                    if (arr.isNull() || arr.size() == 0) {
+                        // Session exhausted — advance and yield
+                        _dumpCtx.sessionIndex++;
+                        _dumpCtx.sinceId = 0;
+                        _dumpCtx.sinceIdInitialized = false;
+                        _dumpCtx.cachedBatchIndex = 0;
+                        _dumpCtx.cachedBatchCount = 0;
+                        _dumpSlicePause();
+                        return false;
+                    }
 
-                    _setUploadUiState(true, "UPLOADING",
-                                      static_cast<uint32_t>(_lastPublished),
-                                      static_cast<uint32_t>(_queuedRecords),
-                                      true);
+                    _dumpCtx.cachedBatchIndex = 0;
+                    _dumpCtx.cachedBatchCount =
+                        static_cast<uint16_t>(arr.size());
 
+                    // Yield after the expensive scan; next call drains cache
+                    return false;
                 }
 
-                return false;
+                // ── PROCESS PHASE ─────────────────────────────────────────
+                // Drain one record from the cached batch per while-iteration.
+                JsonArray batch = _dumpCtx.cachedBatch.as<JsonArray>();
+                if (batch.isNull() ||
+                    _dumpCtx.cachedBatchIndex >= _dumpCtx.cachedBatchCount) {
+                    // Defensive: stale cache — reset and re-fetch next call
+                    _dumpCtx.cachedBatchIndex = 0;
+                    _dumpCtx.cachedBatchCount = 0;
+                    continue;
+                }
+
+                JsonObject record =
+                    batch[_dumpCtx.cachedBatchIndex].as<JsonObject>();
+                if (record.isNull()) {
+                    _lastFailed++;
+                    DLOG_WARN("MQTT",
+                              "Upload batch record malformed session=%s since=%lu",
+                              sessionId.c_str(),
+                              static_cast<unsigned long>(_dumpCtx.sinceId));
+                    _dumpCtx.phase = DUMP_PHASE_FAILED;
+                    return true;
+                }
+
+                publishDoc.clear();
+
+                const uint32_t eventId = record["id"] | 0U;
+                if (eventId == 0) {
+                    _lastFailed++;
+                    DLOG_WARN("MQTT",
+                              "Upload batch record missing event id session=%s since=%lu",
+                              sessionId.c_str(),
+                              static_cast<unsigned long>(_dumpCtx.sinceId));
+                    _dumpCtx.phase = DUMP_PHASE_FAILED;
+                    return true;
+                }
+
+                const char* type = record["type"] | "event";
+                const String topic = _mqttTopicForEventType(type);
+
+                if (!_dumpCtx.firstEventFetchedOkLogged) {
+                    DLOG_INFO("MQTT",
+                              "First event fetched ok eventId=%lu type=%s",
+                              static_cast<unsigned long>(eventId),
+                              type);
+                    _dumpCtx.firstEventFetchedOkLogged = true;
+                }
+
+                if (!_dumpCtx.firstEventValidatedLogged) {
+                    DLOG_INFO("MQTT", "First event validated");
+                    _dumpCtx.firstEventValidatedLogged = true;
+                }
+
+                _copyEventRecordForPublish(record, publishDoc);
+
+                if (!_dumpCtx.firstEventDocBuiltLogged) {
+                    DLOG_INFO("MQTT", "First event doc built");
+                    _dumpCtx.firstEventDocBuiltLogged = true;
+                }
+
+                if (!_dumpCtx.firstEventPublishBeginLogged) {
+                    DLOG_INFO("MQTT", "First event publish begin");
+                    _dumpCtx.firstEventPublishBeginLogged = true;
+                }
+
+                _refreshUploadLease("mqtt_publish", _uploadLeaseHoldMs);
+
+                if (!_mqtt.connected()) {
+                    DLOG_WARN("MQTT",
+                              "Broker disconnected before event=%lu — reconnecting",
+                              static_cast<unsigned long>(eventId));
+                    if (!_connectBroker()) {
+                        DLOG_WARN("MQTT",
+                                  "Reconnect failed before publish event=%lu",
+                                  static_cast<unsigned long>(eventId));
+                        _lastFailed++;
+                        _dumpCtx.phase = DUMP_PHASE_FAILED;
+                        return true;
+                    }
+                    _mqtt.loop();
+                }
+
+                if (!_publishJson(topic.c_str(), publishDoc, false, eventId)) {
+                    const bool samePoisonRecord =
+                        (_lastPoisonEventId == eventId &&
+                         _lastPoisonSessionId == sessionId);
+                    _lastPoisonEventId = eventId;
+                    _lastPoisonSessionId = sessionId;
+                    _lastPoisonEventFailures = samePoisonRecord
+                        ? static_cast<uint8_t>(_lastPoisonEventFailures + 1)
+                        : 1;
+
+                    const size_t payloadBytes = measureJson(publishDoc);
+                    const char* payloadSessionId = publishDoc["session_id"] | "";
+                    const char* payloadTs = publishDoc["ts"] | "";
+                    const char* payloadSensor = publishDoc["sensor"] | "";
+                    DLOG_WARN("MQTT",
+                              "Publish failed for session=%s event=%lu type=%s"
+                              " topic=%s payload=%u sessionField=%d tsField=%d sensorField=%d"
+                              " mqttState=%d connected=%d poisonFails=%u/%u",
+                              sessionId.c_str(),
+                              static_cast<unsigned long>(eventId),
+                              type,
+                              topic.c_str(),
+                              static_cast<unsigned>(payloadBytes),
+                              payloadSessionId[0] ? 1 : 0,
+                              payloadTs[0] ? 1 : 0,
+                              payloadSensor[0] ? 1 : 0,
+                              _mqtt.state(),
+                              _mqtt.connected() ? 1 : 0,
+                              static_cast<unsigned>(_lastPoisonEventFailures),
+                              static_cast<unsigned>(MQTT_POISON_FAIL_LIMIT));
+
+                    if (_lastPoisonEventFailures >= MQTT_POISON_FAIL_LIMIT) {
+                        if (STORAGE.markEventUploaded(eventId, sessionId.c_str())) {
+                            DLOG_WARN("MQTT",
+                                      "Quarantined poison event session=%s event=%lu after %u failures",
+                                      sessionId.c_str(),
+                                      static_cast<unsigned long>(eventId),
+                                      static_cast<unsigned>(_lastPoisonEventFailures));
+                            _dumpCtx.sinceId = eventId;
+                            _dumpCtx.cachedBatchIndex++;
+                            if (_dumpCtx.cachedBatchIndex >= _dumpCtx.cachedBatchCount) {
+                                _dumpCtx.cachedBatchIndex = 0;
+                                _dumpCtx.cachedBatchCount = 0;
+                            }
+                            _lastPoisonEventId = 0;
+                            _lastPoisonSessionId = "";
+                            _lastPoisonEventFailures = 0;
+                            continue;
+                        }
+
+                        DLOG_WARN("MQTT",
+                                  "Quarantine mark failed for session=%s event=%lu",
+                                  sessionId.c_str(),
+                                  static_cast<unsigned long>(eventId));
+                    }
+
+                    _lastFailed++;
+                    _dumpCtx.phase = DUMP_PHASE_FAILED;
+                    return true;
+                }
+
+                if (!_dumpCtx.firstEventPublishEndLogged) {
+                    DLOG_INFO("MQTT", "First event publish end");
+                    _dumpCtx.firstEventPublishEndLogged = true;
+                }
+
+                if (_mqtt.connected()) {
+                    _mqtt.loop();
+                }
+                _dumpSlicePause();
+
+                if (!STORAGE.markEventUploaded(eventId, sessionId.c_str())) {
+                    _lastFailed++;
+                    DLOG_WARN("MQTT",
+                              "Failed to mark uploaded event=%lu session=%s",
+                              static_cast<unsigned long>(eventId),
+                              sessionId.c_str());
+                    _dumpCtx.phase = DUMP_PHASE_FAILED;
+                    return true;
+                }
+
+                _dumpCtx.sinceId = eventId;
+                _dumpCtx.cachedBatchIndex++;
+                if (_dumpCtx.cachedBatchIndex >= _dumpCtx.cachedBatchCount) {
+                    // Cache exhausted: next iteration fetches the next batch
+                    _dumpCtx.cachedBatchIndex = 0;
+                    _dumpCtx.cachedBatchCount = 0;
+                }
+                _lastPublished++;
+                recordsThisSlice++;
+                _refreshUploadLease("mqtt_progress", _uploadLeaseHoldMs);
+
+                _setUploadUiState(true, "UPLOADING",
+                                  static_cast<uint32_t>(_lastPublished),
+                                  static_cast<uint32_t>(_queuedRecords),
+                                  true);
+
+                // Post-record time yield: placed here so a slow fetch cannot
+                // prevent processing at least one record per call.
+                if ((millis() - sliceStartMs) >= kDumpSliceBudgetMs) {
+                    _mqtt.loop();
+                    return false;
+                }
+
+                // Durable checkpoint: persist watermarks mid-upload so a crash
+                // cannot roll back more than kDurableCheckpointEveryN events.
+                if ((_lastPublished % kDurableCheckpointEveryN) == 0) {
+                    STORAGE.flushUploadCheckpoint();
+                }
+
+                if ((_lastPublished % 25) == 0) {
+                    DLOG_INFO("MQTT",
+                              "Dump progress pub=%d fail=%d session=%u/%u since=%lu leaseMax=%u",
+                              _lastPublished,
+                              _lastFailed,
+                              static_cast<unsigned>(_dumpCtx.sessionIndex),
+                              static_cast<unsigned>(sessionIds.size()),
+                              static_cast<unsigned long>(_dumpCtx.sinceId),
+                              static_cast<unsigned>(_dumpCtx.maxEventsThisLease));
+                }
             }
 
             STORAGE.refreshStorageUiState();
             DLOG_INFO("MQTT", "Published=%d Failed=%d",
                       _lastPublished, _lastFailed);
+
+            if (_lastPublished == 0 && _dumpCtx.maxEventsThisLease > 0) {
+                DLOG_WARN("MQTT",
+                          "No events published despite pending=%u at dump start",
+                          static_cast<unsigned>(_dumpCtx.maxEventsThisLease));
+            }
 
             _dumpCtx.phase = DUMP_PHASE_CENSUS;
             _dumpCtx.phaseStarted = false;
@@ -814,7 +905,6 @@ bool MQTTManager::_runDumpSlice() {
                                   static_cast<uint32_t>(_lastPublished),
                                   static_cast<uint32_t>(_queuedRecords),
                                   true);
-
                 const int compactedSessions = STORAGE.compactAllUploadedEventFiles();
                 DLOG_INFO("MQTT", "Compacted uploaded event files for %d session(s)",
                           compactedSessions);

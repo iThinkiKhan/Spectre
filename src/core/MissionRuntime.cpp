@@ -1,5 +1,3 @@
-
-
 #include "MissionRuntime.h"
 
 #include "DebugLog.h"
@@ -204,6 +202,3 @@ void exitMission() {
     DLOG_INFO("MISSION", "Exited %s",
               missionProfileName(mission));
 }
-
-
-
