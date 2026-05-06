@@ -15,6 +15,10 @@ The purpose of this project is embedded engineering, wireless research, RF mappi
 
 ---
 
+<p align="center">
+  <img src="docs/assets/banner-boot-final.png" alt="SPECTRE — Pocket field lab. Living RF map. Cyberpunk fieldware. $20 hardware." width="100%">
+</p>
+
 <h1 align="center">Spectre</h1>
 
 <p align="center">
@@ -24,29 +28,6 @@ The purpose of this project is embedded engineering, wireless research, RF mappi
 <p align="center">
   <b>Spectre is a cyberpunk field node that extends a stationary RF sensor network with GPS-tagged collection, autonomous sync, companion-assisted enrichment, and a modular radio toolkit for real-world wireless reconnaissance.</b>
 </p>
-
-<div align="center">
-
-```text
-┌──────────────────────────────────────────────────────────────────────────────┐
-│                                                                              │
-│   ███████╗██████╗ ███████╗ ██████╗████████╗██████╗ ███████╗                 │
-│   ██╔════╝██╔══██╗██╔════╝██╔════╝╚══██╔══╝██╔══██╗██╔════╝                 │
-│   ███████╗██████╔╝█████╗  ██║        ██║   ██████╔╝█████╗                   │
-│   ╚════██║██╔═══╝ ██╔══╝  ██║        ██║   ██╔══██╗██╔══╝                   │
-│   ███████║██║     ███████╗╚██████╗   ██║   ██║  ██║███████╗                 │
-│   ╚══════╝╚═╝     ╚══════╝ ╚═════╝   ╚═╝   ╚═╝  ╚═╝╚══════╝                 │
-│                                                                              │
-│   FIELD INTELLIGENCE PLATFORM // LIVING RF MAP // CYBERPUNK NODE             │
-│                                                                              │
-│   ESP32-S3 :: LVGL HUD :: APP-LAYER CRYPTO :: BINARY SPOOL :: PWNY MODE      │
-│                                                                              │
-└──────────────────────────────────────────────────────────────────────────────┘
-```
-
-</div>
-
----
 
 ## What is Spectre?
 
@@ -58,17 +39,22 @@ It is the cheapest homemade cyberpunk field lab out there, and now you can have 
 
 ---
 
-## Device
+## Mascot states
 
 <p align="center">
-  <img src="docs/assets/spectre_hero.jpg" width="260">
-  <img src="docs/assets/spectre_menu.jpg" width="260">
-  <img src="docs/assets/spectre_pwny.jpg" width="260">
+  <img src="docs/assets/tile-standby.png" width="220">
+  <img src="docs/assets/tile-homelab.png" width="220">
+  <img src="docs/assets/tile-bad-usb.png" width="220">
+</p>
+
+<p align="center">
+  <img src="docs/assets/tile-pwnagotchi.png" width="220">
+  <img src="docs/assets/tile-alert.png" width="220">
 </p>
 
 <p align="center">
   <sub>
-  Spectre running Sub-GHz recon, mission launcher, and PWNY mode.
+  Different mascot states. They are all rendered against LVGL sprite background in C. Animated, several frames each. There are many more!
   </sub>
 </p>
 
@@ -99,6 +85,10 @@ Nothing here is an afterthought. Spectre is meant to be used by me personally, a
 ## Core features
 
 ### Living RF Mapping
+
+<p align="center">
+  <img src="docs/assets/banner-rf-final.png" alt="SPECTRE Live RF Map — WiFi · Sub-GHz · BLE · LoRa · NFC · IR" width="100%">
+</p>
 
 Spectre turns field observations into spatial intelligence. GPS-tagged collection and synchronized home uploads allow RF activity to be layered over satellite or other map imagery, creating a continuously improving view of the environment.
 
