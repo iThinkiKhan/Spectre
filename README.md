@@ -54,7 +54,7 @@ It is the cheapest homemade cyberpunk field lab out there, and now you can have 
 
 <p align="center">
   <sub>
-  Spectre's ghost mascot. Props communicate mode — every glyph is procedurally drawn in C against an LVGL sprite buffer. PWNY rides into raid mode in a horned helm with axe and shield.
+  Different mascot states. They are all rendered against LVGL sprite background in C. Animated, several frames each. There are many more!
   </sub>
 </p>
 
