@@ -15,6 +15,20 @@ The purpose of this project is embedded engineering, wireless research, RF mappi
 
 ---
 
+<p align="center">
+  <img src="docs/assets/banner-boot-final.png" alt="SPECTRE — Pocket field lab. Living RF map. Cyberpunk fieldware. $20 hardware." width="100%">
+</p>
+
+<h1 align="center">Spectre</h1>
+
+<p align="center">
+  <b>Pocket field lab. Living RF map. Cyberpunk fieldware. $20 hardware.</b>
+</p>
+
+<p align="center">
+  <b>Spectre is a cyberpunk field node that extends a stationary RF sensor network with GPS-tagged collection, autonomous sync, companion-assisted enrichment, and a modular radio toolkit for real-world wireless reconnaissance.</b>
+</p>
+
 ## What is Spectre?
 
 Spectre is a pocket-sized field intelligence platform for extending a stationary RF sensor network into the real world.
