@@ -294,4 +294,4 @@ In progress:
 
 ## License
 
-TBD.
+MIT. Build it. Have fun. Learn. Dont be a creep.
