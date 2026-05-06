@@ -228,7 +228,9 @@ TaskHandle_t taskDisplayHandle  = nullptr;
 TaskHandle_t taskHardwareHandle = nullptr;
 
 
-// Stack watermarks (2026-04-26): TaskDisplay min_free=20 KB, TaskHardware min_free=25 KB.
+// Stack high-water marks (2026-04-26): TaskDisplay min_free=20 KB, TaskHardware min_free=25 KB.
+// FreeRTOS reports the minimum free stack ever observed for the task; this
+// watermark can fall after deep MQTT/WiFi call paths and will not rebound.
 // Reduced from 24/32 KB to 18/22 KB — still leaves >10 KB headroom on each task.
 // Revisit if min_free ever drops below 4 KB on either task.
 static constexpr uint32_t TASK_DISPLAY_STACK_BYTES  = 18432;
@@ -2951,7 +2953,7 @@ void TaskDisplay(void* pvParameters) {
     DLOG_INFO("CORE", "Display task started");
     uint32_t lastStackLogMs = millis();
     UBaseType_t minStackWords = uxTaskGetStackHighWaterMark(nullptr);
-    DLOG_INFO("STACK", "TaskDisplay free=%luB",
+    DLOG_INFO("STACK", "TaskDisplay watermark=%luB",
               (unsigned long)(minStackWords * sizeof(StackType_t)));
 
     PrebootFallback::showInit(tft, "SPECTRE", "BRINGING UP LVGL");
@@ -3134,7 +3136,7 @@ void TaskDisplay(void* pvParameters) {
             if (freeWords < minStackWords) {
                 minStackWords = freeWords;
             }
-            DLOG_INFO("STACK", "TaskDisplay free=%luB min=%luB",
+            DLOG_INFO("STACK", "TaskDisplay watermark=%luB min=%luB",
                       (unsigned long)(freeWords * sizeof(StackType_t)),
                       (unsigned long)(minStackWords * sizeof(StackType_t)));
             lastStackLogMs = now;
@@ -3375,7 +3377,7 @@ void TaskHardware(void* pvParameters) {
     DLOG_INFO("CORE", "Hardware task started");
     uint32_t lastStackLogMs = millis();
     UBaseType_t minStackWords = uxTaskGetStackHighWaterMark(nullptr);
-    DLOG_INFO("STACK", "TaskHardware free=%luB",
+    DLOG_INFO("STACK", "TaskHardware watermark=%luB",
               (unsigned long)(minStackWords * sizeof(StackType_t)));
     uint32_t lastWifiTick = 0;
     CompanionScheduler companion = {};
@@ -4037,7 +4039,7 @@ void TaskHardware(void* pvParameters) {
             if (freeWords < minStackWords) {
                 minStackWords = freeWords;
             }
-            DLOG_INFO("STACK", "TaskHardware free=%luB min=%luB",
+            DLOG_INFO("STACK", "TaskHardware watermark=%luB min=%luB",
                       (unsigned long)(freeWords * sizeof(StackType_t)),
                       (unsigned long)(minStackWords * sizeof(StackType_t)));
             lastStackLogMs = now;

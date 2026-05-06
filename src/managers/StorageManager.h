@@ -515,6 +515,7 @@ private:
     bool        _uploadBatchActive = false;
     bool        _uploadBatchDirty  = false;
     bool        _uploadIndexDirty   = false;
+    bool        _uploadIndexResident = false;
     bool        _uploadBatchNeedsRescan = false;
     // When summary metadata is observed invalid during a busy radio window,
     // defer rebuilding until a quiet maintenance pass can service it.
@@ -577,6 +578,7 @@ private:
     bool _validateUploadIndexRecord(const UploadIndexRecordV1& rec,
                                     uint32_t expectedSegmentId) const;
     void _addUploadPtrToMemory(const UploadIndexRecordV1& rec);
+    void _releaseUploadIndexMemory(const char* reason);
     // force=true guarantees an immediate write. force=false is the hot-path
     // mode — it throttles to ~5s and defers while an upload batch is active.
     bool _persistSpoolIndex(bool force = false);
@@ -587,12 +589,6 @@ private:
     uint32_t _uploadedWatermarkForSession(const String& sessionId) const;
     void _setUploadedWatermarkForSession(const String& sessionId, uint32_t eventId);
     bool _appendSpoolRecord(JsonDocument& doc, uint32_t* outEventId = nullptr);
-    bool _appendUploadIndexRecord(uint32_t segmentId,
-                                  uint32_t offset,
-                                  uint32_t len,
-                                  uint32_t eventId,
-                                  const char* sessionId,
-                                  JsonObjectConst event);
     bool _appendSpoolEnrichmentDelta(const String& sessionId,
                                      uint32_t eventId,
                                      float lat, float lon,

@@ -94,9 +94,6 @@ static uint32_t g_binaryStructuredWrites = 0;
 static uint32_t g_binaryUnsupportedWrites = 0;
 static std::vector<BinaryUnsupportedAuditEntry> g_binaryUnsupportedAudit;
 
-// Keep capture appends on the old, stable path. Upload attempts a boundary
-// rebuild while the sidecar index is dirty, then falls back to spool scans.
-static constexpr bool kAppendUploadIndexDuringCapture = false;
 static constexpr uint32_t kUploadIndexRebuildMinBudgetMs = 15000UL;
 
 static void _resetBinaryUnsupportedAudit() {
@@ -1201,11 +1198,7 @@ bool StorageManager::begin() {
         _rebuildInvalidSegmentSummaries(false);
     }
 
-    _loadUploadIndex();
-    if (_uploadIndexDirty) {
-        DLOG_INFO("STORAGE",
-                  "Upload index dirty after load; scan fallback until upload rebuild");
-    }
+    _releaseUploadIndexMemory("boot_skip_load");
 
     if (!loadConfig()) {
         DLOG_WARN("STORAGE", "Settings unavailable, using defaults");
@@ -2006,7 +1999,8 @@ bool StorageManager::getUploadEventBatchForSession(const char* sessionIdOverride
         (sessionIdOverride && sessionIdOverride[0]) ?
             String(sessionIdOverride) : SESS.getId();
     if (!sessionId.length()) return true;
-    if (!_uploadIndexDirty &&
+    if (_uploadIndexResident &&
+        !_uploadIndexDirty &&
         _getUploadEventBatchForSessionFromIndex(sessionId, sinceId, maxCount, out)) {
         return true;
     }
@@ -2020,38 +2014,33 @@ bool StorageManager::getUploadEventBatchForSession(const char* sessionIdOverride
 
 bool StorageManager::prepareUploadIndexForUpload(uint32_t budgetMs) {
     if (!_ready) {
+        DLOG_WARN("STORAGE",
+                  "Upload index prepare rebuilt=0 reason=not_ready fallback=1");
         return false;
-    }
-
-    if (!_uploadIndexDirty) {
-        return true;
     }
 
     if (budgetMs < kUploadIndexRebuildMinBudgetMs) {
         DLOG_INFO("STORAGE",
-                  "Upload index rebuild skipped dirty=1 budgetMs=%lu minMs=%lu",
-                  static_cast<unsigned long>(budgetMs),
-                  static_cast<unsigned long>(kUploadIndexRebuildMinBudgetMs));
+                  "Upload index prepare rebuilt=0 reason=budget_too_small fallback=1");
+        _releaseUploadIndexMemory("prepare_budget_too_small");
         return false;
     }
 
     const uint32_t t0 = millis();
-    DLOG_INFO("STORAGE",
-              "Upload index dirty; rebuilding before upload budgetMs=%lu",
-              static_cast<unsigned long>(budgetMs));
-
     const bool ok = _rebuildUploadIndex();
     const uint32_t dt = millis() - t0;
     if (ok) {
         DLOG_INFO("STORAGE",
-                  "Upload index ready for upload ms=%lu",
+                  "Upload index prepare rebuilt=1 indexed=%lu sessions=%lu ms=%lu fallback=0",
+                  static_cast<unsigned long>(_uploadIndexStats.indexedEvents),
+                  static_cast<unsigned long>(_uploadIndexStats.sessions),
                   static_cast<unsigned long>(dt));
         return true;
     }
 
     DLOG_WARN("STORAGE",
-              "Upload index rebuild failed before upload ms=%lu; scan fallback enabled",
-              static_cast<unsigned long>(dt));
+              "Upload index prepare rebuilt=0 reason=rebuild_failed fallback=1");
+    _releaseUploadIndexMemory("prepare_rebuild_failed");
     return false;
 }
 
@@ -2553,6 +2542,7 @@ bool StorageManager::endUploadBatch() {
         _uploadBatchActive = false;
         _uploadBatchDirty  = false;
         _uploadBatchNeedsRescan = false;
+        _releaseUploadIndexMemory("upload_batch_end_not_ready");
         return false;
     }
 
@@ -2570,6 +2560,7 @@ bool StorageManager::endUploadBatch() {
     _uploadBatchNeedsRescan = false;
 
     if (!wasActive || !wasDirty) {
+        _releaseUploadIndexMemory("upload_batch_end_clean");
         return true;
     }
 
@@ -2587,6 +2578,7 @@ bool StorageManager::endUploadBatch() {
     refreshStorageUiState();
     _logSpoolDiagnostics("upload_batch_flush");
     _checkSpoolInvariants("upload_batch_end", false);
+    _releaseUploadIndexMemory("upload_batch_end");
     return ok;
 }
 
@@ -3606,8 +3598,9 @@ bool StorageManager::_appendSegmentRecord(SpoolSegmentInfo& seg,
             // sanity
             if (body.size() <= eventFlagsOffset + 1) return false;
 
-            SpoolBin::AppendRecordLocation loc{};
             SpoolBin::SegmentHeaderV2 hdr;
+            SpoolBin::AppendRecordLocation loc{};
+            SpoolBin::AppendRecordLocation* locOut = outLoc ? &loc : nullptr;
             if (!SpoolBin::appendRecordV2(
                     _spoolBinarySegmentPath(seg.segmentId),
                     static_cast<uint8_t>(SpoolBin::REC_EVENT),
@@ -3615,23 +3608,30 @@ bool StorageManager::_appendSegmentRecord(SpoolSegmentInfo& seg,
                     static_cast<uint16_t>(body.size()),
                     recordId,
                     &hdr,
-                    &loc)) {
+                    locOut)) {
                 return false;
             }
 
             if (outLoc) {
                 *outLoc = loc;
+                DLOG_DEBUG("STORAGE",
+                    "append loc event=%lu seg=%lu off=%lu len=%lu session=%s lane=%u prio=%u",
+                    static_cast<unsigned long>(recordId),
+                    static_cast<unsigned long>(seg.segmentId),
+                    static_cast<unsigned long>(loc.offset),
+                    static_cast<unsigned long>(loc.len),
+                    sessionId.c_str(),
+                    static_cast<unsigned>(lane),
+                    static_cast<unsigned>(prio));
+            } else {
+                DLOG_DEBUG("STORAGE",
+                    "append event=%lu seg=%lu session=%s lane=%u prio=%u",
+                    static_cast<unsigned long>(recordId),
+                    static_cast<unsigned long>(seg.segmentId),
+                    sessionId.c_str(),
+                    static_cast<unsigned>(lane),
+                    static_cast<unsigned>(prio));
             }
-
-            DLOG_DEBUG("STORAGE",
-                "append loc event=%lu seg=%lu off=%lu len=%lu session=%s lane=%u prio=%u",
-                static_cast<unsigned long>(recordId),
-                static_cast<unsigned long>(seg.segmentId),
-                static_cast<unsigned long>(loc.offset),
-                static_cast<unsigned long>(loc.len),
-                sessionId.c_str(),
-                static_cast<unsigned>(lane),
-                static_cast<unsigned>(prio));
 
             seg.firstEventId = hdr.firstEventId;
             seg.lastEventId = hdr.lastEventId;
@@ -3651,7 +3651,8 @@ bool StorageManager::_appendSegmentRecord(SpoolSegmentInfo& seg,
 
             File f = LittleFS.open(path, "a");
             if (!f) return false;
-            const uint32_t writeOffset = f.size();
+            const uint32_t writeOffset =
+                outLoc ? static_cast<uint32_t>(f.size()) : 0U;
             const size_t written = serializeJson(doc, f);
             if (f.print('\n') != 1) {
                 f.close();
@@ -5660,6 +5661,32 @@ void StorageManager::_addUploadPtrToMemory(const UploadIndexRecordV1& rec) {
     _uploadIndexSessions.push_back(sessionId);
 }
 
+void StorageManager::_releaseUploadIndexMemory(const char* reason) {
+    const uint32_t indexed = _uploadIndexStats.indexedEvents;
+    const uint32_t sessions = static_cast<uint32_t>(_uploadIndexSessions.size());
+    const bool hadResidentState =
+        _uploadIndexResident ||
+        indexed != 0 ||
+        sessions != 0 ||
+        !_uploadIndexBySegment.empty() ||
+        !_uploadIndexBySession.empty();
+
+    std::map<uint32_t, std::vector<UploadIndexRecordV1>>().swap(_uploadIndexBySegment);
+    std::map<String, std::vector<UploadIndexRecordV1>>().swap(_uploadIndexBySession);
+    std::vector<String>().swap(_uploadIndexSessions);
+    _uploadIndexStats = {};
+    _uploadIndexResident = false;
+    _uploadIndexDirty = false;
+
+    if (hadResidentState) {
+        DLOG_INFO("STORAGE",
+                  "Upload index released reason=%s indexed=%lu sessions=%lu",
+                  (reason && reason[0]) ? reason : "-",
+                  static_cast<unsigned long>(indexed),
+                  static_cast<unsigned long>(sessions));
+    }
+}
+
 bool StorageManager::_loadUploadIndexSegment(uint32_t segmentId) {
     const String path = _uploadIndexPath(segmentId);
     File f = LittleFS.open(path, "r");
@@ -5724,6 +5751,7 @@ bool StorageManager::_loadUploadIndex() {
     _uploadIndexSessions.clear();
     _uploadIndexStats = {};
     _uploadIndexDirty = false;
+    _uploadIndexResident = true;
 
     for (const auto& seg : _spoolIndex.segments) {
         if (seg.segmentId == 0) {
@@ -5947,6 +5975,7 @@ bool StorageManager::_rebuildUploadIndex() {
     _uploadIndexSessions.clear();
     _uploadIndexStats = {};
     _uploadIndexDirty = false;
+    _uploadIndexResident = true;
 
     bool ok = true;
     for (const auto& seg : _spoolIndex.segments) {
@@ -5970,13 +5999,6 @@ bool StorageManager::_rebuildUploadIndex() {
     _uploadIndexStats.sessions = static_cast<uint32_t>(_uploadIndexSessions.size());
     _uploadIndexStats.dirty = _uploadIndexDirty;
 
-    DLOG_INFO("STORAGE",
-              "Upload index rebuilt segs=%lu indexed=%lu sessions=%lu bad=%lu dirty=%u",
-              static_cast<unsigned long>(_uploadIndexStats.segmentsScanned),
-              static_cast<unsigned long>(_uploadIndexStats.indexedEvents),
-              static_cast<unsigned long>(_uploadIndexStats.sessions),
-              static_cast<unsigned long>(_uploadIndexStats.badRecords),
-              _uploadIndexStats.dirty ? 1U : 0U);
     return ok;
 }
 
@@ -6014,16 +6036,6 @@ bool StorageManager::_openNewSpoolSegment() {
     _spoolIndex.segments.push_back(seg);
     _spoolIndex.activeSegmentId = segmentId;
     _binaryLastSessionBySegment.erase(segmentId);
-    {
-        File idx = LittleFS.open(_uploadIndexPath(segmentId), "w");
-        if (idx) {
-            idx.close();
-        } else {
-            DLOG_WARN("STORAGE", "Upload index sidecar create failed seg=%lu",
-                      static_cast<unsigned long>(segmentId));
-            _uploadIndexDirty = true;
-        }
-    }
     if (_spoolIndex.oldestSegmentId == 0) {
         _spoolIndex.oldestSegmentId = segmentId;
     }
@@ -6430,8 +6442,7 @@ bool StorageManager::_appendSpoolRecord(JsonDocument& doc, uint32_t* outEventId)
         if (!seg) return false;
     }
 
-    SpoolBin::AppendRecordLocation loc{};
-    if (!_appendSegmentRecord(*seg, doc, outEventId, &loc)) {
+    if (!_appendSegmentRecord(*seg, doc, outEventId, nullptr)) {
         return false;
     }
 
@@ -6440,29 +6451,6 @@ bool StorageManager::_appendSpoolRecord(JsonDocument& doc, uint32_t* outEventId)
     const uint32_t ts = doc["ts"] | 0U;
     const JsonObjectConst eventObj = doc.as<JsonObjectConst>();
     _updateSegmentSummaryFromEventDoc(*seg, eventObj, eventId, ts);
-
-    const char* sessionId = eventObj[F_SESSION] | eventObj["session_id"] | "";
-    if (eventId != 0 &&
-        sessionId && sessionId[0]) {
-        if (kAppendUploadIndexDuringCapture) {
-            if (!_appendUploadIndexRecord(seg->segmentId,
-                                         loc.offset,
-                                         loc.len,
-                                         eventId,
-                                         sessionId,
-                                         eventObj)) {
-                _uploadIndexDirty = true;
-                DLOG_DEBUG("STORAGE",
-                           "upload index append failed event=%lu seg=%lu path=%s",
-                           static_cast<unsigned long>(eventId),
-                           static_cast<unsigned long>(seg->segmentId),
-                           _uploadIndexPath(seg->segmentId).c_str());
-            }
-        } else {
-            _uploadIndexDirty = true;
-            _uploadIndexStats.dirty = true;
-        }
-    }
 
     if (seg->approxBytes >= SPOOL_SEGMENT_TARGET_BYTES) {
         if (!_openNewSpoolSegment()) {
@@ -6480,59 +6468,6 @@ bool StorageManager::_appendSpoolRecord(JsonDocument& doc, uint32_t* outEventId)
         _logSpoolDiagnostics("append_batch");
     }
 
-    return true;
-}
-
-bool StorageManager::_appendUploadIndexRecord(uint32_t segmentId,
-                                              uint32_t offset,
-                                              uint32_t len,
-                                              uint32_t eventId,
-                                              const char* sessionId,
-                                              JsonObjectConst event) {
-    (void)event;
-
-    if (eventId == 0 || !sessionId || !sessionId[0]) {
-        return true;
-    }
-
-    UploadIndexRecordV1 record;
-    memset(&record, 0, sizeof(record));
-    record.magic = UIX_MAGIC;
-    record.version = 1;
-    record.recordLen = UIX_RECORD_LEN_V1;
-    record.segmentId = segmentId;
-    record.offset = offset;
-    record.len = len;
-    record.eventId = eventId;
-    snprintf(record.sessionId, sizeof(record.sessionId), "%s", sessionId);
-    record.crc = _uploadIndexRecordHash(record);
-
-    File f = LittleFS.open(_uploadIndexPath(segmentId), "a");
-    if (!f) {
-        _uploadIndexDirty = true;
-        return false;
-    }
-
-    const size_t written = f.write(reinterpret_cast<const uint8_t*>(&record),
-                                   sizeof(record));
-    f.close();
-    if (written != sizeof(record)) {
-        _uploadIndexDirty = true;
-        return false;
-    }
-
-    _addUploadPtrToMemory(record);
-    _uploadIndexStats.indexedEvents++;
-    _uploadIndexStats.sessions = static_cast<uint32_t>(_uploadIndexSessions.size());
-    _uploadIndexStats.dirty = _uploadIndexDirty;
-
-    DLOG_DEBUG("STORAGE",
-               "upload index append event=%lu seg=%lu off=%lu len=%lu hash=%08lx",
-               static_cast<unsigned long>(eventId),
-               static_cast<unsigned long>(segmentId),
-               static_cast<unsigned long>(offset),
-               static_cast<unsigned long>(len),
-               static_cast<unsigned long>(record.crc));
     return true;
 }
 

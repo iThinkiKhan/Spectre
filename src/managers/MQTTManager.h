@@ -167,6 +167,7 @@ private:
     uint32_t      _lastPoisonEventId = 0;
     String        _lastPoisonSessionId;
     uint8_t       _lastPoisonEventFailures = 0;
+    uint32_t      _uploadStartStackWatermarkBytes = 0;
 
     // Internal state machine
     void _runStateMachine();
@@ -181,6 +182,7 @@ private:
                        uint32_t published,
                        uint32_t total,
                        bool radioBusy);
+    void _logUploadStackWatermark(const char* result);
     bool _wifiConnectStarted = false;
                        
     // Individual publish methods

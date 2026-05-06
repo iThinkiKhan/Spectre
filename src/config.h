@@ -50,7 +50,7 @@
 #define MQTT_FAILED_BACKOFF_MS        SPECTRE_SECONDS_TO_MS(MQTT_FAILED_BACKOFF_SEC)
 #define MQTT_POISON_FAIL_LIMIT        3
 
-#define MQTT_UPLOAD_READY_THRESHOLD   1000
+#define MQTT_UPLOAD_READY_THRESHOLD   900
 
 // ── Upload slice / batch tuning ───────────────────────────────────────────────
 //

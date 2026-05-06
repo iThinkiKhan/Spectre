@@ -115,6 +115,12 @@ const char* _legacyEventTypeFromQueueName(const String& name) {
 
 constexpr uint32_t kUploadFetchSlowInfoMs = 250;
 constexpr uint32_t kUploadFetchSlowWarnMs = 500;
+constexpr uint32_t kUploadStackWatermarkDropWarnBytes = 1024;
+
+uint32_t _currentTaskStackWatermarkBytes() {
+    return static_cast<uint32_t>(uxTaskGetStackHighWaterMark(nullptr) *
+                                 sizeof(StackType_t));
+}
 
 uint32_t _extractLegacyEventIdFromQueueName(const String& name) {
     const int firstUnderscore = name.indexOf('_');
@@ -285,6 +291,7 @@ bool MQTTManager::requestDump(bool force) {
     if (granted) {
         _wifiConnectStarted = false;
         _dumpCtx = DumpContext{};
+        _uploadStartStackWatermarkBytes = _currentTaskStackWatermarkBytes();
 
         if (!STORAGE.prepareUploadIndexForUpload(_uploadLeaseHoldMs)) {
             DLOG_WARN("MQTT", "Upload index not ready; using spool scan fallback");
@@ -306,6 +313,34 @@ bool MQTTManager::requestDump(bool force) {
         return true;
     }
     return false;
+}
+
+void MQTTManager::_logUploadStackWatermark(const char* result) {
+    const uint32_t afterBytes = _currentTaskStackWatermarkBytes();
+    const uint32_t beforeBytes = _uploadStartStackWatermarkBytes;
+    if (beforeBytes == 0) {
+        return;
+    }
+
+    const uint32_t dropBytes = (afterBytes < beforeBytes) ?
+        (beforeBytes - afterBytes) : 0U;
+    if (dropBytes >= kUploadStackWatermarkDropWarnBytes) {
+        DLOG_WARN("STACK",
+                  "TaskHardware upload watermark result=%s before=%luB after=%luB drop=%luB",
+                  (result && result[0]) ? result : "-",
+                  static_cast<unsigned long>(beforeBytes),
+                  static_cast<unsigned long>(afterBytes),
+                  static_cast<unsigned long>(dropBytes));
+    } else {
+        DLOG_INFO("STACK",
+                  "TaskHardware upload watermark result=%s before=%luB after=%luB drop=%luB",
+                  (result && result[0]) ? result : "-",
+                  static_cast<unsigned long>(beforeBytes),
+                  static_cast<unsigned long>(afterBytes),
+                  static_cast<unsigned long>(dropBytes));
+    }
+
+    _uploadStartStackWatermarkBytes = 0;
 }
 
 bool MQTTManager::bleTriggeredDump() {
@@ -434,6 +469,7 @@ void MQTTManager::_runStateMachine() {
             crashBreadcrumbClear(CrashPhase::MQTT_DUMPING);
             // Return to promiscuous after sync
             RADIO_ARB.ensureDefaultCapture("mqtt_done");
+            _logUploadStackWatermark("done");
             _state = MQTT_IDLE;
 
             // Note: session data NOT cleared here
@@ -461,6 +497,7 @@ void MQTTManager::_runStateMachine() {
             crashBreadcrumbClear(CrashPhase::MQTT_DUMPING);
             // Return to promiscuous after sync
             RADIO_ARB.ensureDefaultCapture("mqtt_failed");
+            _logUploadStackWatermark("failed");
             _state = MQTT_IDLE;
             break;
     }
