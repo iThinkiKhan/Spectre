@@ -9,11 +9,8 @@
 #include "../core/EventBus.h"
 #include "../core/SpectreState.h"
 #include "../data/Schema.h"
+#include "SpoolBinaryCodec.h"
 #include "TimeService.h"
-
-namespace SpoolBin {
-struct AppendRecordLocation;
-}
 
 // OWNERSHIP CONTRACT
 // - TaskHardware is the sole mutator of persistent storage state.
@@ -278,9 +275,6 @@ struct BadUsbScriptInfo {
     bool valid;
 };
 
-// Result category returned by the audit-mode spool scanner.
-// Returned by the file-scope _scanBinarySegmentMetaRecordsAudit helper
-// in StorageManager.cpp; kept here so callers can branch on the result.
 enum class SpoolScanStatus : uint8_t {
     OK = 0,          // all records decoded cleanly
     OK_WITH_SKIPS,   // some records were bad but framing held
@@ -337,6 +331,7 @@ public:
                                            uint32_t sinceId,
                                            int maxCount,
                                            JsonDocument& out);
+    bool     prepareUploadIndexForUpload(uint32_t budgetMs);
     bool     getNextResolvedEventForSession(const char* sessionId,
                                             uint32_t sinceId,
                                             JsonDocument& out);
@@ -441,7 +436,6 @@ public:
                                     const char* ssid,
                                     uint8_t messageNumber);
 
-    // Each method prints directly to Serial (prefixed "[SPOOL]") for USB console use.
     void spoolAuditToSerial(bool repair);
     void spoolDiagToSerial();
     void spoolQuarantineListToSerial();

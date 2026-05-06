@@ -1,10 +1,7 @@
-
-
 #pragma once
 #include <Arduino.h>
 #include "DebugConfig.h"
 
-// Convenience macros
 #define DLOG_DEBUG(tag, fmt, ...) DebugLog::log('D', tag, fmt, ##__VA_ARGS__)
 #define DLOG_INFO(tag, fmt, ...)  DebugLog::log('I', tag, fmt, ##__VA_ARGS__)
 #define DLOG_WARN(tag, fmt, ...)  DebugLog::log('W', tag, fmt, ##__VA_ARGS__)

@@ -976,7 +976,7 @@ static bool _applyPhoneEnrichmentBatch(const PendingEnrichment* records,
     STORAGE.endHotPathDiagnosticsSuppressed();
     const uint32_t pending = STORAGE.getPendingEventCount();
     DLOG_INFO("BLE",
-              "enrich_perf count=%u applied=%u failed=%u storageMs=%lu pending=%lu",
+              "enrich_perf count=%u applied=%u failed=%u storageMs=%lu pendingUpload=%lu",
               static_cast<unsigned>(count),
               static_cast<unsigned>(applied),
               static_cast<unsigned>(failed),
@@ -1548,7 +1548,7 @@ void _handleUsbConsoleLine(const char* rawLine) {
                       static_cast<unsigned long>(bleBegun && lastBeginMs     ? now - lastBeginMs     : 0),
                       static_cast<unsigned long>(bleBegun && lastScanStartMs ? now - lastScanStartMs : 0),
                       disconnReason);
-        Serial.printf("[COMP] pendingMission=%lu pendingNoise=%lu total=%lu\r\n",
+        Serial.printf("[COMP] pendingEnrichMission=%lu pendingEnrichNoise=%lu pendingEnrichTotal=%lu\r\n",
                       static_cast<unsigned long>(s.pendingMission),
                       static_cast<unsigned long>(s.pendingNoise),
                       static_cast<unsigned long>(s.pendingTotal));
@@ -2492,23 +2492,15 @@ void _logRuntimeHealth(uint32_t nowMs) {
         _updateCoreLoad(nowMs);
 
         DLOG_INFO("HEAP",
-          "heap used=%lu/%luKB free=%luKB min=%luKB largest=%luKB frag=%lu%% psram used=%lu/%luKB free=%luKB largest=%luKB core=%u/%u%% owner=%s wifi=%d ble=%d gps=%d nets=%d pending=%d",
-          static_cast<unsigned long>(kb(usedHeap)),
-          static_cast<unsigned long>(kb(totalHeap)),
+          "heap free=%luKB min=%luKB largest=%luKB frag=%lu%% psramFree=%luKB core=%u/%u%% owner=%s nets=%d pendingUpload=%d",
           static_cast<unsigned long>(kb(freeHeap)),
           static_cast<unsigned long>(kb(minHeap)),
           static_cast<unsigned long>(kb(largestHeap)),
           static_cast<unsigned long>(heapFragPct),
-          static_cast<unsigned long>(kb(usedPsram)),
-          static_cast<unsigned long>(kb(totalPsram)),
           static_cast<unsigned long>(kb(freePsram)),
-          static_cast<unsigned long>(kb(largestPsram)),
           static_cast<unsigned>(g_coreLoad.busyPct[0]),
           static_cast<unsigned>(g_coreLoad.busyPct[1]),
           RadioArbiter::ownerName(static_cast<RadioOwner>(health.radioOwner)),
-          health.wifiConnected ? 1 : 0,
-          health.bleConnected ? 1 : 0,
-          health.gpsValid ? 1 : 0,
           health.wifiCount,
           health.pendingFiles);
         if (health.timeValid && health.timeLocal[0]) {
@@ -2540,7 +2532,7 @@ void _logRuntimeHealth(uint32_t nowMs) {
         Serial.printf("[HEALTH] core usage: core0=%u%% core1=%u%%\r\n",
                       static_cast<unsigned>(g_coreLoad.busyPct[0]),
                       static_cast<unsigned>(g_coreLoad.busyPct[1]));
-        Serial.printf("[HEALTH] radio=%s wifi=%d ble=%d gps=%d nets=%d pending=%d\r\n",
+        Serial.printf("[HEALTH] radio=%s wifi=%d ble=%d gps=%d nets=%d pendingUpload=%d\r\n",
                       RadioArbiter::ownerName(static_cast<RadioOwner>(health.radioOwner)),
                       health.wifiConnected ? 1 : 0,
                       health.bleConnected ? 1 : 0,
@@ -3821,7 +3813,7 @@ void TaskHardware(void* pvParameters) {
                                 static_cast<uint8_t>(RADIO_ARB.currentOwner()),
                                 static_cast<uint32_t>(companion.pendingItems));
                 DLOG_INFO("BLE",
-                          "Active BLE link promoted to enrichment pending=%lu manual=%u offload=%u timeSync=%u",
+                          "Active BLE link promoted to enrichment pendingEnrich=%lu manual=%u offload=%u timeSync=%u",
                           static_cast<unsigned long>(companion.pendingItems),
                           companion.manualEnrichRequested ? 1u : 0u,
                           companion.offloadPrepRequested ? 1u : 0u,
@@ -3938,7 +3930,7 @@ void TaskHardware(void* pvParameters) {
                                         static_cast<uint8_t>(RADIO_ARB.currentOwner()),
                                         static_cast<uint32_t>(companion.pendingItems));
                         DLOG_INFO("BLE",
-                                  "Phone probe promoted to enrichment pending=%lu maxBatch=%u",
+                                  "Phone probe promoted to enrichment pendingEnrich=%lu maxBatch=%u",
                                   static_cast<unsigned long>(companion.pendingItems),
                                   static_cast<unsigned>(PHONE_ENRICH_BATCH_MAX));
                     } else {

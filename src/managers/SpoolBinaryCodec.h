@@ -39,17 +39,17 @@ struct RecordPrefix {
     uint16_t length = 0;
 };
 
-bool writeBytes(File& f, const void* data, size_t len);
-bool readBytes(File& f, void* data, size_t len);
+bool writeBytes(fs::File& f, const void* data, size_t len);
+bool readBytes(fs::File& f, void* data, size_t len);
 
-bool writeUVarint(File& f, uint32_t value);
-bool readUVarint(File& f, uint32_t& out);
+bool writeUVarint(fs::File& f, uint32_t value);
+bool readUVarint(fs::File& f, uint32_t& out);
 
-bool writeVarintZigZag(File& f, int32_t value);
-bool readVarintZigZag(File& f, int32_t& out);
+bool writeVarintZigZag(fs::File& f, int32_t value);
+bool readVarintZigZag(fs::File& f, int32_t& out);
 
-bool readSegmentHeaderV2(File& f, SegmentHeaderV2& hdr);
-bool writeSegmentHeaderV2(File& f, const SegmentHeaderV2& hdr);
+bool readSegmentHeaderV2(fs::File& f, SegmentHeaderV2& hdr);
+bool writeSegmentHeaderV2(fs::File& f, const SegmentHeaderV2& hdr);
 
 struct AppendRecordLocation {
     uint32_t offset = 0;
@@ -67,7 +67,7 @@ bool appendRecordV2(const String& path,
 // Append one record to an already-open file at its current write position.
 // Updates hdr counters in memory but does NOT write hdr back to disk —
 // the caller must call writeSegmentHeaderV2 once at the end of the batch.
-bool appendRecordToOpen(File& f,
+bool appendRecordToOpen(fs::File& f,
                         uint8_t recType,
                         const uint8_t* payload,
                         uint16_t length,

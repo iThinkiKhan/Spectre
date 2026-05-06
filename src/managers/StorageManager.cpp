@@ -94,6 +94,11 @@ static uint32_t g_binaryStructuredWrites = 0;
 static uint32_t g_binaryUnsupportedWrites = 0;
 static std::vector<BinaryUnsupportedAuditEntry> g_binaryUnsupportedAudit;
 
+// Keep capture appends on the old, stable path. Upload attempts a boundary
+// rebuild while the sidecar index is dirty, then falls back to spool scans.
+static constexpr bool kAppendUploadIndexDuringCapture = false;
+static constexpr uint32_t kUploadIndexRebuildMinBudgetMs = 15000UL;
+
 static void _resetBinaryUnsupportedAudit() {
     g_binaryStructuredWrites = 0;
     g_binaryUnsupportedWrites = 0;
@@ -123,10 +128,14 @@ static void _recordBinaryUnsupportedUsage(const String& type,
 }
 
 static void _logBinaryUnsupportedAudit(const char* reason) {
+    if (g_binaryUnsupportedWrites == 0 && g_binaryUnsupportedAudit.empty()) {
+        return;
+    }
+
     const char* safeReason = (reason && reason[0]) ? reason : "?";
 
     DLOG_INFO("STORAGE",
-              "Unsupported audit[%s] structured=%lu unsupported=%lu unique=%u (binary-only mode)",
+              "Unsupported audit[%s] structured=%lu unsupported=%lu unique=%u",
               safeReason,
               static_cast<unsigned long>(g_binaryStructuredWrites),
               static_cast<unsigned long>(g_binaryUnsupportedWrites),
@@ -874,25 +883,11 @@ inline void storageScanYield(uint32_t& workCounter) {
     }
 }
 
-// ---------------------------------------------------------------------------
-// Audit-mode binary segment scanner.
-// Like _scanBinarySegmentMetaRecords but decode failures are SKIPPED (the
-// record bytes were successfully read — framing is intact) rather than
-// aborting the entire scan.  I/O errors and structural problems such as a
-// bad header, unreadable prefix, or a body length that overruns the file are
-// FATAL and stop the scan immediately.
-//
-// Per-record counters in `audit` are updated by this function:
-//   scannedRecords    — every record whose prefix + body were read
-//   validEventRecords — records that decoded as SPOOL_REC_EVENT
-//   validEnrichDeltas — records that decoded as SPOOL_REC_ENRICH_DELTA
-//   invalidRecords    — records whose decode failed (framing still OK)
-//   skippedRecords    — same set as invalidRecords (one increment per skip)
-//   maxEventIdSeen    — high-water mark of eventId across valid records
-//
-// File-scope static (not a class method) so it can reference BinaryMetaRecord
-// and _decodeBinaryMetaRecord, which live in the anonymous namespace above.
-// ---------------------------------------------------------------------------
+// Decode failures are SKIPPED (framing intact) rather than aborting the scan.
+// I/O errors and structural problems (bad header, bad prefix, body overrun) are
+// FATAL and stop immediately.
+// File-scope static: must access BinaryMetaRecord/_decodeBinaryMetaRecord from
+// the anonymous namespace above, so it cannot be a class method.
 static SpoolScanStatus _scanBinarySegmentMetaRecordsAudit(
         const String& path,
         const std::function<bool(const BinaryMetaRecord&)>& cb,
@@ -991,7 +986,6 @@ static SpoolScanStatus _scanBinarySegmentMetaRecordsAudit(
             continue;
         }
 
-        // Update per-type counters.
         if (rec.recordType == SPOOL_REC_EVENT) {
             audit.validEventRecords++;
             if (rec.eventId > audit.maxEventIdSeen) {
@@ -1209,12 +1203,8 @@ bool StorageManager::begin() {
 
     _loadUploadIndex();
     if (_uploadIndexDirty) {
-        DLOG_INFO("STORAGE", "Upload index dirty after load; rebuilding sidecars");
-        if (_rebuildUploadIndex()) {
-            _loadUploadIndex();
-        } else {
-            DLOG_WARN("STORAGE", "Upload index rebuild failed; scan fallback remains enabled");
-        }
+        DLOG_INFO("STORAGE",
+                  "Upload index dirty after load; scan fallback until upload rebuild");
     }
 
     if (!loadConfig()) {
@@ -1321,7 +1311,6 @@ bool StorageManager::logLoraPacket(int address, const String& payload,
     entry[F_PAYLOAD]     = payload;
     entry[F_PAYLOAD_HEX] = payloadHex;
 
-    // GPS
     GPSFix gps = SESS.getGPS();
     entry[F_GPS][F_LAT]      = gps.lat;
     entry[F_GPS][F_LON]      = gps.lon;
@@ -1942,8 +1931,6 @@ bool StorageManager::getNextResolvedEventForSession(const char* sessionIdOverrid
     const uint32_t watermark = _uploadedWatermarkForSession(sessionId);
 
     for (const auto& seg : _spoolIndex.segments) {
-        // Skip segments that cannot contain events newer than sinceId.
-        // Matches the same guard in getUploadEventBatchForSession().
         if (seg.lastEventId != 0 && seg.lastEventId <= sinceId) {
             continue;
         }
@@ -2029,6 +2016,43 @@ bool StorageManager::getUploadEventBatchForSession(const char* sessionIdOverride
               sessionId.c_str(),
               static_cast<unsigned long>(sinceId));
     return _getEventBatchForSessionFromSpool(sessionId, sinceId, maxCount, out);
+}
+
+bool StorageManager::prepareUploadIndexForUpload(uint32_t budgetMs) {
+    if (!_ready) {
+        return false;
+    }
+
+    if (!_uploadIndexDirty) {
+        return true;
+    }
+
+    if (budgetMs < kUploadIndexRebuildMinBudgetMs) {
+        DLOG_INFO("STORAGE",
+                  "Upload index rebuild skipped dirty=1 budgetMs=%lu minMs=%lu",
+                  static_cast<unsigned long>(budgetMs),
+                  static_cast<unsigned long>(kUploadIndexRebuildMinBudgetMs));
+        return false;
+    }
+
+    const uint32_t t0 = millis();
+    DLOG_INFO("STORAGE",
+              "Upload index dirty; rebuilding before upload budgetMs=%lu",
+              static_cast<unsigned long>(budgetMs));
+
+    const bool ok = _rebuildUploadIndex();
+    const uint32_t dt = millis() - t0;
+    if (ok) {
+        DLOG_INFO("STORAGE",
+                  "Upload index ready for upload ms=%lu",
+                  static_cast<unsigned long>(dt));
+        return true;
+    }
+
+    DLOG_WARN("STORAGE",
+              "Upload index rebuild failed before upload ms=%lu; scan fallback enabled",
+              static_cast<unsigned long>(dt));
+    return false;
 }
 
 StorageLaneCounts StorageManager::getPendingUploadCounts(const char* sessionIdOverride) {
@@ -2480,8 +2504,8 @@ bool StorageManager::markEventsUploaded(uint32_t upToId) {
 
     _setUploadedWatermarkForSession(sessionId, upToId);
 
-    // See markEventUploaded(): defer flash writes while an upload batch is
-    // active so brownout-prone "w" opens stay out of the active-radio window.
+    // Defer flash writes while an upload batch is active so brownout-prone
+    // "w" opens stay out of the active-radio window.
     if (_uploadBatchActive) {
         _uploadBatchDirty = true;
         _uploadBatchNeedsRescan = true;
@@ -2605,13 +2629,13 @@ bool StorageManager::compactUploadedEventFiles(const char* sessionIdOverride) {
 
     if (sessionId.length()) {
         DLOG_INFO("STORAGE",
-                  "Spool compact request session=%s result=%d pending=%lu",
+                  "Spool compact request session=%s result=%d pendingUpload=%lu",
                   sessionId.c_str(),
                   ok ? 1 : 0,
                   static_cast<unsigned long>(_pendingEventCount));
     } else {
         DLOG_INFO("STORAGE",
-                  "Spool compact request result=%d pending=%lu",
+                  "Spool compact request result=%d pendingUpload=%lu",
                   ok ? 1 : 0,
                   static_cast<unsigned long>(_pendingEventCount));
     }
@@ -4432,7 +4456,7 @@ void StorageManager::_maybeCompactForPressure(StoragePressureMode oldMode,
     }
 
     DLOG_WARN("STORAGE",
-              "Pressure compaction trigger mode=%u used=%d%% pending=%lu",
+              "Pressure compaction trigger mode=%u used=%d%% pendingUpload=%lu",
               static_cast<unsigned>(newMode),
               getUsedPercent(),
               static_cast<unsigned long>(_pendingEventCount));
@@ -4449,7 +4473,7 @@ void StorageManager::_maybeCompactForPressure(StoragePressureMode oldMode,
     refreshStorageUiState();
 
     DLOG_INFO("STORAGE",
-              "Pressure compaction complete used=%d%% pending=%lu",
+              "Pressure compaction complete used=%d%% pendingUpload=%lu",
               getUsedPercent(),
               static_cast<unsigned long>(_pendingEventCount));
 }
@@ -4592,7 +4616,6 @@ void StorageManager::saveKnownLocations(
     serializeJson(doc, f);
     f.close();
 
-    // Retire legacy flat file once vault write succeeds.
     if (LittleFS.exists(PATH_STORE_LEGACY_KNOWN_LOCATIONS)) {
         LittleFS.remove(PATH_STORE_LEGACY_KNOWN_LOCATIONS);
     }
@@ -4638,13 +4661,11 @@ int StorageManager::loadKnownLocations(
         return count;
     };
 
-    // Preferred path: vault.
     int count = loadFromPath(PATH_STORE_KNOWN_LOCATIONS, true);
     if (count > 0) {
         return count;
     }
 
-    // One-way fallback: read legacy file, then migrate it into vault.
     count = loadFromPath(PATH_STORE_LEGACY_KNOWN_LOCATIONS, false);
     if (count > 0) {
         saveKnownLocations(locs, count);
@@ -5320,24 +5341,16 @@ void StorageManager::_logSpoolDiagnostics(const char* reason,
         (strcmp(reason, "append_enrich_batch") == 0 ||
          strcmp(reason, "append_enrich_rotate") == 0)) {
         DLOG_INFO("STORAGE",
-                  "Spool diag[%s] suppressed hot_path active=%lu pending=%lu",
+                  "Spool diag[%s] suppressed hot_path activeSegment=%lu pendingUpload=%lu",
                   reason,
                   static_cast<unsigned long>(_spoolIndex.activeSegmentId),
                   static_cast<unsigned long>(_spoolIndex.pendingTotal));
         return;
     }
 
-    const uint32_t watermark =
-        sessionId.length() ? _activeSessionWatermark(sessionId) : 0U;
+    (void)sessionId;
 
     uint32_t totalEvents = 0;
-    uint32_t totalEnrich = 0;
-    uint32_t totalMission = 0;
-    uint32_t totalNoise = 0;
-    uint32_t totalP0 = 0;
-    uint32_t totalP1 = 0;
-    uint32_t totalP2 = 0;
-    uint32_t totalP3 = 0;
     uint32_t invalidSummaries = 0;
 
     for (const auto& seg : _spoolIndex.segments) {
@@ -5347,67 +5360,25 @@ void StorageManager::_logSpoolDiagnostics(const char* reason,
         }
 
         totalEvents += seg.eventCount;
-        totalMission += seg.missionCount;
-        totalNoise += seg.noiseCount;
-        totalP0 += seg.p0Count;
-        totalP1 += seg.p1Count;
-        totalP2 += seg.p2Count;
-        totalP3 += seg.p3Count;
-        totalEnrich += seg.enrichDeltaCount;
     }
 
     if (includeRuntimeCounters) {
-        if (sessionId.length()) {
-            DLOG_INFO("STORAGE",
-                      "Spool diag[%s] segs=%u active=%lu events=%lu mission=%lu noise=%lu p0=%lu p1=%lu p2=%lu p3=%lu enrich=%lu invalid=%u pending=%lu nextEvt=%lu session=%s watermark=%lu",
-                      reason ? reason : "?",
-                      static_cast<unsigned>(_spoolIndex.segments.size()),
-                      static_cast<unsigned long>(_spoolIndex.activeSegmentId),
-                      static_cast<unsigned long>(totalEvents),
-                      static_cast<unsigned long>(totalMission),
-                      static_cast<unsigned long>(totalNoise),
-                      static_cast<unsigned long>(totalP0),
-                      static_cast<unsigned long>(totalP1),
-                      static_cast<unsigned long>(totalP2),
-                      static_cast<unsigned long>(totalP3),
-                      static_cast<unsigned long>(totalEnrich),
-                      static_cast<unsigned>(invalidSummaries),
-                      static_cast<unsigned long>(_spoolIndex.pendingTotal),
-                      static_cast<unsigned long>(_nextEventId),
-                      sessionId.c_str(),
-                      static_cast<unsigned long>(watermark));
-        } else {
-            DLOG_INFO("STORAGE",
-                      "Spool diag[%s] segs=%u active=%lu events=%lu mission=%lu noise=%lu p0=%lu p1=%lu p2=%lu p3=%lu enrich=%lu invalid=%u pending=%lu nextEvt=%lu",
-                      reason ? reason : "?",
-                      static_cast<unsigned>(_spoolIndex.segments.size()),
-                      static_cast<unsigned long>(_spoolIndex.activeSegmentId),
-                      static_cast<unsigned long>(totalEvents),
-                      static_cast<unsigned long>(totalMission),
-                      static_cast<unsigned long>(totalNoise),
-                      static_cast<unsigned long>(totalP0),
-                      static_cast<unsigned long>(totalP1),
-                      static_cast<unsigned long>(totalP2),
-                      static_cast<unsigned long>(totalP3),
-                      static_cast<unsigned long>(totalEnrich),
-                      static_cast<unsigned>(invalidSummaries),
-                      static_cast<unsigned long>(_spoolIndex.pendingTotal),
-                      static_cast<unsigned long>(_nextEventId));
-        }
-    } else {
         DLOG_INFO("STORAGE",
-                  "Spool diag[%s] segs=%u active=%lu events=%lu mission=%lu noise=%lu p0=%lu p1=%lu p2=%lu p3=%lu enrich=%lu invalid=%u",
+                  "Spool diag[%s] segs=%u active=%lu storedEvents=%lu pendingUpload=%lu nextEventId=%lu invalid=%u",
                   reason ? reason : "?",
                   static_cast<unsigned>(_spoolIndex.segments.size()),
                   static_cast<unsigned long>(_spoolIndex.activeSegmentId),
                   static_cast<unsigned long>(totalEvents),
-                  static_cast<unsigned long>(totalMission),
-                  static_cast<unsigned long>(totalNoise),
-                  static_cast<unsigned long>(totalP0),
-                  static_cast<unsigned long>(totalP1),
-                  static_cast<unsigned long>(totalP2),
-                  static_cast<unsigned long>(totalP3),
-                  static_cast<unsigned long>(totalEnrich),
+                  static_cast<unsigned long>(_spoolIndex.pendingTotal),
+                  static_cast<unsigned long>(_nextEventId),
+                  static_cast<unsigned>(invalidSummaries));
+    } else {
+        DLOG_INFO("STORAGE",
+                  "Spool diag[%s] segs=%u active=%lu storedEvents=%lu invalid=%u",
+                  reason ? reason : "?",
+                  static_cast<unsigned>(_spoolIndex.segments.size()),
+                  static_cast<unsigned long>(_spoolIndex.activeSegmentId),
+                  static_cast<unsigned long>(totalEvents),
                   static_cast<unsigned>(invalidSummaries));
     }
 
@@ -5702,6 +5673,7 @@ bool StorageManager::_loadUploadIndexSegment(uint32_t segmentId) {
     }
 
     const size_t recordSize = sizeof(UploadIndexRecordV1);
+    uint32_t loadedRecords = 0;
     while (static_cast<size_t>(f.available()) >= recordSize) {
         UploadIndexRecordV1 rec;
         memset(&rec, 0, sizeof(rec));
@@ -5721,6 +5693,7 @@ bool StorageManager::_loadUploadIndexSegment(uint32_t segmentId) {
 
         _addUploadPtrToMemory(rec);
         _uploadIndexStats.indexedEvents++;
+        loadedRecords++;
     }
 
     if (static_cast<size_t>(f.available()) > 0) {
@@ -5729,6 +5702,19 @@ bool StorageManager::_loadUploadIndexSegment(uint32_t segmentId) {
     }
 
     f.close();
+
+    const SpoolSegmentInfo* seg = _findSegmentInfo(segmentId);
+    if (seg && seg->summaryValid && loadedRecords != seg->eventCount) {
+        DLOG_WARN("STORAGE",
+                  "Upload index stale seg=%lu indexed=%lu storedEvents=%lu",
+                  static_cast<unsigned long>(segmentId),
+                  static_cast<unsigned long>(loadedRecords),
+                  static_cast<unsigned long>(seg->eventCount));
+        _uploadIndexStats.badRecords++;
+        _uploadIndexDirty = true;
+        return false;
+    }
+
     return true;
 }
 
@@ -6130,7 +6116,6 @@ bool StorageManager::_resyncSpoolIndexFromFilesystem() {
             if (it == onDiskFormat.end()) {
                 onDiskFormat[id] = fmt;
         } else if (it->second != SPOOL_SEGMENT_BIN_V2 && fmt == SPOOL_SEGMENT_BIN_V2) {
-            // Prefer binary if both exist for the same segment id.
             it->second = fmt;
             duplicateJsonToRemove.push_back(id);
             } else if (it->second == SPOOL_SEGMENT_BIN_V2 && fmt == SPOOL_SEGMENT_JSONL) {
@@ -6142,7 +6127,6 @@ bool StorageManager::_resyncSpoolIndexFromFilesystem() {
     }
     dir.close();
 
-    // Retire paired legacy JSON segments once binary exists for the same id.
     for (uint32_t segmentId : duplicateJsonToRemove) {
         const String legacyJsonPath = _spoolSegmentPath(segmentId);
         const String binaryPath = _spoolBinarySegmentPath(segmentId);
@@ -6180,7 +6164,6 @@ bool StorageManager::_resyncSpoolIndexFromFilesystem() {
         rebuilt.push_back(seg);
     }
 
-    // Detect and log dropped index entries (missing on disk).
     for (const auto& kv : prior) {
         if (onDiskFormat.find(kv.first) == onDiskFormat.end()) {
             DLOG_WARN("STORAGE",
@@ -6206,7 +6189,6 @@ bool StorageManager::_resyncSpoolIndexFromFilesystem() {
 
     _spoolIndex.segments = rebuilt;
 
-    // Normalize oldest/next/active based on what's on disk.
     if (!_spoolIndex.segments.empty()) {
         const uint32_t oldest = _spoolIndex.segments.front().segmentId;
         if (_spoolIndex.oldestSegmentId != oldest) {
@@ -6388,7 +6370,6 @@ bool StorageManager::appendEnrichDeltasBatch(const SpoolEnrichBatchEntry* entrie
     if (ok) f.flush();
     f.close();
 
-    // Update in-memory segment from the header written to disk
     seg->firstEventId = hdr.firstEventId;
     seg->lastEventId  = hdr.lastEventId;
     seg->recordCount  = hdr.recordCount;
@@ -6462,18 +6443,25 @@ bool StorageManager::_appendSpoolRecord(JsonDocument& doc, uint32_t* outEventId)
 
     const char* sessionId = eventObj[F_SESSION] | eventObj["session_id"] | "";
     if (eventId != 0 &&
-        !_appendUploadIndexRecord(seg->segmentId,
-                                 loc.offset,
-                                 loc.len,
-                                 eventId,
-                                 sessionId,
-                                 eventObj)) {
-        _uploadIndexDirty = true;
-        DLOG_DEBUG("STORAGE",
-                   "upload index append failed event=%lu seg=%lu path=%s",
-                   static_cast<unsigned long>(eventId),
-                   static_cast<unsigned long>(seg->segmentId),
-                   _uploadIndexPath(seg->segmentId).c_str());
+        sessionId && sessionId[0]) {
+        if (kAppendUploadIndexDuringCapture) {
+            if (!_appendUploadIndexRecord(seg->segmentId,
+                                         loc.offset,
+                                         loc.len,
+                                         eventId,
+                                         sessionId,
+                                         eventObj)) {
+                _uploadIndexDirty = true;
+                DLOG_DEBUG("STORAGE",
+                           "upload index append failed event=%lu seg=%lu path=%s",
+                           static_cast<unsigned long>(eventId),
+                           static_cast<unsigned long>(seg->segmentId),
+                           _uploadIndexPath(seg->segmentId).c_str());
+            }
+        } else {
+            _uploadIndexDirty = true;
+            _uploadIndexStats.dirty = true;
+        }
     }
 
     if (seg->approxBytes >= SPOOL_SEGMENT_TARGET_BYTES) {
@@ -8517,7 +8505,7 @@ void StorageManager::_logSpoolAuditResult(const char* reason,
     const char* safeReason = (reason && reason[0] != '\0') ? reason : "-";
     if (audit.hadFatalSegmentError) {
         DLOG_WARN("STORAGE",
-                  "Spool audit[%s] segs=%lu records=%lu validEvt=%lu validEnrich=%lu invalid=%lu skipped=%lu quarantined=%lu unreadable=%lu pending=%lu->%lu nextEvt=%lu maxSeen=%lu repaired=%d fatal=%d",
+                  "Spool audit[%s] scannedSegs=%lu scannedRecords=%lu validEvents=%lu validEnrichDeltas=%lu invalidRecords=%lu skippedRecords=%lu quarantined=%lu unreadable=%lu pendingUpload=%lu->%lu nextEventId=%lu maxEventIdSeen=%lu repaired=%d fatal=%d",
                   safeReason,
                   static_cast<unsigned long>(audit.scannedSegments),
                   static_cast<unsigned long>(audit.scannedRecords),
@@ -8535,7 +8523,7 @@ void StorageManager::_logSpoolAuditResult(const char* reason,
                   audit.hadFatalSegmentError ? 1 : 0);
     } else {
         DLOG_INFO("STORAGE",
-                  "Spool audit[%s] segs=%lu records=%lu validEvt=%lu validEnrich=%lu invalid=%lu skipped=%lu quarantined=%lu unreadable=%lu pending=%lu->%lu nextEvt=%lu maxSeen=%lu repaired=%d fatal=%d",
+                  "Spool audit[%s] scannedSegs=%lu scannedRecords=%lu validEvents=%lu validEnrichDeltas=%lu invalidRecords=%lu skippedRecords=%lu quarantined=%lu unreadable=%lu pendingUpload=%lu->%lu nextEventId=%lu maxEventIdSeen=%lu repaired=%d fatal=%d",
                   safeReason,
                   static_cast<unsigned long>(audit.scannedSegments),
                   static_cast<unsigned long>(audit.scannedRecords),
@@ -8713,7 +8701,7 @@ bool StorageManager::_checkSpoolInvariants(const char* reason, bool repairIfBad)
 
     // in-memory pending counter must agree with the spool index
     if (_spoolIndex.pendingTotal != _pendingEventCount) {
-        DLOG_WARN("STORAGE", "Inv[%s] pending split idx=%lu counter=%lu",
+        DLOG_WARN("STORAGE", "Inv[%s] pendingUpload split idx=%lu counter=%lu",
                   r,
                   static_cast<unsigned long>(_spoolIndex.pendingTotal),
                   static_cast<unsigned long>(_pendingEventCount));
@@ -8765,11 +8753,11 @@ void StorageManager::spoolAuditToSerial(bool repair) {
     const bool ok = _auditAndRepairSpool(
         repair ? "manual_repair" : "manual_audit", repair, &audit);
 
-    Serial.printf("[SPOOL] ok=%d segs=%lu recs=%lu\r\n",
+    Serial.printf("[SPOOL] ok=%d scannedSegs=%lu scannedRecords=%lu\r\n",
                   ok ? 1 : 0,
                   static_cast<unsigned long>(audit.scannedSegments),
                   static_cast<unsigned long>(audit.scannedRecords));
-    Serial.printf("[SPOOL] validEvt=%lu validEnrich=%lu invalid=%lu skipped=%lu\r\n",
+    Serial.printf("[SPOOL] validEvents=%lu validEnrichDeltas=%lu invalidRecords=%lu skippedRecords=%lu\r\n",
                   static_cast<unsigned long>(audit.validEventRecords),
                   static_cast<unsigned long>(audit.validEnrichDeltas),
                   static_cast<unsigned long>(audit.invalidRecords),
@@ -8777,7 +8765,7 @@ void StorageManager::spoolAuditToSerial(bool repair) {
     Serial.printf("[SPOOL] quarantined=%lu unreadable=%lu\r\n",
                   static_cast<unsigned long>(audit.quarantinedSegments),
                   static_cast<unsigned long>(audit.unreadableSegments));
-    Serial.printf("[SPOOL] pending %lu->%lu  nextEvt %lu->%lu\r\n",
+    Serial.printf("[SPOOL] pendingUpload %lu->%lu  nextEventId %lu->%lu\r\n",
                   static_cast<unsigned long>(audit.oldPendingTotal),
                   static_cast<unsigned long>(audit.rebuiltPendingTotal),
                   static_cast<unsigned long>(audit.oldNextEventId),
@@ -8801,7 +8789,7 @@ void StorageManager::spoolDiagToSerial() {
                   static_cast<unsigned>(_spoolIndex.segments.size()),
                   static_cast<unsigned long>(_spoolIndex.activeSegmentId),
                   static_cast<unsigned long>(_spoolIndex.oldestSegmentId));
-    Serial.printf("[SPOOL] pending=%lu nextEvt=%lu sessions=%u\r\n",
+    Serial.printf("[SPOOL] pendingUpload=%lu nextEventId=%lu sessions=%u\r\n",
                   static_cast<unsigned long>(_pendingEventCount),
                   static_cast<unsigned long>(_nextEventId),
                   static_cast<unsigned>(_spoolIndex.sessions.size()));
@@ -8811,8 +8799,8 @@ void StorageManager::spoolDiagToSerial() {
                   _spoolSummaryRebuildPending ? 1 : 0);
 
     for (const auto& seg : _spoolIndex.segments) {
-        Serial.printf("[SPOOL]   seg=%lu fmt=%s recs=%lu evts=%lu"
-                      " pending=%lu summaryOk=%d active=%d\r\n",
+        Serial.printf("[SPOOL]   seg=%lu fmt=%s records=%lu storedEvents=%lu"
+                      " storedLaneEvents=%lu summaryOk=%d active=%d\r\n",
                       static_cast<unsigned long>(seg.segmentId),
                       _segmentFormatText(seg.format),
                       static_cast<unsigned long>(seg.recordCount),

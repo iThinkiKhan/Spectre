@@ -1,5 +1,3 @@
-
-
 #pragma once
 #include "SecretsConfig.h"
 #include "core/ScreenEnum.h"
@@ -8,12 +6,9 @@
 // Feature flags
 // -----------------------------------------------------------------------------
 
-// Phone app
-// Master switch: device-side companion support is compiled/allowed.
 #define PHONE_COMPANION_ENABLED     false
 // Boot-time BLE probe (8 s → 2 m → 5 m → 10 m → 30 m retry ladder).
 #define PHONE_COMPANION_BOOT_PROBE  false
-// Automatic enrichment when the pending-item backlog exceeds threshold.
 #define PHONE_COMPANION_AUTO_ENRICH false
 // Pending event count that triggers automatic phone enrichment.
 // Keep this below MQTT_UPLOAD_READY_THRESHOLD so records can be enriched
@@ -23,23 +18,16 @@
 // ATT payload, so the BLE/write path and phone app must support long writes.
 // Keep <=64 unless BLEManager buffer sizing is audited.
 #define PHONE_COMPANION_ENRICH_BATCH_MAX 18
-// Convert human-readable duration knobs into the ms values the code already
-// consumes.
 #define SPECTRE_SECONDS_TO_MS(seconds) ((uint32_t)(seconds) * 1000UL)
 
 // -----------------------------------------------------------------------------
 // Diagnostic tools (keep false in production builds).
 // -----------------------------------------------------------------------------
 
-// Boot sequence debug helpers.
-// Temporarily disable the animated boot flow to isolate LVGL startup issues.
 #define BOOT_SEQUENCE_ENABLED       true
-// Print phase markers during the boot animation.
 #define BOOT_SEQUENCE_VERBOSE       false
 
-// Serial "ble smoke" command: suspend WiFi, run NimBLE init/deinit, report heap.
-// Confirmed working 2026-04-26. Gate it off so the command isn't accidentally
-// triggered in the field; flip to true only when debugging BLE bring-up.
+// Gate off so the command isn't accidentally triggered in the field.
 #define BLE_SMOKE_ENABLED           true
 
 // Safety gate: passive Pwny capture remains available, but active deauth is
@@ -54,7 +42,6 @@
 #define BUTTON_LONG_PRESS_MS          800UL
 #define BUTTON_DEBOUNCE_MS            50UL
 
-// Human-readable duration knobs: set values in seconds, code keeps using ms.
 #define MQTT_DUMP_INTERVAL_SEC        7200UL
 #define MQTT_DUMP_INTERVAL_MS         SPECTRE_SECONDS_TO_MS(MQTT_DUMP_INTERVAL_SEC)
 #define MQTT_CONNECT_TIMEOUT_SEC      10UL
@@ -63,7 +50,6 @@
 #define MQTT_FAILED_BACKOFF_MS        SPECTRE_SECONDS_TO_MS(MQTT_FAILED_BACKOFF_SEC)
 #define MQTT_POISON_FAIL_LIMIT        3
 
-// Pending upload count that triggers normal MQTT dump.
 #define MQTT_UPLOAD_READY_THRESHOLD   1000
 
 // ── Upload slice / batch tuning ───────────────────────────────────────────────
@@ -118,7 +104,6 @@
 #define BACKLIGHT_TIMEOUT_SEC         30UL
 #define BACKLIGHT_TIMEOUT_MS          SPECTRE_SECONDS_TO_MS(BACKLIGHT_TIMEOUT_SEC)
 
-// Power subsystem timing
 #define POWER_CRITICAL_SLEEP_COUNTDOWN_SEC  300UL
 #define POWER_CRITICAL_SLEEP_COUNTDOWN_MS   SPECTRE_SECONDS_TO_MS(POWER_CRITICAL_SLEEP_COUNTDOWN_SEC)
 

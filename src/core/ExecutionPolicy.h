@@ -1,5 +1,3 @@
-
-
 #pragma once
 
 #include "../core/ScreenEnum.h"
@@ -8,9 +6,6 @@
 #include "../managers/RadioArbiter.h"
 
 namespace ExecutionPolicy {
-
-// Shared execution rules for mode/radio/UI orchestration. Keep these helpers
-// pure so the task-level code can share one source of truth.
 
 struct StatusBarStateView {
     int     battPercent = 0;

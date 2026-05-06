@@ -101,6 +101,28 @@ private:
     };
 
     struct DumpContext {
+        DumpContext()
+            : phase(DUMP_PHASE_IDLE),
+              sessionIndex(0),
+              sinceId(0),
+              maxEventsThisLease(0),
+              phaseStarted(false),
+              healthDone(false),
+              censusDone(false),
+              compactDone(false),
+              purgeDone(false),
+              firstEventFetchLogged(false),
+              firstEventFetchedOkLogged(false),
+              firstEventValidatedLogged(false),
+              firstEventDocBuiltLogged(false),
+              firstEventPublishBeginLogged(false),
+              firstEventPublishEndLogged(false),
+              sinceIdInitialized(false),
+              sessionIds(),
+              cachedBatch(),
+              cachedBatchIndex(0),
+              cachedBatchCount(0) {}
+
         DumpPhase phase = DUMP_PHASE_IDLE;
         size_t sessionIndex = 0;
         uint32_t sinceId = 0;
@@ -182,7 +204,7 @@ private:
                               const char* filePath,
                               const char* fileName,
                               size_t chunkSize = 512);
-    DumpContext _dumpCtx = {};
+    DumpContext _dumpCtx{};
 
     // Timestamp helper — ISO8601 UTC
     void _timestamp(char* buf, int len);

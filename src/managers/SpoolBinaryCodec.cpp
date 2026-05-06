@@ -2,17 +2,17 @@
 
 namespace SpoolBin {
 
-bool writeBytes(File& f, const void* data, size_t len) {
+bool writeBytes(fs::File& f, const void* data, size_t len) {
     if (!data && len > 0) return false;
     return f.write(reinterpret_cast<const uint8_t*>(data), len) == len;
 }
 
-bool readBytes(File& f, void* data, size_t len) {
+bool readBytes(fs::File& f, void* data, size_t len) {
     if (!data && len > 0) return false;
     return f.read(reinterpret_cast<uint8_t*>(data), len) == static_cast<int>(len);
 }
 
-bool writeUVarint(File& f, uint32_t value) {
+bool writeUVarint(fs::File& f, uint32_t value) {
     uint8_t buf[5];
     size_t used = 0;
 
@@ -26,7 +26,7 @@ bool writeUVarint(File& f, uint32_t value) {
     return writeBytes(f, buf, used);
 }
 
-bool readUVarint(File& f, uint32_t& out) {
+bool readUVarint(fs::File& f, uint32_t& out) {
     out = 0;
     uint8_t shift = 0;
 
@@ -47,13 +47,13 @@ bool readUVarint(File& f, uint32_t& out) {
     return false;
 }
 
-bool writeVarintZigZag(File& f, int32_t value) {
+bool writeVarintZigZag(fs::File& f, int32_t value) {
     const uint32_t zz = (static_cast<uint32_t>(value) << 1) ^
                         static_cast<uint32_t>(value >> 31);
     return writeUVarint(f, zz);
 }
 
-bool readVarintZigZag(File& f, int32_t& out) {
+bool readVarintZigZag(fs::File& f, int32_t& out) {
     uint32_t zz = 0;
     if (!readUVarint(f, zz)) {
         return false;
@@ -63,12 +63,12 @@ bool readVarintZigZag(File& f, int32_t& out) {
     return true;
 }
 
-bool readSegmentHeaderV2(File& f, SegmentHeaderV2& hdr) {
+bool readSegmentHeaderV2(fs::File& f, SegmentHeaderV2& hdr) {
     if (!f.seek(0)) return false;
     return readBytes(f, &hdr, sizeof(hdr));
 }
 
-bool writeSegmentHeaderV2(File& f, const SegmentHeaderV2& hdr) {
+bool writeSegmentHeaderV2(fs::File& f, const SegmentHeaderV2& hdr) {
     if (!f.seek(0)) return false;
     return writeBytes(f, &hdr, sizeof(hdr));
 }
@@ -80,7 +80,7 @@ bool appendRecordV2(const String& path,
                     uint32_t eventId,
                     SegmentHeaderV2* outHeader,
                     AppendRecordLocation* outLoc) {
-    File f = LittleFS.open(path, "r+");
+    fs::File f = LittleFS.open(path, "r+");
     if (!f) return false;
 
     SegmentHeaderV2 hdr;
@@ -147,7 +147,7 @@ bool appendRecordV2(const String& path,
     return true;
 }
 
-bool appendRecordToOpen(File& f,
+bool appendRecordToOpen(fs::File& f,
                         uint8_t recType,
                         const uint8_t* payload,
                         uint16_t length,

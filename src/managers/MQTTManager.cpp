@@ -284,7 +284,11 @@ bool MQTTManager::requestDump(bool force) {
 
     if (granted) {
         _wifiConnectStarted = false;
-        _dumpCtx = {};
+        _dumpCtx = DumpContext{};
+
+        if (!STORAGE.prepareUploadIndexForUpload(_uploadLeaseHoldMs)) {
+            DLOG_WARN("MQTT", "Upload index not ready; using spool scan fallback");
+        }
 
         // Defer LittleFS watermark flushes until the radio is paused at
         // end-of-dump. Per-ack "w" opens during an active-radio window
@@ -517,7 +521,7 @@ void MQTTManager::_startDumpPlan() {
     _lastPublished = 0;
     _lastFailed = 0;
 
-    _dumpCtx = {};
+    _dumpCtx = DumpContext{};
     _dumpCtx.phase = DUMP_PHASE_HEALTH;
     _dumpCtx.sessionIndex = 0;
     _dumpCtx.sinceId = 0;
@@ -530,7 +534,7 @@ void MQTTManager::_startDumpPlan() {
                     static_cast<uint8_t>(RADIO_ARB.currentOwner()),
                     static_cast<uint32_t>(_queuedRecords));
 
-    DLOG_INFO("MQTT", "Dump start — pending=%d lease=%lus leaseMax=%u",
+    DLOG_INFO("MQTT", "Dump start — pendingUpload=%d lease=%lus leaseMaxEvents=%u",
               _queuedRecords,
               static_cast<unsigned long>(_uploadLeaseHoldMs / 1000UL),
               static_cast<unsigned>(_dumpCtx.maxEventsThisLease));
@@ -866,7 +870,7 @@ bool MQTTManager::_runDumpSlice() {
 
                 if ((_lastPublished % 25) == 0) {
                     DLOG_INFO("MQTT",
-                              "Dump progress pub=%d fail=%d session=%u/%u since=%lu leaseMax=%u",
+                      "Dump progress pub=%d fail=%d session=%u/%u since=%lu leaseMaxEvents=%u",
                               _lastPublished,
                               _lastFailed,
                               static_cast<unsigned>(_dumpCtx.sessionIndex),
@@ -882,7 +886,7 @@ bool MQTTManager::_runDumpSlice() {
 
             if (_lastPublished == 0 && _dumpCtx.maxEventsThisLease > 0) {
                 DLOG_WARN("MQTT",
-                          "No events published despite pending=%u at dump start",
+                          "No events published despite pendingUpload=%u at dump start",
                           static_cast<unsigned>(_dumpCtx.maxEventsThisLease));
             }
 
@@ -1617,8 +1621,8 @@ uint32_t MQTTManager::_appendQueuedEvent(const char* eventType,
                 s_suppressedDuplicateCount++;
                 const uint32_t now = millis();
                 if ((now - s_lastSuppressedLogMs) >= 10000UL) {
-                    DLOG_INFO("MQTT", "Suppressed duplicates=%lu",
-                              static_cast<unsigned long>(s_suppressedDuplicateCount));
+                    DLOG_DEBUG("MQTT", "append duplicate suppressed count=%lu",
+                               static_cast<unsigned long>(s_suppressedDuplicateCount));
                     s_suppressedDuplicateCount = 0;
                     s_lastSuppressedLogMs = now;
                 }
