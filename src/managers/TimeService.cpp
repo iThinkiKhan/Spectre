@@ -1,5 +1,4 @@
 
-
 #include "TimeService.h"
 
 #include <WiFi.h>
@@ -75,6 +74,18 @@ bool TimeService::syncFromEpoch(uint32_t epochUtc, TimeSource source,
     const TimeSource prevSource = _source;
     const uint32_t prevEpochAtSync = _epochAtSync;
     const uint32_t prevMillisAtSync = _millisAtSync;
+
+    if (source == TIME_SOURCE_GPS && wasValid) {
+        const int64_t projectedEpoch =
+            static_cast<int64_t>(prevEpochAtSync) +
+            (static_cast<int64_t>(static_cast<int32_t>(referenceMs - prevMillisAtSync)) / 1000LL);
+        if (static_cast<int64_t>(epochUtc) + GPS_BACKWARD_GUARD_S < projectedEpoch) {
+            DLOG_WARN("TIME", "Reject stale GPS sync incoming=%lu current=%lu",
+                      static_cast<unsigned long>(epochUtc),
+                      static_cast<unsigned long>(projectedEpoch));
+            return false;
+        }
+    }
 
     bool shouldLog = false;
     if (!wasValid || prevSource != source) {
@@ -248,6 +259,4 @@ void TimeService::_formatLocalClock(time_t epochUtc, char* out, size_t len) {
     localtime_r(&epochUtc, &localTm);
     strftime(out, len, "%Y-%m-%d %H:%M:%S", &localTm);
 }
-
-
 

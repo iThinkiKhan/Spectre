@@ -1,5 +1,4 @@
 
-
 #pragma once
 
 #include <Arduino.h>
@@ -41,6 +40,7 @@ private:
     static constexpr uint32_t MIN_VALID_EPOCH = 1704067200UL;
     static constexpr uint32_t TICK_INTERVAL_MS = 1000UL;
     static constexpr uint32_t NTP_RESTART_MS = 300000UL;
+    static constexpr uint32_t GPS_BACKWARD_GUARD_S = 2UL;
 
     void _syncFromGps(uint32_t nowMs);
     void _syncFromNtp(uint32_t nowMs);
@@ -59,6 +59,4 @@ private:
 };
 
 #define TIME_SVC TimeService::getInstance()
-
-
 

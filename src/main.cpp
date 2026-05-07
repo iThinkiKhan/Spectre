@@ -82,6 +82,7 @@ namespace {
     constexpr size_t USB_CONSOLE_BUF_SIZE = 128;
     char g_usbConsoleBuf[USB_CONSOLE_BUF_SIZE] = {};
     size_t g_usbConsoleLen = 0;
+    bool g_usbSerialAttachedAtBoot = false;
 
     struct DisplayFrameState {
     Screen      currentScreen = SCREEN_LORA;
@@ -438,6 +439,7 @@ bool _waitForDisplayLayerReady(uint32_t timeoutMs);
 void _publishStorageState(bool storageOk, const String& storageUsed);
 void _loadKnownLocationsIntoState();
 static const char* _resetReasonName(esp_reset_reason_t r);
+static const char* _fieldVaultPowerSourceName(PowerSource source);
 void _applySubGhzStatusToState(const SubGhzStatus& status);
 void _applyPowerSnapshotToState(const PowerSnapshot& power);
 void _initializeHardwareManagers(uint32_t& lastWifiTick);
@@ -2354,6 +2356,8 @@ void _initializeHardwareManagers(uint32_t& lastWifiTick) {
             STORAGE.isReady() ? STORAGE.getPendingEventCount() : 0;
         const uint32_t heapKb =
             static_cast<uint32_t>(ESP.getMinFreeHeap() / 1024);
+        const PowerSnapshot power = POWER_MGR.snapshot();
+        const bool usbSerialAttached = g_usbSerialAttachedAtBoot;
         char isoBuf[24] = "";
         TIME_SVC.formatNowIso(isoBuf, sizeof(isoBuf));
         char sidBuf[40];
@@ -2361,16 +2365,27 @@ void _initializeHardwareManagers(uint32_t& lastWifiTick) {
         strlcpy(sidBuf, g_state.sessionId, sizeof(sidBuf));
         STATE_READ_END();
 
+        FieldVault::appendSeriallessResetCrashIfNeeded(
+            static_cast<uint8_t>(rr),
+            _resetReasonName(rr),
+            sidBuf,
+            isoBuf,
+            _fieldVaultPowerSourceName(power.source),
+            heapKb,
+            pending,
+            usbSerialAttached);
         FieldVault::vaultUnresolvedCrashIfNew(static_cast<uint8_t>(rr),
                                               _resetReasonName(rr),
                                               sidBuf,
-                                              isoBuf);
+                                              isoBuf,
+                                              usbSerialAttached);
         FieldVault::appendBoot(static_cast<uint8_t>(rr),
                                _resetReasonName(rr),
                                heapKb,
                                pending,
                                sidBuf,
-                               isoBuf);
+                               isoBuf,
+                               usbSerialAttached);
     }
 
     DLOG_INFO("WIFI", "Allocation: %s",
@@ -4413,9 +4428,19 @@ static const char* _resetReasonName(esp_reset_reason_t r) {
     }
 }
 
+static const char* _fieldVaultPowerSourceName(PowerSource source) {
+    switch (source) {
+        case POWER_SOURCE_BATTERY: return "battery";
+        case POWER_SOURCE_USB:     return "usb";
+        case POWER_SOURCE_UNKNOWN:
+        default:                   return "unknown";
+    }
+}
+
 void setup() {
     Serial.begin(115200);
     delay(500);
+    g_usbSerialAttachedAtBoot = static_cast<bool>(Serial);
 
     // Apply the compile-time debug profile before any DLOG_* call so disabled
     // logs cost nothing from boot onward.
