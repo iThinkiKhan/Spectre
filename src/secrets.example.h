@@ -133,6 +133,10 @@
 #define SPECTRE_BLE_TARGET_DEVICE_NAME "SpectrePhone"
 #endif
 
+#ifndef SPECTRE_BLE_TARGET_DEVICE_NAME_SHORT
+#define SPECTRE_BLE_TARGET_DEVICE_NAME_SHORT "SPHONE"
+#endif
+
 // P-256 app-layer BLE security.
 //
 // Device private key: 32-byte P-256 scalar as 64 hex chars. Keep only in the

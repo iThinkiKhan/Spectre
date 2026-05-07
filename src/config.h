@@ -253,12 +253,24 @@ static constexpr uint8_t OFF = 0;
 #define POWER_USB_SENSE_ACTIVE             HIGH
 #define POWER_CHARGE_SENSE_PIN             -1
 #define POWER_CHARGE_SENSE_ACTIVE          LOW
-#define POWER_ECONOMY_PERCENT              30
-#define POWER_CRITICAL_RUNTIME_MIN         7
+#define POWER_ECONOMY_PERCENT              20
+#define POWER_CRITICAL_RUNTIME_MIN         3
 
-// Power thresholds (millivolts)
-#define BAT_WARN_MV     3500
-#define BAT_CRITICAL_MV 3200
+// Battery-life characterization mode. When ON, the automatic deep-sleep that
+// fires POWER_CRITICAL_SLEEP_COUNTDOWN_SEC after entering BATTERY_CRITICAL is
+// suppressed — the device keeps running until the cell collapses on its own.
+// Defaulting to ON: power-saving is being characterized first, and any
+// premature critical-trip would cut off the test before useful data lands.
+// Li-ion cutoff: most boards include a hardware undervoltage cutoff; if not,
+// observe the discharge run and unplug before the cell sags below ~2.9 V.
+#define POWER_RUN_UNTIL_DEAD               ON
+
+// Power thresholds (millivolts). Pushed lower than typical to bias toward
+// "let the battery run all the way out" rather than trip critical early —
+// the runtime estimate has been wrong before, and we'd rather under-warn
+// than auto-sleep on a cell that still has real headroom.
+#define BAT_WARN_MV     3300
+#define BAT_CRITICAL_MV 3000
 
 // -----------------------------------------------------------------------------
 // MQTT

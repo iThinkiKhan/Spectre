@@ -78,7 +78,7 @@ enum StorageLane : uint8_t {
     STORAGE_LANE_NOISE   = 1
 };
 
-static constexpr uint16_t SPOOL_SEGMENT_SUMMARY_VERSION = 2;
+static constexpr uint16_t SPOOL_SEGMENT_SUMMARY_VERSION = 3;
 
 struct StorageLaneCounts {
     uint32_t mission = 0;
@@ -205,6 +205,8 @@ struct SpoolSegmentInfo {
 
     uint32_t missionCount = 0;
     uint32_t noiseCount = 0;
+    uint32_t pendingUploadMissionCount = 0;
+    uint32_t pendingUploadNoiseCount = 0;
 
     uint32_t p0Count = 0;
     uint32_t p1Count = 0;
@@ -365,7 +367,9 @@ public:
                                                 size_t& outCount);
     bool     forEachEventForSession(const char* sessionId,
                                     const std::function<bool(JsonObjectConst)>& cb);
-    bool     markEventUploaded(uint32_t eventId, const char* sessionId = nullptr);
+    bool     markEventUploaded(uint32_t eventId,
+                               const char* sessionId = nullptr,
+                               uint8_t laneHint = 0xFF);
     bool     markEventsUploaded(uint32_t upToId);
 
     // Batch mode: while active, markEventUploaded/markEventsUploaded update
@@ -456,9 +460,14 @@ public:
     void refreshStorageUiState();
     void updateStoragePressure();
     bool hasStorageMaintenanceWork() const {
-        return _repairRequested || _repairJob.active || _spoolAuditRepairRequired;
+        return _repairRequested ||
+               _repairJob.active ||
+               _spoolAuditRepairRequired ||
+               _spoolSummaryRebuildPending ||
+               _pendingCountDirty;
     }
     bool requestSpoolRepair(const char* reason = nullptr);
+    bool serviceStorageMaintenanceStep(uint32_t budgetMs, uint16_t maxRecords);
     bool repairStep(uint32_t budgetMs, uint16_t maxRecords);
 
     void beginHotPathDiagnosticsSuppressed();
@@ -664,7 +673,8 @@ private:
     void _updateSegmentSummaryFromEventDoc(SpoolSegmentInfo& seg,
                                            JsonObjectConst doc,
                                            uint32_t eventId,
-                                           uint32_t timestampMs);
+                                           uint32_t timestampMs,
+                                           bool pendingUpload = true);
     void _markSegmentEnrichmentDelta(SpoolSegmentInfo& seg,
                                      uint32_t recordId,
                                      uint32_t timestampMs);
@@ -683,6 +693,9 @@ private:
     // duplicate deltas in the spool decrement the gross count exactly
     // once during repair.
     void _decrementPendingEnrichmentForEvent(uint32_t eventId);
+    void _decrementPendingUploadForEvent(uint32_t eventId,
+                                         uint8_t laneHint,
+                                         const char* reason);
     bool _rebuildSegmentSummary(SpoolSegmentInfo& seg);
     bool _rebuildInvalidSegmentSummaries(bool force = false);
     bool _hasInvalidSpoolSummaries() const;

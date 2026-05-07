@@ -388,6 +388,7 @@ private:
     char      _sessionId[40];
     char      _deviceName[24];
     char      _targetDeviceName[24];
+    char      _targetDeviceNameShort[16];
     char      _targetServiceUUID[40];
     char      _connectedDeviceName[24];
     char      _connectedPeerAddr[24];

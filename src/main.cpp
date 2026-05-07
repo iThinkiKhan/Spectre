@@ -473,7 +473,8 @@ enum PhoneProbeReason : uint8_t {
     PHONE_PROBE_BACKLOG = 0,
     PHONE_PROBE_OFFLOAD_PREP,
     PHONE_PROBE_MANUAL,
-    PHONE_PROBE_TIME_SYNC
+    PHONE_PROBE_TIME_SYNC,
+    PHONE_PROBE_AVAILABILITY
 };
 
 enum CompanionPhoneState : uint8_t {
@@ -520,10 +521,9 @@ struct CompanionScheduler {
     uint32_t enrichmentSessionStorageMs = 0;
 
     // Probe backoff state.
-    // Stage 0 — normal cadence (PHONE_PROBE_MIN_GAP_MS), up to 4 misses.
-    // Stage 1 — 3 min interval, up to 4 misses.
-    // Stage 2 — 6 min interval, up to 4 misses.
-    // Stage 3 — 12 min interval indefinitely.
+    // Stage 0 — normal cadence (PHONE_PROBE_MIN_GAP_MS).
+    // Stage 1/2/3 — still frequent enough to catch Android Field Mode
+    // advertising during a carry instead of waiting out long backoff gaps.
     // Resets to stage 0 on any successful probe.
     uint8_t probeBackoffStage    = 0;
     uint8_t probeBackoffMissCount = 0;
@@ -533,28 +533,26 @@ static void _finishPhoneEnrichment(CompanionScheduler& cs, bool success);
 static void initEnrichQueue();
 static void serviceEnrichmentPipeline(CompanionScheduler& cs);
 
-static constexpr uint32_t WIFI_LULL_MIN_MS = 30000UL;
-static constexpr uint32_t PHONE_PROBE_MIN_GAP_MS = 120000UL;
+static constexpr uint32_t WIFI_LULL_MIN_MS = 10000UL;
+static constexpr uint32_t PHONE_PROBE_MIN_GAP_MS = 30000UL;
 static constexpr uint32_t PHONE_AVAILABILITY_TTL_MS = 300000UL;
 static constexpr uint32_t PHONE_STORAGE_PUBLISH_MIN_MS = 15000UL;
 
-// Probe absence backoff ladder.
-// After PROBE_BACKOFF_MISS_LIMIT[stage] consecutive misses the scheduler
-// advances to the next stage and resets the miss counter.  Stage 3 is the
-// floor: 15-minute probes indefinitely until the phone is seen again.
-// Manual/priority requests still bypass this ladder for one shot.
+// Probe absence backoff ladder. Keep this fairly aggressive in field mode:
+// the phone is expected to advertise continuously, so missed links should
+// recover in minutes, not disappear for the rest of a carry.
 static constexpr uint8_t PROBE_BACKOFF_STAGES = 4;
 static constexpr uint8_t PROBE_BACKOFF_MISS_LIMIT[PROBE_BACKOFF_STAGES] = {
     1,   // stage 0 -> stage 1 after the first automatic miss
-    2,   // stage 1 -> stage 2 after 2 x 5-min misses
-    2,   // stage 2 -> stage 3 after 2 x 15-min misses
+    2,   // stage 1 -> stage 2 after two misses
+    2,   // stage 2 -> stage 3 after two misses
     0,   // stage 3: indefinite (never advances further)
 };
 static constexpr uint32_t PROBE_BACKOFF_INTERVAL_MS[PROBE_BACKOFF_STAGES] = {
     PHONE_PROBE_MIN_GAP_MS,   // stage 0: first automatic retry window
-     5UL * 60000UL,           // stage 1: 5 min
-    15UL * 60000UL,           // stage 2: 15 min
-    15UL * 60000UL,           // stage 3: 15 min floor
+     1UL * 60000UL,           // stage 1: 1 min
+     2UL * 60000UL,           // stage 2: 2 min
+     5UL * 60000UL,           // stage 3: 5 min floor
 };
 static constexpr uint32_t ENRICH_MIN_GAP_MS = 60000UL;
 static constexpr size_t PHONE_ENRICH_BATCH_MAX   = PHONE_COMPANION_ENRICH_BATCH_MAX;
@@ -615,6 +613,7 @@ static const char* phoneProbeReasonName(PhoneProbeReason reason) {
         case PHONE_PROBE_OFFLOAD_PREP: return "offload_prep";
         case PHONE_PROBE_MANUAL:       return "manual_probe";
         case PHONE_PROBE_TIME_SYNC:    return "time_sync";
+        case PHONE_PROBE_AVAILABILITY: return "availability_probe";
         default:                       return "probe";
     }
 }
@@ -1477,6 +1476,8 @@ void _printUsbConsoleHelp() {
     Serial.println("[USB]   spool quarantine list  (list /spool_bad files)");
     Serial.println("[USB]   spool quarantine meta  (print quarantine JSON records)");
     Serial.println("[USB]   spool quarantine clear (delete all quarantine files)");
+    Serial.println("[USB]   fieldvault dump    (print FieldVault records to serial)");
+    Serial.println("[USB]   fieldvault upload  (upload pending FieldVault records only)");
 #if BLE_SMOKE_ENABLED
     Serial.println("[USB]   ble smoke         (suspend WiFi, init/deinit NimBLE, resume promisc)");
 #endif
@@ -1883,6 +1884,28 @@ void _handleUsbConsoleLine(const char* rawLine) {
 
     if (lower == "spool quarantine clear") {
         STORAGE.spoolQuarantineClear();
+        return;
+    }
+
+    if (lower == "fieldvault dump") {
+        FieldVault::dumpToSerial();
+        return;
+    }
+
+    if (lower == "fieldvault upload") {
+        if (!FieldVault::isReady()) {
+            Serial.println("[FIELD] not ready");
+            return;
+        }
+        if (!FieldVault::hasPending()) {
+            Serial.println("[FIELD] no pending records");
+            return;
+        }
+        if (MQTT_MGR.requestFieldVaultDump()) {
+            Serial.println("[FIELD] upload queued");
+        } else {
+            Serial.println("[FIELD] upload unavailable");
+        }
         return;
     }
 
@@ -3724,7 +3747,8 @@ void TaskHardware(void* pvParameters) {
         sleepAlreadyRequested = g_state.requestSleep;
         STATE_READ_END();
 
-        if (!sleepAlreadyRequested &&
+        if (!POWER_RUN_UNTIL_DEAD &&
+            !sleepAlreadyRequested &&
             power.state == POWER_STATE_BATTERY_CRITICAL &&
             power.criticalSleepAtMs != 0 &&
             loopNow >= power.criticalSleepAtMs) {
@@ -4091,13 +4115,16 @@ void TaskHardware(void* pvParameters) {
                           companion.timeSyncRequested ? 1u : 0u);
             }
 
+            const bool companionProbeWorkPending =
+                companion.pendingItems >= PHONE_COMPANION_ENRICH_THRESHOLD ||
+                companion.manualEnrichRequested ||
+                companion.offloadPrepRequested ||
+                companion.timeSyncRequested;
+
             // Opportunistic probe if work exists but phone is not known available yet.
             if (companion.phoneState != COMPANION_PHONE_AVAILABLE &&
                 companion.workState == COMPANION_WORK_IDLE &&
-                (companion.pendingItems >= PHONE_COMPANION_ENRICH_THRESHOLD ||
-                 companion.manualEnrichRequested ||
-                 companion.offloadPrepRequested ||
-                 companion.timeSyncRequested)) {
+                companionProbeWorkPending) {
 
                 if (shouldRunPhoneProbe(companion)) {
                     requestPhoneProbeLease(
@@ -4108,6 +4135,16 @@ void TaskHardware(void* pvParameters) {
                                                       PHONE_PROBE_BACKLOG
                     );
                 }
+            }
+
+            // Field Mode on the phone may already be advertising before
+            // Spectre has enrichment work.  Keep probing lightly so the
+            // link becomes available as soon as the two radios overlap.
+            if (companion.phoneState != COMPANION_PHONE_AVAILABLE &&
+                companion.workState == COMPANION_WORK_IDLE &&
+                !companionProbeWorkPending &&
+                shouldRunPhoneProbe(companion)) {
+                requestPhoneProbeLease(companion, PHONE_PROBE_AVAILABILITY);
             }
 
             // Start enrichment only after phone is known available and WiFi is in a lull.
@@ -4282,7 +4319,7 @@ void TaskHardware(void* pvParameters) {
         if (storageOk &&
             STORAGE.hasStorageMaintenanceWork() &&
             canRunStorageMaintenance(companion, power, now)) {
-            STORAGE.repairStep(REPAIR_BUDGET_MS, REPAIR_MAX_RECORDS);
+            STORAGE.serviceStorageMaintenanceStep(REPAIR_BUDGET_MS, REPAIR_MAX_RECORDS);
         }
 
         _checkRuntimeContracts();

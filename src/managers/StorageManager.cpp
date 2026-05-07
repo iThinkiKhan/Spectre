@@ -45,6 +45,8 @@ static bool _spoolSegmentInfoEquals(const SpoolSegmentInfo& a,
            a.enrichDeltaCount == b.enrichDeltaCount &&
            a.missionCount == b.missionCount &&
            a.noiseCount == b.noiseCount &&
+           a.pendingUploadMissionCount == b.pendingUploadMissionCount &&
+           a.pendingUploadNoiseCount == b.pendingUploadNoiseCount &&
            a.p0Count == b.p0Count &&
            a.p1Count == b.p1Count &&
            a.p2Count == b.p2Count &&
@@ -2084,53 +2086,25 @@ StorageLaneCounts StorageManager::getPendingUploadCounts(const char* sessionIdOv
     if (!_ready) return counts;
 
     const bool filterBySession = sessionIdOverride && sessionIdOverride[0];
-    const String sessionId = filterBySession ? String(sessionIdOverride) : String();
-    const uint32_t sessionWatermark = filterBySession ? _uploadedWatermarkForSession(sessionId) : 0U;
+    if (filterBySession) {
+        DLOG_WARN("STORAGE",
+                  "Session pending upload lane count requested outside session summary; maintenance queued");
+        requestSpoolRepair("pending_upload_session_count_request");
+        return counts;
+    }
 
     for (const auto& seg : _spoolIndex.segments) {
         const bool summaryReady =
             seg.summaryValid &&
             seg.summaryVersion == SPOOL_SEGMENT_SUMMARY_VERSION;
 
-        if (summaryReady && seg.eventCount == 0) {
+        if (!summaryReady) {
+            requestSpoolRepair("pending_upload_summary_stale");
             continue;
         }
 
-        if (filterBySession &&
-            summaryReady &&
-            seg.lastEventId != 0 &&
-            seg.lastEventId <= sessionWatermark) {
-            continue;
-        }
-
-        const bool ok = _scanSegmentRecords(seg.segmentId,
-            [&](const DecodedSpoolRecord& rec) -> bool {
-                if (rec.recordType != SPOOL_REC_EVENT ||
-                    rec.eventId == 0 ||
-                    !rec.sessionId.length()) {
-                    return true;
-                }
-
-                if (filterBySession && rec.sessionId != sessionId) {
-                    return true;
-                }
-
-                const uint32_t watermark = _uploadedWatermarkForSession(rec.sessionId);
-                if (rec.eventId <= watermark) {
-                    return true;
-                }
-
-                if (_eventRecordLane(rec.doc.as<JsonObjectConst>()) == STORAGE_LANE_MISSION) {
-                    counts.mission++;
-                } else {
-                    counts.noise++;
-                }
-                return true;
-            });
-
-        if (!ok) {
-            return {};
-        }
+        counts.mission += seg.pendingUploadMissionCount;
+        counts.noise += seg.pendingUploadNoiseCount;
     }
 
     return counts;
@@ -2252,6 +2226,7 @@ bool StorageManager::getSessionStorageSummary(const char* sessionIdOverride,
     if (!sessionId.length()) {
         return true;
     }
+    const uint32_t sessionWatermark = _uploadedWatermarkForSession(sessionId);
 
     for (const auto& seg : _spoolIndex.segments) {
         const bool summaryReady =
@@ -2304,6 +2279,14 @@ bool StorageManager::getSessionStorageSummary(const char* sessionIdOverride,
                     out.lastEventId = rec.eventId;
                 }
 
+                if (rec.eventId > sessionWatermark) {
+                    if (lane == STORAGE_LANE_MISSION) {
+                        out.pendingUploadMission++;
+                    } else {
+                        out.pendingUploadNoise++;
+                    }
+                }
+
                 return true;
             });
 
@@ -2311,10 +2294,6 @@ bool StorageManager::getSessionStorageSummary(const char* sessionIdOverride,
             return false;
         }
     }
-
-    const StorageLaneCounts pendingUpload = getPendingUploadCounts(sessionId.c_str());
-    out.pendingUploadMission = pendingUpload.mission;
-    out.pendingUploadNoise = pendingUpload.noise;
 
     const StorageLaneCounts pendingEnrichment =
         getPendingEnrichmentCountsForSession(sessionId.c_str());
@@ -2501,7 +2480,8 @@ bool StorageManager::forEachEventForSession(const char* sessionIdOverride,
 }
 
 bool StorageManager::markEventUploaded(uint32_t eventId,
-                                       const char* sessionIdOverride) {
+                                       const char* sessionIdOverride,
+                                       uint8_t laneHint) {
     if (!_ready || eventId == 0) return false;
 
     String sessionId =
@@ -2527,6 +2507,7 @@ bool StorageManager::markEventUploaded(uint32_t eventId,
             _pendingEventCount--;
         }
         _spoolIndex.pendingTotal = _pendingEventCount;
+        _decrementPendingUploadForEvent(eventId, laneHint, "mark_uploaded_batch");
         _uploadBatchDirty = true;
         return true;
     }
@@ -2550,7 +2531,10 @@ bool StorageManager::markEventUploaded(uint32_t eventId,
         _pendingEventCount--;
     }
     _spoolIndex.pendingTotal = _pendingEventCount;
-    _pendingCountDirty = false;
+    _decrementPendingUploadForEvent(eventId, laneHint, "mark_uploaded_single");
+    if (!_spoolAuditRepairRequired && !_repairRequested) {
+        _pendingCountDirty = false;
+    }
     _persistEventMeta(true);
     refreshStorageUiState();
     _logSpoolDiagnostics("mark_uploaded_single", sessionId);
@@ -2600,6 +2584,10 @@ bool StorageManager::markEventsUploaded(uint32_t upToId) {
             if (decrement > _pendingEventCount) decrement = _pendingEventCount;
             _pendingEventCount -= decrement;
             _spoolIndex.pendingTotal = _pendingEventCount;
+            if (decrement > 0) {
+                _pendingCountDirty = true;
+                requestSpoolRepair("bulk_mark_lane_reconcile");
+            }
         } else {
             CONTRACT_WARN_ONCE(CONTRACT_STORAGE_MARK_OUTSIDE_BATCH,
                                "STORAGE",
@@ -2618,7 +2606,12 @@ bool StorageManager::markEventsUploaded(uint32_t upToId) {
             if (decrement > _pendingEventCount) decrement = _pendingEventCount;
             _pendingEventCount -= decrement;
             _spoolIndex.pendingTotal = _pendingEventCount;
-            _pendingCountDirty = false;
+            if (decrement > 0) {
+                _pendingCountDirty = true;
+                requestSpoolRepair("bulk_mark_lane_reconcile");
+            } else if (!_spoolAuditRepairRequired && !_repairRequested) {
+                _pendingCountDirty = false;
+            }
             _persistEventMeta(true);
             refreshStorageUiState();
             _logSpoolDiagnostics("mark_uploaded_bulk", sessionId);
@@ -2632,6 +2625,7 @@ bool StorageManager::markEventsUploaded(uint32_t upToId) {
                   sessionId.c_str(),
                   static_cast<unsigned long>(upToId));
         _pendingCountDirty = true;
+        requestSpoolRepair("bulk_mark_inexact");
     }
 
     // Defer flash writes while an upload batch is active so brownout-prone
@@ -4047,6 +4041,8 @@ void StorageManager::_clearSegmentSummary(SpoolSegmentInfo& seg) {
     seg.enrichDeltaCount = 0;
     seg.missionCount = 0;
     seg.noiseCount = 0;
+    seg.pendingUploadMissionCount = 0;
+    seg.pendingUploadNoiseCount = 0;
     seg.p0Count = 0;
     seg.p1Count = 0;
     seg.p2Count = 0;
@@ -4059,7 +4055,8 @@ void StorageManager::_clearSegmentSummary(SpoolSegmentInfo& seg) {
 void StorageManager::_updateSegmentSummaryFromEventDoc(SpoolSegmentInfo& seg,
                                                        JsonObjectConst doc,
                                                        uint32_t eventId,
-                                                       uint32_t timestampMs) {
+                                                       uint32_t timestampMs,
+                                                       bool pendingUpload) {
     const StorageLane lane = _eventRecordLane(doc);
     const StoragePriority prio = _eventRecordPriority(doc);
 
@@ -4067,8 +4064,14 @@ void StorageManager::_updateSegmentSummaryFromEventDoc(SpoolSegmentInfo& seg,
 
     if (lane == STORAGE_LANE_MISSION) {
         seg.missionCount++;
+        if (pendingUpload) {
+            seg.pendingUploadMissionCount++;
+        }
     } else {
         seg.noiseCount++;
+        if (pendingUpload) {
+            seg.pendingUploadNoiseCount++;
+        }
     }
 
     switch (prio) {
@@ -4128,6 +4131,7 @@ void StorageManager::_decrementPendingEnrichmentForEvent(uint32_t eventId) {
         if (!seg.summaryValid ||
             seg.summaryVersion != SPOOL_SEGMENT_SUMMARY_VERSION) {
             _pendingCountDirty = true;
+            requestSpoolRepair("pending_enrich_summary_stale");
             return;
         }
 
@@ -4136,6 +4140,7 @@ void StorageManager::_decrementPendingEnrichmentForEvent(uint32_t eventId) {
             // or pre-existing drift.  Either way, do not underflow; let
             // the next explicit recount reconcile.
             _pendingCountDirty = true;
+            requestSpoolRepair("pending_enrich_counter_clamp");
             return;
         }
 
@@ -4145,6 +4150,46 @@ void StorageManager::_decrementPendingEnrichmentForEvent(uint32_t eventId) {
     // Origin segment not found (e.g., compacted away).  Treat as benign:
     // the events that segment held have already left the spool, so any
     // count it contributed is gone with it.
+}
+
+void StorageManager::_decrementPendingUploadForEvent(uint32_t eventId,
+                                                     uint8_t laneHint,
+                                                     const char* reason) {
+    if (eventId == 0) return;
+
+    for (auto& seg : _spoolIndex.segments) {
+        if (seg.firstEventId == 0 || seg.lastEventId == 0) continue;
+        if (eventId < seg.firstEventId || eventId > seg.lastEventId) continue;
+
+        if (!seg.summaryValid ||
+            seg.summaryVersion != SPOOL_SEGMENT_SUMMARY_VERSION) {
+            _pendingCountDirty = true;
+            requestSpoolRepair(reason ? reason : "pending_upload_summary_stale");
+            return;
+        }
+
+        uint32_t* counter = nullptr;
+        if (laneHint == static_cast<uint8_t>(STORAGE_LANE_MISSION)) {
+            counter = &seg.pendingUploadMissionCount;
+        } else if (laneHint == static_cast<uint8_t>(STORAGE_LANE_NOISE)) {
+            counter = &seg.pendingUploadNoiseCount;
+        } else if (seg.pendingUploadMissionCount > 0 &&
+                   seg.pendingUploadNoiseCount == 0) {
+            counter = &seg.pendingUploadMissionCount;
+        } else if (seg.pendingUploadNoiseCount > 0 &&
+                   seg.pendingUploadMissionCount == 0) {
+            counter = &seg.pendingUploadNoiseCount;
+        }
+
+        if (counter && *counter > 0) {
+            (*counter)--;
+            return;
+        }
+
+        _pendingCountDirty = true;
+        requestSpoolRepair(reason ? reason : "pending_upload_lane_unknown");
+        return;
+    }
 }
 
 void StorageManager::_markSegmentEnrichmentDelta(SpoolSegmentInfo& seg,
@@ -4180,7 +4225,10 @@ void StorageManager::_updateSegmentSummaryFromDecodedRecord(SpoolSegmentInfo& se
     }
 
     const JsonObjectConst doc = rec.doc.as<JsonObjectConst>();
-    _updateSegmentSummaryFromEventDoc(seg, doc, rec.eventId, doc["ts"] | 0U);
+    const bool pendingUpload =
+        rec.sessionId.length() &&
+        rec.eventId > _uploadedWatermarkForSession(rec.sessionId);
+    _updateSegmentSummaryFromEventDoc(seg, doc, rec.eventId, doc["ts"] | 0U, pendingUpload);
 }
 
 bool StorageManager::_rebuildSegmentSummary(SpoolSegmentInfo& seg) {
@@ -4366,6 +4414,8 @@ bool StorageManager::_scanSegmentForAudit(SpoolSegmentInfo& rebuilt,
             scanned.summaryValid = rebuilt.summaryValid;
             scanned.missionCount = rebuilt.missionCount;
             scanned.noiseCount = rebuilt.noiseCount;
+            scanned.pendingUploadMissionCount = rebuilt.pendingUploadMissionCount;
+            scanned.pendingUploadNoiseCount = rebuilt.pendingUploadNoiseCount;
             scanned.p0Count = rebuilt.p0Count;
             scanned.p1Count = rebuilt.p1Count;
             scanned.p2Count = rebuilt.p2Count;
@@ -4832,20 +4882,20 @@ bool StorageManager::_repairBinaryMetaSlice(uint32_t startMs,
         return false;
     }
 
+    SpoolBin::SegmentHeaderV2 hdr;
+    if (!SpoolBin::readSegmentHeaderV2(f, hdr)) {
+        DLOG_WARN("STORAGE", "Repair hdr read failed path=%s", path.c_str());
+        f.close();
+        return false;
+    }
+
+    if (hdr.magic != SpoolBin::SEGMENT_MAGIC || hdr.version != 2) {
+        DLOG_WARN("STORAGE", "Repair invalid hdr path=%s", path.c_str());
+        f.close();
+        return false;
+    }
+
     if (_repairJob.fileOffset == 0) {
-        SpoolBin::SegmentHeaderV2 hdr;
-        if (!SpoolBin::readSegmentHeaderV2(f, hdr)) {
-            DLOG_WARN("STORAGE", "Repair hdr read failed path=%s", path.c_str());
-            f.close();
-            return false;
-        }
-
-        if (hdr.magic != SpoolBin::SEGMENT_MAGIC || hdr.version != 2) {
-            DLOG_WARN("STORAGE", "Repair invalid hdr path=%s", path.c_str());
-            f.close();
-            return false;
-        }
-
         _repairJob.fileOffset = sizeof(SpoolBin::SegmentHeaderV2);
     }
 
@@ -4900,6 +4950,7 @@ bool StorageManager::_repairBinaryMetaSlice(uint32_t startMs,
         recordsScanned++;
         _repairJob.audit.scannedRecords++;
 
+        const String sessionSeed = _repairJob.lastSession;
         BinaryMetaRecord rec;
         if (!_decodeBinaryMetaRecord(body.data(),
                                      body.size(),
@@ -4930,6 +4981,19 @@ bool StorageManager::_repairBinaryMetaSlice(uint32_t startMs,
             if (rec.eventId > watermark) {
                 _repairJob.audit.rebuiltPendingTotal++;
             }
+            DecodedSpoolRecord decoded;
+            if (_decodeBinarySpoolRecordBody(segmentId,
+                                             prefix.type,
+                                             body.data(),
+                                             body.size(),
+                                             hdr.createdMs,
+                                             sessionSeed,
+                                             decoded)) {
+                _updateSegmentSummaryFromDecodedRecord(_repairJob.rebuiltSegment,
+                                                       decoded);
+            } else {
+                _repairJob.rebuiltSegment.summaryValid = false;
+            }
             if (rec.eventId != 0) {
                 if (_repairJob.rebuiltSegment.firstEventId == 0 ||
                     rec.eventId < _repairJob.rebuiltSegment.firstEventId) {
@@ -4942,6 +5006,7 @@ bool StorageManager::_repairBinaryMetaSlice(uint32_t startMs,
         } else if (rec.recordType == SPOOL_REC_ENRICH_DELTA) {
             _repairJob.audit.validEnrichDeltas++;
             _repairJob.segmentValidEnrichDeltas++;
+            _repairJob.rebuiltSegment.enrichDeltaCount++;
         }
 
         if (rec.eventId > _repairJob.audit.maxEventIdSeen) {
@@ -4974,11 +5039,22 @@ void StorageManager::_finishRepairSegment() {
             before.firstEventId == _repairJob.rebuiltSegment.firstEventId &&
             before.lastEventId == _repairJob.rebuiltSegment.lastEventId;
 
-        if (existingSummaryStillMatches) {
+        const bool rebuiltSummaryReady =
+            _repairJob.rebuiltSegment.summaryValid &&
+            _repairJob.rebuiltSegment.summaryVersion == SPOOL_SEGMENT_SUMMARY_VERSION;
+
+        if (rebuiltSummaryReady) {
+            // Full binary decode during maintenance rebuilt the lane/priority
+            // counters in slices, so keep the freshly computed summary.
+        } else if (existingSummaryStillMatches) {
             _repairJob.rebuiltSegment.summaryVersion = before.summaryVersion;
             _repairJob.rebuiltSegment.summaryValid = before.summaryValid;
             _repairJob.rebuiltSegment.missionCount = before.missionCount;
             _repairJob.rebuiltSegment.noiseCount = before.noiseCount;
+            _repairJob.rebuiltSegment.pendingUploadMissionCount =
+                before.pendingUploadMissionCount;
+            _repairJob.rebuiltSegment.pendingUploadNoiseCount =
+                before.pendingUploadNoiseCount;
             _repairJob.rebuiltSegment.p0Count = before.p0Count;
             _repairJob.rebuiltSegment.p1Count = before.p1Count;
             _repairJob.rebuiltSegment.p2Count = before.p2Count;
@@ -5138,6 +5214,26 @@ bool StorageManager::_finalizeRepairJob() {
     _spoolAuditRepairRequired = false;
     refreshStorageUiState();
     return true;
+}
+
+bool StorageManager::serviceStorageMaintenanceStep(uint32_t budgetMs,
+                                                   uint16_t maxRecords) {
+    if (!_ready) {
+        return false;
+    }
+
+    if (!_repairRequested && !_spoolAuditRepairRequired && !_repairJob.active) {
+        if (_pendingCountDirty) {
+            requestSpoolRepair("counter_trust_degraded");
+        } else if (_spoolSummaryRebuildPending || _hasInvalidSpoolSummaries()) {
+            _spoolSummaryRebuildPending = true;
+            requestSpoolRepair("summary_rebuild_pending");
+        } else {
+            return true;
+        }
+    }
+
+    return repairStep(budgetMs, maxRecords);
 }
 
 bool StorageManager::repairStep(uint32_t budgetMs, uint16_t maxRecords) {
@@ -6342,6 +6438,8 @@ bool StorageManager::_persistSpoolIndex(bool force) {
         o["en"] = seg.enrichDeltaCount;
         o["mi"] = seg.missionCount;
         o["no"] = seg.noiseCount;
+        o["pum"] = seg.pendingUploadMissionCount;
+        o["pun"] = seg.pendingUploadNoiseCount;
         o["p0"] = seg.p0Count;
         o["p1"] = seg.p1Count;
         o["p2"] = seg.p2Count;
@@ -6418,6 +6516,8 @@ bool StorageManager::_loadSpoolIndex() {
         seg.enrichDeltaCount = segObj["en"] | 0U;
         seg.missionCount = segObj["mi"] | 0U;
         seg.noiseCount = segObj["no"] | 0U;
+        seg.pendingUploadMissionCount = segObj["pum"] | 0U;
+        seg.pendingUploadNoiseCount = segObj["pun"] | 0U;
         seg.p0Count = segObj["p0"] | 0U;
         seg.p1Count = segObj["p1"] | 0U;
         seg.p2Count = segObj["p2"] | 0U;
@@ -9289,6 +9389,11 @@ void StorageManager::spoolAuditToSerial(bool repair) {
                   static_cast<unsigned long>(audit.rebuiltPendingTotal),
                   static_cast<unsigned long>(audit.oldNextEventId),
                   static_cast<unsigned long>(_nextEventId));
+    const StorageLaneCounts pendingEnrich = getPendingEnrichmentCounts();
+    Serial.printf("[SPOOL] pendingEnrich mission=%lu noise=%lu total=%lu\r\n",
+                  static_cast<unsigned long>(pendingEnrich.mission),
+                  static_cast<unsigned long>(pendingEnrich.noise),
+                  static_cast<unsigned long>(pendingEnrich.total()));
     Serial.printf("[SPOOL] mismatch=%d repaired=%d fatal=%d\r\n",
                   audit.hadMismatch ? 1 : 0,
                   audit.repaired    ? 1 : 0,
@@ -9312,6 +9417,11 @@ void StorageManager::spoolDiagToSerial() {
                   static_cast<unsigned long>(_pendingEventCount),
                   static_cast<unsigned long>(_nextEventId),
                   static_cast<unsigned>(_spoolIndex.sessions.size()));
+    const StorageLaneCounts pendingEnrich = getPendingEnrichmentCounts();
+    Serial.printf("[SPOOL] pendingEnrich mission=%lu noise=%lu total=%lu\r\n",
+                  static_cast<unsigned long>(pendingEnrich.mission),
+                  static_cast<unsigned long>(pendingEnrich.noise),
+                  static_cast<unsigned long>(pendingEnrich.total()));
     Serial.printf("[SPOOL] used=%s auditRepairReq=%d summaryRebuildPending=%d\r\n",
                   getUsedString().c_str(),
                   _spoolAuditRepairRequired ? 1 : 0,

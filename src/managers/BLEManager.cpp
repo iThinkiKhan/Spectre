@@ -76,7 +76,7 @@ constexpr uint32_t BLE_PRE_INIT_SETTLE_MS    = 75UL;
 constexpr uint16_t CONNECT_SCAN_INTERVAL     = 16;  // 10 ms units used by NimBLE initiator
 constexpr uint16_t CONNECT_SCAN_WINDOW       = 16;
 constexpr uint32_t CONNECT_TIMEOUT_MS        = 8000UL;  // modest increase; was 6 s
-constexpr uint32_t CONNECT_TIMEOUT_PROBE_MS  = 15000UL;  // manual bench probe
+constexpr uint32_t CONNECT_TIMEOUT_PROBE_MS  = 45000UL;  // long field probe
 constexpr uint32_t CONNECT_WATCHDOG_MS       = 50000UL;
 constexpr uint32_t GPS_POLL_MS               = 5000UL;
 constexpr uint32_t CONTROL_POLL_MS           = 2000UL;
@@ -310,6 +310,7 @@ BLEManager::BLEManager()
     memset(_sessionId, 0, sizeof(_sessionId));
     memset(_deviceName, 0, sizeof(_deviceName));
     memset(_targetDeviceName, 0, sizeof(_targetDeviceName));
+    memset(_targetDeviceNameShort, 0, sizeof(_targetDeviceNameShort));
     memset(_targetServiceUUID, 0, sizeof(_targetServiceUUID));
     memset(_connectedDeviceName, 0, sizeof(_connectedDeviceName));
     memset(_connectedPeerAddr, 0, sizeof(_connectedPeerAddr));
@@ -321,6 +322,7 @@ BLEManager::BLEManager()
     memset(_metadataBuf, 0, sizeof(_metadataBuf));
 
     strlcpy(_targetDeviceName, SPECTRE_BLE_TARGET_DEVICE_NAME, sizeof(_targetDeviceName));
+    strlcpy(_targetDeviceNameShort, SPECTRE_BLE_TARGET_DEVICE_NAME_SHORT, sizeof(_targetDeviceNameShort));
     strlcpy(_targetServiceUUID, PHONE_SERVICE_UUID, sizeof(_targetServiceUUID));
     strlcpy(_receiptBuf, "IDLE", sizeof(_receiptBuf));
 }
@@ -2417,19 +2419,27 @@ BLEManager::_matchesTarget(const NimBLEAdvertisedDevice* advertisedDevice) {
         return TargetMatch::ServiceUuid;
     }
 
-    // Manual BTCON diagnostic fallback only. Production discovery remains
-    // service-UUID based, but this lets us prove an Android name-only
-    // advertisement is visible and connect to inspect the GATT table.
-    // Name fallback never persists _haveTargetAddress past the immediate
-    // attempt — the caller is responsible for clearing the cache after.
-    if (_manualProbeActive && advertisedDevice->haveName()) {
+    // Name fallback covers the bench condition where Android shortens the
+    // local name under payload pressure (advertises "SPHONE" instead of
+    // "SpectrePhone") and where the 128-bit service UUID isn't surviving the
+    // primary AD payload. Accept either the full target name or the short
+    // alias so production discovery can link until UUID packing is resolved.
+    if (advertisedDevice->haveName()) {
         const std::string name = advertisedDevice->getName();
-        if (equalsIgnoreCase(name.c_str(), _targetDeviceName) ||
-            startsWithIgnoreCase(name.c_str(), _targetDeviceName)) {
+        const char* matched = nullptr;
+        if (_targetDeviceName[0] != '\0' &&
+            (equalsIgnoreCase(name.c_str(), _targetDeviceName) ||
+             startsWithIgnoreCase(name.c_str(), _targetDeviceName))) {
+            matched = _targetDeviceName;
+        } else if (_targetDeviceNameShort[0] != '\0' &&
+                   equalsIgnoreCase(name.c_str(), _targetDeviceNameShort)) {
+            matched = _targetDeviceNameShort;
+        }
+        if (matched) {
             DLOG_WARN(TAG,
-                      "diag name fallback match name=%s target=%s",
+                      "name fallback match name=%s target=%s",
                       name.c_str(),
-                      _targetDeviceName);
+                      matched);
             return TargetMatch::NameFallback;
         }
     }

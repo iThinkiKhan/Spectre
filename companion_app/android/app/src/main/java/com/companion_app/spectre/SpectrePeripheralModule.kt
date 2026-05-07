@@ -79,7 +79,8 @@ class SpectrePeripheralModule(
     // server is running.  Short enough to make stalls obvious in the
     // logcat stream during a 30s ESP32 diagnostic window.
     private const val ADV_WATCHDOG_PERIOD_MS = 3000L
-    private const val BEACON_REFRESH_PERIOD_MS = 18000L
+    private const val BEACON_REFRESH_PERIOD_MS = 5000L
+    private const val CONNECTED_BEACON_REFRESH_PERIOD_MS = 12000L
 
     // How long to wait after startAdvertising() before the watchdog is
     // allowed to declare the callback missing and restart the advertiser.
@@ -669,12 +670,18 @@ class SpectrePeripheralModule(
     }
 
     if (advertising && advertiseStartSucceeded) {
-      if (connectedDevices.isEmpty() && ageMs >= BEACON_REFRESH_PERIOD_MS) {
+      val refreshPeriodMs = if (connectedDevices.isEmpty()) {
+        BEACON_REFRESH_PERIOD_MS
+      } else {
+        CONNECTED_BEACON_REFRESH_PERIOD_MS
+      }
+      if (ageMs >= refreshPeriodMs) {
         val nextMode = nextIdleBeaconMode()
         emitLog(
-          "adv beacon refresh mode=${advertiseMode.configValue}->${nextMode.configValue} ageMs=$ageMs"
+          "adv beacon refresh mode=${advertiseMode.configValue}->${nextMode.configValue} connected=${connectedDevices.size} ageMs=$ageMs"
         )
         advertiseMode = nextMode
+        totalAdvertiseRestarts += 1
         runCatching { startAdvertising(adapter) }.onFailure { error ->
           emitLog("adv beacon refresh failed: ${error.message}")
         }
@@ -700,15 +707,12 @@ class SpectrePeripheralModule(
 
   private fun nextIdleBeaconMode(): AdvertisePayloadMode {
     advertiseRefreshIndex += 1
-    return if (advertiseRefreshIndex % 3 == 0) {
-      AdvertisePayloadMode.SHORT_NAME
-    } else {
-      when (preferredAdvertiseMode) {
-        AdvertisePayloadMode.NAME_ONLY,
-        AdvertisePayloadMode.SHORT_NAME -> preferredAdvertiseMode
-        AdvertisePayloadMode.UUID_ONLY,
-        AdvertisePayloadMode.SERVICE_UUID_WITH_NAME_SCAN_RESPONSE -> AdvertisePayloadMode.UUID_ONLY
-      }
+    return when (preferredAdvertiseMode) {
+      AdvertisePayloadMode.NAME_ONLY,
+      AdvertisePayloadMode.SHORT_NAME -> preferredAdvertiseMode
+      AdvertisePayloadMode.UUID_ONLY -> AdvertisePayloadMode.UUID_ONLY
+      AdvertisePayloadMode.SERVICE_UUID_WITH_NAME_SCAN_RESPONSE ->
+        AdvertisePayloadMode.SERVICE_UUID_WITH_NAME_SCAN_RESPONSE
     }
   }
 

@@ -52,6 +52,7 @@ public:
 
     // Trigger a dump through radio arbiter
     bool requestDump(bool force = false);
+    bool requestFieldVaultDump();
 
     // BLE WireGuard trigger — always allowed, confirms intent
     bool bleTriggeredDump();

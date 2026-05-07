@@ -23,10 +23,14 @@ constexpr uint32_t CURRENT_WINDOW_MS = 90000UL;
 // spuriously short runtime estimate and triggering a premature critical state.
 constexpr uint32_t TREND_STABLE_MIN_MS = 120000UL;
 constexpr float MIN_SOC_DELTA_FOR_CURRENT = 0.45f;
-constexpr float NOMINAL_ACTIVE_CURRENT_MA = 135.0f;
-constexpr float NOMINAL_ECONOMY_CURRENT_MA = 95.0f;
-constexpr float MIN_RUNTIME_CURRENT_MA = 20.0f;
-constexpr float MAX_RUNTIME_CURRENT_MA = 400.0f;
+// Calibrated against an observed ~2 h runtime on the stock 1100 mAh cell —
+// the device draws far more in promiscuous-heavy use than the original 135 mA
+// guess implied. POWER_AGGRESSIVE_SAVING (CPU scaling, backlight floor) is
+// expected to bring this down; revisit after a discharge run with the flag on.
+constexpr float NOMINAL_ACTIVE_CURRENT_MA = 320.0f;
+constexpr float NOMINAL_ECONOMY_CURRENT_MA = 220.0f;
+constexpr float MIN_RUNTIME_CURRENT_MA = 40.0f;
+constexpr float MAX_RUNTIME_CURRENT_MA = 800.0f;
 
 struct SocPoint {
     uint16_t mv;

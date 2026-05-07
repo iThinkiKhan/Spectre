@@ -362,6 +362,16 @@ bool MQTTManager::bleTriggeredDump() {
     return requestDump(true);
 }
 
+bool MQTTManager::requestFieldVaultDump() {
+    if (_state != MQTT_IDLE) return false;
+    if (!FieldVault::hasPending()) return false;
+    if (_uploadPausedByMission()) {
+        DLOG_INFO("MQTT", "FieldVault upload deferred while non-uplink mission is active");
+        return false;
+    }
+    return _startStartupFieldDump();
+}
+
 bool MQTTManager::_maybeStartStartupFieldDump() {
 #if (MQTT_FIELDVAULT_STARTUP_UPLOAD_ENABLED == ON)
     if (_startupFieldDumpDone) return false;
@@ -1037,7 +1047,9 @@ bool MQTTManager::_runDumpSlice() {
                               static_cast<unsigned>(MQTT_POISON_FAIL_LIMIT));
 
                     if (_lastPoisonEventFailures >= MQTT_POISON_FAIL_LIMIT) {
-                        if (STORAGE.markEventUploaded(eventId, sessionId.c_str())) {
+                        const uint8_t laneHint =
+                            publishDoc["lane"] | static_cast<uint8_t>(STORAGE_LANE_NOISE);
+                        if (STORAGE.markEventUploaded(eventId, sessionId.c_str(), laneHint)) {
                             DLOG_WARN("MQTT",
                                       "Quarantined poison event session=%s event=%lu after %u failures",
                                       sessionId.c_str(),
@@ -1076,7 +1088,9 @@ bool MQTTManager::_runDumpSlice() {
                 }
                 _dumpSlicePause();
 
-                if (!STORAGE.markEventUploaded(eventId, sessionId.c_str())) {
+                const uint8_t laneHint =
+                    publishDoc["lane"] | static_cast<uint8_t>(STORAGE_LANE_NOISE);
+                if (!STORAGE.markEventUploaded(eventId, sessionId.c_str(), laneHint)) {
                     _lastFailed++;
                     DLOG_WARN("MQTT",
                               "Failed to mark uploaded event=%lu session=%s",
