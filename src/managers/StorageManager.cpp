@@ -12,6 +12,7 @@
 #include <cstdlib>
 #include <map>
 #include <functional>
+#include <esp_heap_caps.h>
 
 namespace {
 
@@ -2022,6 +2023,22 @@ bool StorageManager::prepareUploadIndexForUpload(uint32_t budgetMs) {
         DLOG_INFO("STORAGE",
                   "Upload index prepare rebuilt=0 reason=budget_too_small fallback=1");
         _releaseUploadIndexMemory("prepare_budget_too_small");
+        return false;
+    }
+
+    const uint32_t pending = getPendingEventCount();
+    const uint32_t estimatedIndexBytes =
+        pending * static_cast<uint32_t>(sizeof(UploadIndexRecordV1));
+    const uint32_t largestInternal =
+        heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
+    if (pending > 0 &&
+        estimatedIndexBytes > (largestInternal / 2U)) {
+        DLOG_WARN("STORAGE",
+                  "Upload index prepare rebuilt=0 reason=heap_guard pending=%lu estimate=%lu largest=%lu fallback=1",
+                  static_cast<unsigned long>(pending),
+                  static_cast<unsigned long>(estimatedIndexBytes),
+                  static_cast<unsigned long>(largestInternal));
+        _releaseUploadIndexMemory("prepare_heap_guard");
         return false;
     }
 
@@ -4147,7 +4164,32 @@ bool StorageManager::_scanSegmentForAudit(SpoolSegmentInfo& rebuilt,
             },
             local);
 
-        scanned.summaryValid = false;
+        scanned.eventCount = local.validEventRecords;
+        scanned.enrichDeltaCount = local.validEnrichDeltas;
+
+        const bool existingSummaryStillMatches =
+            rebuilt.summaryValid &&
+            rebuilt.summaryVersion == SPOOL_SEGMENT_SUMMARY_VERSION &&
+            rebuilt.recordCount == scanned.recordCount &&
+            rebuilt.eventCount == scanned.eventCount &&
+            rebuilt.enrichDeltaCount == scanned.enrichDeltaCount &&
+            rebuilt.firstEventId == scanned.firstEventId &&
+            rebuilt.lastEventId == scanned.lastEventId;
+
+        if (existingSummaryStillMatches) {
+            scanned.summaryVersion = rebuilt.summaryVersion;
+            scanned.summaryValid = rebuilt.summaryValid;
+            scanned.missionCount = rebuilt.missionCount;
+            scanned.noiseCount = rebuilt.noiseCount;
+            scanned.p0Count = rebuilt.p0Count;
+            scanned.p1Count = rebuilt.p1Count;
+            scanned.p2Count = rebuilt.p2Count;
+            scanned.p3Count = rebuilt.p3Count;
+            scanned.minTimestampMs = rebuilt.minTimestampMs;
+            scanned.maxTimestampMs = rebuilt.maxTimestampMs;
+        } else {
+            scanned.summaryValid = false;
+        }
         ok = (status != SpoolScanStatus::FATAL);
     } else {
         ok = _scanSegmentRecords(scanned.segmentId,
@@ -6340,7 +6382,7 @@ bool StorageManager::_appendSpoolRecord(JsonDocument& doc, uint32_t* outEventId)
         }
     }
 
-    if ((seg->recordCount % 8U) == 0U) {
+    if ((seg->recordCount % 64U) == 0U) {
         _logSpoolDiagnostics("append_batch");
     }
 
@@ -6461,7 +6503,7 @@ bool StorageManager::_appendSpoolEnrichmentDelta(const String& sessionId,
         }
     }
 
-    if ((seg->recordCount % 8U) == 0U) {
+    if ((seg->recordCount % 64U) == 0U) {
         _logSpoolDiagnostics("append_enrich_batch");
     }
 

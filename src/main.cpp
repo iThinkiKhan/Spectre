@@ -451,8 +451,7 @@ static bool _applyPhoneEnrichmentBatch(const PendingEnrichment* records,
 static PhoneStorageFrameV1 _buildPhoneStorageFrame();
 
 enum PhoneProbeReason : uint8_t {
-    PHONE_PROBE_BOOT = 0,
-    PHONE_PROBE_BACKLOG,
+    PHONE_PROBE_BACKLOG = 0,
     PHONE_PROBE_OFFLOAD_PREP,
     PHONE_PROBE_MANUAL,
     PHONE_PROBE_TIME_SYNC
@@ -475,9 +474,6 @@ struct CompanionScheduler {
 
     CompanionPhoneState phoneState = COMPANION_PHONE_UNKNOWN;
     CompanionWorkState workState = COMPANION_WORK_IDLE;
-
-    bool bootProbeDone = !PHONE_COMPANION_BOOT_PROBE;
-    uint8_t bootRetryIndex = 0;
 
     uint32_t nextProbeMs = 0;
     uint32_t lastSeenMs = 0;
@@ -518,14 +514,6 @@ static void _finishPhoneEnrichment(CompanionScheduler& cs, bool success);
 static void initEnrichQueue();
 static void serviceEnrichmentPipeline(CompanionScheduler& cs);
 
-static constexpr uint32_t PHONE_BOOT_RETRY_SCHEDULE_MS[] = {
-    8000UL,
-    120000UL,
-    300000UL,
-    600000UL,
-    1800000UL
-};
-
 static constexpr uint32_t WIFI_LULL_MIN_MS = 30000UL;
 static constexpr uint32_t PHONE_PROBE_MIN_GAP_MS = 120000UL;
 static constexpr uint32_t PHONE_AVAILABILITY_TTL_MS = 300000UL;
@@ -534,19 +522,20 @@ static constexpr uint32_t PHONE_STORAGE_PUBLISH_MIN_MS = 15000UL;
 // Probe absence backoff ladder.
 // After PROBE_BACKOFF_MISS_LIMIT[stage] consecutive misses the scheduler
 // advances to the next stage and resets the miss counter.  Stage 3 is the
-// floor: 12-minute probes indefinitely until the phone is seen again.
+// floor: 30-minute probes indefinitely until the phone is seen again.
+// Manual/priority requests still bypass this ladder for one shot.
 static constexpr uint8_t PROBE_BACKOFF_STAGES = 4;
 static constexpr uint8_t PROBE_BACKOFF_MISS_LIMIT[PROBE_BACKOFF_STAGES] = {
-    4,   // stage 0 → stage 1 after 4 normal-cadence misses
-    4,   // stage 1 → stage 2 after 4 × 3-min misses
-    4,   // stage 2 → stage 3 after 4 × 6-min misses
+    1,   // stage 0 -> stage 1 after the first automatic miss
+    2,   // stage 1 -> stage 2 after 2 x 5-min misses
+    2,   // stage 2 -> stage 3 after 2 x 15-min misses
     0,   // stage 3: indefinite (never advances further)
 };
 static constexpr uint32_t PROBE_BACKOFF_INTERVAL_MS[PROBE_BACKOFF_STAGES] = {
-    PHONE_PROBE_MIN_GAP_MS,   // stage 0 — normal (2 min)
-     3UL * 60000UL,           // stage 1 — 3 min
-     6UL * 60000UL,           // stage 2 — 6 min
-    12UL * 60000UL,           // stage 3 — 12 min (floor)
+    PHONE_PROBE_MIN_GAP_MS,   // stage 0: first automatic retry window
+     5UL * 60000UL,           // stage 1: 5 min
+    15UL * 60000UL,           // stage 2: 15 min
+    30UL * 60000UL,           // stage 3: 30 min floor
 };
 static constexpr uint32_t ENRICH_MIN_GAP_MS = 60000UL;
 static constexpr size_t PHONE_ENRICH_BATCH_MAX   = PHONE_COMPANION_ENRICH_BATCH_MAX;
@@ -598,7 +587,6 @@ static bool companionPhoneAvailabilityStale(const CompanionScheduler& cs) {
 
 static const char* phoneProbeReasonName(PhoneProbeReason reason) {
     switch (reason) {
-        case PHONE_PROBE_BOOT:         return "boot_probe";
         case PHONE_PROBE_BACKLOG:      return "backlog_probe";
         case PHONE_PROBE_OFFLOAD_PREP: return "offload_prep";
         case PHONE_PROBE_MANUAL:       return "manual_probe";
@@ -669,8 +657,6 @@ static CompanionCmd g_companionCmd;
 
 struct CompanionStatusSnapshot {
     bool enabled        = false;
-    bool bootProbe      = false;
-    bool autoEnrich     = false;
     CompanionPhoneState   phoneState = COMPANION_PHONE_UNKNOWN;
     CompanionWorkState    workState  = COMPANION_WORK_IDLE;
     bool bleBegun        = false;
@@ -715,11 +701,50 @@ static bool isWiFiBusyForPhoneProbe(const CompanionScheduler& cs) {
     return false;
 }
 
+static void _applyCompanionPendingFromMirror(CompanionScheduler& companion) {
+    uint32_t mission = 0;
+    uint32_t noise = 0;
+    bool valid = false;
+
+    STATE_READ_BEGIN();
+    valid = g_state.storageSummaryValid;
+    mission = g_state.storagePendingEnrichMission;
+    noise = g_state.storagePendingEnrichNoise;
+    STATE_READ_END();
+
+    if (!valid) {
+        return;
+    }
+
+    companion.pendingMissionItems = mission;
+    companion.pendingNoiseItems = noise;
+    companion.pendingItems = mission + noise;
+}
+
 static void refreshCompanionPending(CompanionScheduler& companion, bool force) {
     if (!companion.enabled) return;
 
     const uint32_t now = millis();
     if (!force && now - companion.lastPendingRefreshMs < 15000UL) {
+        return;
+    }
+
+    const RadioOwner owner = RADIO_ARB.currentOwner();
+    const bool radioActive =
+        owner == RADIO_WIFI_CAPTURE ||
+        owner == RADIO_WIFI_SCAN ||
+        owner == RADIO_WIFI_PMKID ||
+        owner == RADIO_BLE_GPS ||
+        owner == RADIO_BLE_TEXT ||
+        owner == RADIO_WIFI_UPLOAD;
+
+    // Automatic backlog probes should not perform a full spool scan every time
+    // the threshold is exceeded. At 15k-30k records that becomes background
+    // pressure. Use the storage mirror and let explicit/manual paths or idle
+    // windows do full recounts.
+    if (!force || radioActive) {
+        _applyCompanionPendingFromMirror(companion);
+        companion.lastPendingRefreshMs = now;
         return;
     }
 
@@ -836,10 +861,7 @@ static bool shouldRunEnrichment(const CompanionScheduler& cs) {
         return true;
     }
 
-    if (PHONE_COMPANION_AUTO_ENRICH) {
-        return cs.pendingItems >= PHONE_COMPANION_ENRICH_THRESHOLD;
-    }
-    return false;
+    return cs.pendingItems >= PHONE_COMPANION_ENRICH_THRESHOLD;
 }
 
 static bool requestPhoneProbeLease(CompanionScheduler& cs,
@@ -958,6 +980,10 @@ static bool _buildPendingEnrichmentBatch(EventBatchRecord* out,
         return false;
     }
 
+    DLOG_INFO("BLE", "Enrichment pending scan begin claimed=%u max=%u",
+              static_cast<unsigned>(enrichClaimedCount),
+              static_cast<unsigned>(maxCount));
+
     PendingEventDescriptor pending[PHONE_ENRICH_BATCH_MAX] = {};
     if (!STORAGE.getPendingEnrichmentBatchExcluding(
             enrichClaimedEventIds, enrichClaimedCount,
@@ -965,6 +991,9 @@ static bool _buildPendingEnrichmentBatch(EventBatchRecord* out,
         DLOG_WARN("BLE", "Failed to read spool enrichment backlog batch");
         return false;
     }
+
+    DLOG_INFO("BLE", "Enrichment pending scan done count=%u",
+              static_cast<unsigned>(outCount));
 
     for (size_t i = 0; i < outCount; ++i) {
         out[i].eventId     = pending[i].eventId;
@@ -1192,8 +1221,16 @@ static void drainOneEnrichBatch(CompanionScheduler& cs) {
     if (enrichQueueSize == 0) return;
     QueuedEnrichBatch& oldest = enrichQueue[enrichQueueHead];
     uint32_t batchApplied = 0, batchFailed = 0, batchStorageMs = 0;
+    DLOG_INFO("BLE", "Enrich drain begin count=%u queueSize=%u ageMs=%lu",
+              static_cast<unsigned>(oldest.count),
+              static_cast<unsigned>(enrichQueueSize),
+              static_cast<unsigned long>(millis() - oldest.queuedMs));
+    crashCheckpointVolatile(CrashPhase::STORAGE_APPEND,
+                            static_cast<uint8_t>(RADIO_ARB.currentOwner()),
+                            STORAGE.isReady() ? STORAGE.getPendingEventCount() : 0U);
     _applyPhoneEnrichmentBatch(oldest.records, oldest.count,
                                batchApplied, batchFailed, batchStorageMs);
+    crashBreadcrumbClearVolatile(CrashPhase::STORAGE_APPEND);
     enrichRemoveClaims(oldest.records, oldest.count);
     cs.enrichmentSessionApplied   += batchApplied;
     cs.enrichmentSessionFailed    += batchFailed;
@@ -1202,6 +1239,10 @@ static void drainOneEnrichBatch(CompanionScheduler& cs) {
     oldest.queuedMs = 0;
     enrichQueueHead = (enrichQueueHead + 1) % ENRICH_QUEUE_DEPTH;
     enrichQueueSize--;
+    DLOG_INFO("BLE", "Enrich drain done applied=%lu failed=%lu queueSize=%u",
+              static_cast<unsigned long>(batchApplied),
+              static_cast<unsigned long>(batchFailed),
+              static_cast<unsigned>(enrichQueueSize));
 }
 
 static void serviceEnrichmentPipeline(CompanionScheduler& cs) {
@@ -1214,6 +1255,7 @@ static void serviceEnrichmentPipeline(CompanionScheduler& cs) {
         drainOneEnrichBatch(cs);
         justDrained = true;
     }
+    bool justReceivedBatch = false;
 
     if (BLE_MGR.isPhoneCompanionReady()) {
         cs.phoneState = COMPANION_PHONE_AVAILABLE;
@@ -1237,23 +1279,37 @@ static void serviceEnrichmentPipeline(CompanionScheduler& cs) {
                 // Valid response received — enqueue and claim BEFORE clearing
                 // requestIssued so that the next _buildPendingEnrichmentBatch
                 // call excludes these IDs while they sit in the queue.
-                enqueueEnrichBatch(enrichments, outCount);
-                enrichClaimReceived(enrichments, outCount);
-                cs.enrichmentSessionBatches++;
-                cs.enrichmentSessionXferMs += BLE_MGR.getLastEnrichmentTransferMs();
-                cs.enrichmentRequestIssued = false;
-                cs.lastRequestedEnrichmentCount = 0;
-                DLOG_INFO("BLE", "Enrichment batch received count=%u claimed=%u queued=%u",
-                          static_cast<unsigned>(outCount),
-                          static_cast<unsigned>(enrichClaimedCount),
-                          static_cast<unsigned>(enrichQueueSize));
+                if (enqueueEnrichBatch(enrichments, outCount)) {
+                    enrichClaimReceived(enrichments, outCount);
+                    cs.enrichmentSessionBatches++;
+                    cs.enrichmentSessionXferMs += BLE_MGR.getLastEnrichmentTransferMs();
+                    cs.enrichmentRequestIssued = false;
+                    cs.lastRequestedEnrichmentCount = 0;
+                    justReceivedBatch = true;
+                    DLOG_INFO("BLE", "Enrichment batch received count=%u claimed=%u queued=%u",
+                              static_cast<unsigned>(outCount),
+                              static_cast<unsigned>(enrichClaimedCount),
+                              static_cast<unsigned>(enrichQueueSize));
+                } else {
+                    DLOG_WARN("BLE", "Enrichment queue full; ending session count=%u queued=%u",
+                              static_cast<unsigned>(outCount),
+                              static_cast<unsigned>(enrichQueueSize));
+                    enrichClearAllClaims();
+                    _finishPhoneEnrichment(cs, false);
+                    return;
+                }
             }
         }
 
         // Issue next request if the queue has room and no request is in flight.
         // Skip if we just drained — separates the storage write from the spool
         // scan by one 10ms tick, giving the heap one breath between them.
-        if (!cs.enrichmentRequestIssued && enrichQueueHasRoom() && !justDrained) {
+        // Also skip immediately after receiving a response.  The queued batch
+        // should be drained before another full pending-enrichment spool scan.
+        if (!cs.enrichmentRequestIssued &&
+            enrichQueueHasRoom() &&
+            !justDrained &&
+            !justReceivedBatch) {
             EventBatchRecord batch[PHONE_ENRICH_BATCH_MAX] = {};
             size_t batchCount = 0;
 
@@ -1598,10 +1654,8 @@ void _handleUsbConsoleLine(const char* rawLine) {
         const uint32_t lastScanStartMs = BLE_MGR.getLastScanStartMs();
         const int      disconnReason   = BLE_MGR.getLastDisconnectReason();
 
-        Serial.printf("[COMP] enabled=%d boot=%d auto=%d\r\n",
-                      s.enabled ? 1 : 0,
-                      s.bootProbe ? 1 : 0,
-                      s.autoEnrich ? 1 : 0);
+        Serial.printf("[COMP] enabled=%d\r\n",
+                      s.enabled ? 1 : 0);
         Serial.printf("[COMP] phone=%s work=%s\r\n",
                       companionPhoneStateName(s.phoneState),
                       companionWorkStateName(s.workState));
@@ -2503,6 +2557,10 @@ void _logRuntimeHealth(uint32_t nowMs) {
     static uint32_t lastHeapCheckMs = 0;
 
     if (nowMs - lastHealthLogMs >= HEALTH_LOG_INTERVAL_MS) {
+        uint8_t healthOwner = static_cast<uint8_t>(RADIO_ARB.currentOwner());
+        crashCheckpointVolatile(CrashPhase::RUNTIME_HEALTH,
+                                healthOwner,
+                                STORAGE.isReady() ? STORAGE.getPendingEventCount() : 0U);
         struct HealthSnapshot {
             bool wifiConnected;
             bool bleConnected;
@@ -2633,16 +2691,33 @@ void _logRuntimeHealth(uint32_t nowMs) {
         }
 
         lastHealthLogMs = nowMs;
+        crashBreadcrumbClearVolatile(CrashPhase::RUNTIME_HEALTH);
     }
 
     if (nowMs - lastHeapCheckMs >= HEAP_CHECK_INTERVAL_MS) {
-        const bool heapOk = heap_caps_check_integrity_all(false);
-        if (!heapOk) {
-            DLOG_ERROR("HEAP", "heap integrity check failed");
-            Serial.println("[HEAP] integrity check failed");
+        const RadioOwner owner = RADIO_ARB.currentOwner();
+        const bool radioActive =
+            owner == RADIO_WIFI_CAPTURE ||
+            owner == RADIO_WIFI_SCAN ||
+            owner == RADIO_WIFI_PMKID ||
+            owner == RADIO_BLE_GPS ||
+            owner == RADIO_BLE_TEXT;
+        if (radioActive) {
+            DLOG_DEBUG("HEAP", "integrity check deferred owner=%s",
+                       RadioArbiter::ownerName(owner));
         } else {
-            DLOG_DEBUG("HEAP", "heap integrity check ok");
-            Serial.println("[HEAP] integrity check ok");
+            crashCheckpointVolatile(CrashPhase::HEAP_INTEGRITY,
+                                    static_cast<uint8_t>(owner),
+                                    STORAGE.isReady() ? STORAGE.getPendingEventCount() : 0U);
+            const bool heapOk = heap_caps_check_integrity_all(false);
+            if (!heapOk) {
+                DLOG_ERROR("HEAP", "heap integrity check failed");
+                Serial.println("[HEAP] integrity check failed");
+            } else {
+                DLOG_DEBUG("HEAP", "heap integrity check ok");
+                Serial.println("[HEAP] integrity check ok");
+            }
+            crashBreadcrumbClearVolatile(CrashPhase::HEAP_INTEGRITY);
         }
         lastHeapCheckMs = nowMs;
     }
@@ -3353,8 +3428,14 @@ static void _clearStorageSummaryMirror() {
 static bool _refreshStorageSummaryMirror(bool force) {
     static uint32_t lastRefreshMs = 0;
     const uint32_t now = millis();
+    const uint32_t pendingBacklog =
+        STORAGE.isReady() ? STORAGE.getPendingEventCount() : 0U;
+    const uint32_t refreshIntervalMs =
+        pendingBacklog >= 10000UL ? 10UL * 60000UL :
+        pendingBacklog >= 1000UL  ?  5UL * 60000UL :
+                                    30000UL;
 
-    if (!force && now - lastRefreshMs < 30000UL) {
+    if (!force && now - lastRefreshMs < refreshIntervalMs) {
         return true;
     }
 
@@ -3364,10 +3445,18 @@ static bool _refreshStorageSummaryMirror(bool force) {
         return false;
     }
 
-    // Avoid heavy spool scan while upload owns WiFi and storage is in its
-    // most sensitive write window.  Forced refreshes (post-upload, post-export)
-    // always proceed.
-    if (!force && RADIO_ARB.isOwner(RADIO_WIFI_UPLOAD)) {
+    // Avoid heavy spool scans while any radio owner is active once the backlog
+    // is large. The mirror can be minutes stale under pressure; explicit
+    // commands and forced refreshes still recount.
+    const RadioOwner owner = RADIO_ARB.currentOwner();
+    const bool radioActive =
+        owner == RADIO_WIFI_CAPTURE ||
+        owner == RADIO_WIFI_SCAN ||
+        owner == RADIO_WIFI_PMKID ||
+        owner == RADIO_BLE_GPS ||
+        owner == RADIO_BLE_TEXT ||
+        owner == RADIO_WIFI_UPLOAD;
+    if (!force && pendingBacklog >= 1000UL && radioActive) {
         return false;
     }
 
@@ -3451,13 +3540,6 @@ void TaskHardware(void* pvParameters) {
     uint32_t lastWifiTick = 0;
     CompanionScheduler companion = {};
     companion.enabled = PHONE_COMPANION_ENABLED;
-    // Only prime the boot-probe countdown when boot probing is actually enabled.
-    // Without this gate, nextProbeMs gets set to 8 s even with boot probe off,
-    // which adds a spurious 8 s delay to the first manual probe.
-    companion.nextProbeMs =
-        (PHONE_COMPANION_ENABLED && PHONE_COMPANION_BOOT_PROBE)
-            ? PHONE_BOOT_RETRY_SCHEDULE_MS[0]
-            : 0;
     bool lastTextPending = false;
     ExecutionPolicy::UiRefreshMarks uiRefreshMarks = {};
 
@@ -3891,27 +3973,6 @@ void TaskHardware(void* pvParameters) {
                           companion.timeSyncRequested ? 1u : 0u);
             }
 
-            // Boot retry schedule: 8s, 2m, 5m, 10m, 30m, then stop automatic probing.
-            if (!companion.bootProbeDone &&
-                companion.bootRetryIndex <
-                    (sizeof(PHONE_BOOT_RETRY_SCHEDULE_MS) /
-                     sizeof(PHONE_BOOT_RETRY_SCHEDULE_MS[0])) &&
-                millis() >= PHONE_BOOT_RETRY_SCHEDULE_MS[companion.bootRetryIndex]) {
-
-                companion.nextProbeMs = millis();
-
-                if (shouldRunPhoneProbe(companion)) {
-                    if (requestPhoneProbeLease(companion, PHONE_PROBE_BOOT)) {
-                        companion.bootRetryIndex++;
-                        if (companion.bootRetryIndex >=
-                            (sizeof(PHONE_BOOT_RETRY_SCHEDULE_MS) /
-                             sizeof(PHONE_BOOT_RETRY_SCHEDULE_MS[0]))) {
-                            companion.bootProbeDone = true;
-                        }
-                    }
-                }
-            }
-
             // Opportunistic probe if work exists but phone is not known available yet.
             if (companion.phoneState != COMPANION_PHONE_AVAILABLE &&
                 companion.workState == COMPANION_WORK_IDLE &&
@@ -3919,8 +3980,6 @@ void TaskHardware(void* pvParameters) {
                  companion.manualEnrichRequested ||
                  companion.offloadPrepRequested ||
                  companion.timeSyncRequested)) {
-
-                companion.nextProbeMs = millis();
 
                 if (shouldRunPhoneProbe(companion)) {
                     requestPhoneProbeLease(
@@ -3983,7 +4042,6 @@ void TaskHardware(void* pvParameters) {
                     companion.phoneState = COMPANION_PHONE_AVAILABLE;
                     companion.lastSeenMs = millis();
                     companion.nextProbeMs = 0;
-                    companion.bootProbeDone = true;
                     companion.probeBackoffStage    = 0;
                     companion.probeBackoffMissCount = 0;
                     companion.manualProbeRequested = false;
@@ -4033,18 +4091,18 @@ void TaskHardware(void* pvParameters) {
                         PROBE_BACKOFF_INTERVAL_MS[companion.probeBackoffStage];
                     companion.nextProbeMs = millis() + interval;
 
-                    // Distinguish scan-miss from GATT-connected-but-auth-failed.
+                    // Compact probe summary — one line regardless of failure mode.
                     const auto authFail = BLE_MGR.getLastAuthFailReason();
                     if (authFail != BLEManager::BleAuthFailReason::NONE) {
                         DLOG_WARN("BLE",
-                                  "Phone probe failed: auth_fail=%u stage=%u miss=%u nextIn=%lus",
+                                  "probe_summary seen=0 result=auth_fail=%u stage=%u miss=%u nextIn=%lus",
                                   static_cast<unsigned>(authFail),
                                   static_cast<unsigned>(companion.probeBackoffStage),
                                   static_cast<unsigned>(companion.probeBackoffMissCount),
                                   static_cast<unsigned long>(interval / 1000UL));
                     } else {
                         DLOG_WARN("BLE",
-                                  "Phone probe failed: not_seen stage=%u miss=%u nextIn=%lus",
+                                  "probe_summary seen=0 result=not_seen stage=%u miss=%u nextIn=%lus",
                                   static_cast<unsigned>(companion.probeBackoffStage),
                                   static_cast<unsigned>(companion.probeBackoffMissCount),
                                   static_cast<unsigned long>(interval / 1000UL));

@@ -163,7 +163,11 @@ void RadioArbiter::release(RadioOwner owner,
     _clearActiveOwnerState();
     _lastSwitchMs = millis();
     if (serviceIdleOwner) {
+        crashCheckpointVolatile(CrashPhase::RADIO_RESUME,
+                                static_cast<uint8_t>(owner),
+                                STORAGE.isReady() ? STORAGE.getPendingEventCount() : 0U);
         _serviceIdleOwner(reason ? reason : "release");
+        crashBreadcrumbClearVolatile(CrashPhase::RADIO_RESUME);
     }
 }
 

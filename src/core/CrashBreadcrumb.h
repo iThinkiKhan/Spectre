@@ -38,6 +38,10 @@ enum class CrashPhase : uint8_t {
     BACKLOG_PROBE,   // BLE phone probe lease granted (no phone yet)
     BACKLOG_ENRICH,  // BLE enrichment exchange in progress
     BLE_AUTH,        // P-256 + AES-GCM handshake with phone underway
+    STORAGE_APPEND,  // storage append / enrichment delta batch write
+    RUNTIME_HEALTH,  // periodic health snapshot / serial diagnostics
+    HEAP_INTEGRITY,  // heap_caps_check_integrity_all diagnostic walk
+    RADIO_RESUME,    // idle fallback/radio owner resume after release
 };
 
 struct CrashLogEntry {
@@ -109,6 +113,10 @@ inline const char* crashPhaseName(CrashPhase p) {
         case CrashPhase::BACKLOG_PROBE:  return "backlog_probe";
         case CrashPhase::BACKLOG_ENRICH: return "backlog_enrich";
         case CrashPhase::BLE_AUTH:       return "ble_auth";
+        case CrashPhase::STORAGE_APPEND: return "storage_append";
+        case CrashPhase::RUNTIME_HEALTH: return "runtime_health";
+        case CrashPhase::HEAP_INTEGRITY: return "heap_integrity";
+        case CrashPhase::RADIO_RESUME:   return "radio_resume";
         default:                          return "?";
     }
 }
@@ -132,6 +140,26 @@ inline void crashCheckpoint(CrashPhase phase, uint8_t owner, uint32_t pending) {
 
     g_crashLog.head = (g_crashLog.head + 1) % CRASH_LOG_DEPTH;
     (void)crashBreadcrumbPersist();
+}
+
+// RTC-only checkpoint for frequent diagnostics. Survives panic/watchdog resets
+// without adding flash/NVS writes to hot paths.
+inline void crashCheckpointVolatile(CrashPhase phase, uint8_t owner, uint32_t pending) {
+    if (!_logReady()) _initLog();
+
+    CrashLogEntry& e = g_crashLog.entries[g_crashLog.head];
+    e.magic       = CRASH_ENTRY_MAGIC;
+    e.phase       = static_cast<uint8_t>(phase);
+    e.owner       = owner;
+    e.resolved    = 0;
+    e._pad        = 0;
+    e.pending     = pending;
+    e.heapMinFree = static_cast<uint32_t>(ESP.getMinFreeHeap());
+    e.uptimeMs    = static_cast<uint32_t>(millis());
+    e.seqNum      = g_crashLog.nextSeq++;
+    e.crc         = _entryCrc(e);
+
+    g_crashLog.head = (g_crashLog.head + 1) % CRASH_LOG_DEPTH;
 }
 
 // Mark the most-recently written checkpoint as cleanly resolved.
@@ -169,6 +197,26 @@ inline void crashBreadcrumbClear(CrashPhase phase) {
         newest->resolved = 1;
         newest->crc = _entryCrc(*newest);
         (void)crashBreadcrumbPersist();
+    }
+}
+
+inline void crashBreadcrumbClearVolatile(CrashPhase phase) {
+    if (!_logReady()) return;
+
+    const uint8_t phaseValue = static_cast<uint8_t>(phase);
+    CrashLogEntry* newest = nullptr;
+    for (uint8_t i = 0; i < CRASH_LOG_DEPTH; i++) {
+        CrashLogEntry& e = g_crashLog.entries[i];
+        if (_entryValid(e) && e.phase == phaseValue && e.resolved == 0) {
+            if (!newest || e.seqNum > newest->seqNum) {
+                newest = &e;
+            }
+        }
+    }
+
+    if (newest) {
+        newest->resolved = 1;
+        newest->crc = _entryCrc(*newest);
     }
 }
 

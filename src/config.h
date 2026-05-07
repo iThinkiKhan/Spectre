@@ -7,13 +7,10 @@
 // -----------------------------------------------------------------------------
 
 #define PHONE_COMPANION_ENABLED     true
-// Boot-time BLE probe (8 s → 2 m → 5 m → 10 m → 30 m retry ladder).
-#define PHONE_COMPANION_BOOT_PROBE  false
-#define PHONE_COMPANION_AUTO_ENRICH false
 // Pending event count that triggers automatic phone enrichment.
 // Keep this below MQTT_UPLOAD_READY_THRESHOLD so records can be enriched
 // before normal MQTT upload drains the spool.
-#define PHONE_COMPANION_ENRICH_THRESHOLD 48UL
+#define PHONE_COMPANION_ENRICH_THRESHOLD 270UL
 // Enrichment batch size. Batches above 18 exceed a single 247-MTU encrypted
 // ATT payload, so the BLE/write path and phone app must support long writes.
 // Keep <=64 unless BLEManager buffer sizing is audited.
@@ -28,7 +25,7 @@
 #define BOOT_SEQUENCE_VERBOSE       false
 
 // Gate off so the command isn't accidentally triggered in the field.
-#define BLE_SMOKE_ENABLED           true
+#define BLE_SMOKE_ENABLED           false
 
 // Safety gate: passive Pwny capture remains available, but active deauth is
 // disabled unless explicitly enabled here or manually requested from the UI.

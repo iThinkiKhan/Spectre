@@ -918,8 +918,6 @@ bool MQTTManager::_runDumpSlice() {
             }
 
             STORAGE.refreshStorageUiState();
-            DLOG_INFO("MQTT", "Published=%d Failed=%d",
-                      _lastPublished, _lastFailed);
 
             if (_lastPublished == 0 && _dumpCtx.maxEventsThisLease > 0) {
                 DLOG_WARN("MQTT",
@@ -966,8 +964,9 @@ bool MQTTManager::_runDumpSlice() {
                 }
             }
 
-            DLOG_INFO("MQTT", "Dump done — pub=%d fail=%d remain=%d",
-                      _lastPublished, _lastFailed, _queuedRecords);
+            DLOG_INFO("MQTT", "upload_session_summary pub=%d failed=%d remain=%d leaseMs=%lu",
+                      _lastPublished, _lastFailed, _queuedRecords,
+                      static_cast<unsigned long>(_uploadLeaseHoldMs));
 
             _dumpCtx.phase = (_lastFailed == 0) ? DUMP_PHASE_DONE : DUMP_PHASE_FAILED;
             return true;

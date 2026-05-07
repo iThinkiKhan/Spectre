@@ -525,6 +525,8 @@ void WiFiManager::handleFrame(void* buf,
     if (!_deferredQueue) return;
 
     wifi_promiscuous_pkt_t* pkt = (wifi_promiscuous_pkt_t*)buf;
+    int copyLen = pkt->rx_ctrl.sig_len;
+    if (copyLen <= 0) return;
 
     int nextHead = (_deferredHead + 1) % DEFERRED_QUEUE_SIZE;
     if (nextHead == _deferredTail) {
@@ -535,7 +537,6 @@ void WiFiManager::handleFrame(void* buf,
     }
 
     DeferredFrame& f = _deferredQueue[_deferredHead];
-    int copyLen = pkt->rx_ctrl.sig_len;
     if (copyLen > 128) copyLen = 128;
     memcpy(f.payload, pkt->payload, copyLen);
     f.len          = copyLen;
@@ -958,17 +959,30 @@ void WiFiManager::_parseRemoteID(const uint8_t* payload,
     ODID_UAS_Data uasData;
     memset(&uasData, 0, sizeof(uasData));
 
-    // Try to decode as packed message first.
+    // Packed messages are variable length. The OpenDroneID decoder assumes the
+    // complete pack buffer exists, so validate the advertised size first.
     if (len >= ODID_MESSAGE_SIZE) {
-        ODID_MessagePack_encoded* pack =
-            (ODID_MessagePack_encoded*)payload;
-        if (decodeMessagePack(&uasData, pack) == ODID_SUCCESS) {
-            _handleDecodedDrone(&uasData, rssi, channel);
-            return;
+        uint8_t msgType = (payload[0] >> 4) & 0x0F;
+        if (msgType == ODID_MESSAGETYPE_PACKED && len >= 3) {
+            const uint8_t singleMessageSize = payload[1];
+            const uint8_t packSize = payload[2];
+            const uint16_t requiredLen =
+                static_cast<uint16_t>(3U) +
+                static_cast<uint16_t>(packSize) * ODID_MESSAGE_SIZE;
+            if (singleMessageSize == ODID_MESSAGE_SIZE &&
+                packSize > 0 &&
+                packSize <= ODID_PACK_MAX_MESSAGES &&
+                len >= static_cast<int>(requiredLen)) {
+                ODID_MessagePack_encoded* pack =
+                    (ODID_MessagePack_encoded*)payload;
+                if (decodeMessagePack(&uasData, pack) == ODID_SUCCESS) {
+                    _handleDecodedDrone(&uasData, rssi, channel);
+                    return;
+                }
+            }
         }
 
         // Single message decode — check type first.
-        uint8_t msgType = (payload[0] >> 4) & 0x0F;
         switch (msgType) {
             case ODID_MESSAGETYPE_BASIC_ID:
                 if (decodeBasicIDMessage(&uasData.BasicID[0],
@@ -2326,6 +2340,7 @@ void WiFiManager::_updateRSSIHistory(TrackedDevice* dev,
 }
 
 void WiFiManager::_computeRSSITrends() {
+    static constexpr uint8_t kRssiHistorySize = 8;
     uint32_t now = millis();
     for (int i = 0; i < _deviceCount; i++) {
         TrackedDevice& dev = _devices[i];
@@ -2336,7 +2351,10 @@ void WiFiManager::_computeRSSITrends() {
         int n = dev.rssiCount;
 
         for (int j = 0; j < n; j++) {
-            uint8_t idx = (dev.rssiHead - n + j) % 8;
+            uint8_t idx = (static_cast<uint8_t>(dev.rssiHead % kRssiHistorySize) +
+                           kRssiHistorySize -
+                           static_cast<uint8_t>(n) +
+                           static_cast<uint8_t>(j)) % kRssiHistorySize;
             float x = (now - dev.rssiTimestamps[idx])
                       / 1000.0f;
             float y = dev.rssiHistory[idx];
@@ -2360,7 +2378,10 @@ void WiFiManager::_computeRSSITrends() {
         float mean = sumY / n;
         float var  = 0;
         for (int j = 0; j < n; j++) {
-            uint8_t idx = (dev.rssiHead - n + j) % 8;
+            uint8_t idx = (static_cast<uint8_t>(dev.rssiHead % kRssiHistorySize) +
+                           kRssiHistorySize -
+                           static_cast<uint8_t>(n) +
+                           static_cast<uint8_t>(j)) % kRssiHistorySize;
             float diff = dev.rssiHistory[idx] - mean;
             var += diff * diff;
         }

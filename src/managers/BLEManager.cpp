@@ -571,6 +571,7 @@ void BLEManager::setRadioEnabled(bool enabled) {
 
         _clearBleRxQueues();
         _manualProbeActive = false;
+        _probeStartMs = 0;
         _connectResultPending = false;
         _connectResultOk = false;
         _connectStartedMs = 0;
@@ -697,6 +698,19 @@ void BLEManager::tick() {
         // same address, drop the cache and force a fresh scan.
         _clearTargetCache("connect_watchdog_expired");
         _scheduleReconnect("connect watchdog");
+    }
+
+    // Probe timeout: phone not seen within CONNECT_TIMEOUT_PROBE_MS → release
+    // the radio early instead of burning the full lease.  Guard with
+    // !_haveTargetAddress so a found-but-not-yet-connected device isn't cut off.
+    if (_manualProbeActive && _radioEnabled && _probeStartMs != 0 &&
+        !_haveTargetAddress &&
+        (_state == BLE_SCANNING || _state == BLE_IDLE) &&
+        (now - _probeStartMs) >= CONNECT_TIMEOUT_PROBE_MS) {
+        DLOG_WARN(TAG, "probe timeout: phone not seen in %lums — releasing radio",
+                  static_cast<unsigned long>(CONNECT_TIMEOUT_PROBE_MS));
+        RADIO_ARB.release(RADIO_BLE_GPS, "probe_timeout");
+        return;
     }
 
     if (_state == BLE_IDLE && now >= _nextActionMs) {
@@ -869,6 +883,7 @@ bool BLEManager::requestCompanionLink(const char* reason, bool allowCachedReconn
 
     _manualProbeActive   = true;
     _probeConnectPending = true;
+    _probeStartMs        = 0;   // latched when first scan window opens, after settle
     _nextScanAllowedMs   = 0;
     _nextActionMs        = now + BLE_RADIO_SETTLE_MS;
     _scanDiagUntilMs     = now + (useCachedReconnect ? 12000UL : 45000UL);
@@ -1307,6 +1322,9 @@ void BLEManager::_startScanWindow() {
 
     _targetFound = false;
     _scanStartedMs = now;
+    if (_manualProbeActive && _probeStartMs == 0) {
+        _probeStartMs = now;   // start probe window clock on first scan
+    }
     _state = BLE_SCANNING;
     _scan->clearResults();
     _scan->setScanCallbacks(&_scanCallbacks, diagActive);
@@ -2182,6 +2200,21 @@ bool BLEManager::_bindRemoteCharacteristics() {
               _authNotifyEnabled ? 1 : 0,
               static_cast<unsigned>(mtu),
               static_cast<unsigned>(attPayload));
+
+    // Compact one-line summaries — keep these; they are the field-readable record.
+    const uint32_t scanMs = (_probeStartMs != 0 && _lastTargetSeenMs > _probeStartMs)
+                            ? (_lastTargetSeenMs - _probeStartMs)
+                            : 0;
+    DLOG_INFO(TAG, "probe_summary seen=1 matchedBy=%s rssi=%d scanMs=%lu",
+              _targetCachedFromService ? "service" : "name",
+              static_cast<int>(_lastTargetRssi),
+              static_cast<unsigned long>(scanMs));
+    DLOG_INFO(TAG, "phone_session_summary auth=ok mtu=%u gps=%d ctrl=%d enrich=%d storage=%d",
+              static_cast<unsigned>(mtu),
+              _gpsRemoteChar ? 1 : 0,
+              _controlRemoteChar ? 1 : 0,
+              _enrichmentRemoteChar ? 1 : 0,
+              _storageRemoteChar ? 1 : 0);
     return true;
 }
 

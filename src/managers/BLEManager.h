@@ -374,6 +374,7 @@ private:
     uint32_t  _workerMinFreeStackBytes = 0;
     uint32_t _lastScanStartMs = 0;
     uint32_t _nextScanAllowedMs = 0;
+    uint32_t _probeStartMs = 0;   // wall-time of first scan window in current probe; 0 = no probe
     uint32_t _lastBeginMs = 0;
     uint32_t _lastLeaseRenewMs = 0;
     int      _lastDisconnectReason = 0;
