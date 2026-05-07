@@ -44,6 +44,7 @@
 #include "managers/SettingsManager.h"
 #include "managers/TimeService.h"
 #include "core/DebugLog.h"
+#include "data/FieldVault.h"
 #include "ui/BootSequence.h"
 #include "ui/LVGLDriver.h"
 #include "ui/Theme.h"
@@ -57,6 +58,23 @@ LoRaManager     lora;
 ReyaxBackend    subghzReyax(lora);
 
 namespace {
+    // Compile-time subsystem mask, resolved from the SPECTRE_DEBUG_AREA_*
+    // toggles in config.h. Only consulted by DEBUG/DEV profiles; OFF rejects
+    // everything and RUN passes WARN/ERROR for any subsystem.
+    constexpr uint32_t kDebugSubsystemMask =
+        (SPECTRE_DEBUG_AREA_GENERAL  ? DEBUG_AREA_GENERAL  : 0u) |
+        (SPECTRE_DEBUG_AREA_CORE     ? DEBUG_AREA_CORE     : 0u) |
+        (SPECTRE_DEBUG_AREA_SETTINGS ? DEBUG_AREA_SETTINGS : 0u) |
+        (SPECTRE_DEBUG_AREA_STORAGE  ? DEBUG_AREA_STORAGE  : 0u) |
+        (SPECTRE_DEBUG_AREA_TIME     ? DEBUG_AREA_TIME     : 0u) |
+        (SPECTRE_DEBUG_AREA_RADIO    ? DEBUG_AREA_RADIO    : 0u) |
+        (SPECTRE_DEBUG_AREA_WIFI     ? DEBUG_AREA_WIFI     : 0u) |
+        (SPECTRE_DEBUG_AREA_BLE      ? DEBUG_AREA_BLE      : 0u) |
+        (SPECTRE_DEBUG_AREA_MQTT     ? DEBUG_AREA_MQTT     : 0u) |
+        (SPECTRE_DEBUG_AREA_EXPORT   ? DEBUG_AREA_EXPORT   : 0u) |
+        (SPECTRE_DEBUG_AREA_GPS      ? DEBUG_AREA_GPS      : 0u) |
+        (SPECTRE_DEBUG_AREA_MODE     ? DEBUG_AREA_MODE     : 0u);
+
     constexpr uint32_t DISPLAY_FRAME_INTERVAL_MS = 50;
     constexpr uint32_t DISPLAY_MASCOT_INTERVAL_MS = 140;
     constexpr uint32_t PWNY_SCREEN_REFRESH_MS = 750;
@@ -419,6 +437,7 @@ void _logRuntimeHealth(uint32_t nowMs);
 bool _waitForDisplayLayerReady(uint32_t timeoutMs);
 void _publishStorageState(bool storageOk, const String& storageUsed);
 void _loadKnownLocationsIntoState();
+static const char* _resetReasonName(esp_reset_reason_t r);
 void _applySubGhzStatusToState(const SubGhzStatus& status);
 void _applyPowerSnapshotToState(const PowerSnapshot& power);
 void _initializeHardwareManagers(uint32_t& lastWifiTick);
@@ -522,7 +541,7 @@ static constexpr uint32_t PHONE_STORAGE_PUBLISH_MIN_MS = 15000UL;
 // Probe absence backoff ladder.
 // After PROBE_BACKOFF_MISS_LIMIT[stage] consecutive misses the scheduler
 // advances to the next stage and resets the miss counter.  Stage 3 is the
-// floor: 30-minute probes indefinitely until the phone is seen again.
+// floor: 15-minute probes indefinitely until the phone is seen again.
 // Manual/priority requests still bypass this ladder for one shot.
 static constexpr uint8_t PROBE_BACKOFF_STAGES = 4;
 static constexpr uint8_t PROBE_BACKOFF_MISS_LIMIT[PROBE_BACKOFF_STAGES] = {
@@ -535,12 +554,17 @@ static constexpr uint32_t PROBE_BACKOFF_INTERVAL_MS[PROBE_BACKOFF_STAGES] = {
     PHONE_PROBE_MIN_GAP_MS,   // stage 0: first automatic retry window
      5UL * 60000UL,           // stage 1: 5 min
     15UL * 60000UL,           // stage 2: 15 min
-    30UL * 60000UL,           // stage 3: 30 min floor
+    15UL * 60000UL,           // stage 3: 15 min floor
 };
 static constexpr uint32_t ENRICH_MIN_GAP_MS = 60000UL;
 static constexpr size_t PHONE_ENRICH_BATCH_MAX   = PHONE_COMPANION_ENRICH_BATCH_MAX;
 static constexpr size_t ENRICH_QUEUE_DEPTH       = 2;
 static constexpr size_t ENRICH_CLAIM_MAX         = ENRICH_QUEUE_DEPTH * PHONE_ENRICH_BATCH_MAX;
+static constexpr uint32_t REPAIR_BUDGET_MS       = 8;
+static constexpr uint16_t REPAIR_MAX_RECORDS     = 64;
+static constexpr uint32_t REPAIR_UI_QUIET_MS     = 500;
+static constexpr uint32_t REPAIR_HEAP_FREE_GUARD = 96UL * 1024UL;
+static constexpr uint32_t REPAIR_HEAP_BLOCK_GUARD = 32UL * 1024UL;
 
 struct QueuedEnrichBatch {
     PendingEnrichment records[PHONE_ENRICH_BATCH_MAX];
@@ -699,6 +723,67 @@ static bool isWiFiBusyForPhoneProbe(const CompanionScheduler& cs) {
     }
 
     return false;
+}
+
+static bool hasActiveUiOperation(uint32_t nowMs) {
+    if (nowMs - _lastUiActivityMs() < REPAIR_UI_QUIET_MS) {
+        return true;
+    }
+
+    bool active = false;
+    STATE_READ_BEGIN();
+    active = g_state.textInputPending ||
+             g_state.wifiListActive ||
+             g_state.missionListActive ||
+             g_state.badUsbListActive ||
+             g_state.debriefActive ||
+             g_state.badUsbRunning ||
+             g_state.requestSleep;
+    STATE_READ_END();
+    return active;
+}
+
+static bool canRunStorageMaintenance(const CompanionScheduler& companion,
+                                     const PowerSnapshot& power,
+                                     uint32_t nowMs) {
+    const RadioOwner owner = RADIO_ARB.currentOwner();
+    if (owner != RADIO_WIFI_CAPTURE && owner != RADIO_NONE) {
+        return false;
+    }
+
+    bool uploadActive = false;
+    STATE_READ_BEGIN();
+    uploadActive = g_state.uploadActive;
+    STATE_READ_END();
+
+    if (uploadActive ||
+        MQTT_MGR.getState() != MQTT_IDLE ||
+        STORAGE.isUploadBatchActive()) {
+        return false;
+    }
+
+    if (companion.workState != COMPANION_WORK_IDLE) {
+        return false;
+    }
+
+    if (hasActiveUiOperation(nowMs)) {
+        return false;
+    }
+
+    const uint32_t freeHeap = heap_caps_get_free_size(MALLOC_CAP_8BIT);
+    const uint32_t largestHeap =
+        heap_caps_get_largest_free_block(MALLOC_CAP_8BIT);
+    if (freeHeap < REPAIR_HEAP_FREE_GUARD ||
+        largestHeap < REPAIR_HEAP_BLOCK_GUARD) {
+        return false;
+    }
+
+    if (power.state == POWER_STATE_BATTERY_CRITICAL ||
+        (power.source == POWER_SOURCE_BATTERY && power.percent <= 3)) {
+        return false;
+    }
+
+    return true;
 }
 
 static void _applyCompanionPendingFromMirror(CompanionScheduler& companion) {
@@ -2233,6 +2318,38 @@ void _initializeHardwareManagers(uint32_t& lastWifiTick) {
     STATE_WRITE_END();
     syncRuntimePresentation();
 
+    // Write FieldVault records now that sessionId is populated. Heavy file
+    // work intentionally happens here (not in setup() or in a crash/panic
+    // context) so it cannot interfere with hardware bring-up timing.
+    //
+    // Order matters for human readability of field.jsonl: a crash from the
+    // prior boot (if any) is written first, then this boot's summary, so
+    // each boot's narrative reads "prior crash → new boot".
+    if (FieldVault::isReady()) {
+        const esp_reset_reason_t rr = esp_reset_reason();
+        const uint32_t pending =
+            STORAGE.isReady() ? STORAGE.getPendingEventCount() : 0;
+        const uint32_t heapKb =
+            static_cast<uint32_t>(ESP.getMinFreeHeap() / 1024);
+        char isoBuf[24] = "";
+        TIME_SVC.formatNowIso(isoBuf, sizeof(isoBuf));
+        char sidBuf[40];
+        STATE_READ_BEGIN();
+        strlcpy(sidBuf, g_state.sessionId, sizeof(sidBuf));
+        STATE_READ_END();
+
+        FieldVault::vaultUnresolvedCrashIfNew(static_cast<uint8_t>(rr),
+                                              _resetReasonName(rr),
+                                              sidBuf,
+                                              isoBuf);
+        FieldVault::appendBoot(static_cast<uint8_t>(rr),
+                               _resetReasonName(rr),
+                               heapKb,
+                               pending,
+                               sidBuf,
+                               isoBuf);
+    }
+
     DLOG_INFO("WIFI", "Allocation: %s",
               WIFI_MGR.isAllocated() ? "OK" : "FAIL");
     lastWifiTick = millis();
@@ -3562,6 +3679,7 @@ void TaskHardware(void* pvParameters) {
 
     if (storageOk) {
         DebugLog::begin();
+        FieldVault::begin();
         _loadKnownLocationsIntoState();
         _refreshStorageSummaryMirror(true);
     }
@@ -4160,6 +4278,13 @@ void TaskHardware(void* pvParameters) {
         lastWifiRefresh = uiRefreshMarks.wifiMs;
         lastPwnyRefresh = uiRefreshMarks.pwnyMs;
         lastSystemRefresh = uiRefreshMarks.systemMs;
+
+        if (storageOk &&
+            STORAGE.hasStorageMaintenanceWork() &&
+            canRunStorageMaintenance(companion, power, now)) {
+            STORAGE.repairStep(REPAIR_BUDGET_MS, REPAIR_MAX_RECORDS);
+        }
+
         _checkRuntimeContracts();
 
         if (now - lastStackLogMs >= STACK_LOG_INTERVAL_MS) {
@@ -4254,6 +4379,11 @@ static const char* _resetReasonName(esp_reset_reason_t r) {
 void setup() {
     Serial.begin(115200);
     delay(500);
+
+    // Apply the compile-time debug profile before any DLOG_* call so disabled
+    // logs cost nothing from boot onward.
+    DebugLog::applyProfile(static_cast<DebugProfile>(SPECTRE_DEBUG_PROFILE),
+                           kDebugSubsystemMask);
 
     // ── Boot diagnostics — runs before any manager initializes ───────────────
     {

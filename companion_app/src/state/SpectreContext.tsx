@@ -663,6 +663,7 @@ export function SpectreProvider({children}: {children: React.ReactNode}) {
         controlBase64: startupConfigRef.current.controlBase64,
         enrichmentBase64: '',
         advertiseMode: 'uuidOnly',
+        useDeviceLocation: locationMode === 'device',
       });
       setPeripheralState(state);
       appendLog('Field Mode foreground service started');

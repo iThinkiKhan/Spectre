@@ -3,6 +3,7 @@
 #pragma once
 
 #include <Arduino.h>
+#include <string.h>
 
 enum DebugArea : uint32_t {
     DEBUG_AREA_GENERAL  = 1u << 0,
@@ -51,5 +52,73 @@ inline char sanitizeDebugLevel(char level) {
     }
 }
 
+inline int debugLevelRank(char level) {
+    switch (sanitizeDebugLevel(level)) {
+        case DEBUG_LEVEL_ERROR:   return 3;
+        case DEBUG_LEVEL_WARN:    return 2;
+        case DEBUG_LEVEL_INFO:    return 1;
+        case DEBUG_LEVEL_VERBOSE:
+        default:                  return 0;
+    }
+}
 
+// Map a log tag to the subsystem area bit it belongs to. Kept inline so the
+// early DLOG gate can short-circuit without extra translation units.
+inline uint32_t debugAreaMaskForTag(const char* tag) {
+    if (!tag || !tag[0]) {
+        return DEBUG_AREA_GENERAL;
+    }
+    if (strcmp(tag, "SYS") == 0 ||
+        strcmp(tag, "CORE") == 0 ||
+        strcmp(tag, "STACK") == 0 ||
+        strcmp(tag, "HEAP") == 0 ||
+        strcmp(tag, "BTN") == 0) {
+        return DEBUG_AREA_CORE;
+    }
+    if (strcmp(tag, "SETTINGS") == 0) {
+        return DEBUG_AREA_SETTINGS;
+    }
+    if (strcmp(tag, "STOR") == 0 ||
+        strcmp(tag, "STORAGE") == 0) {
+        return DEBUG_AREA_STORAGE;
+    }
+    if (strcmp(tag, "TIME") == 0) {
+        return DEBUG_AREA_TIME;
+    }
+    if (strcmp(tag, "RADIO") == 0 ||
+        strcmp(tag, "LORA") == 0 ||
+        strcmp(tag, "SUBGHZ") == 0) {
+        return DEBUG_AREA_RADIO;
+    }
+    if (strcmp(tag, "WIFI") == 0 ||
+        strcmp(tag, "ANT") == 0 ||
+        strcmp(tag, "DRONE") == 0) {
+        return DEBUG_AREA_WIFI;
+    }
+    if (strcmp(tag, "BLE") == 0) {
+        return DEBUG_AREA_BLE;
+    }
+    if (strcmp(tag, "MQTT") == 0) {
+        return DEBUG_AREA_MQTT;
+    }
+    if (strcmp(tag, "EXPORT") == 0) {
+        return DEBUG_AREA_EXPORT;
+    }
+    if (strcmp(tag, "GPS") == 0) {
+        return DEBUG_AREA_GPS;
+    }
+    if (strcmp(tag, "MODE") == 0 ||
+        strcmp(tag, "MISSION") == 0 ||
+        strcmp(tag, "UI") == 0) {
+        return DEBUG_AREA_MODE;
+    }
+    return DEBUG_AREA_GENERAL;
+}
+
+enum DebugProfile : uint8_t {
+    DEBUG_PROFILE_OFF   = 0,
+    DEBUG_PROFILE_RUN   = 1,
+    DEBUG_PROFILE_DEBUG = 2,
+    DEBUG_PROFILE_DEV   = 3,
+};
 

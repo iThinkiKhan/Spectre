@@ -15,6 +15,7 @@ type NativePeripheralModule = {
     controlBase64: string;
     enrichmentBase64: string;
     advertiseMode?: PeripheralAdvertiseMode;
+    useDeviceLocation?: boolean;
   }): Promise<PeripheralState>;
   stopServer(): Promise<PeripheralState>;
   updateMetadata(metadata: string): Promise<void>;
@@ -117,6 +118,7 @@ export class SpectrePeripheralBridge {
     controlBase64: string;
     enrichmentBase64: string;
     advertiseMode?: PeripheralAdvertiseMode;
+    useDeviceLocation?: boolean;
   }): Promise<PeripheralState> {
     if (!nativeModule) {
       const fallback = {

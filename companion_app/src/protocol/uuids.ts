@@ -14,3 +14,5 @@ export const PHONE_CONTROL_UUID = '84f03a80-6d7b-4d4d-9a64-6b2d6f3a0003';
 export const PHONE_METADATA_UUID = '84f03a80-6d7b-4d4d-9a64-6b2d6f3a0004';
 export const PHONE_EVENT_BATCH_UUID = '84f03a80-6d7b-4d4d-9a64-6b2d6f3a0005';
 export const PHONE_ENRICHMENT_UUID = '84f03a80-6d7b-4d4d-9a64-6b2d6f3a0006';
+export const PHONE_AUTH_UUID = '84f03a80-6d7b-4d4d-9a64-6b2d6f3a0007';
+export const PHONE_STORAGE_UUID = '84f03a80-6d7b-4d4d-9a64-6b2d6f3a0008';

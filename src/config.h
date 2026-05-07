@@ -2,113 +2,169 @@
 #include "SecretsConfig.h"
 #include "core/ScreenEnum.h"
 
-// -----------------------------------------------------------------------------
-// Feature flags
-// -----------------------------------------------------------------------------
+// Spectre config
+//
+// Flip switches with ON/OFF (or 1/0). Time values are seconds unless the name
+// ends in _MS.
 
-#define PHONE_COMPANION_ENABLED     true
-// Pending event count that triggers automatic phone enrichment.
-// Keep this below MQTT_UPLOAD_READY_THRESHOLD so records can be enriched
-// before normal MQTT upload drains the spool.
-#define PHONE_COMPANION_ENRICH_THRESHOLD 270UL
-// Enrichment batch size. Batches above 18 exceed a single 247-MTU encrypted
-// ATT payload, so the BLE/write path and phone app must support long writes.
-// Keep <=64 unless BLEManager buffer sizing is audited.
-#define PHONE_COMPANION_ENRICH_BATCH_MAX 18
+// Shared switch values. ON is a macro for build-flag use; OFF is a typed
+// constant so it does not collide with enum values like SubGhzMode::OFF.
+#define ON  1
+static constexpr uint8_t OFF = 0;
+
 #define SPECTRE_SECONDS_TO_MS(seconds) ((uint32_t)(seconds) * 1000UL)
 
 // -----------------------------------------------------------------------------
-// Diagnostic tools (keep false in production builds).
+// Main switches
 // -----------------------------------------------------------------------------
 
-#define BOOT_SEQUENCE_ENABLED       true
-#define BOOT_SEQUENCE_VERBOSE       false
+#define PHONE_COMPANION_ENABLED     ON
+#define PHONE_COMPANION_ENRICH_THRESHOLD 270UL
+#define PHONE_COMPANION_ENRICH_BATCH_MAX 18
 
-// Gate off so the command isn't accidentally triggered in the field.
-#define BLE_SMOKE_ENABLED           false
+#define BOOT_SEQUENCE_ENABLED       ON
+#define BOOT_SEQUENCE_VERBOSE       OFF
 
-// Safety gate: passive Pwny capture remains available, but active deauth is
-// disabled unless explicitly enabled here or manually requested from the UI.
-#define PWNY_ACTIVE_ATTACKS_ENABLED false
+#define BLE_SMOKE_ENABLED           OFF
+
+#define PWNY_ACTIVE_ATTACKS_ENABLED OFF
 
 // -----------------------------------------------------------------------------
-// Timing and upload behavior
+// Timing
 // -----------------------------------------------------------------------------
 
-// Fine-grained timing stays in milliseconds to preserve sub-second precision.
-#define BUTTON_LONG_PRESS_MS          800UL
-#define BUTTON_DEBOUNCE_MS            50UL
+// Button timing needs sub-second precision, so it stays in milliseconds.
+#define BUTTON_LONG_PRESS_MS          800UL   // ms
+#define BUTTON_DEBOUNCE_MS            50UL    // ms
 
-#define MQTT_DUMP_INTERVAL_SEC        7200UL
+#define MQTT_DUMP_INTERVAL_SEC        7200UL  // seconds
 #define MQTT_DUMP_INTERVAL_MS         SPECTRE_SECONDS_TO_MS(MQTT_DUMP_INTERVAL_SEC)
-#define MQTT_CONNECT_TIMEOUT_SEC      10UL
+#define MQTT_CONNECT_TIMEOUT_SEC      10UL    // seconds
 #define MQTT_CONNECT_TIMEOUT_MS       SPECTRE_SECONDS_TO_MS(MQTT_CONNECT_TIMEOUT_SEC)
-#define MQTT_FAILED_BACKOFF_SEC       300UL
+#define MQTT_FAILED_BACKOFF_SEC       300UL   // seconds
 #define MQTT_FAILED_BACKOFF_MS        SPECTRE_SECONDS_TO_MS(MQTT_FAILED_BACKOFF_SEC)
 #define MQTT_POISON_FAIL_LIMIT        3
 
-#define MQTT_UPLOAD_READY_THRESHOLD   5000
-
-// ── Upload slice / batch tuning ───────────────────────────────────────────────
-//
-// MQTT upload runs in cooperative slices on TaskHardware.  Each call to
-// _runDumpSlice() does one of two things:
-//
-//   FETCH  — scan spool storage once, cache FETCH_BATCH_SIZE records in RAM,
-//            then yield (return false).  One scan ≈ 500 ms on a cold spool.
-//
-//   PROCESS — publish up to RECORDS_PER_SLICE cached records, then yield when
-//            either the record budget or SLICE_BUDGET_MS is exceeded.
-//
-// Because fetch and process alternate, raising FETCH_BATCH_SIZE amortises the
-// 500 ms scan cost across more publishes.  RECORDS_PER_SLICE and
-// SLICE_BUDGET_MS bound how long a single process call holds the CPU.
-//
-// Rule of thumb: FETCH_BATCH_SIZE ≥ 2 × RECORDS_PER_SLICE so each scan
-// pays for at least two full process calls before the next scan.
-//
-// Durable checkpoints flush upload watermarks to flash every
-// CHECKPOINT_EVERY_N published events so a crash-loop cannot lose more than
-// that many records' worth of upload progress.  Flushing costs ~10–30 ms of
-// LittleFS activity mid-radio; set this low enough to keep recovery windows
-// short, high enough to avoid hammering flash on large uploads.
-#define MQTT_DUMP_FETCH_BATCH_SIZE    16   // records loaded per storage scan
-#define MQTT_DUMP_RECORDS_PER_SLICE    4   // max publish calls per yield
-#define MQTT_DUMP_SLICE_BUDGET_MS     25   // cooperative yield deadline (ms)
-#define MQTT_DUMP_CHECKPOINT_EVERY_N  250   // watermark flush cadence (events)
-
-// Upload radio lease sizing.
-//
-// The lease granted to RADIO_WIFI_UPLOAD scales with the number of records
-// pending at dump start, using the formula:
-//
-//   lease = clamp(MQTT_UPLOAD_LEASE_CONNECT_MS
-//                 + pending * MQTT_UPLOAD_LEASE_MS_PER_EVENT,
-//                 MQTT_UPLOAD_LEASE_MIN_MS,
-//                 MQTT_UPLOAD_LEASE_MAX_MS)
-//
-// Tune CONNECT_MS to cover WiFi association + broker handshake.
-// Tune MS_PER_EVENT to match observed publish round-trip on your network.
-// MIN_MS is the floor so even tiny batches get a comfortable window.
-// MAX_MS is the refreshed live hold window ceiling for very large backlogs.
-#define MQTT_UPLOAD_LEASE_CONNECT_MS    20000UL  // WiFi + broker connect budget
-#define MQTT_UPLOAD_LEASE_MS_PER_EVENT    600UL  // per-event publish time budget
-#define MQTT_UPLOAD_LEASE_MIN_MS        90000UL  // floor  —  90 s
-#define MQTT_UPLOAD_LEASE_MAX_MS       600000UL  // ceiling — 10 min
-
-#define SLEEP_TIMEOUT_SEC             300UL
+#define SLEEP_TIMEOUT_SEC             300UL   // seconds
 #define SLEEP_TIMEOUT_MS              SPECTRE_SECONDS_TO_MS(SLEEP_TIMEOUT_SEC)
-#define BACKLIGHT_TIMEOUT_SEC         30UL
+#define BACKLIGHT_TIMEOUT_SEC         30UL    // seconds
 #define BACKLIGHT_TIMEOUT_MS          SPECTRE_SECONDS_TO_MS(BACKLIGHT_TIMEOUT_SEC)
 
-#define POWER_CRITICAL_SLEEP_COUNTDOWN_SEC  300UL
+#define POWER_CRITICAL_SLEEP_COUNTDOWN_SEC  300UL  // seconds
 #define POWER_CRITICAL_SLEEP_COUNTDOWN_MS   SPECTRE_SECONDS_TO_MS(POWER_CRITICAL_SLEEP_COUNTDOWN_SEC)
 
-// One-shot maintenance wipe: when enabled, the next boot clears all LittleFS
-// content except /config/vault, then writes the tag below so it only runs once
-// for that tag value.
-#define STORAGE_ONE_SHOT_NON_VAULT_RESET_ENABLED false
+// -----------------------------------------------------------------------------
+// MQTT upload
+// -----------------------------------------------------------------------------
+
+#define MQTT_UPLOAD_READY_THRESHOLD   5000
+#define MQTT_DUMP_FETCH_BATCH_SIZE    16   // records loaded per storage scan
+#define MQTT_DUMP_RECORDS_PER_SLICE    4   // max publish calls per yield
+#define MQTT_DUMP_SLICE_BUDGET_MS     25   // ms
+#define MQTT_DUMP_PROGRESS_EVERY_N     64  // events per progress log
+#define MQTT_DUMP_CHECKPOINT_EVERY_N  250  // events per flash checkpoint
+
+// Lease = connect budget + pending events * per-event budget, clamped to min/max.
+#define MQTT_UPLOAD_LEASE_CONNECT_SEC   20UL    // seconds
+#define MQTT_UPLOAD_LEASE_CONNECT_MS    SPECTRE_SECONDS_TO_MS(MQTT_UPLOAD_LEASE_CONNECT_SEC)
+#define MQTT_UPLOAD_LEASE_MS_PER_EVENT  600UL   // ms
+#define MQTT_UPLOAD_LEASE_MIN_SEC       90UL    // seconds
+#define MQTT_UPLOAD_LEASE_MIN_MS        SPECTRE_SECONDS_TO_MS(MQTT_UPLOAD_LEASE_MIN_SEC)
+#define MQTT_UPLOAD_LEASE_MAX_SEC       600UL   // seconds
+#define MQTT_UPLOAD_LEASE_MAX_MS        SPECTRE_SECONDS_TO_MS(MQTT_UPLOAD_LEASE_MAX_SEC)
+
+// One-shot startup FieldVault upload. After boot grace, if FieldVault has
+// pending records, fire a single field-only MQTT upload. On success the live
+// FieldVault file is cleared. On failure (no broker, publish error) the
+// records remain and retry on the next normal/manual/threshold dump. There is
+// no periodic FieldVault-only retry loop — exactly one attempt per boot.
+#define MQTT_FIELDVAULT_STARTUP_UPLOAD_ENABLED  ON
+#define MQTT_FIELDVAULT_STARTUP_GRACE_SEC       30UL    // seconds after boot before attempt
+#define MQTT_FIELDVAULT_STARTUP_GRACE_MS        SPECTRE_SECONDS_TO_MS(MQTT_FIELDVAULT_STARTUP_GRACE_SEC)
+#define MQTT_FIELDVAULT_STARTUP_MAX_RECORDS     8       // cap per startup attempt
+#define MQTT_FIELDVAULT_STARTUP_LEASE_MS        30000UL // short upload lease
+
+// One-shot maintenance wipe. Change the tag before turning this ON again.
+#define STORAGE_ONE_SHOT_NON_VAULT_RESET_ENABLED OFF
 #define STORAGE_ONE_SHOT_NON_VAULT_RESET_TAG     "5-3-26-reset-backlog-1k"
+
+// -----------------------------------------------------------------------------
+// Debug logging
+// -----------------------------------------------------------------------------
+
+// Profiles: OFF=silent, RUN=warnings/errors, DEBUG=targeted info, DEV=everything.
+#define SPECTRE_DEBUG_PROFILE_OFF       0
+#define SPECTRE_DEBUG_PROFILE_RUN       1
+#define SPECTRE_DEBUG_PROFILE_DEBUG     2
+#define SPECTRE_DEBUG_PROFILE_DEV       3
+//-------------------------------------------------------------------------------
+#ifndef SPECTRE_DEBUG_PROFILE
+#define SPECTRE_DEBUG_PROFILE           SPECTRE_DEBUG_PROFILE_DEV
+#endif
+
+// Area toggles matter in DEBUG only. RUN ignores them and still logs warnings/errors.
+#ifndef SPECTRE_DEBUG_AREAS_ALL
+  #if defined(SPECTRE_DEBUG_AREAS_ALL_ENABLED)
+    #define SPECTRE_DEBUG_AREAS_ALL     ON
+  #else
+    #define SPECTRE_DEBUG_AREAS_ALL     ON
+  #endif
+#endif
+
+#ifndef SPECTRE_DEBUG_AREAS_NONE
+  #if defined(SPECTRE_DEBUG_AREAS_NONE_ENABLED)
+    #define SPECTRE_DEBUG_AREAS_NONE    ON
+  #else
+    #define SPECTRE_DEBUG_AREAS_NONE    OFF
+  #endif
+#endif
+
+#if (SPECTRE_DEBUG_AREAS_ALL == ON) && (SPECTRE_DEBUG_AREAS_NONE == ON)
+  #error "Set only one of SPECTRE_DEBUG_AREAS_ALL or SPECTRE_DEBUG_AREAS_NONE"
+#endif
+
+#if (SPECTRE_DEBUG_AREAS_ALL == ON)
+  #define _SPECTRE_DEBUG_AREA_DEFAULT   ON
+#else
+  #define _SPECTRE_DEBUG_AREA_DEFAULT   ON
+#endif
+
+#ifndef SPECTRE_DEBUG_AREA_GENERAL
+#define SPECTRE_DEBUG_AREA_GENERAL      _SPECTRE_DEBUG_AREA_DEFAULT  // catch-all / unmatched tags
+#endif
+#ifndef SPECTRE_DEBUG_AREA_CORE
+#define SPECTRE_DEBUG_AREA_CORE         _SPECTRE_DEBUG_AREA_DEFAULT  // SYS, CORE, STACK, HEAP, BTN
+#endif
+#ifndef SPECTRE_DEBUG_AREA_SETTINGS
+#define SPECTRE_DEBUG_AREA_SETTINGS     _SPECTRE_DEBUG_AREA_DEFAULT  // SETTINGS
+#endif
+#ifndef SPECTRE_DEBUG_AREA_STORAGE
+#define SPECTRE_DEBUG_AREA_STORAGE      _SPECTRE_DEBUG_AREA_DEFAULT  // STOR, STORAGE
+#endif
+#ifndef SPECTRE_DEBUG_AREA_TIME
+#define SPECTRE_DEBUG_AREA_TIME         _SPECTRE_DEBUG_AREA_DEFAULT  // TIME
+#endif
+#ifndef SPECTRE_DEBUG_AREA_RADIO
+#define SPECTRE_DEBUG_AREA_RADIO        _SPECTRE_DEBUG_AREA_DEFAULT  // RADIO, LORA, SUBGHZ
+#endif
+#ifndef SPECTRE_DEBUG_AREA_WIFI
+#define SPECTRE_DEBUG_AREA_WIFI         _SPECTRE_DEBUG_AREA_DEFAULT  // WIFI, ANT, DRONE
+#endif
+#ifndef SPECTRE_DEBUG_AREA_BLE
+#define SPECTRE_DEBUG_AREA_BLE          _SPECTRE_DEBUG_AREA_DEFAULT  // BLE
+#endif
+#ifndef SPECTRE_DEBUG_AREA_MQTT
+#define SPECTRE_DEBUG_AREA_MQTT         _SPECTRE_DEBUG_AREA_DEFAULT  // MQTT
+#endif
+#ifndef SPECTRE_DEBUG_AREA_EXPORT
+#define SPECTRE_DEBUG_AREA_EXPORT       _SPECTRE_DEBUG_AREA_DEFAULT  // EXPORT
+#endif
+#ifndef SPECTRE_DEBUG_AREA_GPS
+#define SPECTRE_DEBUG_AREA_GPS          _SPECTRE_DEBUG_AREA_DEFAULT  // GPS
+#endif
+#ifndef SPECTRE_DEBUG_AREA_MODE
+#define SPECTRE_DEBUG_AREA_MODE         _SPECTRE_DEBUG_AREA_DEFAULT  // MODE, MISSION, UI
+#endif
 
 // -----------------------------------------------------------------------------
 // Display and UI geometry
@@ -159,18 +215,11 @@
 // Radio and antenna control
 // -----------------------------------------------------------------------------
 
-// WiFi antenna switching
-// Set WIFI_ANTENNA_SWITCH_MODE and the matching GPIO values for your board's
-// RF switch. GPIO mode drives one control line; dual GPIO mode uses the ESP32
-// WiFi antenna API for boards wired as ANT0/ANT1.
 #define ANTENNA_SWITCH_DISABLED  0
 #define ANTENNA_SWITCH_GPIO      1
 #define ANTENNA_SWITCH_DUAL_GPIO 2
 
 #if defined(BOARD_HAS_PSRAM)
-  // T-Display S3 style RF switch
-  // NOTE: GPIO0 is also used for BTN_A in this config. If BTN_A is GPIO0,
-  // keep switching disabled to avoid breaking button input during recovery.
   #if (BTN_A == 0)
     #define WIFI_ANTENNA_SWITCH_MODE    ANTENNA_SWITCH_DISABLED
   #else
@@ -180,14 +229,12 @@
   #define WIFI_ANTENNA_SWITCH_MODE    ANTENNA_SWITCH_DISABLED
 #endif
 
-#define WIFI_ANTENNA_DEFAULT_EXTERNAL true
+#define WIFI_ANTENNA_DEFAULT_EXTERNAL ON
 
-// GPIO switch mode
 #define WIFI_ANTENNA_CTRL_PIN       0
 #define WIFI_ANTENNA_INTERNAL_LEVEL  LOW
 #define WIFI_ANTENNA_EXTERNAL_LEVEL  HIGH
 
-// Dual GPIO / ANT0-ANT1 mode
 #define WIFI_ANTENNA_GPIO_ANT0      -1
 #define WIFI_ANTENNA_GPIO_ANT1      -1
 #define WIFI_ANTENNA_INTERNAL_PATH   0

@@ -7,6 +7,7 @@
 #include <vector>
 #include "../config.h"
 #include "../data/Schema.h"
+#include "../data/FieldVault.h"
 #include "../core/EventBus.h"
 #include "../core/NotifTypes.h"
 #include "../core/DebugLog.h"
@@ -192,6 +193,7 @@ bool _stateRequiresUploadLease(MQTTState state) {
 static constexpr uint32_t kDumpSliceBudgetMs       = MQTT_DUMP_SLICE_BUDGET_MS;
 static constexpr uint8_t  kDumpMaxRecordsPerSlice  = MQTT_DUMP_RECORDS_PER_SLICE;
 static constexpr uint8_t  kFetchBatchSize          = MQTT_DUMP_FETCH_BATCH_SIZE;
+static constexpr uint16_t kProgressLogEveryN       = MQTT_DUMP_PROGRESS_EVERY_N;
 static constexpr uint16_t kDurableCheckpointEveryN = MQTT_DUMP_CHECKPOINT_EVERY_N;
 
 bool _uploadPausedByMission() {
@@ -252,6 +254,9 @@ void MQTTManager::begin() {
         DLOG_INFO("MQTT", "Backlog loaded: %d records", _queuedRecords);
     }
 
+    // Schedule the one-shot startup FieldVault upload window. The actual
+    // attempt is gated in tick() once boot grace elapses.
+    _bootGraceUntilMs = millis() + MQTT_FIELDVAULT_STARTUP_GRACE_MS;
 }
 
 void MQTTManager::tick() {
@@ -260,6 +265,10 @@ void MQTTManager::tick() {
     if (_state != MQTT_DUMPING && _mqtt.connected()) {
         _mqtt.loop();
     }
+    // Opportunistic one-shot: if FieldVault has pending records and the boot
+    // grace has elapsed, fire a single short field-only dump. Sets the latch
+    // so we never retry within this boot.
+    _maybeStartStartupFieldDump();
     _runStateMachine();
 }
 
@@ -294,7 +303,13 @@ bool MQTTManager::requestDump(bool force) {
         _uploadStartStackWatermarkBytes = _currentTaskStackWatermarkBytes();
 
         if (!STORAGE.prepareUploadIndexForUpload(_uploadLeaseHoldMs)) {
-            DLOG_WARN("MQTT", "Upload index not ready; using spool scan fallback");
+            DLOG_WARN("MQTT", "Upload index not ready; dump deferred");
+            _uploadBackoffUntilMs = millis() + MQTT_FAILED_BACKOFF_MS;
+            _setUploadUiState(false, "", 0, 0, false);
+            RADIO_ARB.release(RADIO_WIFI_UPLOAD, "upload_index_unavailable", false);
+            RADIO_ARB.ensureDefaultCapture("upload_index_unavailable");
+            _logUploadStackWatermark("index_unavailable");
+            return false;
         }
 
         // Defer LittleFS watermark flushes until the radio is paused at
@@ -305,7 +320,7 @@ bool MQTTManager::requestDump(bool force) {
         _state = MQTT_CONNECTING_WIFI;
         _stateEnteredMs = millis();
         _bleTriggered = force;
-        _setUploadUiState(true, "WIFI", 0, static_cast<uint32_t>(_queuedRecords), true);
+        _setUploadUiState(false, "", 0, 0, true);
 
         DLOG_INFO("MQTT", "Upload lease granted — %d records, lease=%lus",
                   _queuedRecords,
@@ -347,6 +362,75 @@ bool MQTTManager::bleTriggeredDump() {
     return requestDump(true);
 }
 
+bool MQTTManager::_maybeStartStartupFieldDump() {
+#if (MQTT_FIELDVAULT_STARTUP_UPLOAD_ENABLED == ON)
+    if (_startupFieldDumpDone) return false;
+    if (_state != MQTT_IDLE)   return false;
+    if (millis() < _bootGraceUntilMs) return false;
+
+    // No pending records: latch the one-shot so we don't re-check on every
+    // tick. The next normal/manual/threshold dump will drain anything that
+    // gets appended later.
+    if (!FieldVault::hasPending()) {
+        _startupFieldDumpDone = true;
+        return false;
+    }
+
+    if (_uploadPausedByMission()) {
+        // Honor mission-pause: latch and let the regular dump path handle it
+        // when conditions allow. Matches the "exactly one attempt" rule.
+        DLOG_INFO("MQTT", "Startup field upload skipped: mission paused");
+        _startupFieldDumpDone = true;
+        return false;
+    }
+
+    _startupFieldDumpDone = true;  // latch first; any path below is the attempt
+    return _startStartupFieldDump();
+#else
+    return false;
+#endif
+}
+
+bool MQTTManager::_startStartupFieldDump() {
+    // Mirror requestDump(true) but with a short fixed lease and field-only
+    // mode. We still flow through the normal MQTT_CONNECTING_WIFI →
+    // MQTT_CONNECTING_BROKER → MQTT_DUMPING → MQTT_DONE/FAILED state machine
+    // so existing cleanup (lease release, endUploadBatch, ensureDefaultCapture)
+    // runs unchanged.
+    if (_state != MQTT_IDLE) return false;
+
+    _uploadLeaseHoldMs = MQTT_FIELDVAULT_STARTUP_LEASE_MS;
+
+    const bool granted = RADIO_ARB.requestUploadLease(
+        _uploadLeaseHoldMs,
+        "startup_field",
+        /*force=*/true);
+    if (!granted) {
+        DLOG_INFO("MQTT", "Startup field upload skipped: lease not granted");
+        return false;
+    }
+
+    _wifiConnectStarted = false;
+    _dumpCtx = DumpContext{};
+    _uploadStartStackWatermarkBytes = _currentTaskStackWatermarkBytes();
+
+    STORAGE.beginUploadBatch();
+
+    _fieldOnlyMode = true;
+    _fieldOnlyPublishedThisDump = 0;
+    _fieldOnlyClearAfterRelease = false;
+    _state = MQTT_CONNECTING_WIFI;
+    _stateEnteredMs = millis();
+    _bleTriggered = false;
+    _setUploadUiState(false, "", 0, 0, true);
+
+    DLOG_INFO("MQTT",
+              "Startup field upload — pending=%lu lease=%lus",
+              static_cast<unsigned long>(FieldVault::uploadedThrough()),
+              static_cast<unsigned long>(_uploadLeaseHoldMs / 1000UL));
+    return true;
+}
+
 // ── State machine ─────────────────────────────────────────────
 
 void MQTTManager::_runStateMachine() {
@@ -386,7 +470,7 @@ void MQTTManager::_runStateMachine() {
 
         case MQTT_CONNECTING_WIFI:
             _refreshUploadLease("mqtt_connecting_wifi", _uploadLeaseHoldMs);
-            _setUploadUiState(true, "WIFI", 0, static_cast<uint32_t>(_queuedRecords), true);
+            _setUploadUiState(false, "", 0, 0, true);
 
             if (WiFi.status() == WL_CONNECTED) {
                 DLOG_INFO("MQTT", "WiFi connected, connecting broker");
@@ -419,7 +503,9 @@ void MQTTManager::_runStateMachine() {
 
         case MQTT_CONNECTING_BROKER:
             _refreshUploadLease("mqtt_connecting_broker", _uploadLeaseHoldMs);
-            _setUploadUiState(true, "BROKER", 0, static_cast<uint32_t>(_queuedRecords), true);
+            _setUploadUiState(true, "CONNECTED", 0,
+                              static_cast<uint32_t>(_queuedRecords),
+                              true);
             if (_connectBroker()) {
                 DLOG_INFO("MQTT", "Broker connected, dumping");
                 _startDumpPlan();
@@ -453,7 +539,17 @@ void MQTTManager::_runStateMachine() {
         case MQTT_DONE:
             _setUploadUiState(false, "", 0, 0, false);
             RADIO_ARB.release(RADIO_WIFI_UPLOAD, "dump_complete", false);
-            DLOG_INFO("MQTT", "Dump complete");
+            DLOG_INFO("MQTT",
+                      _fieldOnlyMode ? "Startup field dump complete"
+                                     : "Dump complete");
+            if (_fieldOnlyClearAfterRelease) {
+                FieldVault::clearLive();
+                _fieldOnlyClearAfterRelease = false;
+            } else {
+                FieldVault::flushUploadCursor();
+            }
+            _fieldOnlyMode = false;
+            _fieldOnlyPublishedThisDump = 0;
             _lastDumpMs = millis();
 
             _disconnect();
@@ -483,8 +579,14 @@ void MQTTManager::_runStateMachine() {
                   static_cast<uint32_t>(_queuedRecords),
                   false);
             RADIO_ARB.release(RADIO_WIFI_UPLOAD, "dump_failed", false);
-            DLOG_WARN("MQTT", "Dump failed, backoff %lu ms",
+            DLOG_WARN("MQTT",
+                      _fieldOnlyMode ? "Startup field dump failed, backoff %lu ms"
+                                     : "Dump failed, backoff %lu ms",
                       static_cast<unsigned long>(MQTT_FAILED_BACKOFF_MS));
+            FieldVault::flushUploadCursor();
+            _fieldOnlyClearAfterRelease = false;
+            _fieldOnlyMode = false;
+            _fieldOnlyPublishedThisDump = 0;
             _disconnect();
             // Flush whatever partial progress we already acked before capture
             // fallback is resumed.
@@ -559,7 +661,11 @@ void MQTTManager::_startDumpPlan() {
     _lastFailed = 0;
 
     _dumpCtx = DumpContext{};
-    _dumpCtx.phase = DUMP_PHASE_HEALTH;
+    _fieldOnlyClearAfterRelease = false;
+    // FieldVault drain runs first so high-value tiny records (boot/crash
+    // summaries) publish before bulky event traffic. The phase advances to
+    // HEALTH automatically once the vault is drained or a publish fails.
+    _dumpCtx.phase = DUMP_PHASE_FIELD;
     _dumpCtx.sessionIndex = 0;
     _dumpCtx.sinceId = 0;
     _dumpCtx.phaseStarted = false;
@@ -584,6 +690,110 @@ bool MQTTManager::_runDumpSlice() {
     switch (_dumpCtx.phase) {
         case DUMP_PHASE_IDLE:
             return true;
+
+        case DUMP_PHASE_FIELD: {
+            // Drain pending FieldVault records before any other dump phase.
+            // Each record is a tiny, already-formatted JSON line; we publish
+            // up to MQTT_DUMP_RECORDS_PER_SLICE per slice, then yield to keep
+            // the cooperative budget. Failed publishes do NOT advance the
+            // upload watermark, so the same record is retried later.
+            //
+            // Two terminal modes:
+            //   normal dump  → on drain/fail/empty, advance to HEALTH so the
+            //                  rest of the upload pipeline continues.
+            //   _fieldOnlyMode (one-shot startup upload) → on drain/fail/cap,
+            //                  go straight to DUMP_PHASE_DONE so the regular
+            //                  event backlog is NOT touched. On a fully
+            //                  successful drain the live JSONL is cleared.
+
+            // Helper-style locals to keep the two terminal paths uniform.
+            auto endNormal = [&](DumpPhase next) {
+                _dumpCtx.phase = next;
+                _dumpCtx.phaseStarted = false;
+            };
+            auto endFieldOnly = [&](bool drained) {
+                if (drained) {
+                    // Every pending live record was published successfully.
+                    // Clear the live file after the upload radio is released.
+                    _fieldOnlyClearAfterRelease = true;
+                    DLOG_INFO("MQTT",
+                              "Startup field upload drained — published=%u",
+                              static_cast<unsigned>(_fieldOnlyPublishedThisDump));
+                } else {
+                    DLOG_INFO("MQTT",
+                              "Startup field upload ended early — published=%u",
+                              static_cast<unsigned>(_fieldOnlyPublishedThisDump));
+                }
+                _dumpCtx.phase = DUMP_PHASE_DONE;
+                _dumpCtx.phaseStarted = false;
+            };
+
+            if (!FieldVault::hasPending()) {
+                if (_fieldOnlyMode) {
+                    endFieldOnly(/*drained=*/true);
+                } else {
+                    endNormal(DUMP_PHASE_HEALTH);
+                }
+                return false;
+            }
+
+            const uint32_t sliceStart = millis();
+            uint8_t published = 0;
+            while (published < MQTT_DUMP_RECORDS_PER_SLICE) {
+                // Honor the field-only cap separately from the slice cap.
+                if (_fieldOnlyMode &&
+                    _fieldOnlyPublishedThisDump >=
+                        MQTT_FIELDVAULT_STARTUP_MAX_RECORDS) {
+                    endFieldOnly(/*drained=*/false);
+                    return false;
+                }
+
+                char line[256];
+                uint32_t recordEnd = 0;
+                if (!FieldVault::peekNext(line, sizeof(line), &recordEnd)) {
+                    if (_fieldOnlyMode) {
+                        endFieldOnly(/*drained=*/true);
+                    } else {
+                        endNormal(DUMP_PHASE_HEALTH);
+                    }
+                    return false;
+                }
+
+                const size_t len = strlen(line);
+                const bool ok = _mqtt.publish(
+                    TOPIC_FIELD,
+                    reinterpret_cast<const uint8_t*>(line),
+                    static_cast<unsigned int>(len),
+                    /*retained=*/false);
+
+                if (!ok) {
+                    DLOG_WARN("MQTT",
+                              "FieldVault publish failed (off=%lu len=%u) — "
+                              "will retry next dump",
+                              static_cast<unsigned long>(FieldVault::uploadedThrough()),
+                              static_cast<unsigned>(len));
+                    if (_fieldOnlyMode) {
+                        _lastFailed++;
+                        endFieldOnly(/*drained=*/false);
+                    } else {
+                        endNormal(DUMP_PHASE_HEALTH);
+                    }
+                    return false;
+                }
+
+                FieldVault::markUploadedThroughVolatile(recordEnd);
+                _lastPublished++;
+                published++;
+                if (_fieldOnlyMode) _fieldOnlyPublishedThisDump++;
+
+                if (millis() - sliceStart > MQTT_DUMP_SLICE_BUDGET_MS) {
+                    return false;
+                }
+            }
+            // Slice budget exhausted on records-per-slice; yield with phase
+            // unchanged so the next slice continues draining the vault.
+            return false;
+        }
 
         case DUMP_PHASE_HEALTH:
             _dumpCtx.phaseStarted = true;
@@ -905,7 +1115,7 @@ bool MQTTManager::_runDumpSlice() {
                     STORAGE.flushUploadCheckpoint();
                 }
 
-                if ((_lastPublished % 25) == 0) {
+                if ((_lastPublished % kProgressLogEveryN) == 0) {
                     DLOG_INFO("MQTT",
                       "Dump progress pub=%d fail=%d session=%u/%u since=%lu leaseMaxEvents=%u",
                               _lastPublished,

@@ -194,7 +194,9 @@ class SpectrePeripheralModule(
   fun startServer(config: ReadableMap, promise: Promise) {
     try {
       emitLog("startServer requested")
+      val useDeviceLocation = resolveUseDeviceLocation(config)
       requireBlePermissions()
+      requireLocationForegroundPrereqs(useDeviceLocation)
 
       val adapter = bluetoothAdapter()
       emitLog(
@@ -207,8 +209,13 @@ class SpectrePeripheralModule(
         return
       }
 
-      SpectreBleForegroundService.start(reactApplicationContext)
-      emitLog("BLE foreground service requested")
+      SpectreBleForegroundService.registerStopRequestHandler {
+        stopServerFromForegroundService()
+      }
+      SpectreBleForegroundService.start(reactApplicationContext, useDeviceLocation)
+      emitLog(
+        "BLE foreground service requested type=${if (useDeviceLocation) "connectedDevice|location" else "connectedDevice"}"
+      )
       secureSession.ensurePhonePublicKeyHex()
 
       gpsBytes = decodeBase64(config.getString("gpsBase64"))
@@ -229,6 +236,7 @@ class SpectrePeripheralModule(
       promise.resolve(stateMap())
     } catch (error: Exception) {
       runCatching { SpectreBleForegroundService.stop(reactApplicationContext) }
+      SpectreBleForegroundService.registerStopRequestHandler(null)
       lastError = error.message ?: "Peripheral start failed"
       emitLog(lastError ?: "Peripheral start failed")
       emitState(stateMap(lastError))
@@ -238,6 +246,18 @@ class SpectrePeripheralModule(
 
   @ReactMethod
   fun stopServer(promise: Promise) {
+    stopServerInternal(stopForegroundService = true)
+    emitState(stateMap())
+    promise.resolve(stateMap())
+  }
+
+  private fun stopServerFromForegroundService() {
+    stopServerInternal(stopForegroundService = false)
+    emitLog("Field Mode stopped from foreground notification")
+    emitState(stateMap())
+  }
+
+  private fun stopServerInternal(stopForegroundService: Boolean) {
     stopAdvertiserWatchdog()
     stopAdvertising()
     connectedDevices.clear()
@@ -251,7 +271,6 @@ class SpectrePeripheralModule(
     notificationInFlight = null
     gattServer?.close()
     gattServer = null
-    SpectreBleForegroundService.stop(reactApplicationContext)
     gpsCharacteristic = null
     controlCharacteristic = null
     metadataCharacteristic = null
@@ -259,15 +278,16 @@ class SpectrePeripheralModule(
     enrichmentCharacteristic = null
     authCharacteristic = null
     storageCharacteristic = null
+    SpectreBleForegroundService.registerStopRequestHandler(null)
+    if (stopForegroundService) {
+      SpectreBleForegroundService.stop(reactApplicationContext)
+    }
     secureSession.reset()
     advertising = false
     advertiseStartSucceeded = false
     lastAdvertiseFailureCode = null
     advertiseRefreshIndex = 0
     lastError = null
-
-    emitState(stateMap())
-    promise.resolve(stateMap())
   }
 
   @ReactMethod
@@ -952,6 +972,32 @@ class SpectrePeripheralModule(
     }
   }
 
+  private fun requireLocationForegroundPrereqs(useDeviceLocation: Boolean) {
+    if (!useDeviceLocation) {
+      return
+    }
+
+    if (!hasPermission(Manifest.permission.ACCESS_FINE_LOCATION) &&
+      !hasPermission(Manifest.permission.ACCESS_COARSE_LOCATION)
+    ) {
+      throw SecurityException("Location permission missing for phone GPS Field Mode")
+    }
+
+    val locationManager =
+      reactApplicationContext.getSystemService(Context.LOCATION_SERVICE) as LocationManager
+    val locationEnabled = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+      locationManager.isLocationEnabled
+    } else {
+      @Suppress("DEPRECATION")
+      locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER) ||
+        locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)
+    }
+
+    if (!locationEnabled) {
+      throw SecurityException("Android location services are disabled")
+    }
+  }
+
   private fun hasPermission(permission: String): Boolean =
     ContextCompat.checkSelfPermission(
       reactApplicationContext,
@@ -1007,6 +1053,11 @@ class SpectrePeripheralModule(
   /** Adapter local-name we want the controller to broadcast for the current mode. */
   private fun desiredLocalName(mode: AdvertisePayloadMode): String =
     if (mode == AdvertisePayloadMode.SHORT_NAME) DEVICE_NAME_SHORT else DEVICE_NAME
+
+  private fun resolveUseDeviceLocation(config: ReadableMap): Boolean =
+    config.hasKey("useDeviceLocation") &&
+      !config.isNull("useDeviceLocation") &&
+      config.getBoolean("useDeviceLocation")
 
   private fun setAdapterNameForDiagnostics(adapter: BluetoothAdapter) {
     val desired = desiredLocalName(advertiseMode)

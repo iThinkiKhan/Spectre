@@ -13,6 +13,7 @@
 #include <map>
 #include <functional>
 #include <esp_heap_caps.h>
+#include <new>
 
 namespace {
 
@@ -1179,16 +1180,6 @@ bool StorageManager::begin() {
         return false;
     }
 
-    _pendingEventCount = audit.rebuiltPendingTotal;
-    _spoolIndex.pendingTotal = audit.rebuiltPendingTotal;
-    _pendingCountDirty = false;
-    if (!_persistEventMeta(true)) {
-        DLOG_ERROR("STORAGE", "Failed to persist boot pending-count metadata");
-        return false;
-    }
-
-    _checkSpoolInvariants("boot_post_audit", false);
-
     // The boot audit uses the fast binary-meta scanner which cannot populate
     // priority/lane/timestamp stats, so it leaves all BIN_V2 segments with
     // summaryValid=false.  Rebuild here while the radio arbiter hasn't started
@@ -1198,6 +1189,16 @@ bool StorageManager::begin() {
         DLOG_INFO("STORAGE", "Post-audit summary rebuild");
         _rebuildInvalidSegmentSummaries(false);
     }
+
+    const uint32_t bootPending = recountPendingFromSpool();
+    if (bootPending != audit.rebuiltPendingTotal) {
+        DLOG_WARN("STORAGE",
+                  "Boot audit pending mismatch audit=%lu recount=%lu",
+                  static_cast<unsigned long>(audit.rebuiltPendingTotal),
+                  static_cast<unsigned long>(bootPending));
+    }
+
+    _checkSpoolInvariants("boot_post_audit", false);
 
     _releaseUploadIndexMemory("boot_skip_load");
 
@@ -2005,6 +2006,14 @@ bool StorageManager::getUploadEventBatchForSession(const char* sessionIdOverride
         return true;
     }
 
+    if (_uploadBatchActive) {
+        DLOG_WARN("STORAGE",
+                  "Upload index unavailable during active upload; spool scan fallback disabled session=%s since=%lu",
+                  sessionId.c_str(),
+                  static_cast<unsigned long>(sinceId));
+        return false;
+    }
+
     DLOG_WARN("STORAGE",
               "Upload index unavailable; falling back to spool scan session=%s since=%lu",
               sessionId.c_str(),
@@ -2029,14 +2038,24 @@ bool StorageManager::prepareUploadIndexForUpload(uint32_t budgetMs) {
     const uint32_t pending = getPendingEventCount();
     const uint32_t estimatedIndexBytes =
         pending * static_cast<uint32_t>(sizeof(UploadIndexRecordV1));
+    const uint32_t largestAny =
+        heap_caps_get_largest_free_block(MALLOC_CAP_8BIT);
+    const uint32_t freeAny =
+        heap_caps_get_free_size(MALLOC_CAP_8BIT);
     const uint32_t largestInternal =
         heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
+    const uint32_t maxIndexAllocBytes =
+        static_cast<uint32_t>(sizeof(UploadIndexPage)) + 4096UL;
+    const uint32_t guardBytes = estimatedIndexBytes + 32768UL;
     if (pending > 0 &&
-        estimatedIndexBytes > (largestInternal / 2U)) {
+        (largestAny < maxIndexAllocBytes || freeAny < (guardBytes * 2U))) {
         DLOG_WARN("STORAGE",
-                  "Upload index prepare rebuilt=0 reason=heap_guard pending=%lu estimate=%lu largest=%lu fallback=1",
+                  "Upload index prepare rebuilt=0 reason=heap_guard pending=%lu estimate=%lu maxAlloc=%lu largest=%lu free=%lu internalLargest=%lu fallback=1",
                   static_cast<unsigned long>(pending),
                   static_cast<unsigned long>(estimatedIndexBytes),
+                  static_cast<unsigned long>(maxIndexAllocBytes),
+                  static_cast<unsigned long>(largestAny),
+                  static_cast<unsigned long>(freeAny),
                   static_cast<unsigned long>(largestInternal));
         _releaseUploadIndexMemory("prepare_heap_guard");
         return false;
@@ -2134,6 +2153,29 @@ StorageLaneCounts StorageManager::_getPendingEnrichmentCounts(const String& sess
 
     if (filterBySession && !sessionId.length()) return counts;
 
+    // Hot-path early-out: when every segment summary is current, the live
+    // per-segment pendingEnrichmentCount tells us authoritatively whether
+    // ANY pending work exists. Zero everywhere ⇒ skip the delta scan and
+    // every event-record open. Segments that need scanning (summary stale
+    // or non-zero pending) are visited below.
+    bool allSummariesCurrent = true;
+    bool anyPending = false;
+    for (const auto& seg : _spoolIndex.segments) {
+        const bool summaryReady =
+            seg.summaryValid &&
+            seg.summaryVersion == SPOOL_SEGMENT_SUMMARY_VERSION;
+        if (!summaryReady) {
+            allSummariesCurrent = false;
+            break;
+        }
+        if (seg.pendingEnrichmentCount > 0) {
+            anyPending = true;
+        }
+    }
+    if (allSummariesCurrent && !anyPending) {
+        return counts;
+    }
+
     std::map<uint32_t, bool> enrichedById;
     if (!_loadSpoolEnrichmentIds(sessionId, filterBySession, enrichedById)) {
         return {};
@@ -2145,6 +2187,14 @@ StorageLaneCounts StorageManager::_getPendingEnrichmentCounts(const String& sess
             seg.summaryVersion == SPOOL_SEGMENT_SUMMARY_VERSION;
 
         if (summaryReady && seg.eventCount == 0) {
+            continue;
+        }
+
+        // Drained segments contribute nothing; skip the record scan.
+        // Sessions are filtered post-scan, so this skip stays correct
+        // even with filterBySession (a drained segment cannot host a
+        // pending event for any session).
+        if (summaryReady && seg.pendingEnrichmentCount == 0) {
             continue;
         }
 
@@ -2376,6 +2426,12 @@ bool StorageManager::_getPendingEnrichmentBatch(const String& sessionId,
             continue;
         }
 
+        // Live pending-enrichment counter: drained segments cannot host
+        // any candidate, so skip the record scan entirely.
+        if (summaryReady && seg.pendingEnrichmentCount == 0) {
+            continue;
+        }
+
         const bool ok = _scanSegmentRecords(seg.segmentId,
             [&](const DecodedSpoolRecord& rec) -> bool {
                 if (rec.recordType == SPOOL_REC_ENRICH_DELTA) {
@@ -2460,17 +2516,18 @@ bool StorageManager::markEventUploaded(uint32_t eventId,
     }
 
     _setUploadedWatermarkForSession(sessionId, eventId);
-    if (_pendingEventCount > 0) {
-        _pendingEventCount--;
-    }
-    _spoolIndex.pendingTotal = _pendingEventCount;
 
     // During an upload batch, keep flash quiet — radio is active. The flush
     // happens in endUploadBatch() after RADIO_ARB releases the lease, to
     // avoid the LittleFS-erase-during-active-radio brownout.
+    // The batch flush is the durable boundary; outside batch mode we defer
+    // the counter update until the watermark commit succeeds.
     if (_uploadBatchActive) {
+        if (_pendingEventCount > 0) {
+            _pendingEventCount--;
+        }
+        _spoolIndex.pendingTotal = _pendingEventCount;
         _uploadBatchDirty = true;
-        _pendingCountDirty = true;
         return true;
     }
 
@@ -2481,6 +2538,7 @@ bool StorageManager::markEventUploaded(uint32_t eventId,
                        static_cast<unsigned long>(eventId));
 
     if (!_persistSpoolIndex()) {
+        _setUploadedWatermarkForSession(sessionId, before);
         DLOG_WARN("STORAGE",
                   "Spool mark persist failed session=%s event=%lu",
                   sessionId.c_str(),
@@ -2488,6 +2546,10 @@ bool StorageManager::markEventUploaded(uint32_t eventId,
         return false;
     }
 
+    if (_pendingEventCount > 0) {
+        _pendingEventCount--;
+    }
+    _spoolIndex.pendingTotal = _pendingEventCount;
     _pendingCountDirty = false;
     _persistEventMeta(true);
     refreshStorageUiState();
@@ -2507,32 +2569,80 @@ bool StorageManager::markEventsUploaded(uint32_t upToId) {
         return true;
     }
 
+    // Compute the live decrement BEFORE advancing the watermark so we
+    // never need to rescan the whole spool on the hot path.  When the
+    // upload index is resident we can count exactly; otherwise we mark
+    // the counter as needing an explicit recount (which the runtime
+    // will never run on its own).
+    uint32_t decrement = 0;
+    bool decrementExact = false;
+    if (_uploadIndexResident) {
+        auto it = _uploadIndexBySession.find(sessionId);
+        if (it != _uploadIndexBySession.end()) {
+            for (const auto& pagePtr : it->second.pages) {
+                if (!pagePtr) continue;
+                const UploadIndexPage& page = *pagePtr;
+                for (uint8_t i = 0; i < page.count; ++i) {
+                    const uint32_t id = page.records[i].eventId;
+                    if (id > before && id <= upToId) {
+                        decrement++;
+                    }
+                }
+            }
+            decrementExact = true;
+        }
+    }
+
     _setUploadedWatermarkForSession(sessionId, upToId);
 
+    if (decrementExact) {
+        if (_uploadBatchActive) {
+            if (decrement > _pendingEventCount) decrement = _pendingEventCount;
+            _pendingEventCount -= decrement;
+            _spoolIndex.pendingTotal = _pendingEventCount;
+        } else {
+            CONTRACT_WARN_ONCE(CONTRACT_STORAGE_MARK_OUTSIDE_BATCH,
+                               "STORAGE",
+                               !RADIO_ARB.isOwner(RADIO_WIFI_UPLOAD),
+                               "bulk mark=%lu while upload owner active without batch",
+                               static_cast<unsigned long>(upToId));
+
+            if (!_persistSpoolIndex()) {
+                _setUploadedWatermarkForSession(sessionId, before);
+                DLOG_WARN("STORAGE", "Spool bulk mark persist failed session=%s upTo=%lu",
+                          sessionId.c_str(),
+                          static_cast<unsigned long>(upToId));
+                return false;
+            }
+
+            if (decrement > _pendingEventCount) decrement = _pendingEventCount;
+            _pendingEventCount -= decrement;
+            _spoolIndex.pendingTotal = _pendingEventCount;
+            _pendingCountDirty = false;
+            _persistEventMeta(true);
+            refreshStorageUiState();
+            _logSpoolDiagnostics("mark_uploaded_bulk", sessionId);
+            return true;
+        }
+    } else {
+        DLOG_WARN("STORAGE",
+                  "markEventsUploaded bulk without resident index — "
+                  "live counter may drift; explicit recount required "
+                  "session=%s upTo=%lu",
+                  sessionId.c_str(),
+                  static_cast<unsigned long>(upToId));
+        _pendingCountDirty = true;
+    }
+
     // Defer flash writes while an upload batch is active so brownout-prone
-    // "w" opens stay out of the active-radio window.
+    // "w" opens stay out of the active-radio window.  No rescan needed —
+    // the live counter already reflects the bulk decrement (or has been
+    // explicitly flagged for repair when the index was not resident).
     if (_uploadBatchActive) {
         _uploadBatchDirty = true;
-        _uploadBatchNeedsRescan = true;
-        _pendingCountDirty = true;
         return true;
     }
 
-    CONTRACT_WARN_ONCE(CONTRACT_STORAGE_MARK_OUTSIDE_BATCH,
-                       "STORAGE",
-                       !RADIO_ARB.isOwner(RADIO_WIFI_UPLOAD),
-                       "bulk mark=%lu while upload owner active without batch",
-                       static_cast<unsigned long>(upToId));
-
-    if (!_persistSpoolIndex()) {
-        DLOG_WARN("STORAGE", "Spool bulk mark persist failed session=%s upTo=%lu",
-                  sessionId.c_str(),
-                  static_cast<unsigned long>(upToId));
-        return false;
-    }
-
-    _pendingEventCount = _rescanPendingEventCountFromSpool();
-    _pendingCountDirty = false;
     _persistEventMeta(true);
     refreshStorageUiState();
     _logSpoolDiagnostics("mark_uploaded_bulk", sessionId);
@@ -2549,7 +2659,6 @@ void StorageManager::beginUploadBatch() {
                        _uploadBatchDirty ? 1 : 0);
     _uploadBatchActive = true;
     _uploadBatchDirty  = false;
-    _uploadBatchNeedsRescan = false;
     DLOG_INFO("STORAGE", "Upload batch open — deferring watermark flush");
 }
 
@@ -2557,7 +2666,6 @@ bool StorageManager::endUploadBatch() {
     if (!_ready) {
         _uploadBatchActive = false;
         _uploadBatchDirty  = false;
-        _uploadBatchNeedsRescan = false;
         _releaseUploadIndexMemory("upload_batch_end_not_ready");
         return false;
     }
@@ -2570,10 +2678,8 @@ bool StorageManager::endUploadBatch() {
 
     const bool wasActive = _uploadBatchActive;
     const bool wasDirty  = _uploadBatchDirty;
-    const bool needsRescan = _uploadBatchNeedsRescan;
     _uploadBatchActive = false;
     _uploadBatchDirty  = false;
-    _uploadBatchNeedsRescan = false;
 
     if (!wasActive || !wasDirty) {
         _releaseUploadIndexMemory("upload_batch_end_clean");
@@ -2585,11 +2691,10 @@ bool StorageManager::endUploadBatch() {
         DLOG_WARN("STORAGE", "Upload batch flush: spool index persist failed");
     }
 
-    if (needsRescan) {
-        _pendingEventCount = _rescanPendingEventCountFromSpool();
-        _spoolIndex.pendingTotal = _pendingEventCount;
-    }
-    _pendingCountDirty = false;
+    // Live counter is authoritative — every markEventUploaded already
+    // decremented it.  No rescan on the hot path; if the caller used the
+    // bulk path without a resident upload index it set _pendingCountDirty
+    // and must invoke recountPendingFromSpool() explicitly.
     _persistEventMeta(true);
     refreshStorageUiState();
     _logSpoolDiagnostics("upload_batch_flush");
@@ -2605,20 +2710,14 @@ bool StorageManager::flushUploadCheckpoint() {
 
     // Intentionally mid-radio: caller accepts the brownout trade-off in
     // exchange for durable mid-upload progress.  Batch stays open.
-    const bool needsRescan = _uploadBatchNeedsRescan;
-    _uploadBatchDirty       = false;
-    _uploadBatchNeedsRescan = false;
+    _uploadBatchDirty = false;
 
     bool ok = _persistSpoolIndex(true);
     if (!ok) {
         DLOG_WARN("STORAGE", "Upload checkpoint flush: spool index persist failed");
     }
 
-    if (needsRescan) {
-        _pendingEventCount = _rescanPendingEventCountFromSpool();
-        _spoolIndex.pendingTotal = _pendingEventCount;
-    }
-    _pendingCountDirty = false;
+    // No rescan: every markEventUploaded already adjusted the live counter.
     _persistEventMeta(true);
     return ok;
 }
@@ -2661,15 +2760,24 @@ int StorageManager::compactAllUploadedEventFiles() {
 uint32_t StorageManager::getPendingEventCount(bool forceRescan) {
     if (!_ready) return 0;
 
+    // Hot path: never scans.  The live counter is updated by every
+    // appendEvent / markEventUploaded.  Callers that genuinely need to
+    // resolve drift must pass forceRescan=true (or call
+    // recountPendingFromSpool() directly), which is reserved for boot,
+    // explicit repair, and post-quarantine recovery.
     if (forceRescan) {
-        _servicePendingSpoolSummaryRebuild();
+        return recountPendingFromSpool();
     }
+    return _pendingEventCount;
+}
 
-    if (forceRescan || _pendingCountDirty) {
-        _pendingEventCount = _rescanPendingEventCountFromSpool();
-        _pendingCountDirty = false;
-        _persistEventMeta();
-    }
+uint32_t StorageManager::recountPendingFromSpool() {
+    _servicePendingSpoolSummaryRebuild();
+    _pendingEventCount = _rescanPendingEventCountFromSpool();
+    _pendingCountDirty = false;
+    _spoolAuditRepairRequired = false;
+    _spoolSummaryRebuildPending = false;
+    _persistEventMeta(true);
     return _pendingEventCount;
 }
 
@@ -3943,6 +4051,7 @@ void StorageManager::_clearSegmentSummary(SpoolSegmentInfo& seg) {
     seg.p1Count = 0;
     seg.p2Count = 0;
     seg.p3Count = 0;
+    seg.pendingEnrichmentCount = 0;
     seg.minTimestampMs = 0;
     seg.maxTimestampMs = 0;
 }
@@ -3970,6 +4079,11 @@ void StorageManager::_updateSegmentSummaryFromEventDoc(SpoolSegmentInfo& seg,
         default:              seg.p3Count++; break;
     }
 
+    if (_eventRecordWantsEnrichment(doc) &&
+        _eventRecordPendingEnrichment(doc)) {
+        seg.pendingEnrichmentCount++;
+    }
+
     if (eventId != 0) {
         if (seg.firstEventId == 0 || eventId < seg.firstEventId) {
             seg.firstEventId = eventId;
@@ -3990,6 +4104,47 @@ void StorageManager::_updateSegmentSummaryFromEventDoc(SpoolSegmentInfo& seg,
 
     seg.summaryVersion = SPOOL_SEGMENT_SUMMARY_VERSION;
     seg.summaryValid = true;
+}
+
+void StorageManager::_decrementPendingEnrichmentForEvent(uint32_t eventId) {
+    if (eventId == 0) return;
+
+    // Idempotency contract: this helper must NOT double-decrement when a
+    // duplicate delta lands for an already-enriched event.  The runtime
+    // does not maintain an in-memory enrichedSet (memory cost rejected at
+    // 2k+ events scale), so we cannot cheaply prove first-application.
+    // Per the design, we therefore CLAMP and mark recount-required:
+    //   * summary stale  → can't reason about the counter; flag recount.
+    //   * counter == 0   → either a duplicate delta or pre-existing drift;
+    //                      do NOT underflow, flag recount.
+    //   * counter  > 0   → decrement once and trust the live count until
+    //                      the next explicit recountPendingFromSpool().
+    // Cross-segment audit/rebuild paths dedupe per eventId in their own
+    // local set, so they never reach this helper for a duplicate.
+    for (auto& seg : _spoolIndex.segments) {
+        if (seg.firstEventId == 0 || seg.lastEventId == 0) continue;
+        if (eventId < seg.firstEventId || eventId > seg.lastEventId) continue;
+
+        if (!seg.summaryValid ||
+            seg.summaryVersion != SPOOL_SEGMENT_SUMMARY_VERSION) {
+            _pendingCountDirty = true;
+            return;
+        }
+
+        if (seg.pendingEnrichmentCount == 0) {
+            // Either a duplicate delta against a fully-drained segment
+            // or pre-existing drift.  Either way, do not underflow; let
+            // the next explicit recount reconcile.
+            _pendingCountDirty = true;
+            return;
+        }
+
+        seg.pendingEnrichmentCount--;
+        return;
+    }
+    // Origin segment not found (e.g., compacted away).  Treat as benign:
+    // the events that segment held have already left the spool, so any
+    // count it contributed is gone with it.
 }
 
 void StorageManager::_markSegmentEnrichmentDelta(SpoolSegmentInfo& seg,
@@ -4064,6 +4219,7 @@ bool StorageManager::_rebuildSegmentSummary(SpoolSegmentInfo& seg) {
 bool StorageManager::_rebuildInvalidSegmentSummaries(bool force) {
     uint32_t rebuiltCount = 0;
     bool changed = false;
+    bool anyRebuilt = false;
 
     for (auto& seg : _spoolIndex.segments) {
         const SpoolSegmentInfo before = seg;
@@ -4075,10 +4231,39 @@ bool StorageManager::_rebuildInvalidSegmentSummaries(bool force) {
 
         if (_rebuildSegmentSummary(seg)) {
             rebuiltCount++;
+            anyRebuilt = true;
         }
 
         if (!_spoolSegmentInfoEquals(before, seg)) {
             changed = true;
+        }
+    }
+
+    // Per-segment rebuild produces gross pending-enrichment counts (every
+    // event-that-wants-enrichment is counted).  Now apply cross-segment
+    // delta decrements: each UNIQUE enriched eventId found anywhere
+    // subtracts 1 from its originating segment's pendingEnrichmentCount.
+    // The local set guarantees idempotency — duplicate deltas (e.g. from
+    // a phone retry) decrement exactly once, matching the semantics of
+    // _eventRecordPendingEnrichment.  This is the ONLY place we walk the
+    // whole spool — explicit, costly, never on the hot path.
+    if (anyRebuilt && !_hasInvalidSpoolSummaries()) {
+        std::map<uint32_t, bool> seenEnrichedIds;
+        for (const auto& seg : _spoolIndex.segments) {
+            _scanSegmentRecords(seg.segmentId,
+                [&](const DecodedSpoolRecord& rec) -> bool {
+                    if (rec.recordType != SPOOL_REC_ENRICH_DELTA) return true;
+                    const uint32_t targetId = rec.doc["event_id"] | 0U;
+                    if (targetId == 0) return true;
+                    // First-application proof: only the first delta per
+                    // eventId actually decrements the gross count.
+                    if (seenEnrichedIds.find(targetId) != seenEnrichedIds.end()) {
+                        return true;
+                    }
+                    seenEnrichedIds[targetId] = true;
+                    _decrementPendingEnrichmentForEvent(targetId);
+                    return true;
+                });
         }
     }
 
@@ -4185,6 +4370,7 @@ bool StorageManager::_scanSegmentForAudit(SpoolSegmentInfo& rebuilt,
             scanned.p1Count = rebuilt.p1Count;
             scanned.p2Count = rebuilt.p2Count;
             scanned.p3Count = rebuilt.p3Count;
+            scanned.pendingEnrichmentCount = rebuilt.pendingEnrichmentCount;
             scanned.minTimestampMs = rebuilt.minTimestampMs;
             scanned.maxTimestampMs = rebuilt.maxTimestampMs;
         } else {
@@ -4442,6 +4628,585 @@ bool StorageManager::_auditAndRepairSpool(const char* reason,
     return !audit.hadFatalSegmentError || repair;
 }
 
+bool StorageManager::requestSpoolRepair(const char* reason) {
+    if (!_ready) {
+        return false;
+    }
+
+    const char* safeReason = (reason && reason[0]) ? reason : "maintenance";
+    const bool wasRequested = _repairRequested || _spoolAuditRepairRequired;
+    _repairRequested = true;
+    _spoolAuditRepairRequired = true;
+
+    if (!_repairJob.active) {
+        _repairJob.reason = safeReason;
+    }
+
+    if (!wasRequested) {
+        DLOG_WARN("STORAGE", "Spool repair queued reason=%s", safeReason);
+    }
+    return true;
+}
+
+void StorageManager::_resetRepairJob() {
+    _repairJob = SpoolRepairJob();
+}
+
+void StorageManager::_startRepairJob(const char* reason) {
+    const String jobReason = (reason && reason[0]) ? String(reason)
+                                                   : _repairJob.reason;
+    _resetRepairJob();
+    _repairJob.active = true;
+    _repairJob.reason = jobReason.length() ? jobReason : String("maintenance");
+    _repairJob.startMs = millis();
+    _repairJob.audit.oldPendingTotal = _spoolIndex.pendingTotal;
+    _repairJob.audit.oldNextEventId = _nextEventId;
+    _repairJob.repairedSegments.reserve(_spoolIndex.segments.size());
+    _repairJob.rebuiltSessions.reserve(_spoolIndex.sessions.size());
+    DLOG_INFO("STORAGE", "Spool repair start reason=%s segs=%u",
+              _repairJob.reason.c_str(),
+              static_cast<unsigned>(_spoolIndex.segments.size()));
+}
+
+void StorageManager::_rememberRepairSession(const String& sessionId) {
+    if (!sessionId.length()) {
+        return;
+    }
+    for (const auto& existing : _repairJob.segmentSessions) {
+        if (existing == sessionId) {
+            return;
+        }
+    }
+    _repairJob.segmentSessions.push_back(sessionId);
+}
+
+bool StorageManager::_beginRepairSegment() {
+    while (_repairJob.segmentIndex < _spoolIndex.segments.size()) {
+        const SpoolSegmentInfo& seg = _spoolIndex.segments[_repairJob.segmentIndex];
+
+        if (_isSegmentQuarantined(seg.segmentId)) {
+            _repairJob.audit.quarantinedSegments++;
+            _repairJob.segmentChanged = true;
+            _repairJob.segmentIndex++;
+            continue;
+        }
+
+        const String segmentPath =
+            _spoolSegmentPathForFormat(seg.segmentId, seg.format);
+        if (!LittleFS.exists(segmentPath)) {
+            _repairJob.audit.unreadableSegments++;
+            _repairJob.audit.hadFatalSegmentError = true;
+            _repairJob.segmentChanged = true;
+            _repairJob.audit.repaired = true;
+
+            DLOG_WARN("STORAGE",
+                      "Spool repair dropping missing segment seg=%lu path=%s",
+                      static_cast<unsigned long>(seg.segmentId),
+                      segmentPath.c_str());
+            const String indexPath = _uploadIndexPath(seg.segmentId);
+            if (LittleFS.exists(indexPath) && !LittleFS.remove(indexPath)) {
+                DLOG_WARN("STORAGE",
+                          "Upload index sidecar remove failed missing seg=%lu path=%s",
+                          static_cast<unsigned long>(seg.segmentId),
+                          indexPath.c_str());
+            }
+            _repairJob.segmentIndex++;
+            continue;
+        }
+
+        _repairJob.originalSegment = seg;
+        _repairJob.rebuiltSegment = seg;
+        _clearSegmentSummary(_repairJob.rebuiltSegment);
+        _repairJob.rebuiltSegment.segmentId = seg.segmentId;
+        _repairJob.rebuiltSegment.format = seg.format;
+        _repairJob.rebuiltSegment.approxBytes = seg.approxBytes;
+        _repairJob.rebuiltSegment.firstEventId = 0;
+        _repairJob.rebuiltSegment.lastEventId = 0;
+        _repairJob.rebuiltSegment.recordCount = 0;
+        _repairJob.segmentSessions.clear();
+        _repairJob.lastSession = "";
+        _repairJob.fileOffset = 0;
+        _repairJob.segmentValidEventRecords = 0;
+        _repairJob.segmentValidEnrichDeltas = 0;
+        _repairJob.scanningSegment = true;
+        _repairJob.audit.scannedSegments++;
+        return true;
+    }
+
+    return false;
+}
+
+bool StorageManager::_repairJsonlSlice(uint32_t startMs,
+                                       uint32_t budgetMs,
+                                       uint16_t maxRecords,
+                                       uint16_t& recordsScanned) {
+    const String path =
+        _spoolSegmentPathForFormat(_repairJob.originalSegment.segmentId,
+                                   SPOOL_SEGMENT_JSONL);
+    File f = LittleFS.open(path, "r");
+    if (!f) {
+        return false;
+    }
+    if (_repairJob.fileOffset > 0 && !f.seek(_repairJob.fileOffset)) {
+        f.close();
+        return false;
+    }
+
+    while (f.available() &&
+           recordsScanned < maxRecords &&
+           (millis() - startMs) < budgetMs) {
+        String line = f.readStringUntil('\n');
+        _repairJob.fileOffset = f.position();
+        line.trim();
+        if (!line.length()) {
+            continue;
+        }
+
+        recordsScanned++;
+
+        JsonDocument doc;
+        if (deserializeJson(doc, line)) {
+            continue;
+        }
+
+        DecodedSpoolRecord rec;
+        rec.eventId = doc["id"] | 0U;
+        rec.sessionId = String(doc[F_SESSION] | doc["session_id"] | "");
+        rec.doc = doc;
+
+        const char* recType = doc["type"] | "";
+        rec.recordType = (strcmp(recType, "enrich_delta") == 0)
+            ? SPOOL_REC_ENRICH_DELTA
+            : SPOOL_REC_EVENT;
+
+        _repairJob.audit.scannedRecords++;
+
+        const bool isEvent = rec.recordType == SPOOL_REC_EVENT;
+        const bool isEnrich = rec.recordType == SPOOL_REC_ENRICH_DELTA;
+        if (!isEvent && !isEnrich) {
+            _repairJob.audit.invalidRecords++;
+            _repairJob.audit.skippedRecords++;
+            continue;
+        }
+
+        if (!rec.eventId || !rec.sessionId.length()) {
+            _repairJob.audit.invalidRecords++;
+            _repairJob.audit.skippedRecords++;
+            continue;
+        }
+
+        _repairJob.rebuiltSegment.recordCount++;
+        _repairJob.audit.maxEventIdSeen =
+            std::max(_repairJob.audit.maxEventIdSeen, rec.eventId);
+        _rememberRepairSession(rec.sessionId);
+
+        if (isEvent) {
+            _repairJob.audit.validEventRecords++;
+            const uint32_t watermark = _uploadedWatermarkForSession(rec.sessionId);
+            if (rec.eventId > watermark) {
+                _repairJob.audit.rebuiltPendingTotal++;
+            }
+        } else {
+            _repairJob.audit.validEnrichDeltas++;
+        }
+
+        _updateSegmentSummaryFromDecodedRecord(_repairJob.rebuiltSegment, rec);
+    }
+
+    const bool done = !f.available();
+    f.close();
+    if (done) {
+        _repairJob.scanningSegment = false;
+    }
+    return true;
+}
+
+bool StorageManager::_repairBinaryMetaSlice(uint32_t startMs,
+                                            uint32_t budgetMs,
+                                            uint16_t maxRecords,
+                                            uint16_t& recordsScanned) {
+    const uint32_t segmentId = _repairJob.originalSegment.segmentId;
+    const String path = _spoolBinarySegmentPath(segmentId);
+    File f = LittleFS.open(path, "r");
+    if (!f) {
+        return false;
+    }
+
+    if (_repairJob.fileOffset == 0) {
+        SpoolBin::SegmentHeaderV2 hdr;
+        if (!SpoolBin::readSegmentHeaderV2(f, hdr)) {
+            DLOG_WARN("STORAGE", "Repair hdr read failed path=%s", path.c_str());
+            f.close();
+            return false;
+        }
+
+        if (hdr.magic != SpoolBin::SEGMENT_MAGIC || hdr.version != 2) {
+            DLOG_WARN("STORAGE", "Repair invalid hdr path=%s", path.c_str());
+            f.close();
+            return false;
+        }
+
+        _repairJob.fileOffset = sizeof(SpoolBin::SegmentHeaderV2);
+    }
+
+    if (!f.seek(_repairJob.fileOffset)) {
+        f.close();
+        return false;
+    }
+
+    uint32_t skipWarnCount = 0;
+    while (f.position() < f.size() &&
+           recordsScanned < maxRecords &&
+           (millis() - startMs) < budgetMs) {
+        const size_t remainingBeforePrefix =
+            static_cast<size_t>(f.size() - f.position());
+        if (remainingBeforePrefix < sizeof(SpoolBin::RecordPrefix)) {
+            DLOG_WARN("STORAGE",
+                      "Repair truncated tail path=%s remaining=%u",
+                      path.c_str(),
+                      static_cast<unsigned>(remainingBeforePrefix));
+            f.close();
+            return false;
+        }
+
+        SpoolBin::RecordPrefix prefix;
+        if (!SpoolBin::readBytes(f, &prefix, sizeof(prefix))) {
+            DLOG_WARN("STORAGE", "Repair prefix read failed path=%s", path.c_str());
+            f.close();
+            return false;
+        }
+
+        const size_t remainingAfterPrefix =
+            static_cast<size_t>(f.size() - f.position());
+        if (prefix.length > remainingAfterPrefix) {
+            DLOG_WARN("STORAGE",
+                      "Repair truncated body path=%s len=%u remaining=%u",
+                      path.c_str(),
+                      static_cast<unsigned>(prefix.length),
+                      static_cast<unsigned>(remainingAfterPrefix));
+            f.close();
+            return false;
+        }
+
+        std::vector<uint8_t> body(prefix.length);
+        if (prefix.length > 0 &&
+            !SpoolBin::readBytes(f, body.data(), prefix.length)) {
+            DLOG_WARN("STORAGE", "Repair body read failed path=%s", path.c_str());
+            f.close();
+            return false;
+        }
+
+        _repairJob.fileOffset = f.position();
+        recordsScanned++;
+        _repairJob.audit.scannedRecords++;
+
+        BinaryMetaRecord rec;
+        if (!_decodeBinaryMetaRecord(body.data(),
+                                     body.size(),
+                                     prefix.type,
+                                     _repairJob.lastSession,
+                                     rec)) {
+            _repairJob.audit.invalidRecords++;
+            _repairJob.audit.skippedRecords++;
+            if (skipWarnCount < 4) {
+                DLOG_WARN("STORAGE",
+                          "Repair decode skip path=%s type=%u len=%u skips=%lu",
+                          path.c_str(),
+                          static_cast<unsigned>(prefix.type),
+                          static_cast<unsigned>(prefix.length),
+                          static_cast<unsigned long>(_repairJob.audit.skippedRecords));
+                skipWarnCount++;
+            }
+            continue;
+        }
+
+        _repairJob.rebuiltSegment.recordCount++;
+        _rememberRepairSession(rec.sessionId);
+
+        if (rec.recordType == SPOOL_REC_EVENT) {
+            _repairJob.audit.validEventRecords++;
+            _repairJob.segmentValidEventRecords++;
+            const uint32_t watermark = _uploadedWatermarkForSession(rec.sessionId);
+            if (rec.eventId > watermark) {
+                _repairJob.audit.rebuiltPendingTotal++;
+            }
+            if (rec.eventId != 0) {
+                if (_repairJob.rebuiltSegment.firstEventId == 0 ||
+                    rec.eventId < _repairJob.rebuiltSegment.firstEventId) {
+                    _repairJob.rebuiltSegment.firstEventId = rec.eventId;
+                }
+                if (rec.eventId > _repairJob.rebuiltSegment.lastEventId) {
+                    _repairJob.rebuiltSegment.lastEventId = rec.eventId;
+                }
+            }
+        } else if (rec.recordType == SPOOL_REC_ENRICH_DELTA) {
+            _repairJob.audit.validEnrichDeltas++;
+            _repairJob.segmentValidEnrichDeltas++;
+        }
+
+        if (rec.eventId > _repairJob.audit.maxEventIdSeen) {
+            _repairJob.audit.maxEventIdSeen = rec.eventId;
+        }
+    }
+
+    const bool done = f.position() >= f.size();
+    f.close();
+    if (done) {
+        _repairJob.scanningSegment = false;
+    }
+    return true;
+}
+
+void StorageManager::_finishRepairSegment() {
+    if (_repairJob.originalSegment.format == SPOOL_SEGMENT_BIN_V2) {
+        _repairJob.rebuiltSegment.eventCount =
+            _repairJob.segmentValidEventRecords;
+        _repairJob.rebuiltSegment.enrichDeltaCount =
+            _repairJob.segmentValidEnrichDeltas;
+
+        const SpoolSegmentInfo& before = _repairJob.originalSegment;
+        const bool existingSummaryStillMatches =
+            before.summaryValid &&
+            before.summaryVersion == SPOOL_SEGMENT_SUMMARY_VERSION &&
+            before.recordCount == _repairJob.rebuiltSegment.recordCount &&
+            before.eventCount == _repairJob.rebuiltSegment.eventCount &&
+            before.enrichDeltaCount == _repairJob.rebuiltSegment.enrichDeltaCount &&
+            before.firstEventId == _repairJob.rebuiltSegment.firstEventId &&
+            before.lastEventId == _repairJob.rebuiltSegment.lastEventId;
+
+        if (existingSummaryStillMatches) {
+            _repairJob.rebuiltSegment.summaryVersion = before.summaryVersion;
+            _repairJob.rebuiltSegment.summaryValid = before.summaryValid;
+            _repairJob.rebuiltSegment.missionCount = before.missionCount;
+            _repairJob.rebuiltSegment.noiseCount = before.noiseCount;
+            _repairJob.rebuiltSegment.p0Count = before.p0Count;
+            _repairJob.rebuiltSegment.p1Count = before.p1Count;
+            _repairJob.rebuiltSegment.p2Count = before.p2Count;
+            _repairJob.rebuiltSegment.p3Count = before.p3Count;
+            _repairJob.rebuiltSegment.pendingEnrichmentCount =
+                before.pendingEnrichmentCount;
+            _repairJob.rebuiltSegment.minTimestampMs = before.minTimestampMs;
+            _repairJob.rebuiltSegment.maxTimestampMs = before.maxTimestampMs;
+        } else {
+            _repairJob.rebuiltSegment.summaryValid = false;
+        }
+    }
+
+    for (const auto& sessionId : _repairJob.segmentSessions) {
+        bool seen = false;
+        for (const auto& existing : _repairJob.rebuiltSessions) {
+            if (existing == sessionId) {
+                seen = true;
+                break;
+            }
+        }
+        if (!seen) {
+            _repairJob.rebuiltSessions.push_back(sessionId);
+        }
+    }
+
+    if (!_spoolSegmentInfoEquals(_repairJob.originalSegment,
+                                 _repairJob.rebuiltSegment)) {
+        _repairJob.segmentChanged = true;
+    }
+    _repairJob.repairedSegments.push_back(_repairJob.rebuiltSegment);
+    _repairJob.segmentIndex++;
+    _repairJob.scanningSegment = false;
+    _repairJob.segmentSessions.clear();
+    _repairJob.lastSession = "";
+}
+
+bool StorageManager::_finalizeRepairJob() {
+    SpoolRepairJob job = _repairJob;
+
+    if (_nextEventId != job.audit.oldNextEventId) {
+        DLOG_WARN("STORAGE",
+                  "Spool repair restart: spool changed during repair oldNext=%lu now=%lu",
+                  static_cast<unsigned long>(job.audit.oldNextEventId),
+                  static_cast<unsigned long>(_nextEventId));
+        _resetRepairJob();
+        _repairRequested = true;
+        _spoolAuditRepairRequired = true;
+        return false;
+    }
+
+    const bool sessionsChanged = (job.rebuiltSessions != _spoolIndex.sessions);
+    job.audit.hadMismatch =
+        job.audit.oldPendingTotal != job.audit.rebuiltPendingTotal ||
+        job.audit.oldNextEventId <= job.audit.maxEventIdSeen ||
+        job.audit.quarantinedSegments > 0 ||
+        job.audit.invalidRecords > 0 ||
+        job.audit.hadFatalSegmentError ||
+        job.segmentChanged ||
+        sessionsChanged;
+
+    bool persistOk = true;
+    if (job.audit.hadMismatch) {
+        _spoolIndex.pendingTotal = job.audit.rebuiltPendingTotal;
+        _pendingEventCount = job.audit.rebuiltPendingTotal;
+
+        const uint32_t rebuiltNext =
+            (job.audit.maxEventIdSeen == UINT32_MAX)
+                ? UINT32_MAX
+                : std::max<uint32_t>(job.audit.maxEventIdSeen + 1U, 1U);
+        if (_nextEventId <= job.audit.maxEventIdSeen) {
+            _nextEventId = rebuiltNext;
+            _eventCounterDirty = true;
+            _eventCounterPendingWrites = 1;
+        }
+
+        _spoolIndex.segments = job.repairedSegments;
+        _spoolIndex.segments.erase(
+            std::remove_if(_spoolIndex.segments.begin(),
+                           _spoolIndex.segments.end(),
+                           [&](const SpoolSegmentInfo& seg) {
+                               return seg.segmentId == 0;
+                           }),
+            _spoolIndex.segments.end());
+
+        if (!_spoolIndex.segments.empty()) {
+            _spoolIndex.oldestSegmentId = _spoolIndex.segments.front().segmentId;
+        } else {
+            _spoolIndex.oldestSegmentId = 0;
+        }
+
+        _spoolIndex.sessions = job.rebuiltSessions;
+        _pendingCountDirty = false;
+        _spoolIndexDirty = true;
+
+        for (auto it = _binaryLastSessionBySegment.begin();
+             it != _binaryLastSessionBySegment.end();) {
+            const bool keep =
+                std::any_of(_spoolIndex.segments.begin(),
+                            _spoolIndex.segments.end(),
+                            [&](const SpoolSegmentInfo& seg) {
+                                return seg.segmentId == it->first;
+                            });
+            if (!keep) {
+                it = _binaryLastSessionBySegment.erase(it);
+            } else {
+                ++it;
+            }
+        }
+
+        const bool activeStillExists =
+            _spoolIndex.activeSegmentId != 0 &&
+            _findSegmentInfo(_spoolIndex.activeSegmentId) != nullptr;
+        if (!activeStillExists) {
+            _spoolIndex.activeSegmentId = 0;
+            if (!_openNewSpoolSegment()) {
+                job.audit.hadFatalSegmentError = true;
+                persistOk = false;
+            }
+        }
+
+        if (persistOk &&
+            (!_persistEventCounter(true) ||
+             !_persistSpoolIndex(true) ||
+             !_persistEventMeta(true))) {
+            persistOk = false;
+        }
+
+        job.audit.repaired = persistOk;
+    } else {
+        _pendingCountDirty = false;
+    }
+
+    _spoolSummaryRebuildPending = _hasInvalidSpoolSummaries();
+
+    const uint32_t elapsedMs = millis() - job.startMs;
+    if (elapsedMs > 200U || job.audit.scannedRecords > 512U) {
+        DLOG_WARN("STORAGE",
+                  "Spool repair slow reason=%s segs=%lu recs=%lu ms=%lu",
+                  job.reason.c_str(),
+                  static_cast<unsigned long>(job.audit.scannedSegments),
+                  static_cast<unsigned long>(job.audit.scannedRecords),
+                  static_cast<unsigned long>(elapsedMs));
+    }
+    _logSpoolAuditResult(job.reason.c_str(), job.audit);
+
+    _resetRepairJob();
+
+    if (!persistOk) {
+        _repairRequested = true;
+        _spoolAuditRepairRequired = true;
+        refreshStorageUiState();
+        return false;
+    }
+
+    _repairRequested = false;
+    _spoolAuditRepairRequired = false;
+    refreshStorageUiState();
+    return true;
+}
+
+bool StorageManager::repairStep(uint32_t budgetMs, uint16_t maxRecords) {
+    if (!_ready) {
+        return false;
+    }
+
+    if (!_repairRequested && !_spoolAuditRepairRequired && !_repairJob.active) {
+        return true;
+    }
+
+    if (budgetMs == 0) {
+        budgetMs = 1;
+    }
+    if (maxRecords == 0) {
+        maxRecords = 1;
+    }
+
+    if (!_repairJob.active) {
+        _startRepairJob(_repairJob.reason.length()
+                            ? _repairJob.reason.c_str()
+                            : "maintenance_repair");
+    }
+
+    const uint32_t startMs = millis();
+    uint16_t recordsScanned = 0;
+
+    while (recordsScanned < maxRecords &&
+           (millis() - startMs) < budgetMs) {
+        if (!_repairJob.scanningSegment && !_beginRepairSegment()) {
+            return _finalizeRepairJob();
+        }
+
+        const bool ok =
+            (_repairJob.originalSegment.format == SPOOL_SEGMENT_BIN_V2)
+                ? _repairBinaryMetaSlice(startMs, budgetMs, maxRecords, recordsScanned)
+                : _repairJsonlSlice(startMs, budgetMs, maxRecords, recordsScanned);
+
+        if (!ok) {
+            _repairJob.audit.unreadableSegments++;
+            _repairJob.audit.hadFatalSegmentError = true;
+
+            if (!_quarantineSpoolSegment(_repairJob.originalSegment.segmentId,
+                                         SpoolCorruptionReason::SCAN_FAILED,
+                                         "maintenance repair scan failed")) {
+                _repairRequested = true;
+                _spoolAuditRepairRequired = true;
+                return false;
+            }
+
+            _repairJob.audit.quarantinedSegments++;
+            _repairJob.segmentChanged = true;
+            _repairJob.scanningSegment = false;
+            _repairJob.segmentIndex++;
+            continue;
+        }
+
+        if (!_repairJob.scanningSegment) {
+            _finishRepairSegment();
+        }
+
+        if (recordsScanned == 0) {
+            break;
+        }
+    }
+
+    return !_repairJob.active;
+}
+
 bool StorageManager::_canRebuildSpoolSummariesNow() const {
     if (!_ready || _uploadBatchActive) {
         return false;
@@ -4509,8 +5274,8 @@ void StorageManager::_maybeCompactForPressure(StoragePressureMode oldMode,
         return;
     }
 
-    _pendingEventCount = _rescanPendingEventCountFromSpool();
-    _pendingCountDirty = false;
+    // compactSpool only removes fully-uploaded segments, so the live
+    // counter is already correct — no rescan needed.
     _persistEventMeta(true);
     refreshStorageUiState();
 
@@ -4579,14 +5344,14 @@ void StorageManager::checkHealth() {
 
     updateStoragePressure();
 
-    if (_spoolAuditRepairRequired && _canRebuildSpoolSummariesNow()) {
-        DLOG_INFO("STORAGE", "Health: running deferred audit-repair");
-        SpoolAuditResult healthAudit;
-        _auditAndRepairSpool("health_repair", true, &healthAudit);
-        _spoolAuditRepairRequired = false;
-    }
+    const bool hadTruthDebt =
+        _spoolAuditRepairRequired ||
+        _spoolSummaryRebuildPending ||
+        _pendingCountDirty;
 
-    _servicePendingSpoolSummaryRebuild();
+    if (hadTruthDebt) {
+        requestSpoolRepair("health_truth_debt");
+    }
     refreshStorageUiState();
     _logSpoolDiagnostics("health");
 }
@@ -5151,6 +5916,7 @@ bool StorageManager::wipeNonVaultStorage() {
     _spoolIndex = {};
     _binaryLastSessionBySegment.clear();
     _uploadIndexBySession.clear();
+    _uploadEnrichBySession.clear();
     _uploadIndexSessions.clear();
     _uploadIndexStats = {};
 
@@ -5682,20 +6448,42 @@ bool StorageManager::_validateUploadIndexRecord(const UploadIndexRecordV1& rec,
     return rec.crc == _uploadIndexRecordHash(rec);
 }
 
-void StorageManager::_addUploadPtrToMemory(const UploadIndexRecordV1& rec) {
+bool StorageManager::_addUploadPtrToMemory(const UploadIndexRecordV1& rec) {
     if (!rec.sessionId[0]) {
-        return;
+        return true;
     }
 
     const String sessionId(rec.sessionId);
-    _uploadIndexBySession[sessionId].push_back(rec);
+    const bool newSession = _uploadIndexBySession.find(sessionId) == _uploadIndexBySession.end();
+    UploadIndexPagedSession& session = _uploadIndexBySession[sessionId];
+
+    if (session.pages.empty() ||
+        session.pages.back()->count >= UPLOAD_INDEX_PAGE_CAPACITY) {
+        std::unique_ptr<UploadIndexPage> page(new (std::nothrow) UploadIndexPage());
+        if (!page) {
+            DLOG_WARN("STORAGE",
+                      "Upload index page alloc failed session=%s count=%lu",
+                      sessionId.c_str(),
+                      static_cast<unsigned long>(session.count));
+            if (newSession && session.count == 0 && session.pages.empty()) {
+                _uploadIndexBySession.erase(sessionId);
+            }
+            return false;
+        }
+        session.pages.push_back(std::move(page));
+    }
+
+    UploadIndexPage* page = session.pages.back().get();
+    page->records[page->count++] = rec;
+    session.count++;
 
     for (const auto& existing : _uploadIndexSessions) {
         if (existing == sessionId) {
-            return;
+            return true;
         }
     }
     _uploadIndexSessions.push_back(sessionId);
+    return true;
 }
 
 void StorageManager::_releaseUploadIndexMemory(const char* reason) {
@@ -5707,7 +6495,8 @@ void StorageManager::_releaseUploadIndexMemory(const char* reason) {
         sessions != 0 ||
         !_uploadIndexBySession.empty();
 
-    std::map<String, std::vector<UploadIndexRecordV1>>().swap(_uploadIndexBySession);
+    std::map<String, UploadIndexPagedSession>().swap(_uploadIndexBySession);
+    std::map<String, std::map<uint32_t, SpoolEnrichmentDelta>>().swap(_uploadEnrichBySession);
     std::vector<String>().swap(_uploadIndexSessions);
     _uploadIndexStats = {};
     _uploadIndexResident = false;
@@ -5767,7 +6556,9 @@ bool StorageManager::_rebuildUploadIndexSegment(const SpoolSegmentInfo& seg) {
             return false;
         }
 
-        _addUploadPtrToMemory(record);
+        if (!_addUploadPtrToMemory(record)) {
+            return false;
+        }
         _uploadIndexStats.indexedEvents++;
         return true;
     };
@@ -5890,11 +6681,45 @@ bool StorageManager::_rebuildUploadIndexSegment(const SpoolSegmentInfo& seg) {
         DLOG_WARN("STORAGE", "Upload index rebuild failed seg=%lu",
                   static_cast<unsigned long>(seg.segmentId));
     }
+
+    const bool summaryReady =
+        seg.summaryValid &&
+        seg.summaryVersion == SPOOL_SEGMENT_SUMMARY_VERSION;
+    if (ok && summaryReady && seg.enrichDeltaCount > 0) {
+        ok = _scanSegmentRecords(seg.segmentId,
+            [&](const DecodedSpoolRecord& rec) -> bool {
+                if (rec.recordType != SPOOL_REC_ENRICH_DELTA ||
+                    !rec.sessionId.length()) {
+                    return true;
+                }
+
+                SpoolEnrichmentDelta enrichment;
+                enrichment.id = rec.doc["event_id"] | 0U;
+                if (enrichment.id == 0) {
+                    return true;
+                }
+
+                enrichment.lat = rec.doc["lat"] | 0.0f;
+                enrichment.lon = rec.doc["lon"] | 0.0f;
+                enrichment.alt = rec.doc["alt"] | 0.0f;
+                enrichment.acc = rec.doc["acc"] | 0.0f;
+                enrichment.tag = String((const char*)(rec.doc["tag"] | ""));
+                enrichment.ts = rec.doc["ts"] | 0U;
+                _uploadEnrichBySession[rec.sessionId][enrichment.id] = enrichment;
+                return true;
+            });
+
+        if (!ok) {
+            DLOG_WARN("STORAGE", "Upload enrich index rebuild failed seg=%lu",
+                      static_cast<unsigned long>(seg.segmentId));
+        }
+    }
     return ok;
 }
 
 bool StorageManager::_rebuildUploadIndex() {
     _uploadIndexBySession.clear();
+    _uploadEnrichBySession.clear();
     _uploadIndexSessions.clear();
     _uploadIndexStats = {};
     _uploadIndexResident = true;
@@ -5904,15 +6729,6 @@ bool StorageManager::_rebuildUploadIndex() {
         if (!_rebuildUploadIndexSegment(seg)) {
             ok = false;
         }
-    }
-
-    for (auto& kv : _uploadIndexBySession) {
-        std::sort(kv.second.begin(),
-                  kv.second.end(),
-                  [](const UploadIndexRecordV1& a,
-                     const UploadIndexRecordV1& b) {
-                      return a.eventId < b.eventId;
-                  });
     }
 
     _uploadIndexStats.sessions = static_cast<uint32_t>(_uploadIndexSessions.size());
@@ -6294,6 +7110,7 @@ bool StorageManager::appendEnrichDeltasBatch(const SpoolEnrichBatchEntry* entrie
         if (firstEvent == 0) firstEvent = e.eventId;
         lastEvent = e.eventId;
         applied++;
+        _decrementPendingEnrichmentForEvent(e.eventId);
     }
 
     bool ok = SpoolBin::writeSegmentHeaderV2(f, hdr);
@@ -6489,6 +7306,7 @@ bool StorageManager::_appendSpoolEnrichmentDelta(const String& sessionId,
     seg->approxBytes = hdr.bodyBytes + sizeof(SpoolBin::SegmentHeaderV2);
 
     _markSegmentEnrichmentDelta(*seg, recordId, ts);
+    _decrementPendingEnrichmentForEvent(eventId);
 
     _binaryLastSessionBySegment[seg->segmentId] = sessionId;
 
@@ -6680,26 +7498,32 @@ bool StorageManager::_getUploadEventBatchForSessionFromIndex(const String& sessi
     events.reserve(static_cast<size_t>(maxCount));
     std::vector<UploadIndexRecordV1> selected;
     selected.reserve(static_cast<size_t>(maxCount));
-    std::map<uint32_t, SpoolEnrichmentDelta> enrichById;
-
     auto sessionIt = _uploadIndexBySession.find(sessionId);
     if (sessionIt == _uploadIndexBySession.end()) {
         return true;
     }
 
-    const auto& ptrs = sessionIt->second;
-    auto ptrIt = std::upper_bound(
-        ptrs.begin(),
-        ptrs.end(),
-        sinceId,
-        [](uint32_t id, const UploadIndexRecordV1& rec) {
-            return id < rec.eventId;
-        });
+    const UploadIndexPagedSession& ptrs = sessionIt->second;
+    for (const auto& pagePtr : ptrs.pages) {
+        if (!pagePtr) {
+            continue;
+        }
 
-    for (; ptrIt != ptrs.end() &&
-           selected.size() < static_cast<size_t>(maxCount);
-         ++ptrIt) {
-        selected.push_back(*ptrIt);
+        const UploadIndexPage& page = *pagePtr;
+        for (uint8_t i = 0; i < page.count; ++i) {
+            const UploadIndexRecordV1& rec = page.records[i];
+            if (rec.eventId <= sinceId) {
+                continue;
+            }
+            selected.push_back(rec);
+            if (selected.size() >= static_cast<size_t>(maxCount)) {
+                break;
+            }
+        }
+
+        if (selected.size() >= static_cast<size_t>(maxCount)) {
+            break;
+        }
     }
 
     size_t selectedIndex = 0;
@@ -6825,60 +7649,8 @@ bool StorageManager::_getUploadEventBatchForSessionFromIndex(const String& sessi
         f.close();
     }
 
-    if (!events.empty()) {
-        auto selectedIndex = [&](uint32_t eventId) -> int {
-            for (size_t i = 0; i < events.size(); ++i) {
-                if (events[i].eventId == eventId) {
-                    return static_cast<int>(i);
-                }
-            }
-            return -1;
-        };
-
-        for (const auto& seg : _spoolIndex.segments) {
-            const bool summaryReady =
-                seg.summaryValid &&
-                seg.summaryVersion == SPOOL_SEGMENT_SUMMARY_VERSION;
-
-            if (summaryReady && seg.enrichDeltaCount == 0) {
-                continue;
-            }
-
-            const bool ok = _scanSegmentRecords(seg.segmentId,
-                [&](const DecodedSpoolRecord& rec) -> bool {
-                    if (rec.recordType != SPOOL_REC_ENRICH_DELTA ||
-                        !rec.sessionId.length() ||
-                        rec.sessionId != sessionId) {
-                        return true;
-                    }
-
-                    SpoolEnrichmentDelta enrichment;
-                    enrichment.id = rec.doc["event_id"] | 0U;
-                    if (enrichment.id == 0 || selectedIndex(enrichment.id) < 0) {
-                        return true;
-                    }
-
-                    enrichment.lat = rec.doc["lat"] | 0.0f;
-                    enrichment.lon = rec.doc["lon"] | 0.0f;
-                    enrichment.alt = rec.doc["alt"] | 0.0f;
-                    enrichment.acc = rec.doc["acc"] | 0.0f;
-                    enrichment.tag = String((const char*)(rec.doc["tag"] | ""));
-                    enrichment.ts = rec.doc["ts"] | 0U;
-                    enrichById[enrichment.id] = enrichment;
-                    return enrichById.size() < events.size();
-                });
-
-            if (!ok) {
-                return false;
-            }
-
-            if (enrichById.size() >= events.size()) {
-                break;
-            }
-        }
-    }
-
     const uint32_t watermark = _uploadedWatermarkForSession(sessionId);
+    const auto enrichSessionIt = _uploadEnrichBySession.find(sessionId);
 
     for (const auto& event : events) {
         JsonObject dst = batch.add<JsonObject>();
@@ -6887,8 +7659,11 @@ bool StorageManager::_getUploadEventBatchForSessionFromIndex(const String& sessi
         }
 
         EventStatus status = EVT_RAW;
-        auto it = enrichById.find(event.eventId);
-        if (it != enrichById.end()) {
+        auto it = (enrichSessionIt != _uploadEnrichBySession.end()) ?
+            enrichSessionIt->second.find(event.eventId) :
+            std::map<uint32_t, SpoolEnrichmentDelta>::const_iterator{};
+        if (enrichSessionIt != _uploadEnrichBySession.end() &&
+            it != enrichSessionIt->second.end()) {
             const SpoolEnrichmentDelta& enrichment = it->second;
             dst["lat"] = enrichment.lat;
             dst["lon"] = enrichment.lon;
@@ -8418,12 +9193,11 @@ bool StorageManager::compactSpool() {
 // segment ranges, and dangling active/oldest pointers that can arise from
 // interrupted writes or bugs in the deferred-persist path.
 //
-// When an invariant fails and repairIfBad is false, the function sets
-// _spoolAuditRepairRequired so checkHealth() runs a full audit-repair during
-// the next radio-quiet maintenance window. Pass repairIfBad=true only from the
-// manual "spool repair" command where an immediate full repair is expected.
+// When an invariant fails, the function marks counter trust degraded and queues
+// budgeted maintenance. It never walks the spool inline.
 // ─────────────────────────────────────────────────────────────────────────────
 bool StorageManager::_checkSpoolInvariants(const char* reason, bool repairIfBad) {
+    (void)repairIfBad;
     if (!_ready) {
         return false;
     }
@@ -8479,11 +9253,8 @@ bool StorageManager::_checkSpoolInvariants(const char* reason, bool repairIfBad)
     if (ok) {
         DLOG_DEBUG("STORAGE", "Inv[%s] ok segs=%u",
                    r, static_cast<unsigned>(_spoolIndex.segments.size()));
-    } else if (repairIfBad) {
-        SpoolAuditResult repairAudit;
-        _auditAndRepairSpool(reason, true, &repairAudit);
     } else {
-        _spoolAuditRepairRequired = true;
+        requestSpoolRepair(reason);
     }
 
     return ok;

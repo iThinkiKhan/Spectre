@@ -4,6 +4,7 @@
 #include <ArduinoJson.h>
 #include <vector>
 #include <map>
+#include <memory>
 #include <functional>
 #include "../core/Session.h"
 #include "../core/EventBus.h"
@@ -77,7 +78,7 @@ enum StorageLane : uint8_t {
     STORAGE_LANE_NOISE   = 1
 };
 
-static constexpr uint16_t SPOOL_SEGMENT_SUMMARY_VERSION = 1;
+static constexpr uint16_t SPOOL_SEGMENT_SUMMARY_VERSION = 2;
 
 struct StorageLaneCounts {
     uint32_t mission = 0;
@@ -210,6 +211,13 @@ struct SpoolSegmentInfo {
     uint32_t p2Count = 0;
     uint32_t p3Count = 0;
 
+    // Events ORIGINATING in this segment that want enrichment but haven't
+    // been enriched anywhere yet. Maintained live: incremented on append
+    // when the event wants enrichment; decremented when a delta lands
+    // anywhere referencing one of this segment's eventIds. Lets hot-path
+    // getters skip drained segments instead of scanning every record.
+    uint32_t pendingEnrichmentCount = 0;
+
     uint32_t minTimestampMs = 0;
     uint32_t maxTimestampMs = 0;
 
@@ -249,6 +257,18 @@ static_assert(sizeof(UploadIndexRecordV1) == 68,
 struct UploadIndexStats {
     uint32_t indexedEvents = 0;
     uint32_t sessions = 0;
+};
+
+static constexpr size_t UPLOAD_INDEX_PAGE_CAPACITY = 32;
+
+struct UploadIndexPage {
+    UploadIndexRecordV1 records[UPLOAD_INDEX_PAGE_CAPACITY];
+    uint8_t count = 0;
+};
+
+struct UploadIndexPagedSession {
+    std::vector<std::unique_ptr<UploadIndexPage>> pages;
+    uint32_t count = 0;
 };
 
 struct SpoolIndex {
@@ -362,7 +382,19 @@ public:
     bool     isUploadBatchDirty() const { return _uploadBatchDirty; }
     bool     compactUploadedEventFiles(const char* sessionId = nullptr);
     int      compactAllUploadedEventFiles();
+
+    // Hot-path accessor: returns the live in-memory counter without ever
+    // scanning the spool. This is the only path the runtime should use.
+    // The live counter is incremented on appendEvent and decremented on
+    // markEventUploaded; passing forceRescan=true is for explicit repair
+    // tooling and triggers a full O(spool) scan via recountPendingFromSpool().
     uint32_t getPendingEventCount(bool forceRescan = false);
+
+    // Explicit, costly: walks every record in every segment to recompute
+    // the pending counter and replace the live value. Reserve for boot
+    // audit, manual repair, or post-quarantine recovery — never call from
+    // a hot path. Returns the recounted value.
+    uint32_t recountPendingFromSpool();
     uint32_t getPendingEventCountForSession(const char* sessionId);
     uint32_t getSessionPendingEventCount();
     uint32_t getLastUploadedEventId(const char* sessionId = nullptr);
@@ -423,6 +455,11 @@ public:
     bool compactSpool();
     void refreshStorageUiState();
     void updateStoragePressure();
+    bool hasStorageMaintenanceWork() const {
+        return _repairRequested || _repairJob.active || _spoolAuditRepairRequired;
+    }
+    bool requestSpoolRepair(const char* reason = nullptr);
+    bool repairStep(uint32_t budgetMs, uint16_t maxRecords);
 
     void beginHotPathDiagnosticsSuppressed();
     void endHotPathDiagnosticsSuppressed();
@@ -487,6 +524,25 @@ private:
         QUARANTINE_SEGMENT
     };
 
+    struct SpoolRepairJob {
+        bool active = false;
+        String reason;
+        SpoolAuditResult audit;
+        std::vector<SpoolSegmentInfo> repairedSegments;
+        std::vector<String> rebuiltSessions;
+        std::vector<String> segmentSessions;
+        SpoolSegmentInfo originalSegment;
+        SpoolSegmentInfo rebuiltSegment;
+        size_t segmentIndex = 0;
+        uint32_t fileOffset = 0;
+        uint32_t startMs = 0;
+        uint32_t segmentValidEventRecords = 0;
+        uint32_t segmentValidEnrichDeltas = 0;
+        String lastSession;
+        bool scanningSegment = false;
+        bool segmentChanged = false;
+    };
+
     bool        _ready = false;
     DeviceConfig _config;
     String      _currentLoraLog;
@@ -511,12 +567,13 @@ private:
     bool        _uploadBatchActive = false;
     bool        _uploadBatchDirty  = false;
     bool        _uploadIndexResident = false;
-    bool        _uploadBatchNeedsRescan = false;
     // When summary metadata is observed invalid during a busy radio window,
     // defer rebuilding until a quiet maintenance pass can service it.
     bool        _spoolSummaryRebuildPending = false;
     bool        _spoolAuditRepairRequired = false;
+    bool        _repairRequested = false;
     bool        _suppressHotPathDiagnostics = false;
+    SpoolRepairJob _repairJob;
 
     StoragePressureMode    _pressureMode = STORAGE_MODE_NORMAL;
     StorageRetentionPolicy _retentionPolicy = STORAGE_POLICY_NORMAL;
@@ -524,7 +581,8 @@ private:
     std::vector<DedupWindowEntry> _dedupWindow;
     std::vector<HandshakeProgress> _handshakeWindow;
     std::map<uint32_t, String> _binaryLastSessionBySegment;
-    std::map<String, std::vector<UploadIndexRecordV1>> _uploadIndexBySession;
+    std::map<String, UploadIndexPagedSession> _uploadIndexBySession;
+    std::map<String, std::map<uint32_t, SpoolEnrichmentDelta>> _uploadEnrichBySession;
     std::vector<String> _uploadIndexSessions;
     UploadIndexStats _uploadIndexStats;
 
@@ -569,7 +627,7 @@ private:
     bool _rebuildUploadIndexSegment(const SpoolSegmentInfo& seg);
     bool _validateUploadIndexRecord(const UploadIndexRecordV1& rec,
                                     uint32_t expectedSegmentId) const;
-    void _addUploadPtrToMemory(const UploadIndexRecordV1& rec);
+    bool _addUploadPtrToMemory(const UploadIndexRecordV1& rec);
     void _releaseUploadIndexMemory(const char* reason);
     // force=true guarantees an immediate write. force=false is the hot-path
     // mode — it throttles to ~5s and defers while an upload batch is active.
@@ -610,6 +668,21 @@ private:
     void _markSegmentEnrichmentDelta(SpoolSegmentInfo& seg,
                                      uint32_t recordId,
                                      uint32_t timestampMs);
+    // Find the segment whose [firstEventId, lastEventId] contains eventId
+    // and decrement its pendingEnrichmentCount. Bounded O(num_segments),
+    // never opens a record file.
+    //
+    // CLAMP/RECOUNT semantics — conservative because a duplicate delta
+    // against an already-enriched event would double-decrement the live
+    // counter, and the runtime does not maintain an in-memory enriched-
+    // set (memory rejected at 2k+ event scale):
+    //   * stale segment summary           → flag _pendingCountDirty
+    //   * counter already 0 (likely dup)  → flag _pendingCountDirty
+    //   * counter > 0                     → decrement once
+    // Audit/rebuild paths dedupe at the call site (per-eventId map) so
+    // duplicate deltas in the spool decrement the gross count exactly
+    // once during repair.
+    void _decrementPendingEnrichmentForEvent(uint32_t eventId);
     bool _rebuildSegmentSummary(SpoolSegmentInfo& seg);
     bool _rebuildInvalidSegmentSummaries(bool force = false);
     bool _hasInvalidSpoolSummaries() const;
@@ -682,6 +755,20 @@ private:
     const char* _segmentFormatText(uint8_t format) const;
 
     bool _auditAndRepairSpool(const char* reason, bool repair, SpoolAuditResult* out);
+    void _startRepairJob(const char* reason);
+    void _resetRepairJob();
+    bool _beginRepairSegment();
+    bool _repairJsonlSlice(uint32_t startMs,
+                           uint32_t budgetMs,
+                           uint16_t maxRecords,
+                           uint16_t& recordsScanned);
+    bool _repairBinaryMetaSlice(uint32_t startMs,
+                                uint32_t budgetMs,
+                                uint16_t maxRecords,
+                                uint16_t& recordsScanned);
+    void _finishRepairSegment();
+    bool _finalizeRepairJob();
+    void _rememberRepairSession(const String& sessionId);
     bool _scanSegmentForAudit(SpoolSegmentInfo& rebuilt,
                               SpoolAuditResult& audit,
                               std::vector<String>& rebuiltSessions,
@@ -698,8 +785,8 @@ private:
                               const String& metaPath);
     bool _isSegmentQuarantined(uint32_t segmentId) const;
     void _logSpoolAuditResult(const char* reason, const SpoolAuditResult& audit);
-    // No I/O, no scan. Sets _spoolAuditRepairRequired when invariants fail and
-    // repairIfBad is false; runs the full audit immediately when repairIfBad is true.
+    // No I/O, no scan. Invariant failures only degrade counter trust and queue
+    // explicit maintenance; they never run a spool scan inline.
     bool _checkSpoolInvariants(const char* reason, bool repairIfBad);
 };
 

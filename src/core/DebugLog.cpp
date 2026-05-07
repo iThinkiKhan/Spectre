@@ -39,8 +39,44 @@ uint32_t DebugLog::_serialAreaMask = DEBUG_AREA_OPERATORS;
 uint32_t DebugLog::_lastFlush   = 0;
 portMUX_TYPE DebugLog::_mux     = portMUX_INITIALIZER_UNLOCKED;
 
+// Default to OFF until applyProfile() runs. _minLevelRank=99 makes enabled()
+// reject every level even before the profile branch is reached, so anything
+// that logs before init produces no churn.
+DebugProfile DebugLog::_profile             = DEBUG_PROFILE_OFF;
+int          DebugLog::_minLevelRank        = 99;
+uint32_t     DebugLog::_subsystemMask       = 0;
+bool         DebugLog::_areaMaskAll         = false;
+uint32_t     DebugLog::_autoFlushIntervalMs = 0;
+
 const char DebugLog::LOG_PATH[] = "/logs/debug.log";
 const char DebugLog::LOG_BAK[]  = "/logs/debug.log.1";
+
+void DebugLog::applyProfile(DebugProfile profile, uint32_t subsystemMask) {
+    _profile = profile;
+    _subsystemMask = subsystemMask;
+    switch (profile) {
+        case DEBUG_PROFILE_OFF:
+            _minLevelRank = 99;          // reject everything
+            _areaMaskAll = false;
+            _autoFlushIntervalMs = 0;    // never auto-flush
+            break;
+        case DEBUG_PROFILE_RUN:
+            _minLevelRank = 2;           // WARN+
+            _areaMaskAll = true;         // any subsystem
+            _autoFlushIntervalMs = 0;    // no auto-flush in field
+            break;
+        case DEBUG_PROFILE_DEBUG:
+            _minLevelRank = 1;           // INFO+
+            _areaMaskAll = false;
+            _autoFlushIntervalMs = 120000UL;
+            break;
+        case DEBUG_PROFILE_DEV:
+            _minLevelRank = 0;           // VERBOSE+
+            _areaMaskAll = false;
+            _autoFlushIntervalMs = 30000UL;
+            break;
+    }
+}
 
 void DebugLog::begin() {
     if (_ready) {
@@ -118,6 +154,11 @@ void DebugLog::setUsbSerialAreaMask(uint32_t areaMask) {
 
 void DebugLog::log(char level, const char* tag,
                    const char* fmt, ...) {
+    // Defensive recheck: callers that bypass DLOG_* macros still get gated.
+    if (!enabled(level, tag)) {
+        return;
+    }
+
     _ensureBuffer();
     char line[256];
     char msg[192];
@@ -164,19 +205,24 @@ void DebugLog::log(char level, const char* tag,
     _lineCount++;
     portEXIT_CRITICAL(&_mux);
 
+    // Profile-controlled auto-flush. OFF/RUN have _autoFlushIntervalMs=0 so
+    // no LittleFS writes happen on the routine log path. DEBUG/DEV throttle
+    // and skip while an upload is active or a risky radio owner holds the
+    // bus, keeping file IO out of the upload/capture windows.
+    if (_autoFlushIntervalMs == 0) {
+        return;
+    }
+
     bool uploadActive = false;
     STATE_READ_BEGIN();
     uploadActive = g_state.uploadActive;
     STATE_READ_END();
 
-    // Auto-flush every 30 seconds if ready, but keep LittleFS writes out of
-    // the active upload window and risky WiFi radio ownership windows.
-    // Manual/crash flushes still go through flush().
     uint32_t now = millis();
     if (_ready &&
         !uploadActive &&
         !debugLogFlushRisky() &&
-        now - _lastFlush > 30000) {
+        now - _lastFlush > _autoFlushIntervalMs) {
         flush();
     }
 }
@@ -188,7 +234,38 @@ void DebugLog::logCrash(const char* fmt, ...) {
     vsnprintf(msg, sizeof(msg), fmt, args);
     va_end(args);
 
-    log('E', "CRASH", "%s", msg);
+    // Crash records bypass the profile gate (OFF/RUN must still capture
+    // them) so we cannot route through log(). Hand-roll the same ring
+    // append + serial mirror that log() does, then force a flush.
+    char line[256];
+    uint32_t ms = millis();
+    snprintf(line, sizeof(line), "[%lu][E][CRASH] %s\r\n", ms, msg);
+
+    if (_serialEnabled) {
+        Serial.print(line);
+    }
+
+    _ensureBuffer();
+    portENTER_CRITICAL(&_mux);
+    const int capacity = _bufSize - 1;
+    int len = strlen(line);
+    if (len > capacity) {
+        len = capacity;
+    }
+    while (_used + len > capacity) {
+        _head = (_head + 1) % capacity;
+        _used--;
+    }
+    for (int i = 0; i < len; ++i) {
+        _buf[_tail] = line[i];
+        _tail = (_tail + 1) % capacity;
+    }
+    _used += len;
+    if (_used < capacity) {
+        _buf[_tail] = '\0';
+    }
+    _lineCount++;
+    portEXIT_CRITICAL(&_mux);
 
     // Force immediate flush on crash
     flush();
@@ -296,71 +373,11 @@ bool DebugLog::_shouldMirrorToUsbSerial(char level, const char* tag) {
         return false;
     }
 
-    return (_serialAreaMask & _areaMaskForTag(tag)) != 0;
+    return (_serialAreaMask & debugAreaMaskForTag(tag)) != 0;
 }
 
 int DebugLog::_levelRank(char level) {
-    switch (sanitizeDebugLevel(level)) {
-        case DEBUG_LEVEL_ERROR:
-            return 3;
-        case DEBUG_LEVEL_WARN:
-            return 2;
-        case DEBUG_LEVEL_INFO:
-            return 1;
-        case DEBUG_LEVEL_VERBOSE:
-        default:
-            return 0;
-    }
-}
-
-uint32_t DebugLog::_areaMaskForTag(const char* tag) {
-    if (!tag || !tag[0]) {
-        return DEBUG_AREA_GENERAL;
-    }
-
-    if (strcmp(tag, "SYS") == 0 ||
-        strcmp(tag, "CORE") == 0 ||
-        strcmp(tag, "STACK") == 0 ||
-        strcmp(tag, "HEAP") == 0 ||
-        strcmp(tag, "BTN") == 0) {
-        return DEBUG_AREA_CORE;
-    }
-    if (strcmp(tag, "SETTINGS") == 0) {
-        return DEBUG_AREA_SETTINGS;
-    }
-    if (strcmp(tag, "STOR") == 0 ||
-        strcmp(tag, "STORAGE") == 0) {
-        return DEBUG_AREA_STORAGE;
-    }
-    if (strcmp(tag, "TIME") == 0) {
-        return DEBUG_AREA_TIME;
-    }
-    if (strcmp(tag, "RADIO") == 0 ||
-        strcmp(tag, "LORA") == 0) {
-        return DEBUG_AREA_RADIO;
-    }
-    if (strcmp(tag, "WIFI") == 0 ||
-        strcmp(tag, "ANT") == 0 ||
-        strcmp(tag, "DRONE") == 0) {
-        return DEBUG_AREA_WIFI;
-    }
-    if (strcmp(tag, "BLE") == 0) {
-        return DEBUG_AREA_BLE;
-    }
-    if (strcmp(tag, "MQTT") == 0) {
-        return DEBUG_AREA_MQTT;
-    }
-    if (strcmp(tag, "EXPORT") == 0) {
-        return DEBUG_AREA_EXPORT;
-    }
-    if (strcmp(tag, "GPS") == 0) {
-        return DEBUG_AREA_GPS;
-    }
-    if (strcmp(tag, "MODE") == 0) {
-        return DEBUG_AREA_MODE;
-    }
-
-    return DEBUG_AREA_GENERAL;
+    return debugLevelRank(level);
 }
 
 

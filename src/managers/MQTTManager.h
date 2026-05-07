@@ -31,6 +31,10 @@
 #define TOPIC_CENSUS    SPECTRE_MQTT_TOPIC_BASE "/" MQTT_SENSOR_ID "/census"
 #define TOPIC_PROBE     SPECTRE_MQTT_TOPIC_BASE "/" MQTT_SENSOR_ID "/probe"
 #define TOPIC_DEVICE    SPECTRE_MQTT_TOPIC_BASE "/" MQTT_SENSOR_ID "/device"
+// FieldVault drain — high-value boot/crash/upload/enrichment summaries.
+// Payload is a single JSONL record line (no trailing newline) with a "type"
+// tag identifying the record kind.
+#define TOPIC_FIELD     SPECTRE_MQTT_TOPIC_BASE "/" MQTT_SENSOR_ID "/field"
 
 typedef enum {
     MQTT_IDLE,
@@ -97,7 +101,11 @@ private:
         DUMP_PHASE_COMPACT,
         DUMP_PHASE_PURGE,
         DUMP_PHASE_DONE,
-        DUMP_PHASE_FAILED
+        DUMP_PHASE_FAILED,
+        // Field vault drain. Runs first so high-value tiny boot/crash records
+        // publish before bulky event/census traffic. Appended to keep the
+        // existing ordinals stable.
+        DUMP_PHASE_FIELD,
     };
 
     struct DumpContext {
@@ -169,6 +177,17 @@ private:
     uint8_t       _lastPoisonEventFailures = 0;
     uint32_t      _uploadStartStackWatermarkBytes = 0;
 
+    // One-shot startup FieldVault upload state. _bootGraceUntilMs is set in
+    // begin() and never moves; _startupFieldDumpDone latches true on the
+    // single attempt and is never cleared (no periodic retry loop).
+    // _fieldOnlyMode and _fieldOnlyPublishedThisDump bound the dump so it
+    // does not drain the regular event backlog.
+    uint32_t      _bootGraceUntilMs       = 0;
+    bool          _startupFieldDumpDone   = false;
+    bool          _fieldOnlyMode          = false;
+    uint8_t       _fieldOnlyPublishedThisDump = 0;
+    bool          _fieldOnlyClearAfterRelease = false;
+
     // Internal state machine
     void _runStateMachine();
     bool _connectWiFi();
@@ -188,6 +207,9 @@ private:
     // Individual publish methods
     void _publishHealth();
     void _publishCensus();
+
+    bool _maybeStartStartupFieldDump();
+    bool _startStartupFieldDump();
     bool _publishJson(const char* topic, JsonDocument& doc,
                       bool retained = false,
                       uint32_t debugEventId = 0);

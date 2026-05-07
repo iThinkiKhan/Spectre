@@ -13,12 +13,18 @@ function requiredPermissions() {
   }
 
   if (Platform.Version >= 31) {
-    return [
+    const permissions = [
       PermissionsAndroid.PERMISSIONS.BLUETOOTH_SCAN,
       PermissionsAndroid.PERMISSIONS.BLUETOOTH_CONNECT,
       PermissionsAndroid.PERMISSIONS.BLUETOOTH_ADVERTISE,
       PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
     ];
+
+    if (Platform.Version >= 33) {
+      permissions.push(PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS);
+    }
+
+    return permissions;
   }
 
   return [PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION];
@@ -84,6 +90,8 @@ export function friendlyPermissionName(permission: string) {
       return 'Bluetooth advertise';
     case PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION:
       return 'Precise location';
+    case PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS:
+      return 'Field Mode notification';
     default:
       return permission.split('.').pop() || permission;
   }
