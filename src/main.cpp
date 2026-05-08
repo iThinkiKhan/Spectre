@@ -1228,7 +1228,6 @@ static void _finishPhoneEnrichment(CompanionScheduler& cs, bool success) {
         cs.manualEnrichRequested = false;
         cs.offloadPrepRequested  = false;
         cs.timeSyncRequested     = false;
-        crashBreadcrumbClear(CrashPhase::BACKLOG_ENRICH);
         DLOG_INFO("BLE", "Phone enrichment finished successfully");
     } else {
         // Pending counts are unchanged on failure; the next probe will refresh.
@@ -1239,6 +1238,10 @@ static void _finishPhoneEnrichment(CompanionScheduler& cs, bool success) {
     if (RADIO_ARB.isOwner(RADIO_BLE_GPS)) {
         RADIO_ARB.release(RADIO_BLE_GPS,
                           success ? "enrich_done" : "enrich_fail");
+    }
+
+    if (success) {
+        crashBreadcrumbClear(CrashPhase::BACKLOG_ENRICH);
     }
 }
 

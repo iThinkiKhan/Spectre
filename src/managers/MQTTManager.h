@@ -224,11 +224,6 @@ private:
                             QueueMetric metric);
     void _noteQueuedRecord(QueueMetric metric);
     bool _purgeTransientFiles();
-    void _publishDebugLogs();
-    bool _publishFileInChunks(const char* topicSuffix,
-                              const char* filePath,
-                              const char* fileName,
-                              size_t chunkSize = 512);
     DumpContext _dumpCtx{};
 
     // Timestamp helper — ISO8601 UTC

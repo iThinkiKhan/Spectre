@@ -15,18 +15,6 @@ static void _typewrite(lv_obj_t* label, const char* text, int delayMs) {
     }
 }
 
-// ─── Animate line width left to right ────────────────────────
-static void _drawLineAnim(lv_obj_t* line, int y, int delayMs) {
-    static lv_point_precise_t pts[2];
-    pts[0] = {0, (lv_value_precise_t)y};
-    for (int x = 0; x <= THEME_SCREEN_W; x += 8) {
-        pts[1] = {(lv_value_precise_t)x, (lv_value_precise_t)y};
-        lv_line_set_points(line, pts, 2);
-        lv_refr_now(NULL);
-        vTaskDelay(pdMS_TO_TICKS(delayMs));
-    }
-}
-
 // ─── Glitch flash ─────────────────────────────────────────────
 static void _glitchFlash(lv_obj_t* titleLabel) {
     // Chromatic split — red offset

@@ -395,9 +395,10 @@ void RadioArbiter::_stopOwner(RadioOwner owner, const char* reason) {
             break;
 
         case RADIO_BLE_GPS:
-            // GPS probes are opportunistic. Fully release NimBLE and its worker
-            // stack before WiFi capture resumes on long-running, low-heap units.
-            BLE_MGR.shutdown();
+            // GPS probes are opportunistic. Release the app worker stack before
+            // WiFi capture resumes, but keep NimBLE initialized: deinit(true)
+            // panics consistently on the probe-timeout handoff.
+            BLE_MGR.releaseProbeResources();
             break;
 
         case RADIO_NONE:

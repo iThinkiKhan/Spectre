@@ -62,6 +62,7 @@ public:
 
     bool begin();
     void shutdown();
+    void releaseProbeResources();
     void tick();
     void setRadioEnabled(bool enabled);
     bool isBegun() const { return _begun; }
@@ -204,6 +205,8 @@ private:
     void _ensureAdvertising(bool enable);
 
     // Worker
+    bool _ensureWorkerTask();
+    void _releaseWorkerTask(const char* phase);
     static void _workerTaskEntry(void* arg);
     void _workerLoop();
     void _doConnectJob();

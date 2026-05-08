@@ -392,7 +392,6 @@ private:
     // ── IE fingerprinting ────────────────────────────────────────────────────
     void          _computeIEFingerprint(const uint8_t* taggedParams, int len,
                                          char* outHex33);
-    uint32_t      _computeIEOrderHash(const uint8_t* taggedParams, int len);
 
     // ── Remote ID / drone parsers ────────────────────────────────────────────
     bool          _checkASTMRemoteID(const uint8_t* payload, int len,
@@ -404,7 +403,6 @@ private:
     void          _handleDecodedDrone(ODID_UAS_Data* data,
                                        int8_t rssi, uint8_t ch);
     bool          _validateCoordinates(float lat, float lon, float alt = 0.0f);
-    bool          _validateSpeed(float speed);
 
     // ── PMKID extraction ─────────────────────────────────────────────────────
     bool          _extractPMKID(const uint8_t* eapol, int len,
@@ -452,9 +450,6 @@ private:
 
     // ── device aging ─────────────────────────────────────────────────────────
     void           _ageDevices();
-
-    // ── event logging ────────────────────────────────────────────────────────
-    void           _logEvent(const char* eventType, const char* detail);
 
     // ── state sync ───────────────────────────────────────────────────────────
     void           _syncState();

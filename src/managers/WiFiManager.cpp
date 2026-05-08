@@ -895,22 +895,6 @@ void WiFiManager::_computeIEFingerprint(const uint8_t* tags,
     outHex33[32] = '\0';
 }
 
-uint32_t WiFiManager::_computeIEOrderHash(const uint8_t* tags,
-                                            int len) {
-    // FNV-1a hash of the IE tag ID sequence
-    uint32_t hash = 0x811c9dc5;
-    int pos = 0;
-    while (pos + 2 <= len) {
-        uint8_t tagID = tags[pos];
-        uint8_t tagSz = tags[pos + 1];
-        if (pos + 2 + tagSz > len) break;
-        hash ^= tagID;
-        hash *= 0x01000193;
-        pos += 2 + tagSz;
-    }
-    return hash;
-}
-
 // ═════════════════════════════════════════════════════════════
 //  ASTM F3411 Remote ID Parser
 // ═════════════════════════════════════════════════════════════
@@ -1067,9 +1051,6 @@ bool WiFiManager::_validateCoordinates(float lat,
     return true;
 }
 
-bool WiFiManager::_validateSpeed(float speed) {
-    return (speed >= 0.0f && speed <= 200.0f);
-}
 
 // ═════════════════════════════════════════════════════════════
 //  DJI DroneID Parser
@@ -2767,11 +2748,6 @@ bool WiFiManager::_isTrustedSSID(const char* ssid) const {
     return false;
 }
 
-void WiFiManager::_logEvent(const char* eventType,
-                              const char* detail) {
-    MQTT_MGR.queueEvent(eventType, "INFO", "", "",
-                         detail, "detection");
-}
 
 
 

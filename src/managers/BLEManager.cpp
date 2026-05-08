@@ -72,6 +72,7 @@ constexpr uint32_t WEAK_SIGNAL_SCAN_WINDOW_MS = 15000UL;
 constexpr uint32_t SCAN_GAP_MS               = 15000UL;
 constexpr uint32_t SCAN_RESPONSE_TIMEOUT_MS  = 200UL;
 constexpr uint32_t BLE_RADIO_SETTLE_MS       = 500UL;
+constexpr uint32_t BLE_SCAN_STOP_SETTLE_MS   = 300UL;
 constexpr uint32_t BLE_PRE_INIT_SETTLE_MS    = 75UL;
 constexpr uint16_t CONNECT_SCAN_INTERVAL     = 16;  // 10 ms units used by NimBLE initiator
 constexpr uint16_t CONNECT_SCAN_WINDOW       = 16;
@@ -329,7 +330,7 @@ BLEManager::BLEManager()
 
 bool BLEManager::begin() {
     if (_begun) {
-        return true;
+        return _ensureWorkerTask();
     }
 
     // Create the RX mutex before any NimBLE callbacks can be registered.
@@ -342,15 +343,7 @@ bool BLEManager::begin() {
     }
 
     auto failBegin = [this]() {
-        if (_workerTask) {
-            vTaskDelete(_workerTask);
-            _workerTask = nullptr;
-        }
-
-        if (_workerStack) {
-            heap_caps_free(_workerStack);
-            _workerStack = nullptr;
-        }
+        _releaseWorkerTask("begin_fail");
 
         s_bleInstance = nullptr;
         NimBLEDevice::deinit(true);
@@ -447,31 +440,10 @@ bool BLEManager::begin() {
     _setupScanner();
     DLOG_INFO(TAG, "begin phase=scanner_ok");
 
-    _workerStack = static_cast<StackType_t*>(heap_caps_malloc(
-        WORKER_STACK_WORDS * sizeof(StackType_t),
-        MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT));
-    if (!_workerStack) {
-        DLOG_ERROR(TAG, "worker stack alloc failed");
+    if (!_ensureWorkerTask()) {
         failBegin();
         return false;
     }
-
-    _workerTask = xTaskCreateStaticPinnedToCore(
-        _workerTaskEntry,
-        "BLEWorker",
-        WORKER_STACK_WORDS,
-        this,
-        2,
-        _workerStack,
-        &_workerTaskBuffer,
-        0
-    );
-    if (!_workerTask) {
-        DLOG_ERROR(TAG, "worker task create failed");
-        failBegin();
-        return false;
-    }
-    DLOG_INFO(TAG, "begin phase=worker_ok");
 
     _publishBleState();
     _publishGpsState();
@@ -492,18 +464,23 @@ void BLEManager::shutdown() {
         return;
     }
 
+    const bool scanWasActive = _scan && _scan->isScanning();
     DLOG_INFO(TAG, "shutdown");
     setRadioEnabled(false);
-
-    if (_workerTask) {
-        TaskHandle_t task = _workerTask;
-        _workerTask = nullptr;
-        vTaskDelete(task);
+    if (scanWasActive) {
+        DLOG_INFO(TAG, "shutdown scan stop settle=%lums",
+                  static_cast<unsigned long>(BLE_SCAN_STOP_SETTLE_MS));
+        delay(BLE_SCAN_STOP_SETTLE_MS);
     }
 
+    _releaseWorkerTask("shutdown");
+
+    DLOG_INFO(TAG, "shutdown phase=nimble_deinit");
     NimBLEDevice::deinit(true);
+    DLOG_INFO(TAG, "shutdown phase=nimble_deinit_ok");
 
     if (_workerStack) {
+        DLOG_INFO(TAG, "shutdown phase=worker_stack_free");
         heap_caps_free(_workerStack);
         _workerStack = nullptr;
     }
@@ -540,6 +517,39 @@ void BLEManager::shutdown() {
     s_bleInstance = nullptr;
 
     _publishBleState();
+    _publishTextInputState();
+}
+
+void BLEManager::releaseProbeResources() {
+    if (!_begun) {
+        return;
+    }
+
+    const bool scanWasActive = _scan && _scan->isScanning();
+    DLOG_INFO(TAG, "probe resource release");
+    setRadioEnabled(false);
+    if (scanWasActive) {
+        DLOG_INFO(TAG, "probe release scan stop settle=%lums",
+                  static_cast<unsigned long>(BLE_SCAN_STOP_SETTLE_MS));
+        delay(BLE_SCAN_STOP_SETTLE_MS);
+    }
+
+    // NimBLEDevice::deinit(true) is a proven panic site on the GPS probe
+    // timeout path. Free only our app worker stack here; begin() recreates it
+    // on the next BLE lease while the NimBLE host remains initialized.
+    _releaseWorkerTask("probe_release");
+    _resetState();
+    _radioEnabled = false;
+    _scanActive = false;
+    _clientConnected = false;
+    _connectResultPending = false;
+    _connectResultOk = false;
+    _state = BLE_IDLE;
+    _lastStackLogMs = 0;
+    _workerMinFreeStackBytes = 0;
+
+    _publishBleState();
+    _publishGpsState();
     _publishTextInputState();
 }
 
@@ -704,12 +714,16 @@ void BLEManager::tick() {
         _scheduleReconnect("connect watchdog");
     }
 
-    // Probe timeout: phone not seen within CONNECT_TIMEOUT_PROBE_MS → release
-    // the radio early instead of burning the full lease.  Guard with
-    // !_haveTargetAddress so a found-but-not-yet-connected device isn't cut off.
+    // Probe timeout: phone not seen within CONNECT_TIMEOUT_PROBE_MS. If the
+    // timeout lands mid-scan, let the active scan stop normally first; tearing
+    // NimBLE down immediately after an in-flight stop is fragile on the S3.
+    const bool scanStopSettled =
+        _scanStartedMs == 0 ||
+        (now - _scanStartedMs) >= (scanWindowMs + BLE_SCAN_STOP_SETTLE_MS);
     if (_manualProbeActive && _radioEnabled && _probeStartMs != 0 &&
         !_haveTargetAddress &&
-        (_state == BLE_SCANNING || _state == BLE_IDLE) &&
+        _state == BLE_IDLE &&
+        scanStopSettled &&
         (now - _probeStartMs) >= CONNECT_TIMEOUT_PROBE_MS) {
         DLOG_WARN(TAG, "probe timeout: phone not seen in %lums — releasing radio",
                   static_cast<unsigned long>(CONNECT_TIMEOUT_PROBE_MS));
@@ -1483,6 +1497,59 @@ void BLEManager::_queueWorker(uint32_t bits) {
     }
 }
 
+bool BLEManager::_ensureWorkerTask() {
+    if (_workerTask) {
+        return true;
+    }
+
+    if (!_workerStack) {
+        _workerStack = static_cast<StackType_t*>(heap_caps_malloc(
+            WORKER_STACK_WORDS * sizeof(StackType_t),
+            MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT));
+        if (!_workerStack) {
+            DLOG_ERROR(TAG, "worker stack alloc failed");
+            return false;
+        }
+    }
+
+    _workerTask = xTaskCreateStaticPinnedToCore(
+        _workerTaskEntry,
+        "BLEWorker",
+        WORKER_STACK_WORDS,
+        this,
+        2,
+        _workerStack,
+        &_workerTaskBuffer,
+        0
+    );
+    if (!_workerTask) {
+        DLOG_ERROR(TAG, "worker task create failed");
+        heap_caps_free(_workerStack);
+        _workerStack = nullptr;
+        return false;
+    }
+
+    _lastStackLogMs = millis();
+    _workerMinFreeStackBytes = 0;
+    DLOG_INFO(TAG, "begin phase=worker_ok");
+    return true;
+}
+
+void BLEManager::_releaseWorkerTask(const char* phase) {
+    if (_workerTask) {
+        DLOG_INFO(TAG, "%s phase=worker_delete", phase ? phase : "ble");
+        TaskHandle_t task = _workerTask;
+        _workerTask = nullptr;
+        vTaskDelete(task);
+    }
+
+    if (_workerStack) {
+        DLOG_INFO(TAG, "%s phase=worker_stack_free", phase ? phase : "ble");
+        heap_caps_free(_workerStack);
+        _workerStack = nullptr;
+    }
+}
+
 void BLEManager::_ensureAdvertising(bool enable) {
     if (enable == _advertisingActive) {
         return;
@@ -1932,21 +1999,29 @@ void BLEManager::_onClientDisconnected(NimBLEClient* pClient, int reason) {
     (void)pClient;
     const bool enrichmentActive =
         _enrichmentRequestPending || _enrichmentInFlight || _enrichmentSendQueued;
+    const bool radioReleased =
+        !_radioEnabled || !RADIO_ARB.isBleOwner();
     _lastDisconnectReason = reason;
     _clientConnected = false;
     _lastLeaseRenewMs = 0;
     _clearRemoteHandles();
     _clearBleRxQueues();
+
+    if (_ignoreDisconnectOnce || radioReleased) {
+        _ignoreDisconnectOnce = false;
+        if (radioReleased) {
+            DLOG_INFO(TAG, "peer disconnect ignored after radio release reason=%d",
+                      reason);
+        }
+        _publishBleState();
+        return;
+    }
+
     if (enrichmentActive) {
         _enrichmentFailed = true;
         DLOG_WARN(TAG, "enrichment failed reason=peer_disconnected");
     }
     _publishBleState();
-
-    if (_ignoreDisconnectOnce) {
-        _ignoreDisconnectOnce = false;
-        return;
-    }
 
     if (_dirtyDisconnectCount < 255) {
         _dirtyDisconnectCount++;
@@ -2950,6 +3025,12 @@ void BLEManager::_handleControlPayload(const uint8_t* data, size_t len) {
     _wgActive = (frame.flags & PHONE_CTRL_FLAG_WG_ACTIVE) != 0;
 
     if ((frame.flags & PHONE_CTRL_FLAG_CANCEL) != 0) {
+        if (_enrichmentRequestPending || _enrichmentInFlight) {
+            DLOG_WARN(TAG, "enrichment cancelled by phone");
+            _failEnrichment("phone_cancel");
+            return;
+        }
+
         _cancelWireGuardConfirmation("WG remote cancel");
         return;
     }
