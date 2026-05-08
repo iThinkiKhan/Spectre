@@ -62,7 +62,7 @@ It is the cheapest homemade cyberpunk field lab out there, and now you can have 
 
 Spectre is not a pile of demos bolted onto an ESP32.
 
-Every major subsystem was built around the same field work idea. The storage engine exists because we only have 8mb of flash to work with in LittleFS, and I want to survive long runtimes. The companion app exists because mobile GPS, relay capability, and operator input make the stationary network smarter. The custom encrypted BLE layer exists because the phone link is meant to be operational without becoming an Android developer. The UI theme exists because its fun, and cool. It also let me use LVGL for the first time - TFT is out.
+Every major subsystem was built around the same field work idea. The binary compaction engine exists because we only have 8mb of flash to work with in LittleFS, and I want to survive long runtimes. The companion app exists because mobile GPS, relay capability, and operator input make the stationary network far richer. The custom encrypted BLE layer exists because the phone link is meant to be operational without becoming an Android developer. The UI theme exists because its fun, and cool. It also let me use LVGL for the first time - TFT is out.
 
 Nothing here is an afterthought. Spectre is meant to be used by me personally, and there is effort and design in all of it. Figure out how to make it better, and let me know!
 
