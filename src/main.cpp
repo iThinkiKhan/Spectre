@@ -83,6 +83,7 @@ namespace {
     char g_usbConsoleBuf[USB_CONSOLE_BUF_SIZE] = {};
     size_t g_usbConsoleLen = 0;
     bool g_usbSerialAttachedAtBoot = false;
+    bool g_bootRecoveryMode = false;
 
     struct DisplayFrameState {
     Screen      currentScreen = SCREEN_LORA;
@@ -440,6 +441,7 @@ void _publishStorageState(bool storageOk, const String& storageUsed);
 void _loadKnownLocationsIntoState();
 static const char* _resetReasonName(esp_reset_reason_t r);
 static const char* _fieldVaultPowerSourceName(PowerSource source);
+static bool _detectBootRecoveryRequest();
 void _applySubGhzStatusToState(const SubGhzStatus& status);
 void _applyPowerSnapshotToState(const PowerSnapshot& power);
 void _initializeHardwareManagers(uint32_t& lastWifiTick);
@@ -3255,6 +3257,13 @@ void TaskDisplay(void* pvParameters) {
     DLOG_INFO("STACK", "TaskDisplay watermark=%luB",
               (unsigned long)(minStackWords * sizeof(StackType_t)));
 
+    if (g_bootRecoveryMode) {
+        PrebootFallback::showFatal(tft, "RECOVERY MODE", "USB FLASH READY");
+        for (;;) {
+            vTaskDelay(pdMS_TO_TICKS(1000));
+        }
+    }
+
     PrebootFallback::showInit(tft, "SPECTRE", "BRINGING UP LVGL");
 
     LVGLDriver::begin(&tft);
@@ -3698,6 +3707,19 @@ void TaskHardware(void* pvParameters) {
     bool lastTextPending = false;
     ExecutionPolicy::UiRefreshMarks uiRefreshMarks = {};
 
+    if (g_bootRecoveryMode) {
+        STATE_WRITE_BEGIN();
+        g_state.hwInitDone = true;
+        g_state.storageReady = false;
+        g_state.loraReady = false;
+        g_state.screenChanged = true;
+        STATE_WRITE_END();
+        DLOG_WARN("CORE", "Boot recovery mode active; hardware init skipped");
+        for (;;) {
+            vTaskDelay(pdMS_TO_TICKS(1000));
+        }
+    }
+
     const bool settingsOk = SETTINGS.begin();
     const bool timeOk = TIME_SVC.begin();
     POWER_MGR.begin();
@@ -3719,7 +3741,12 @@ void TaskHardware(void* pvParameters) {
         DebugLog::begin();
         FieldVault::begin();
         _loadKnownLocationsIntoState();
-        _refreshStorageSummaryMirror(true);
+        if (STORAGE.hasStorageMaintenanceWork()) {
+            _clearStorageSummaryMirror();
+            DLOG_WARN("STORAGE", "Initial storage summary deferred until repair completes");
+        } else {
+            _refreshStorageSummaryMirror(true);
+        }
     }
     const bool exportOk = EXPORT_MGR.begin();
     if (exportOk) {
@@ -4437,9 +4464,33 @@ static const char* _fieldVaultPowerSourceName(PowerSource source) {
     }
 }
 
+static bool _detectBootRecoveryRequest() {
+#if BOOT_RECOVERY_ENABLED
+    pinMode(BOOT_RECOVERY_BUTTON_PIN, INPUT_PULLUP);
+    const uint32_t startMs = millis();
+    bool announced = false;
+
+    while (millis() - startMs < BOOT_RECOVERY_HOLD_MS) {
+        if (digitalRead(BOOT_RECOVERY_BUTTON_PIN) != LOW) {
+            return false;
+        }
+        if (!announced && millis() - startMs > 250UL) {
+            Serial.println("[BOOT] recovery button held; keep holding for recovery");
+            announced = true;
+        }
+        delay(25);
+    }
+
+    Serial.println("[BOOT] recovery mode requested");
+    return true;
+#else
+    return false;
+#endif
+}
+
 void setup() {
     Serial.begin(115200);
-    delay(500);
+    delay(250);
     g_usbSerialAttachedAtBoot = static_cast<bool>(Serial);
 
     // Apply the compile-time debug profile before any DLOG_* call so disabled
@@ -4447,8 +4498,28 @@ void setup() {
     DebugLog::applyProfile(static_cast<DebugProfile>(SPECTRE_DEBUG_PROFILE),
                            kDebugSubsystemMask);
 
+    // Bring up the physical UI before touching NVS or LittleFS. If a prior run
+    // left storage in a bad state, the user still gets a visible recovery path.
+    pinMode(LCD_POWER, OUTPUT);
+    digitalWrite(LCD_POWER, HIGH);
+    delay(100);
+    pinMode(LCD_BL, OUTPUT);
+    analogWriteResolution(LCD_BL, 8);
+    analogWrite(LCD_BL, 255);
+    buttons.begin();
+    _markUiActivity();
+
+    tft.init();
+    tft.setRotation(3);
+    tft.fillScreen(0x0000);
+
+    g_bootRecoveryMode = _detectBootRecoveryRequest();
+    if (g_bootRecoveryMode) {
+        PrebootFallback::showFatal(tft, "RECOVERY MODE", "USB FLASH READY");
+    }
+
     // ── Boot diagnostics — runs before any manager initializes ───────────────
-    {
+    if (!g_bootRecoveryMode) {
         const esp_reset_reason_t rr = esp_reset_reason();
         Serial.printf("[BOOT] reset_reason=%d (%s)\n", (int)rr, _resetReasonName(rr));
         DLOG_WARN("CORE", "reset_reason=%d (%s)", (int)rr, _resetReasonName(rr));
@@ -4488,29 +4559,17 @@ void setup() {
     }
     // ── end boot diagnostics ─────────────────────────────────────────────────
 
-    const bool settingsOk = SETTINGS.begin();
-    if (!settingsOk) {
-        DLOG_WARN("SETTINGS",
-                  "Settings unavailable in setup; using fallback USB serial policy");
+    if (!g_bootRecoveryMode) {
+        const bool settingsOk = SETTINGS.begin();
+        if (!settingsOk) {
+            DLOG_WARN("SETTINGS",
+                      "Settings unavailable in setup; using fallback USB serial policy");
+        }
+        DLOG_INFO("SYS", "Booting");
+    } else {
+        DebugLog::configureUsbSerial(true, DEBUG_LEVEL_INFO, DEBUG_AREA_OPERATORS);
+        DLOG_WARN("SYS", "Booting into recovery mode");
     }
-    DLOG_INFO("SYS", "Booting");
-
-    // Display power
-    pinMode(LCD_POWER, OUTPUT);
-    digitalWrite(LCD_POWER, HIGH);
-    delay(100);
-    pinMode(LCD_BL, OUTPUT);
-    analogWriteResolution(LCD_BL, 8);
-    analogWrite(LCD_BL, 255);
-    _markUiActivity();
-
-    // TFT init — done before tasks start
-    tft.init();
-    tft.setRotation(3);
-    tft.fillScreen(0x0000);
-
-    // Button init
-    buttons.begin();
 
     _initCoreLoadMonitor();
 

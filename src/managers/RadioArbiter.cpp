@@ -395,7 +395,9 @@ void RadioArbiter::_stopOwner(RadioOwner owner, const char* reason) {
             break;
 
         case RADIO_BLE_GPS:
-            BLE_MGR.setRadioEnabled(false);
+            // GPS probes are opportunistic. Fully release NimBLE and its worker
+            // stack before WiFi capture resumes on long-running, low-heap units.
+            BLE_MGR.shutdown();
             break;
 
         case RADIO_NONE:

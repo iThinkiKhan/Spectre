@@ -3,6 +3,7 @@
 #pragma once
 
 #include <Arduino.h>
+#include <esp_heap_caps.h>
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Crash breadcrumb ring — RTC slow memory
@@ -27,7 +28,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 static constexpr uint8_t  CRASH_LOG_DEPTH   = 5;
-static constexpr uint32_t CRASH_LOG_MAGIC   = 0xC0DE0001UL;  // ring metadata sentinel
+static constexpr uint32_t CRASH_LOG_MAGIC   = 0xC0DE0002UL;  // ring metadata sentinel
 static constexpr uint32_t CRASH_ENTRY_MAGIC = 0xDEADB00BUL;  // per-entry sentinel
 
 enum class CrashPhase : uint8_t {
@@ -51,7 +52,9 @@ struct CrashLogEntry {
     uint8_t  resolved;   // 1 = completed cleanly, 0 = was active at reset
     uint8_t  _pad;
     uint32_t pending;    // upload queue depth at checkpoint
-    uint32_t heapMinFree;// ESP.getMinFreeHeap() at checkpoint
+    uint32_t heapMinFree;// internal/8-bit heap low-water mark
+    uint32_t heapFree;   // current internal/8-bit free heap
+    uint32_t heapLargest;// current largest internal/8-bit free block
     uint32_t uptimeMs;   // millis() at checkpoint
     uint32_t seqNum;     // monotonic across resets (for ordering)
     uint32_t crc;        // XOR of all other fields
@@ -79,6 +82,8 @@ inline uint32_t _entryCrc(const CrashLogEntry& e) {
          ^ static_cast<uint32_t>(e.resolved)
          ^ e.pending
          ^ e.heapMinFree
+         ^ e.heapFree
+         ^ e.heapLargest
          ^ e.uptimeMs
          ^ e.seqNum;
 }
@@ -133,7 +138,9 @@ inline void crashCheckpoint(CrashPhase phase, uint8_t owner, uint32_t pending) {
     e.resolved    = 0;
     e._pad        = 0;
     e.pending     = pending;
-    e.heapMinFree = static_cast<uint32_t>(ESP.getMinFreeHeap());
+    e.heapMinFree = heap_caps_get_minimum_free_size(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
+    e.heapFree    = heap_caps_get_free_size(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
+    e.heapLargest = heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
     e.uptimeMs    = static_cast<uint32_t>(millis());
     e.seqNum      = g_crashLog.nextSeq++;
     e.crc         = _entryCrc(e);
@@ -154,7 +161,9 @@ inline void crashCheckpointVolatile(CrashPhase phase, uint8_t owner, uint32_t pe
     e.resolved    = 0;
     e._pad        = 0;
     e.pending     = pending;
-    e.heapMinFree = static_cast<uint32_t>(ESP.getMinFreeHeap());
+    e.heapMinFree = heap_caps_get_minimum_free_size(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
+    e.heapFree    = heap_caps_get_free_size(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
+    e.heapLargest = heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
     e.uptimeMs    = static_cast<uint32_t>(millis());
     e.seqNum      = g_crashLog.nextSeq++;
     e.crc         = _entryCrc(e);

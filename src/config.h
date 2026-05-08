@@ -24,6 +24,9 @@ static constexpr uint8_t OFF = 0;
 
 #define BOOT_SEQUENCE_ENABLED       ON
 #define BOOT_SEQUENCE_VERBOSE       OFF
+#define BOOT_RECOVERY_ENABLED       ON
+#define BOOT_RECOVERY_BUTTON_PIN    BTN_B
+#define BOOT_RECOVERY_HOLD_MS       1500UL
 
 #define BLE_SMOKE_ENABLED           OFF
 
@@ -87,6 +90,7 @@ static constexpr uint8_t OFF = 0;
 // One-shot maintenance wipe. Change the tag before turning this ON again.
 #define STORAGE_ONE_SHOT_NON_VAULT_RESET_ENABLED OFF
 #define STORAGE_ONE_SHOT_NON_VAULT_RESET_TAG     "5-3-26-reset-backlog-1k"
+#define STORAGE_FAST_BOOT_DEFER_SPOOL_REPAIR     ON
 
 // -----------------------------------------------------------------------------
 // Debug logging

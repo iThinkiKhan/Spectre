@@ -524,6 +524,7 @@ void BLEManager::shutdown() {
     _receiptChar = nullptr;
     _statusChar = nullptr;
 
+    _resetState();
     _begun = false;
     _radioEnabled = false;
     _scanActive = false;
@@ -536,6 +537,7 @@ void BLEManager::shutdown() {
     _state = BLE_IDLE;
     _lastStackLogMs = 0;
     _workerMinFreeStackBytes = 0;
+    s_bleInstance = nullptr;
 
     _publishBleState();
     _publishTextInputState();

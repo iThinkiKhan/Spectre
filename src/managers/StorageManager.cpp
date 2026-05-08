@@ -1176,6 +1176,15 @@ bool StorageManager::begin() {
         DLOG_WARN("STORAGE", "Event counter recovery failed");
     }
 
+#if STORAGE_FAST_BOOT_DEFER_SPOOL_REPAIR
+    _pendingEventCount = _spoolIndex.pendingTotal;
+    _pendingCountDirty = _spoolAuditRepairRequired || _spoolSummaryRebuildPending;
+    DLOG_WARN("STORAGE",
+              "Fast boot: deferred spool audit pending=%lu repair=%d summary=%d",
+              static_cast<unsigned long>(_pendingEventCount),
+              _spoolAuditRepairRequired ? 1 : 0,
+              _spoolSummaryRebuildPending ? 1 : 0);
+#else
     SpoolAuditResult audit;
     if (!_auditAndRepairSpool("boot", true, &audit)) {
         DLOG_ERROR("STORAGE", "Boot spool audit failed");
@@ -1201,6 +1210,7 @@ bool StorageManager::begin() {
     }
 
     _checkSpoolInvariants("boot_post_audit", false);
+#endif
 
     _releaseUploadIndexMemory("boot_skip_load");
 
@@ -1222,9 +1232,11 @@ bool StorageManager::begin() {
 
     refreshStorageUiState();
 
+#if !STORAGE_FAST_BOOT_DEFER_SPOOL_REPAIR
     _cleanupLegacyUploadSidecars();
     _cleanupLegacyEnrichSidecars();
     _cleanupLegacyRawSessionFiles();
+#endif
 
     _logSpoolDiagnostics("ensure_ready");
     return true;
@@ -6902,7 +6914,17 @@ bool StorageManager::_ensureSpoolReady() {
     _spoolIndex.format = SPOOL_SEGMENT_BIN_V2;
 
     const bool resyncChanged = _resyncSpoolIndexFromFilesystem();
+#if STORAGE_FAST_BOOT_DEFER_SPOOL_REPAIR
+    const bool summaryChanged = false;
+    if (_hasInvalidSpoolSummaries()) {
+        _spoolSummaryRebuildPending = true;
+    }
+    if (resyncChanged) {
+        _spoolAuditRepairRequired = true;
+    }
+#else
     const bool summaryChanged = _rebuildInvalidSegmentSummaries(false);
+#endif
 
     if (_spoolIndex.activeSegmentId == 0 || !_findSegmentInfo(_spoolIndex.activeSegmentId)) {
         if (!_openNewSpoolSegment()) {
