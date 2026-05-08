@@ -30,6 +30,16 @@ export const PHONE_STORAGE_FLAG_NEARLY_FULL = 0x04;
 export const PHONE_STORAGE_FLAG_FULL = 0x08;
 export const PHONE_STORAGE_FLAG_OVERRUN = 0x10;
 
+const EVENT_EPOCH_SECONDS_MIN = 1_600_000_000;
+
+export function eventTimestampToUnixMs(timestamp: number): number | null {
+  if (timestamp >= EVENT_EPOCH_SECONDS_MIN) {
+    return timestamp * 1000;
+  }
+
+  return null;
+}
+
 export function encodePhoneGpsFrame(frame: PhoneGpsFrameV1): string {
   const bytes = new Uint8Array(PHONE_GPS_FRAME_SIZE);
   const view = new DataView(bytes.buffer);

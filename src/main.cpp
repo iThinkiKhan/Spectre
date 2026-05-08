@@ -50,7 +50,7 @@
 #include "ui/Theme.h"
 #include "ui/PrebootFallback.h"
 
-// ─── Hardware objects ─────────────────────────────────────────
+// ── Hardware objects ──
 TFT_eSPI        tft = TFT_eSPI();
 ButtonHandler   buttons;
 DisplayManager  display;
@@ -243,7 +243,7 @@ static void _updateCoreLoad(uint32_t nowMs) {
     };
 }
 
-// ─── Task handles ─────────────────────────────────────────────
+// ── Task handles ──
 TaskHandle_t taskDisplayHandle  = nullptr;
 TaskHandle_t taskHardwareHandle = nullptr;
 
@@ -411,7 +411,7 @@ static void _sendSubGhzTestPing() {
     }
 }
 
-// ─── Forward declarations ─────────────────────────────────────
+// ── Forward declarations ──
 void TaskDisplay(void* pvParameters);
 void TaskHardware(void* pvParameters);
 void _checkLocationTag();
@@ -567,6 +567,8 @@ static constexpr uint16_t REPAIR_MAX_RECORDS     = 64;
 static constexpr uint32_t REPAIR_UI_QUIET_MS     = 500;
 static constexpr uint32_t REPAIR_HEAP_FREE_GUARD = 96UL * 1024UL;
 static constexpr uint32_t REPAIR_HEAP_BLOCK_GUARD = 32UL * 1024UL;
+static constexpr uint32_t REPAIR_WIFI_CAPTURE_PENDING_LIMIT = 512UL;
+static constexpr uint32_t HARDWARE_LOOP_GAP_WARN_MS = 250UL;
 
 struct QueuedEnrichBatch {
     PendingEnrichment records[PHONE_ENRICH_BATCH_MAX];
@@ -754,6 +756,13 @@ static bool canRunStorageMaintenance(const CompanionScheduler& companion,
         return false;
     }
 
+    const uint32_t pendingUpload =
+        STORAGE.isReady() ? STORAGE.getPendingEventCount() : 0U;
+    if (owner == RADIO_WIFI_CAPTURE &&
+        pendingUpload >= REPAIR_WIFI_CAPTURE_PENDING_LIMIT) {
+        return false;
+    }
+
     bool uploadActive = false;
     STATE_READ_BEGIN();
     uploadActive = g_state.uploadActive;
@@ -910,12 +919,12 @@ static bool shouldRunPhoneProbe(const CompanionScheduler& cs) {
     if (RADIO_ARB.isBleOwner()) {
         return false;
     }
-    const bool bypassGap =
-        (cs.lastProbeMs == 0) || companionHasPriorityReason(cs);
+    const bool priority = companionHasPriorityReason(cs);
+    const bool bypassGap = (cs.lastProbeMs == 0) || priority;
     if (!bypassGap && millis() - cs.lastProbeMs < PHONE_PROBE_MIN_GAP_MS) {
         return false;
     }
-    if (millis() < cs.nextProbeMs) {
+    if (!priority && millis() < cs.nextProbeMs) {
         return false;
     }
     if (isWiFiBusyForPhoneProbe(cs)) {
@@ -1084,8 +1093,12 @@ static bool _buildPendingEnrichmentBatch(EventBatchRecord* out,
               static_cast<unsigned>(outCount));
 
     for (size_t i = 0; i < outCount; ++i) {
+        uint32_t eventEpochUtc = 0;
         out[i].eventId     = pending[i].eventId;
-        out[i].timestampMs = pending[i].timestampMs;
+        out[i].timestampMs =
+            TIME_SVC.epochForMillis(pending[i].timestampMs, eventEpochUtc)
+                ? eventEpochUtc
+                : pending[i].timestampMs;
         out[i].type        = pending[i].type;
         out[i].status      = pending[i].status;
     }
@@ -2727,6 +2740,7 @@ void _logRuntimeHealth(uint32_t nowMs) {
             bool gpsValid;
             int wifiCount;
             int pendingFiles;
+            uint32_t pendingEnrich;
             uint8_t radioOwner;
             bool timeValid;
             unsigned long uptimeMs;
@@ -2744,6 +2758,8 @@ void _logRuntimeHealth(uint32_t nowMs) {
         health.gpsValid = g_state.gpsValid;
         health.wifiCount = g_state.wifiNetworkCount;
         health.pendingFiles = g_state.sessionFilesPending;
+        health.pendingEnrich =
+            g_state.storagePendingEnrichMission + g_state.storagePendingEnrichNoise;
         health.radioOwner = g_state.radioOwner;
         health.timeValid = g_state.timeValid;
         health.uptimeMs = g_state.uptimeMs;
@@ -2781,7 +2797,7 @@ void _logRuntimeHealth(uint32_t nowMs) {
         _updateCoreLoad(nowMs);
 
         DLOG_INFO("HEAP",
-          "heap free=%luKB min=%luKB largest=%luKB frag=%lu%% psramFree=%luKB core=%u/%u%% owner=%s nets=%d pendingUpload=%d",
+          "heap free=%luKB min=%luKB largest=%luKB frag=%lu%% psramFree=%luKB core=%u/%u%% owner=%s nets=%d pendingUpload=%d pendingEnrich=%lu",
           static_cast<unsigned long>(kb(freeHeap)),
           static_cast<unsigned long>(kb(minHeap)),
           static_cast<unsigned long>(kb(largestHeap)),
@@ -2791,7 +2807,8 @@ void _logRuntimeHealth(uint32_t nowMs) {
           static_cast<unsigned>(g_coreLoad.busyPct[1]),
           RadioArbiter::ownerName(static_cast<RadioOwner>(health.radioOwner)),
           health.wifiCount,
-          health.pendingFiles);
+          health.pendingFiles,
+          static_cast<unsigned long>(health.pendingEnrich));
         if (health.timeValid && health.timeLocal[0]) {
             Serial.printf("[HEALTH] time=%s src=%s\r\n", health.timeLocal, health.timeSource);
         } else {
@@ -2821,13 +2838,14 @@ void _logRuntimeHealth(uint32_t nowMs) {
         Serial.printf("[HEALTH] core usage: core0=%u%% core1=%u%%\r\n",
                       static_cast<unsigned>(g_coreLoad.busyPct[0]),
                       static_cast<unsigned>(g_coreLoad.busyPct[1]));
-        Serial.printf("[HEALTH] radio=%s wifi=%d ble=%d gps=%d nets=%d pendingUpload=%d\r\n",
+        Serial.printf("[HEALTH] radio=%s wifi=%d ble=%d gps=%d nets=%d pendingUpload=%d pendingEnrich=%lu\r\n",
                       RadioArbiter::ownerName(static_cast<RadioOwner>(health.radioOwner)),
                       health.wifiConnected ? 1 : 0,
                       health.bleConnected ? 1 : 0,
                       health.gpsValid ? 1 : 0,
                       health.wifiCount,
-                      health.pendingFiles);
+                      health.pendingFiles,
+                      static_cast<unsigned long>(health.pendingEnrich));
         DLOG_DEBUG("SUBGHZ", "heartbeat");
 
         const char* subGhzBackend = health.subGhzBackend[0] ? health.subGhzBackend : "NONE";
@@ -3251,7 +3269,7 @@ static ButtonBindingSet _displayBindingsForSnapshot(const DisplayFrameState& sna
 
 static bool _syncDisplayFromSnapshot(const DisplayFrameState& snapshot);
 
-// ─── Core 1: Display Task ─────────────────────────────────────
+// ── Core 1: TaskDisplay ──
 
 void TaskDisplay(void* pvParameters) {
     DLOG_INFO("CORE", "Display task started");
@@ -3351,7 +3369,6 @@ void TaskDisplay(void* pvParameters) {
             _handleDisplayEvent(queuedEvent, snapshot);
         }
 
-        // Sleep request
         if (snapshot.requestSleep) {
             if (!sleepOverlayShown) {
                 lv_obj_t* scr = lv_screen_active();
@@ -3432,7 +3449,6 @@ void TaskDisplay(void* pvParameters) {
             didDisplayWork = true;
         }
 
-        // Animate mascot in left panel
         lv_timer_handler();
         static uint32_t lastMascotMs = 0;
         if (didDisplayWork || hadDisplayEvents) {
@@ -3696,7 +3712,7 @@ void _runSessionExport(bool notifyUser) {
     }
 }
 
-// ─── Core 0: Hardware Task ────────────────────────────────────
+// ── Core 0: TaskHardware ──
 
 void TaskHardware(void* pvParameters) {
     DLOG_INFO("CORE", "Hardware task started");
@@ -3735,7 +3751,6 @@ void TaskHardware(void* pvParameters) {
         DLOG_WARN("CORE", "Display layer not ready before hardware init");
     }
 
-    // Init storage
     bool storageOk = STORAGE.begin();
     String storageUsed = storageOk ? STORAGE.getCachedUsedString() : String();
     _publishStorageState(storageOk, storageUsed);
@@ -3774,7 +3789,21 @@ void TaskHardware(void* pvParameters) {
         static uint32_t lastPwnyRefresh = 0;
         static uint32_t lastSystemRefresh = 0;
         static uint32_t lastGpsFixSeen = 0;
+        static uint32_t lastLoopStartMs = 0;
         const uint32_t loopNow = millis();
+        if (lastLoopStartMs != 0) {
+            const uint32_t loopGapMs = loopNow - lastLoopStartMs;
+            if (loopGapMs >= HARDWARE_LOOP_GAP_WARN_MS) {
+                DLOG_WARN("CORE",
+                          "TaskHardware loop gap=%lums owner=%s pendingUpload=%lu maint=%d",
+                          static_cast<unsigned long>(loopGapMs),
+                          RadioArbiter::ownerName(RADIO_ARB.currentOwner()),
+                          static_cast<unsigned long>(
+                              STORAGE.isReady() ? STORAGE.getPendingEventCount() : 0U),
+                          (storageOk && STORAGE.hasStorageMaintenanceWork()) ? 1 : 0);
+            }
+        }
+        lastLoopStartMs = loopNow;
 
         POWER_MGR.tick(loopNow);
         const PowerSnapshot power = POWER_MGR.consumeSnapshot();
@@ -3870,7 +3899,6 @@ void TaskHardware(void* pvParameters) {
             }
         }
 
-        // Buttons
         ButtonEvent evt = buttons.getEvent();
         if (evt != BTN_NONE) {
             _markUiActivity();
@@ -3962,7 +3990,6 @@ void TaskHardware(void* pvParameters) {
             }
         }
 
-        // PMKID hunt request from UI
         char huntBssid[18] = "";
         bool huntReq = false;
         STATE_READ_BEGIN();
@@ -3979,37 +4006,31 @@ void TaskHardware(void* pvParameters) {
             }
         }
 
-        // Update uptime
         STATE_WRITE_BEGIN();
         g_state.uptimeMs = millis();
         STATE_WRITE_END();
 
         TIME_SVC.tick();
 
-        // WireGuard dump trigger from BLE
         if (BLE_MGR.consumeWireGuardDumpTrigger()) {
             MQTT_MGR.requestDump(true);
             DLOG_INFO("BLE", "WireGuard dump triggered");
         }
 
-        // Upload demand triggers
         static uint32_t lastUploadCheck = 0;
         if (millis() - lastUploadCheck > 60000) {
             lastUploadCheck = millis();
 
-            // Threshold trigger
             if (MQTT_MGR.uploadReadyCount() >= MQTT_UPLOAD_READY_THRESHOLD) {
                 MQTT_MGR.requestDump(false);
             }
 
-            // Time-based fallback — 2hr maximum gap
             if (MQTT_MGR.lastDumpAge() > MQTT_DUMP_INTERVAL_MS &&
                 MQTT_MGR.queueDepth() > 0) {
                 MQTT_MGR.requestDump(false);
             }
         }
 
-        // BLE text input routing
         char inputBuf[64] = "";
         if (BLE_MGR.consumeTextInput(inputBuf, sizeof(inputBuf))) {
             _markUiActivity();
@@ -4061,7 +4082,6 @@ void TaskHardware(void* pvParameters) {
             }
         }
 
-        // Location auto-tag on fresh GPS fixes
         uint32_t gpsFix = 0;
         STATE_READ_BEGIN();
         gpsFix = g_state.gpsLastFix;
@@ -4109,12 +4129,20 @@ void TaskHardware(void* pvParameters) {
             if (g_companionCmd.probe) {
                 g_companionCmd.probe = false;
                 companion.manualProbeRequested = true;
-                DLOG_INFO("COMP", "Manual probe request received");
+                companion.nextProbeMs = 0;
+                companion.probeBackoffStage = 0;
+                companion.probeBackoffMissCount = 0;
+                DLOG_INFO("COMP",
+                          "Manual probe request received; probe backoff bypassed");
             }
             if (g_companionCmd.enrich) {
                 g_companionCmd.enrich = false;
                 companion.manualEnrichRequested = true;
-                DLOG_INFO("COMP", "Manual enrich request received");
+                companion.nextProbeMs = 0;
+                companion.probeBackoffStage = 0;
+                companion.probeBackoffMissCount = 0;
+                DLOG_INFO("COMP",
+                          "Manual enrich request received; probe backoff bypassed");
             }
 
             // Track recent high-value WiFi activity.
@@ -4236,7 +4264,6 @@ void TaskHardware(void* pvParameters) {
         }
 
         if (companion.enabled) {
-            // BLE companion probe/enrichment completion handling
             if (companion.workState == COMPANION_WORK_PROBING) {
                 if (BLE_MGR.isPhoneCompanionReady()) {
                     companion.phoneState = COMPANION_PHONE_AVAILABLE;
@@ -4338,7 +4365,6 @@ void TaskHardware(void* pvParameters) {
         }
         lastTextPending = textPending;
 
-        // MQTT tick — only when upload lease active
         if (RADIO_ARB.isOwner(RADIO_WIFI_UPLOAD)) {
             MQTT_MGR.tick();
         }
@@ -4364,7 +4390,16 @@ void TaskHardware(void* pvParameters) {
         if (storageOk &&
             STORAGE.hasStorageMaintenanceWork() &&
             canRunStorageMaintenance(companion, power, now)) {
+            const uint32_t maintStartMs = millis();
             STORAGE.serviceStorageMaintenanceStep(REPAIR_BUDGET_MS, REPAIR_MAX_RECORDS);
+            const uint32_t maintMs = millis() - maintStartMs;
+            if (maintMs >= 25UL) {
+                DLOG_WARN("STORAGE",
+                          "maintenance step slow ms=%lu owner=%s pendingUpload=%lu",
+                          static_cast<unsigned long>(maintMs),
+                          RadioArbiter::ownerName(RADIO_ARB.currentOwner()),
+                          static_cast<unsigned long>(STORAGE.getPendingEventCount()));
+            }
         }
 
         _checkRuntimeContracts();
@@ -4440,7 +4475,7 @@ void _checkLocationTag() {
     }
 }
 
-// ─── Setup ────────────────────────────────────────────────────
+// ── Setup ──
 
 static const char* _resetReasonName(esp_reset_reason_t r) {
     switch (r) {
@@ -4578,13 +4613,11 @@ void setup() {
 
     DLOG_INFO("SYS", "Starting tasks");
 
-    // Display task — Core 1, high priority
     xTaskCreatePinnedToCore(
         TaskDisplay, "TaskDisplay",
         TASK_DISPLAY_STACK_BYTES, nullptr, 2,
         &taskDisplayHandle, 1);
 
-    // Hardware task — Core 0, high priority
     xTaskCreatePinnedToCore(
         TaskHardware, "TaskHardware",
         TASK_HARDWARE_STACK_BYTES, nullptr, 2,

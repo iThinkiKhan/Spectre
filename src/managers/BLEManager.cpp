@@ -2,9 +2,7 @@
 
 #include "BLEManager.h"
 
-// ──────────────────────────────────────────────────────────────────────
-// Phone companion bring-up decision tree
-// ──────────────────────────────────────────────────────────────────────
+// ── Phone companion bring-up decision tree ──
 // Use this when interpreting the next manual BTCON probe run.  Cross
 // the ESP32 serial against the Android logcat from
 // SpectrePeripheralModule (look for "advertise payload", "Companion
@@ -2119,9 +2117,7 @@ void BLEManager::_authNotifyThunk(NimBLERemoteCharacteristic* chr,
     }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Enrichment failure helper
-// ─────────────────────────────────────────────────────────────────────────────
+// ── Enrichment failure helper ──
 
 void BLEManager::_resetEnrichmentExchangeState(bool preserveFailure) {
     _enrichmentRequestPending = false;
@@ -2700,9 +2696,7 @@ void BLEManager::_clearTextInputState(bool clearPrompt, const char* receiptCode)
     }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// BLE RX queue — enqueue side (called from NimBLE callback context)
-// ─────────────────────────────────────────────────────────────────────────────
+// ── BLE RX queue — enqueue side (called from NimBLE callback context) ──
 
 void BLEManager::_queueGpsFrameFromCallback(const uint8_t* data, size_t len) {
     if (!data || len < PHONE_GPS_FRAME_SIZE) {
@@ -2796,9 +2790,7 @@ void BLEManager::_queueAuthFrameFromCallback(const uint8_t* data, size_t len) {
     xSemaphoreGive(_rxMutex);
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// BLE RX queue — drain side (called from tick() context only)
-// ─────────────────────────────────────────────────────────────────────────────
+// ── BLE RX queue — drain side (called from tick() context only) ──
 
 void BLEManager::_drainBleRxQueues() {
     _drainGpsRx();

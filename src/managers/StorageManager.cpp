@@ -2852,7 +2852,6 @@ bool StorageManager::_scanSegmentRecords(
     }
 }
 
-// === Landmark: scan_jsonl_segment_records ===
 bool StorageManager::_scanJsonlSegmentRecords(
     uint32_t segmentId,
     std::function<bool(const DecodedSpoolRecord&)> cb) const {
@@ -3725,7 +3724,6 @@ bool StorageManager::_appendSegmentRecord(SpoolSegmentInfo& seg,
             if (eventFlags & BIN_EVENT_HAS_PRIO) body.push_back(prio);
             if (eventFlags & BIN_EVENT_HAS_LANE) body.push_back(lane);
 
-            // sanity
             if (body.size() <= eventFlagsOffset + 1) return false;
 
             SpoolBin::SegmentHeaderV2 hdr;
@@ -3951,7 +3949,6 @@ bool StorageManager::beginSession() {
 }
 
 bool StorageManager::endSession() {
-    // Append to sessions manifest
     JsonDocument entry;
     entry["id"]       = SESS.getId();
     entry[F_START]    = SESS.getStartTime();

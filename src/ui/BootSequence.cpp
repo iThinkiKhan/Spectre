@@ -4,7 +4,6 @@
 #include "MascotState.h"
 #include <Arduino.h>
 
-// ─── Typewriter effect ────────────────────────────────────────
 static void _typewrite(lv_obj_t* label, const char* text, int delayMs) {
     String buf = "";
     for (int i = 0; i < (int)strlen(text); i++) {
@@ -15,27 +14,22 @@ static void _typewrite(lv_obj_t* label, const char* text, int delayMs) {
     }
 }
 
-// ─── Glitch flash ─────────────────────────────────────────────
 static void _glitchFlash(lv_obj_t* titleLabel) {
-    // Chromatic split — red offset
     lv_obj_set_style_text_color(titleLabel, lv_color_hex(0xFF003C), 0);
     lv_obj_set_pos(titleLabel, THEME_SCREEN_W/2 - 2, 8);
     lv_refr_now(NULL);
     vTaskDelay(pdMS_TO_TICKS(40));
 
-    // Cyan offset
     lv_obj_set_style_text_color(titleLabel, lv_color_hex(0x00F0FF), 0);
     lv_obj_set_pos(titleLabel, THEME_SCREEN_W/2 + 2, 8);
     lv_refr_now(NULL);
     vTaskDelay(pdMS_TO_TICKS(40));
 
-    // Snap to correct yellow
     lv_obj_set_style_text_color(titleLabel, lv_color_hex(0xFCE700), 0);
     lv_obj_align(titleLabel, LV_ALIGN_TOP_MID, 0, 8);
     lv_refr_now(NULL);
 }
 
-// ─── Main boot sequence ───────────────────────────────────────
 void runBootSequence(DisplayManager& display, bool loraOk, bool storageOk) {
 
 #if BOOT_SEQUENCE_VERBOSE
@@ -50,7 +44,6 @@ void runBootSequence(DisplayManager& display, bool loraOk, bool storageOk) {
     lv_obj_set_style_bg_color(scr, lv_color_hex(0x000000), 0);
     lv_obj_set_style_bg_opa(scr, LV_OPA_COVER, 0);
 
-    // Corner bracket lines — top left
     static lv_point_precise_t tlH[2] = {{0,0},{0,0}};
     static lv_point_precise_t tlV[2] = {{0,0},{0,0}};
     static lv_point_precise_t trH[2] = {{THEME_SCREEN_W,0},{THEME_SCREEN_W,0}};
@@ -77,7 +70,6 @@ void runBootSequence(DisplayManager& display, bool loraOk, bool storageOk) {
     lv_obj_t* cBRH = makeCornerLine(brH);
     lv_obj_t* cBRV = makeCornerLine(brV);
 
-    // Animate brackets drawing in
     for (int i = 0; i <= 28; i += 2) {
         tlH[1] = {(lv_value_precise_t)i, 0};
         tlV[1] = {0, (lv_value_precise_t)i};
@@ -115,7 +107,6 @@ void runBootSequence(DisplayManager& display, bool loraOk, bool storageOk) {
     lv_refr_now(NULL);
     vTaskDelay(pdMS_TO_TICKS(200));
 
-    // Glitch flash x3
     _glitchFlash(titleLabel);
     vTaskDelay(pdMS_TO_TICKS(80));
     _glitchFlash(titleLabel);
@@ -154,7 +145,6 @@ void runBootSequence(DisplayManager& display, bool loraOk, bool storageOk) {
     vTaskDelay(pdMS_TO_TICKS(200));
 
     // ── Phase 5: system checks cascade ───────────────────────
-    // Mascot appears on right side first
 #if BOOT_SEQUENCE_VERBOSE
     Serial.println("[BOOTSEQ] phase5 mascot area");
 #endif
@@ -167,7 +157,6 @@ void runBootSequence(DisplayManager& display, bool loraOk, bool storageOk) {
     lv_obj_set_style_pad_all(mascotArea, 0, 0);
     lv_obj_clear_flag(mascotArea, LV_OBJ_FLAG_SCROLLABLE);
 
-    // Draw mascot in boot attention pose
     display.drawMascotFrame(MASCOT_BOOT_ATTENTION, 0);
 #if BOOT_SEQUENCE_VERBOSE
     Serial.println("[BOOTSEQ] phase5 mascot ok");
@@ -186,7 +175,6 @@ void runBootSequence(DisplayManager& display, bool loraOk, bool storageOk) {
 
     int checkY = 80;
     for (auto& c : checks) {
-        // Label
 #if BOOT_SEQUENCE_VERBOSE
         Serial.printf("[BOOTSEQ] check label %s\r\n", c.label);
 #endif
@@ -198,7 +186,6 @@ void runBootSequence(DisplayManager& display, bool loraOk, bool storageOk) {
         lv_refr_now(NULL);
         vTaskDelay(pdMS_TO_TICKS(120));
 
-        // Status tag
 #if BOOT_SEQUENCE_VERBOSE
         Serial.printf("[BOOTSEQ] check tag %s\r\n", c.label);
 #endif
@@ -217,7 +204,6 @@ void runBootSequence(DisplayManager& display, bool loraOk, bool storageOk) {
         checkY += 16;
     }
 
-    // Neural link searching
 #if BOOT_SEQUENCE_VERBOSE
     Serial.println("[BOOTSEQ] neural");
 #endif
@@ -230,7 +216,6 @@ void runBootSequence(DisplayManager& display, bool loraOk, bool storageOk) {
 
     vTaskDelay(pdMS_TO_TICKS(800));
 
-    // Mascot transitions to standby
 #if BOOT_SEQUENCE_VERBOSE
     Serial.println("[BOOTSEQ] standby mascot");
 #endif
@@ -245,7 +230,6 @@ void runBootSequence(DisplayManager& display, bool loraOk, bool storageOk) {
 #if BOOT_SEQUENCE_VERBOSE
     Serial.println("[BOOTSEQ] wipe");
 #endif
-    // Three quick flashes
     for (int i = 0; i < 3; i++) {
         lv_obj_set_style_bg_color(scr,
             i % 2 == 0 ?
@@ -255,7 +239,6 @@ void runBootSequence(DisplayManager& display, bool loraOk, bool storageOk) {
         vTaskDelay(pdMS_TO_TICKS(30));
     }
 
-    // Simple scan wipe — single bar sweeping down
     lv_obj_t* wipeBar = lv_obj_create(scr);
     lv_obj_set_size(wipeBar, THEME_SCREEN_W, THEME_SCREEN_H);
     lv_obj_set_style_bg_color(wipeBar, lv_color_hex(0x000000), 0);
@@ -271,7 +254,6 @@ void runBootSequence(DisplayManager& display, bool loraOk, bool storageOk) {
         vTaskDelay(pdMS_TO_TICKS(8));
     }
 
-    // End of boot — cover everything in black and return
     lv_obj_t* blackout = lv_obj_create(scr);
     lv_obj_set_size(blackout, THEME_SCREEN_W, THEME_SCREEN_H);
     lv_obj_set_pos(blackout, 0, 0);

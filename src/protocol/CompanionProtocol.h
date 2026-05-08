@@ -55,7 +55,7 @@ struct __attribute__((packed)) PhoneControlFrameV1 {
 
 struct __attribute__((packed)) EventBatchRecord {
     uint32_t eventId;      // offset  0
-    uint32_t timestampMs;  // offset  4
+    uint32_t timestampMs;  // offset  4; epoch seconds when time is trusted
     uint8_t  type;         // offset  8
     uint8_t  status;       // offset  9
 };

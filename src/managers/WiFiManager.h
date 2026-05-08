@@ -1,10 +1,5 @@
-
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// WiFiManager.h — Spectre Field Intelligence Platform
-// Core WiFi capture engine: promiscuous mode, IE fingerprinting, probe tracking,
-// PMKID extraction, ASTM F3411 / DJI Remote ID, behavioral de-anonymization
-// ═══════════════════════════════════════════════════════════════════════════════
+// WiFiManager: promiscuous capture, IE fingerprinting, probe tracking,
+// PMKID extraction, ASTM F3411 / DJI Remote ID, behavioral de-anonymization.
 #pragma once
 
 #include <Arduino.h>
@@ -220,9 +215,6 @@ static const int WIFI_MAX_KARMA          = 4;
 static const int WIFI_GRAVE_SIZE         = 8;
 static const int WIFI_RECENT_PROBE_COUNT = 16;
 
-// ═════════════════════════════════════════════════════════════════════════════
-//  WiFiManager — the capture engine
-// ═════════════════════════════════════════════════════════════════════════════
 class WiFiManager {
 public:
     // ── lifecycle ────────────────────────────────────────────────────────────
@@ -236,6 +228,7 @@ public:
     void pauseRadio();
     void stopAll();
     void suspendRadio();
+    bool prepareStationForUpload();
     bool startPMKIDHunt(const char* targetBSSID);
     bool startPwnyMode();
     void stopPwnyMode();
@@ -370,10 +363,6 @@ private:
 
     // ── RSSI trend update timer ──────────────────────────────────────────────
     uint32_t      _lastTrendUpdate   = 0;
-
-    // ═════════════════════════════════════════════════════════════════════════
-    //  Private methods
-    // ═════════════════════════════════════════════════════════════════════════
 
     // ── channel hopping ──────────────────────────────────────────────────────
     void          _hopChannel();
@@ -514,7 +503,6 @@ private:
     bool          _pwnyManualDeauthRequested = false;
 };
 
-// ── Global singleton ─────────────────────────────────────────────────────────
 extern WiFiManager WIFI_MGR;
 
 

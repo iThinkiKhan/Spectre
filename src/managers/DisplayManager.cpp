@@ -291,13 +291,11 @@ void DisplayManager::begin() {
     lv_obj_set_style_bg_color(root, lv_color_hex(CLR_BLACK), 0);
     lv_obj_set_style_bg_opa(root, LV_OPA_COVER, 0);
 
-    // Build persistent chrome
     _buildStatusBar();
     _buildMascotPanel();
     _buildDivider();
     _buildActionBar();
 
-    // Build all screen content containers (hidden by default)
     _buildScreenLora();
     _buildScreenPwny();
     _buildScreenMeshtastic();
@@ -306,7 +304,6 @@ void DisplayManager::begin() {
     _buildScreenRecon();
     _buildScreenSystem();
 
-    // Start animations
     _buildRadarSweep();
 
     // Panel borders: fixed at full brightness (amber)
@@ -314,7 +311,6 @@ void DisplayManager::begin() {
     _setPanelBorderColor(_actionBar,   0xD09000);
     _setPanelBorderColor(_mascotPanel, 0xD09000);
 
-    // Initial screen draw
     setScreen(SCREEN_LORA);
     drawLora("NONE", "OFF", 0, 0, "--", 0, 0, 0);
 }
@@ -345,7 +341,6 @@ void DisplayManager::_syncActionHintsFromState() {
 void DisplayManager::_buildNotifPanel() {
     if (_notifPanel) return;
 
-    // Full width panel sitting above screen top
     _notifPanel = lv_obj_create(lv_screen_active());
     lv_obj_set_size(_notifPanel, THEME_SCREEN_W, 38);
     lv_obj_set_pos(_notifPanel, 0, -38);  // hidden above screen
@@ -359,12 +354,10 @@ void DisplayManager::_buildNotifPanel() {
     lv_obj_set_style_radius(_notifPanel, 0, 0);
     lv_obj_clear_flag(_notifPanel, LV_OBJ_FLAG_SCROLLABLE);
 
-    // Icon label on left
     _notifIcon = lv_label_create(_notifPanel);
     lv_obj_set_style_text_font(_notifIcon, FONT_SMALL, 0);
     lv_obj_set_pos(_notifIcon, 6, 10);
 
-    // Main text
     _notifLabel = lv_label_create(_notifPanel);
     lv_obj_set_style_text_font(_notifLabel, FONT_BODY, 0);
     lv_obj_set_pos(_notifLabel, 30, 8);
@@ -376,7 +369,6 @@ void DisplayManager::_showNotif(uint8_t type,
                                  const char* text) {
     if (!_notifPanel) _buildNotifPanel();
 
-    // Color and icon by type
     lv_color_t col = lv_color_hex(0x00F0FF);  // default cyan
     const char* icon = ">";
 
@@ -419,7 +411,6 @@ void DisplayManager::_showNotif(uint8_t type,
             break;
     }
 
-    // Style panel border and text colors
     lv_obj_set_style_border_color(_notifPanel, col, 0);
     lv_obj_set_style_bg_color(_notifPanel,
         lv_color_hex(0x080808), 0);
@@ -430,7 +421,6 @@ void DisplayManager::_showNotif(uint8_t type,
     lv_obj_set_style_text_color(_notifLabel, col, 0);
     lv_label_set_text(_notifLabel, text);
 
-    // Slide down animation
     lv_anim_t a;
     lv_anim_init(&a);
     lv_anim_set_var(&a, _notifPanel);
@@ -442,7 +432,6 @@ void DisplayManager::_showNotif(uint8_t type,
     lv_anim_set_path_cb(&a, lv_anim_path_ease_out);
     lv_anim_start(&a);
 
-    // Switch mascot to alert
     if (!_notifActive) {
         STATE_READ_BEGIN();
         _priorMascot = g_state.mascotState;
@@ -502,7 +491,6 @@ void DisplayManager::syncFromState() {
 void DisplayManager::_dismissNotif() {
     if (!_notifPanel || !_notifActive) return;
 
-    // Slide back up
     lv_anim_t a;
     lv_anim_init(&a);
     lv_anim_set_var(&a, _notifPanel);
@@ -514,7 +502,6 @@ void DisplayManager::_dismissNotif() {
     lv_anim_set_path_cb(&a, lv_anim_path_ease_in);
     lv_anim_start(&a);
 
-    // Restore prior mascot state
     STATE_WRITE_BEGIN();
     g_state.mascotState  = _priorMascot;
     g_state.droneAlert   = false;
@@ -604,7 +591,6 @@ void DisplayManager::setScreen(Screen s) {
 
     _currentScreen = s;
 
-    // Update screen name in status bar
     const char* names[] = {"LRA","MSH","WFI","USB","MIS","RCN","SYS"};
     if (_lblScreen) lv_label_set_text(_lblScreen, names[s]);
 
@@ -626,31 +612,24 @@ void DisplayManager::_buildStatusBar() {
                             0, 0, THEME_SCREEN_W, THEME_STATUS_H,
                             0x111111, accent);
 
-    // SPECTRE branding
     _makeLabel(_statusBar, "SPECTRE", accent, FONT_BODY,
                 LV_ALIGN_LEFT_MID, 4, 0);
 
-    // Battery
     _lblBatt = _makeLabel(_statusBar, "PWR", CLR_GREEN, FONT_SMALL,
                           LV_ALIGN_LEFT_MID, 68, 0);
 
-    // WiFi
     _lblWifi = _makeLabel(_statusBar, "W:--", CLR_GREY, FONT_SMALL,
                           LV_ALIGN_LEFT_MID, 104, 0);
 
-    // BLE
     _lblBle = _makeLabel(_statusBar, "BLE", CLR_GREY, FONT_SMALL,
                          LV_ALIGN_LEFT_MID, 154, 0);
 
-    // LoRa indicator
     _lblLora = _makeLabel(_statusBar, "LORA", CLR_YELLOW, FONT_SMALL,
                           LV_ALIGN_LEFT_MID, 194, 0);
 
-    // Screen name — right aligned
     _lblScreen = _makeLabel(_statusBar, "LRA", CLR_CYAN, FONT_SMALL,
                             LV_ALIGN_RIGHT_MID, -4, 0);
 
-    // Bottom border line
     static lv_point_precise_t pts[] = {{0, THEME_STATUS_H - 1},
                                        {THEME_SCREEN_W, THEME_STATUS_H - 1}};
     lv_obj_t* line = lv_line_create(lv_screen_active());
@@ -706,7 +685,6 @@ void DisplayManager::updateStatus(const StatusBar& sb) {
         _setPanelBorderColor(_mascotPanel, edgeColor);
     }
 
-    // Radio owner indicator replaces static W:--
     const char* radioTxt;
     uint32_t    radioCol;
     switch ((RadioOwner)sb.radioOwner) {
@@ -767,7 +745,6 @@ void DisplayManager::_buildDivider() {
 
     _divTimer = lv_timer_create(_divTimerCb, 90, this);
 
-    // Arc spark objects
     _divArcL = lv_obj_create(lv_screen_active());
     lv_obj_set_size(_divArcL, 10, 2);
     lv_obj_set_style_bg_color(_divArcL, lv_color_hex(CLR_CYAN), 0);
@@ -855,13 +832,11 @@ void DisplayManager::_fireSpark() {
     int pulseY = _divPulseY + THEME_STATUS_H;
     int x = THEME_DIVIDER_X;
 
-    // Primary spark at pulse position
     lv_obj_set_pos(_divArcL, x - 10, pulseY + 8);
     lv_obj_set_pos(_divArcR, x + 4,  pulseY + 8);
     lv_obj_set_style_bg_opa(_divArcL, LV_OPA_COVER, 0);
     lv_obj_set_style_bg_opa(_divArcR, LV_OPA_COVER, 0);
 
-    // Secondary spark at random offset
     int offset = random(-20, 20);
     int sy = pulseY + 8 + offset;
     int top = THEME_STATUS_H;
@@ -887,7 +862,6 @@ void DisplayManager::_fireSpark() {
     lv_obj_set_style_radius(arcR2, 0, 0);
     lv_obj_clear_flag(arcR2, LV_OBJ_FLAG_SCROLLABLE);
 
-    // Fade out all four arc objects
     auto fadeOut = [&](lv_obj_t* obj, int dur) {
         lv_anim_t a;
         lv_anim_init(&a);
@@ -905,7 +879,6 @@ void DisplayManager::_fireSpark() {
     fadeOut(arcL2, 200);
     fadeOut(arcR2, 200);
 
-    // Delete temporary objects after fade completes
     auto delayDelete = [&](lv_obj_t* obj) {
         lv_anim_t d;
         lv_anim_init(&d);
@@ -1688,7 +1661,6 @@ void DisplayManager::drawMission(MissionProfile profile) {
             const bool eapolFull = (t.eapolMask & 0x0F) == 0x0F;
 
             if (t.complete && t.pmkid && eapolFull) {
-                // Gold standard: PMKID + full 4-way
                 snprintf(rowBuf, sizeof(rowBuf),
                          "[**] %-12s PMKID+4W", t.ssid);
             } else if (t.complete && t.pmkid) {
@@ -1862,7 +1834,6 @@ void DisplayManager::drawWifi(const char* ssid, int networks,
                                 lv_color_hex(networks > 0 ? CLR_YELLOW : CLR_GREY),
                                 0);
 
-    // Read live data from state
     int devices, probes;
     char lastMAC[18], lastSSID[33];
     STATE_READ_BEGIN();
@@ -1888,7 +1859,6 @@ void DisplayManager::drawWifi(const char* ssid, int networks,
     lv_label_set_text(_wifiLastSSIDValue, lastSSID[0] ? lastSSID : "--");
     lv_label_set_text(_wifiLastMACValue, lastMAC[0] ? lastMAC : "--");
 
-    // Channel
     uint8_t ch;
     STATE_READ_BEGIN();
     ch = g_state.wifiChannel;

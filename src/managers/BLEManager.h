@@ -71,10 +71,8 @@ public:
     void setTargetDeviceName(const char* deviceName);
     void setTargetServiceUUID(const char* serviceUuid);
 
-    // Returns true if BLE consumed the event.
     bool handleButtonEvent(ButtonEvent evt);
 
-    // Text input handoff
     bool requestTextInput(const char* reason, uint32_t timeoutMs = 120000UL);
     bool consumeTextInput(char* out, size_t outLen);
     void cancelTextInput();
@@ -88,7 +86,6 @@ public:
     bool requestManualProbe();
     bool requestCompanionLink(const char* reason, bool allowCachedReconnect = true);
 
-    // Enrichment exchange
     bool requestEnrichmentBatch(const EventBatchRecord* records, size_t count);
     bool consumeEnrichmentBatch(PendingEnrichment* out, size_t maxCount, size_t& outCount);
     bool consumeEnrichmentFailure();
@@ -123,7 +120,6 @@ public:
     bool isPhoneCompanionReady() const;
     bool publishStorageSnapshot(const PhoneStorageFrameV1& frame);
 
-    // One-shot trigger for MQTT layer
     bool consumeWireGuardDumpTrigger();
     bool isDumpConfirmationPending() const { return _wgConfirmPending; }
 
@@ -184,7 +180,6 @@ private:
 
     static constexpr uint32_t WORKER_STACK_WORDS         = 10240;
 
-    // Lifecycle helpers
     void _buildDeviceName();
     bool _beginFrameworkPhase();
     bool _beginServicesPhase();
@@ -194,7 +189,6 @@ private:
     void _setupScanner();
     void _resetState();
 
-    // Tick helpers
     void _startScanWindow();
     void _stopScanWindow();
     void _startConnectAttempt();
@@ -204,7 +198,6 @@ private:
     void _queueWorker(uint32_t bits);
     void _ensureAdvertising(bool enable);
 
-    // Worker
     bool _ensureWorkerTask();
     void _releaseWorkerTask(const char* phase);
     static void _workerTaskEntry(void* arg);
@@ -214,7 +207,6 @@ private:
     void _doControlPollJob();
     void _doEnrichmentSendJob();
 
-    // NimBLE callbacks
     void _onAdvertisedDevice(const NimBLEAdvertisedDevice* advertisedDevice);
     void _onClientConnected(NimBLEClient* pClient);
     void _onClientDisconnected(NimBLEClient* pClient, int reason);
@@ -239,7 +231,6 @@ private:
                                  size_t len,
                                  bool isNotify);
 
-    // Remote service handling
     bool _bindRemoteCharacteristics();
     bool _authenticateRemote();
     void _clearRemoteHandles();
@@ -264,19 +255,16 @@ private:
     bool _shouldYieldToUpload() const;
     void _scheduleProbeSoonButNotNow(uint32_t now);
 
-    // WireGuard confirm flow
     void _armWireGuardConfirmation();
     void _confirmWireGuardDump();
     void _cancelWireGuardConfirmation(const char* reason);
 
-    // Text input flow
     void _setReceipt(const char* code, bool notify = true);
     void _setPrompt(const char* prompt, bool notify = true);
     void _refreshStatusCharacteristic(bool notify = true);
     bool _acceptTextPayload(const uint8_t* data, size_t len);
     void _clearTextInputState(bool clearPrompt, const char* receiptCode);
 
-    // BLE RX handoff
     void _queueGpsFrameFromCallback(const uint8_t* data, size_t len);
     void _queueControlFrameFromCallback(const uint8_t* data, size_t len);
     void _queueEnrichmentChunkFromCallback(const uint8_t* data, size_t len);
@@ -289,7 +277,6 @@ private:
 
     void _clearBleRxQueues();
 
-    // GPS / control parsing
     void _handleGpsPayload(const uint8_t* data, size_t len);
     void _handleControlPayload(const uint8_t* data, size_t len);
     void _handleEnrichmentPayload(const uint8_t* data, size_t len);
@@ -299,13 +286,11 @@ private:
                          uint32_t epochUtc) const;
     void _setGpsUnavailable(bool clearCoordinates);
 
-    // Shared-state publishing
     void _publishBleState();
     void _publishGpsState();
     void _publishTextInputState();
     void _pushNotification(uint8_t type, const char* text);
 
-    // Time helpers
     bool _parseIso8601(const char* iso, uint32_t& epochUtc) const;
     void _formatIso8601(uint32_t epochUtc, char* out, size_t len) const;
     static int32_t _daysFromCivil(int32_t y, uint32_t m, uint32_t d);

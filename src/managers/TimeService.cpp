@@ -126,6 +126,17 @@ bool TimeService::formatNowLocal(char* out, size_t len) const {
     return formatLocalForMillis(millis(), out, len);
 }
 
+bool TimeService::epochForMillis(uint32_t monotonicMs, uint32_t& epochUtc) const {
+    const int64_t epoch = _epochForMillis(monotonicMs);
+    if (epoch < static_cast<int64_t>(MIN_VALID_EPOCH) ||
+        epoch > static_cast<int64_t>(UINT32_MAX)) {
+        return false;
+    }
+
+    epochUtc = static_cast<uint32_t>(epoch);
+    return true;
+}
+
 bool TimeService::formatIsoForMillis(uint32_t monotonicMs, char* out, size_t len) const {
     if (!out || len == 0) return false;
 
@@ -259,4 +270,3 @@ void TimeService::_formatLocalClock(time_t epochUtc, char* out, size_t len) {
     localtime_r(&epochUtc, &localTm);
     strftime(out, len, "%Y-%m-%d %H:%M:%S", &localTm);
 }
-

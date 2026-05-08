@@ -8,6 +8,7 @@ import {
   encodeEventBatchRecords,
   encodePhoneControlFrame,
   encodePhoneGpsFrame,
+  eventTimestampToUnixMs,
   PHONE_CONTROL_FLAG_BATCH_RECEIVED,
   PHONE_CONTROL_FLAG_CANCEL,
   PHONE_CONTROL_FLAG_DUMP_REQUEST,
@@ -207,6 +208,10 @@ const EMPTY_MANUAL_LOCATION: ManualLocationDraft = {
   accuracy: '10',
 };
 
+const LOCATION_HISTORY_MAX_SAMPLES = 20_000;
+const LOCATION_HISTORY_MAX_AGE_MS = 14 * 24 * 60 * 60 * 1000;
+const LOCATION_MATCH_MAX_DRIFT_MS = 5 * 60 * 1000;
+
 function nowId(prefix: string) {
   return `${prefix}-${Date.now()}-${Math.round(Math.random() * 1000)}`;
 }
@@ -257,6 +262,59 @@ function locationFromNativeFix(fix: LocationFix): ActiveLocationFix {
   };
 }
 
+function rememberLocationSample(
+  previous: ActiveLocationFix[],
+  sample: ActiveLocationFix,
+): ActiveLocationFix[] {
+  const cutoff = Date.now() - LOCATION_HISTORY_MAX_AGE_MS;
+  const next = previous.filter(
+    entry =>
+      entry.timestamp >= cutoff &&
+      Math.abs(entry.timestamp - sample.timestamp) > 1000,
+  );
+
+  next.push(sample);
+  next.sort((a, b) => a.timestamp - b.timestamp);
+
+  if (next.length > LOCATION_HISTORY_MAX_SAMPLES) {
+    return next.slice(next.length - LOCATION_HISTORY_MAX_SAMPLES);
+  }
+
+  return next;
+}
+
+function locationForEvent(
+  event: EventBatchRecord,
+  activeLocation: ActiveLocationFix,
+  history: ActiveLocationFix[],
+): ActiveLocationFix | null {
+  if (activeLocation.source === 'manual') {
+    return activeLocation;
+  }
+
+  const eventUnixMs = eventTimestampToUnixMs(event.timestampMs);
+  if (!eventUnixMs) {
+    return null;
+  }
+
+  const candidates = [...history, activeLocation];
+  let best: ActiveLocationFix | null = null;
+  let bestDrift = Number.MAX_SAFE_INTEGER;
+
+  candidates.forEach(candidate => {
+    if (candidate.source !== 'device') {
+      return;
+    }
+    const drift = Math.abs(candidate.timestamp - eventUnixMs);
+    if (drift < bestDrift) {
+      best = candidate;
+      bestDrift = drift;
+    }
+  });
+
+  return best && bestDrift <= LOCATION_MATCH_MAX_DRIFT_MS ? best : null;
+}
+
 function buildGpsBase64(location: ActiveLocationFix | null) {
   if (!location) {
     return encodePhoneGpsFrame({
@@ -285,23 +343,37 @@ function buildEnrichmentRecords(
   events: EventBatchRecord[],
   location: ActiveLocationFix,
   tag: string,
+  locationHistory: ActiveLocationFix[],
 ): {
   records: EnrichmentRecord[];
   normalizedTag: ReturnType<typeof normalizeEnrichmentTag>;
+  skipped: number;
 } {
   const normalizedTag = normalizeEnrichmentTag(tag);
-  return {
-    records: events.map(event => ({
+  const records: EnrichmentRecord[] = [];
+
+  events.forEach(event => {
+    const eventLocation = locationForEvent(event, location, locationHistory);
+    if (!eventLocation) {
+      return;
+    }
+
+    records.push({
       eventId: event.eventId,
-      latE7: Math.round(location.lat * 10_000_000),
-      lonE7: Math.round(location.lon * 10_000_000),
-      altCm: Math.round(location.alt * 100),
-      accuracyDm: Math.max(0, Math.round(location.accuracy * 10)),
-      epochUtc: Math.max(0, Math.floor(location.timestamp / 1000)),
+      latE7: Math.round(eventLocation.lat * 10_000_000),
+      lonE7: Math.round(eventLocation.lon * 10_000_000),
+      altCm: Math.round(eventLocation.alt * 100),
+      accuracyDm: Math.max(0, Math.round(eventLocation.accuracy * 10)),
+      epochUtc: Math.max(0, Math.floor(eventLocation.timestamp / 1000)),
       flags: normalizedTag.value.length ? 0x01 : 0,
       tag: normalizedTag.value,
-    })),
+    });
+  });
+
+  return {
+    records,
     normalizedTag,
+    skipped: events.length - records.length,
   };
 }
 
@@ -390,6 +462,7 @@ export function SpectreProvider({children}: {children: React.ReactNode}) {
   const activeTagRef = useRef('FIELD');
   const autoApplyRef = useRef(true);
   const activeLocationRef = useRef<ActiveLocationFix | null>(null);
+  const locationHistoryRef = useRef<ActiveLocationFix[]>([]);
   const nextControlCounterRef = useRef(1);
   const startupConfigRef = useRef({
     metadata: '',
@@ -521,11 +594,35 @@ export function SpectreProvider({children}: {children: React.ReactNode}) {
       return;
     }
 
-    const {records, normalizedTag} = buildEnrichmentRecords(
+    const {records, normalizedTag, skipped} = buildEnrichmentRecords(
       events,
       location,
       activeTagRef.current,
+      locationHistoryRef.current,
     );
+
+    if (records.length === 0) {
+      if (source === 'spectre') {
+        queueControlPulse('cancel');
+      }
+      setEventBatches(previous =>
+        previous.map(batch =>
+          batch.id === batchId
+            ? {
+                ...batch,
+                status: 'waiting',
+                note: 'Waiting for a phone GPS sample near the event time',
+              }
+            : batch,
+        ),
+      );
+      appendLog(
+        'Enrichment held: no phone GPS sample matched the event time window',
+        'warn',
+      );
+      return;
+    }
+
     const payload = encodeEnrichmentRecords(records);
 
     try {
@@ -544,7 +641,9 @@ export function SpectreProvider({children}: {children: React.ReactNode}) {
                 note:
                   source === 'mock'
                     ? 'Mock enrichment published to phone peripheral'
-                    : 'Enrichment payload published for Spectre pickup',
+                    : skipped > 0
+                      ? `Enrichment payload published; ${skipped} events need a closer GPS sample`
+                      : 'Enrichment payload published for Spectre pickup',
               }
             : batch,
         ),
@@ -557,6 +656,12 @@ export function SpectreProvider({children}: {children: React.ReactNode}) {
         sentAt: publishedAt,
       });
       appendLog(`Published enrichment batch (${records.length} records)`);
+      if (skipped > 0) {
+        appendLog(
+          `Skipped ${skipped} events without a nearby phone GPS sample`,
+          'warn',
+        );
+      }
       if (normalizedTag.truncated) {
         appendLog('Enrichment tag was trimmed to fit the device contract', 'warn');
       }
@@ -638,6 +743,10 @@ export function SpectreProvider({children}: {children: React.ReactNode}) {
     }
 
     const nextLocation = locationFromNativeFix(fix);
+    locationHistoryRef.current = rememberLocationSample(
+      locationHistoryRef.current,
+      nextLocation,
+    );
     setDeviceLocation(nextLocation);
     appendLog(
       `Location updated from phone (${nextLocation.lat.toFixed(5)}, ${nextLocation.lon.toFixed(5)})`,

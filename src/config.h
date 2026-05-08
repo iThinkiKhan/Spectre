@@ -42,8 +42,10 @@ static constexpr uint8_t OFF = 0;
 
 #define MQTT_DUMP_INTERVAL_SEC        7200UL  // seconds
 #define MQTT_DUMP_INTERVAL_MS         SPECTRE_SECONDS_TO_MS(MQTT_DUMP_INTERVAL_SEC)
-#define MQTT_CONNECT_TIMEOUT_SEC      10UL    // seconds
-#define MQTT_CONNECT_TIMEOUT_MS       SPECTRE_SECONDS_TO_MS(MQTT_CONNECT_TIMEOUT_SEC)
+#define MQTT_WIFI_CONNECT_TIMEOUT_SEC 30UL    // seconds
+#define MQTT_WIFI_CONNECT_TIMEOUT_MS  SPECTRE_SECONDS_TO_MS(MQTT_WIFI_CONNECT_TIMEOUT_SEC)
+#define MQTT_BROKER_CONNECT_TIMEOUT_SEC 15UL  // seconds
+#define MQTT_BROKER_CONNECT_TIMEOUT_MS SPECTRE_SECONDS_TO_MS(MQTT_BROKER_CONNECT_TIMEOUT_SEC)
 #define MQTT_FAILED_BACKOFF_SEC       300UL   // seconds
 #define MQTT_FAILED_BACKOFF_MS        SPECTRE_SECONDS_TO_MS(MQTT_FAILED_BACKOFF_SEC)
 #define MQTT_POISON_FAIL_LIMIT        3
@@ -60,7 +62,7 @@ static constexpr uint8_t OFF = 0;
 // MQTT upload
 // -----------------------------------------------------------------------------
 
-#define MQTT_UPLOAD_READY_THRESHOLD   5000
+#define MQTT_UPLOAD_READY_THRESHOLD   7000
 #define MQTT_DUMP_FETCH_BATCH_SIZE    16   // records loaded per storage scan
 #define MQTT_DUMP_RECORDS_PER_SLICE    4   // max publish calls per yield
 #define MQTT_DUMP_SLICE_BUDGET_MS     25   // ms
@@ -73,7 +75,7 @@ static constexpr uint8_t OFF = 0;
 #define MQTT_UPLOAD_LEASE_MS_PER_EVENT  600UL   // ms
 #define MQTT_UPLOAD_LEASE_MIN_SEC       90UL    // seconds
 #define MQTT_UPLOAD_LEASE_MIN_MS        SPECTRE_SECONDS_TO_MS(MQTT_UPLOAD_LEASE_MIN_SEC)
-#define MQTT_UPLOAD_LEASE_MAX_SEC       600UL   // seconds
+#define MQTT_UPLOAD_LEASE_MAX_SEC       1200UL  // seconds
 #define MQTT_UPLOAD_LEASE_MAX_MS        SPECTRE_SECONDS_TO_MS(MQTT_UPLOAD_LEASE_MAX_SEC)
 
 // One-shot startup FieldVault upload. After boot grace, if FieldVault has

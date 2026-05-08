@@ -247,7 +247,6 @@ void MQTTManager::begin() {
     _migrateLegacyQueueFiles();
     _refreshPendingCount();
 
-    // If absurdly large, log but do not clear automatically
     if (_queuedRecords > 450) {
         DLOG_WARN("MQTT", "Backlog large: %d records", _queuedRecords);
     } else {
@@ -498,8 +497,10 @@ void MQTTManager::_runStateMachine() {
                 _wifiConnectStarted = true;
             }
 
-            if (elapsed > MQTT_CONNECT_TIMEOUT_MS) {
-                DLOG_WARN("MQTT", "WiFi timeout");
+            if (elapsed > MQTT_WIFI_CONNECT_TIMEOUT_MS) {
+                DLOG_WARN("MQTT", "WiFi timeout status=%d elapsed=%lus",
+                          static_cast<int>(WiFi.status()),
+                          static_cast<unsigned long>(elapsed / 1000UL));
                 WiFi.disconnect();
                 // Drain in-flight disconnect events before the next radio
                 // op (ensureDefaultCapture → set_promiscuous(true)) so we
@@ -521,7 +522,7 @@ void MQTTManager::_runStateMachine() {
                 _startDumpPlan();
                 _state = MQTT_DUMPING;
                 _stateEnteredMs = millis();
-            } else if (elapsed > MQTT_CONNECT_TIMEOUT_MS) {
+            } else if (elapsed > MQTT_BROKER_CONNECT_TIMEOUT_MS) {
                 DLOG_WARN("MQTT", "Broker connect failed");
                 DLOG_WARN("MQTT", "Broker timeout");
                 _state = MQTT_FAILED;
@@ -573,7 +574,6 @@ void MQTTManager::_runStateMachine() {
             _refreshPendingCount(true);
             crashBreadcrumbClear(CrashPhase::UPLOAD_FLUSH);
             crashBreadcrumbClear(CrashPhase::MQTT_DUMPING);
-            // Return to promiscuous after sync
             RADIO_ARB.ensureDefaultCapture("mqtt_done");
             _logUploadStackWatermark("done");
             _state = MQTT_IDLE;
@@ -607,7 +607,6 @@ void MQTTManager::_runStateMachine() {
             _refreshPendingCount(true);
             crashBreadcrumbClear(CrashPhase::UPLOAD_FLUSH);
             crashBreadcrumbClear(CrashPhase::MQTT_DUMPING);
-            // Return to promiscuous after sync
             RADIO_ARB.ensureDefaultCapture("mqtt_failed");
             _logUploadStackWatermark("failed");
             _state = MQTT_IDLE;
@@ -626,8 +625,9 @@ bool MQTTManager::_connectWiFi() {
 
     WiFi.setSleep(false);
     WiFi.begin(network->ssid, network->password);
-    DLOG_INFO("MQTT", "Connecting to upload network: %s",
-              network->ssid);
+    DLOG_INFO("MQTT", "Connecting to upload network: %s timeout=%lus",
+              network->ssid,
+              static_cast<unsigned long>(MQTT_WIFI_CONNECT_TIMEOUT_MS / 1000UL));
     return true;
 }
 
@@ -837,13 +837,11 @@ bool MQTTManager::_runDumpSlice() {
             JsonDocument publishDoc;
 
             while (_dumpCtx.sessionIndex < sessionIds.size()) {
-                // Time budget
                 if ((millis() - sliceStartMs) >= kDumpSliceBudgetMs) {
                     _mqtt.loop();
                     return false;
                 }
 
-                // Record limit per slice
                 if (recordsThisSlice >= kDumpMaxRecordsPerSlice) {
                     _mqtt.loop();
                     return false;
@@ -1208,8 +1206,7 @@ void MQTTManager::_disconnect() {
     if (_mqtt.connected()) _mqtt.disconnect();
     _wifiClient.stop();
     _wifiConnectStarted = false;
-    // Don't disconnect WiFi — WiFiManager may need it
-    // WiFiManager handles its own WiFi state
+    // Leave WiFi up — WiFiManager owns its own state.
 }
 
 // ── Dump execution ────────────────────────────────────────────
@@ -1422,7 +1419,6 @@ bool MQTTManager::_purgeTransientFiles() {
         }
 
         if (strcmp(dirPath, PATH_EVENTS) == 0) {
-            // Remove only transient upload snapshots
             return name.endsWith(".upload.jsonl");
         }
 
@@ -1433,7 +1429,6 @@ bool MQTTManager::_purgeTransientFiles() {
 
         if (strcmp(dirPath, PATH_PMKID_DIR) == 0 ||
             strcmp(dirPath, "/pmkid") == 0) {
-            // Treat PMKID artifacts as transient
             return true;
         }
 
@@ -1714,7 +1709,6 @@ void MQTTManager::_migrateLegacyQueueFiles() {
         File marker = LittleFS.open(LEGACY_QUEUE_MIGRATION_MARKER, "w");
         if (marker) marker.close();
 
-        // Optional: remove empty legacy dir
         File checkDir = LittleFS.open(LEGACY_QUEUE_DIR);
         if (checkDir && checkDir.isDirectory()) {
             File leftover = checkDir.openNextFile();
@@ -1917,21 +1911,18 @@ void MQTTManager::queuePMKID(const char* ssid,
     // Hashcat format: PMKID*BSSID*ClientMAC*SSID_hex
     char ssidHex[65];
 
-    // Convert SSID to hex
     const size_t ssidLen = strnlen(ssid ? ssid : "", 32);
     for (size_t i = 0; i < ssidLen; i++) {
         snprintf(ssidHex + i*2, 3, "%02x", (uint8_t)ssid[i]);
     }
     ssidHex[ssidLen * 2] = '\0';
 
-    // Format PMKID as hex
     char pmkidHex[33];
     for (int i = 0; i < 16; i++) {
         snprintf(pmkidHex + i*2, 3, "%02x", pmkid[i]);
     }
     pmkidHex[32] = '\0';
 
-    // Hashcat format line
     char hashcatLine[160];
     snprintf(hashcatLine, sizeof(hashcatLine),
              "PMKID*%s*%s*%s", pmkidHex, bssid, clientMAC);

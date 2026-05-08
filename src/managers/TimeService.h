@@ -30,6 +30,7 @@ public:
 
     bool formatNowIso(char* out, size_t len) const;
     bool formatNowLocal(char* out, size_t len) const;
+    bool epochForMillis(uint32_t monotonicMs, uint32_t& epochUtc) const;
     bool formatIsoForMillis(uint32_t monotonicMs, char* out, size_t len) const;
     bool formatLocalForMillis(uint32_t monotonicMs, char* out, size_t len) const;
     String dayStampForMillis(uint32_t monotonicMs) const;
@@ -59,4 +60,3 @@ private:
 };
 
 #define TIME_SVC TimeService::getInstance()
-

@@ -355,7 +355,7 @@ bool RadioArbiter::_startOwner(RadioOwner owner, const char* reason) {
             return false;
         case RADIO_WIFI_UPLOAD:
             WIFI_MGR.pauseRadio();
-            return true;
+            return WIFI_MGR.prepareStationForUpload();
         case RADIO_BLE_TEXT:
         case RADIO_BLE_GPS:
             WIFI_MGR.suspendRadio();

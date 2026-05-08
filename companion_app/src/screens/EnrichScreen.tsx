@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 
 import {FieldPanel} from '../components/FieldPanel';
+import {eventTimestampToUnixMs} from '../protocol/binary';
 import {useSpectre} from '../state/SpectreContext';
 import {theme} from '../theme/theme';
 
@@ -36,6 +37,11 @@ function eventLaneLabel(lane: number) {
 
 function eventPriorityLabel(priority: number) {
   return `P${priority}`;
+}
+
+function eventTimeLabel(timestamp: number) {
+  const unixMs = eventTimestampToUnixMs(timestamp);
+  return unixMs ? new Date(unixMs).toLocaleTimeString() : 'pending time';
 }
 
 export function EnrichScreen() {
@@ -176,9 +182,7 @@ export function EnrichScreen() {
                   <Text style={styles.eventMeta}>#{event.eventId}</Text>
                   <Text style={styles.eventMeta}>{eventLaneLabel(event.lane)}</Text>
                   <Text style={styles.eventMeta}>{eventPriorityLabel(event.priority)}</Text>
-                  <Text style={styles.eventMeta}>
-                    {new Date(event.timestampMs).toLocaleTimeString()}
-                  </Text>
+                  <Text style={styles.eventMeta}>{eventTimeLabel(event.timestampMs)}</Text>
                 </View>
               ))}
 

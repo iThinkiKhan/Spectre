@@ -1,19 +1,11 @@
-
-// =============================================================================
-// Mascot_LVGL.cpp  —  LVGL v9 canvas implementation
-// =============================================================================
-// All drawing uses lv_draw_* primitives via lv_layer_t.
-// No TFT_eSPI, no sprites, no RGB565 colour remap.
-// Colours are 24-bit hex, converted via lv_color_hex() using Theme.h CLR_* defines.
-// =============================================================================
+// LVGL v9 canvas mascot. lv_draw_* primitives via lv_layer_t; no TFT/sprites.
 
 #include "Mascot_LVGL.h"
 #include "../config.h"
 #include <esp_heap_caps.h>
 #include <math.h>
 
-// ─── New colours not in Theme.h ──────────────────────────────────────────────
-// Viking / Pwnagotchi props
+// Viking / Pwnagotchi prop colours (not in Theme.h)
 #define CLR_BONE        0xE8D0A0
 #define CLR_BONE_SHD    0xA09040
 #define CLR_BEARD       0xD4A830
@@ -26,15 +18,9 @@
 #define CLR_SILVER      0xAAAAAA
 
 
-// =============================================================================
-// DRAW HELPERS
-// Short names keep draw code readable. All operate on a lv_layer_t*.
-// =============================================================================
-
-// Colour shorthand
+// Short-name lv_draw_* wrappers operating on lv_layer_t*.
 static inline lv_color_t C(uint32_t hex) { return lv_color_hex(hex); }
 
-// Filled rectangle
 static void FR(lv_layer_t* l, int x, int y, int w, int h, lv_color_t c) {
     lv_draw_rect_dsc_t d; lv_draw_rect_dsc_init(&d);
     d.bg_color = c; d.bg_opa = LV_OPA_COVER;
@@ -44,7 +30,6 @@ static void FR(lv_layer_t* l, int x, int y, int w, int h, lv_color_t c) {
     lv_draw_rect(l, &d, &a);
 }
 
-// Filled circle
 static void FC(lv_layer_t* l, int cx, int cy, int r, lv_color_t c) {
     lv_draw_rect_dsc_t d; lv_draw_rect_dsc_init(&d);
     d.bg_color = c; d.bg_opa = LV_OPA_COVER;
@@ -54,7 +39,6 @@ static void FC(lv_layer_t* l, int cx, int cy, int r, lv_color_t c) {
     lv_draw_rect(l, &d, &a);
 }
 
-// Stroked circle
 static void DC(lv_layer_t* l, int cx, int cy, int r, lv_color_t c, int w = 1) {
     lv_draw_arc_dsc_t d; lv_draw_arc_dsc_init(&d);
     d.color = c; d.width = (uint16_t)w; d.opa = LV_OPA_COVER;
@@ -66,7 +50,6 @@ static void DC(lv_layer_t* l, int cx, int cy, int r, lv_color_t c, int w = 1) {
     lv_draw_arc(l, &d);
 }
 
-// Stroked arc  (sa/ea in degrees, 0=top, clockwise)
 static void DA(lv_layer_t* l, int cx, int cy, int r, int sa, int ea, lv_color_t c, int w = 1) {
     lv_draw_arc_dsc_t d; lv_draw_arc_dsc_init(&d);
     d.color = c; d.width = (uint16_t)w; d.opa = LV_OPA_COVER;
@@ -78,7 +61,6 @@ static void DA(lv_layer_t* l, int cx, int cy, int r, int sa, int ea, lv_color_t 
     lv_draw_arc(l, &d);
 }
 
-// Line
 static void DL(lv_layer_t* l, int x1, int y1, int x2, int y2, lv_color_t c, int w = 1) {
     lv_draw_line_dsc_t d; lv_draw_line_dsc_init(&d);
     d.color = c; d.width = (uint16_t)w; d.opa = LV_OPA_COVER;
@@ -89,7 +71,6 @@ static void DL(lv_layer_t* l, int x1, int y1, int x2, int y2, lv_color_t c, int 
     lv_draw_line(l, &d);
 }
 
-// Filled triangle
 static void FT(lv_layer_t* l,
                int x1,int y1, int x2,int y2, int x3,int y3, lv_color_t c) {
     lv_draw_triangle_dsc_t d; lv_draw_triangle_dsc_init(&d);
@@ -126,7 +107,6 @@ static void DE(lv_layer_t* l, int cx, int cy, int rx, int ry, lv_color_t c) {
     lv_draw_rect(l, &d, &a);
 }
 
-// Label (small system font)
 static void TXT(lv_layer_t* l, int x, int y, int maxW, lv_color_t c, const char* txt) {
     lv_draw_label_dsc_t d; lv_draw_label_dsc_init(&d);
     d.color = c; d.opa = LV_OPA_COVER;
@@ -138,9 +118,7 @@ static void TXT(lv_layer_t* l, int x, int y, int maxW, lv_color_t c, const char*
 }
 
 
-// =============================================================================
-// LIFECYCLE
-// =============================================================================
+// ── LIFECYCLE ──
 
 bool MascotLVGL::begin(lv_obj_t* parent) {
     size_t fullSz = (size_t)SPR_FULL_W  * SPR_FULL_H  * sizeof(lv_color_t);
@@ -230,7 +208,6 @@ void MascotLVGL::drawSmall(int screenX, int screenY, MascotState state, int fram
     lv_color_t eyeColor = (state == MASCOT_PWNAGOTCHI) ? C(CLR_RED) : C(CLR_BLACK);
     _smallEyes(&layer, cx, cy, eyeColor);
 
-    // Mode indicator
     if (state == MASCOT_RECON_WALK || state == MASCOT_WIFI_RECON || state == MASCOT_LORA_RECON) {
         lv_color_t dot = (frame % 4 < 2) ? C(CLR_YELLOW) : C(CLR_DIMYELLOW);
         FC(&layer, cx, cy - 20, 3, dot);
@@ -265,19 +242,15 @@ int MascotLVGL::_advancePhase(MascotState s, const uint16_t* dur, int nPhases) {
 }
 
 
-// =============================================================================
-// SHARED BODY PARTS
-// =============================================================================
+// ── SHARED BODY PARTS ──
 
 void MascotLVGL::_ghostBody(lv_layer_t* l, int cx, int cy, lv_color_t color) {
     FE(l, cx, cy, 22, 24, color);
     FR(l, cx-22, cy, 44, 18, color);
     for (int bx : {cx-14, cx, cx+14}) FC(l, bx, cy+18, 9, color);
-    // Cut notches
     FR(l, cx-22, cy+22, 44, 8, C(CLR_BLACK));
     FC(l, cx-7, cy+24, 5, C(CLR_BLACK));
     FC(l, cx+7, cy+24, 5, C(CLR_BLACK));
-    // Subtle outline
     lv_color_t outline = C(CLR_DIM);
     DE(l, cx, cy, 22, 24, outline);
 }
@@ -426,15 +399,12 @@ void MascotLVGL::_helmet(lv_layer_t* l, int cx, int cy) {
 // ─── Viking props ─────────────────────────────────────────────────────────────
 
 void MascotLVGL::_vikingHorn(lv_layer_t* l, int cx, int cy, int dir) {
-    // Sweeps outward from side of head then curves upward to a sharp point
-    // Approximated as a chain of filled triangles
     lv_color_t bone = C(CLR_BONE), shadow = C(CLR_BONE_SHD);
     int bx = cx + dir*14;
     FT(l, bx,         cy-16, bx,            cy-22, cx+dir*28, cy-26, bone);
     FT(l, bx,         cy-22, cx+dir*28,     cy-26, cx+dir*36, cy-36, bone);
     FT(l, cx+dir*28,  cy-26, cx+dir*36,     cy-36, cx+dir*42, cy-44, bone);
     FT(l, cx+dir*36,  cy-36, cx+dir*42,     cy-44, cx+dir*44, cy-50, bone);
-    // Shadow ridge
     DL(l, bx+dir*2, cy-18, cx+dir*30, cy-26, shadow);
     DL(l, cx+dir*30, cy-26, cx+dir*40, cy-40, shadow);
     DL(l, cx+dir*40, cy-40, cx+dir*44, cy-50, shadow);
@@ -508,18 +478,15 @@ void MascotLVGL::_notepad(lv_layer_t* l, int cx, int cy, int frame) {
     }
     for (int row = 0; row < 4; row++)
         DL(l, cx+18, cy+3+row*5, cx+32, cy+3+row*5, C(CLR_BONE_SHD));
-    // Animated writing line
     int lineRow = (frame / 16) % 4;
     int lineLen = LV_MIN(frame % 16, 14);
     DL(l, cx+18, cy+3+lineRow*5, cx+18+lineLen, cy+3+lineRow*5, C(CLR_BLACK));
-    // Pen
     int tap = (frame % 8 < 4) ? 1 : 0;
     FE(l, cx+28, cy+14+tap, 5, 4, C(CLR_WHITE));
     DL(l, cx+30, cy+10+tap, cx+36, cy+4+tap, C(CLR_YELLOW), 2);
     FC(l, cx+30, cy+10+tap, 2, C(CLR_YELLOW));
 }
 
-// Small sprite helpers
 void MascotLVGL::_smallGhostBody(lv_layer_t* l, int cx, int cy, lv_color_t color) {
     FE(l, cx, cy, 18, 20, color);
     FR(l, cx-18, cy, 36, 14, color);
@@ -535,9 +502,7 @@ void MascotLVGL::_smallEyes(lv_layer_t* l, int cx, int cy, lv_color_t color) {
 }
 
 
-// =============================================================================
-// DRAW METHODS
-// =============================================================================
+// ── DRAW METHODS ──
 
 // ─── BOOT ─────────────────────────────────────────────────────────────────────
 void MascotLVGL::_drawBoot(lv_layer_t* l, int frame) {
@@ -601,7 +566,6 @@ void MascotLVGL::_drawReconWalk(lv_layer_t* l, int frame) {
     if (phase == 0) {
         _satDishLeft(l, cx, cy, frame);
         _ghostBody(l, cx, cy, C(CLR_WHITE));
-        // Big listening ear (left)
         FE(l, cx-24, cy-2, 9, 14, C(CLR_WHITE));
         FE(l, cx-24, cy-2, 5,  9, C(CLR_DIM));
         FE(l, cx-24, cy-2, 2,  4, C(CLR_BLACK));
@@ -660,7 +624,6 @@ void MascotLVGL::_drawPwny(lv_layer_t* l, int frame) {
     int phase = _advancePhase(MASCOT_PWNAGOTCHI, PHASE_DUR, 3);
     int pf = _animPhaseFr[MASCOT_PWNAGOTCHI];
 
-    // Helper: draw full viking body at offset (vcx, vcy)
     auto viking = [&](int vcx, int vcy) {
         _furCloak    (l, vcx, vcy);
         _ghostBody   (l, vcx, vcy, C(CLR_WHITE));
@@ -681,11 +644,9 @@ void MascotLVGL::_drawPwny(lv_layer_t* l, int frame) {
     } else if (phase == 1) {
         viking(cx, cy);
         _eyes(l, cx, cy, true, true, false, C(CLR_RED), 4);
-        // Axe raised high
         FR(l, cx+28, cy-28, 4, 30, C(CLR_WOOD));
         FT(l, cx+28, cy-28, cx+44, cy-36, cx+44, cy-26, C(CLR_SILVER));
         FT(l, cx+28, cy-28, cx+32, cy-18, cx+44, cy-26, C(CLR_SILVER));
-        // Lightning bolt fires right
         int bx = cx+44 + pf*4;
         if (bx < cx+88) {
             DL(l, bx,   cy-20, bx-8, cy-8,  C(CLR_RED), 3);
@@ -697,14 +658,11 @@ void MascotLVGL::_drawPwny(lv_layer_t* l, int frame) {
         int shake = (pf < 10 && pf % 2) ? 2 : 0;
         viking(cx+shake, cy);
         _eyes(l, cx+shake, cy, true, false, false, C(CLR_RED));
-        // Open roaring mouth replaces fangs
         FE(l, cx+shake, cy+8, 9, 8, C(CLR_BLACK));
         FT(l, cx-8+shake, cy+3, cx-4+shake, cy+12, cx+shake,   cy+3, C(CLR_WHITE));
         FT(l, cx+1+shake, cy+3, cx+5+shake, cy+12, cx+9+shake, cy+3, C(CLR_WHITE));
-        // Arms up
         FE(l, cx-28+shake, cy-10, 7, 5, C(CLR_WHITE));
         FE(l, cx+28+shake, cy-10, 7, 5, C(CLR_WHITE));
-        // Sound waves
         int sp = pf % 8;
         if (sp > 1) DA(l, cx+shake, cy+8, 14, 200, 340, C(CLR_YELLOW));
         if (sp > 4) DA(l, cx+shake, cy+8, 22, 200, 340, C(CLR_DIMYELLOW));
@@ -713,11 +671,9 @@ void MascotLVGL::_drawPwny(lv_layer_t* l, int frame) {
         int bounce = pf < 10 ? -(pf*2) : pf < 20 ? -(20-pf)*2 : 0;
         viking(cx, cy+bounce);
         _eyes(l, cx, cy+bounce, true, false, false, C(CLR_RED));
-        // Axe raised in triumph
         FR(l, cx+28, cy-38+bounce, 4, 30, C(CLR_WOOD));
         FT(l, cx+28, cy-38+bounce, cx+44, cy-46+bounce, cx+44, cy-36+bounce, C(CLR_SILVER));
         FT(l, cx+28, cy-38+bounce, cx+32, cy-28+bounce, cx+44, cy-36+bounce, C(CLR_SILVER));
-        // Packet trophy
         FR(l, cx-10, cy-52+bounce, 20, 12, C(CLR_YELLOW));
         DL(l, cx-8, cy-46+bounce, cx-4, cy-44+bounce, C(CLR_BLACK));
         DL(l, cx-4, cy-44+bounce, cx+8, cy-50+bounce, C(CLR_BLACK));

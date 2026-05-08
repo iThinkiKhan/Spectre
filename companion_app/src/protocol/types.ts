@@ -49,6 +49,8 @@ export interface PhoneStorageFrameV1 {
 
 export interface EventBatchRecord {
   eventId: number;
+  // Wire field is 32-bit: epoch seconds when Spectre has trusted time,
+  // otherwise legacy monotonic millis.
   timestampMs: number;
   type: SpectreEventType;
   status: SpectreEventStatus;
