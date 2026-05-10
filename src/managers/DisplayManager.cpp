@@ -1718,7 +1718,9 @@ void DisplayManager::drawMission(MissionProfile profile) {
         wifiNetworks = g_state.wifiNetworkCount;
         probes = g_state.probePacketCount;
         nodes = g_state.subGhzNodeCount;
-        pending = g_state.sessionFilesPending;
+        pending = STORAGE.isReady()
+            ? static_cast<int>(STORAGE.getAuthoritativePendingEventCount())
+            : g_state.sessionFilesPending;
         subGhzMode = g_state.subGhzMode;
         radioOwner = g_state.radioOwner;
         strlcpy(lastMac, g_state.lastProbedMAC, sizeof(lastMac));
@@ -1764,7 +1766,9 @@ void DisplayManager::drawMission(MissionProfile profile) {
     published = g_state.uploadPublished;
     total = g_state.uploadTotal;
     percent = g_state.uploadPercent;
-    pending = g_state.sessionFilesPending;
+    pending = STORAGE.isReady()
+        ? static_cast<int>(STORAGE.getAuthoritativePendingEventCount())
+        : g_state.sessionFilesPending;
     strlcpy(phase, g_state.uploadPhase, sizeof(phase));
     strlcpy(timeLocal, g_state.timeLocal, sizeof(timeLocal));
     STATE_READ_END();
@@ -2986,7 +2990,9 @@ void DisplayManager::drawDebrief() {
     probes  = g_state.sessionProbes;
     pmkids  = g_state.sessionPMKIDs;
     drones  = g_state.sessionDrones;
-    files   = g_state.sessionFilesPending;
+    files   = STORAGE.isReady()
+        ? static_cast<int>(STORAGE.getAuthoritativePendingEventCount())
+        : g_state.sessionFilesPending;
     tagSet  = g_state.sessionTagSet;
     strlcpy(tag, g_state.sessionTag, sizeof(tag));
     uptime  = millis();
@@ -3114,4 +3120,3 @@ lv_obj_t* DisplayManager::_makePanel(lv_obj_t* parent,
     lv_obj_clear_flag(panel, LV_OBJ_FLAG_SCROLLABLE);
     return panel;
 }
-

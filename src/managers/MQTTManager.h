@@ -59,7 +59,7 @@ public:
 
     // Queue a record for next dump
     // These are called by WiFiManager as captures happen
-    void queueProbe(const char* mac, const char* ssid,
+    bool queueProbe(const char* mac, const char* ssid,
                     int8_t rssi, uint8_t channel,
                     const char* ieFingerprint);
     void queueDevice(const char* mac, const char* ieFingerprint,
@@ -80,10 +80,10 @@ public:
 
     MQTTState getState()      { return _state; }
     bool      isDumping()     { return _state == MQTT_DUMPING; }
-    bool      dumpAvailable() { return _queuedRecords > 0; }
-    int       queueDepth()    { return _queuedRecords; }
+    bool      dumpAvailable();
+    int       queueDepth();
     uint32_t  lastDumpAge()   { return millis() - _lastDumpMs; }
-    int       uploadReadyCount() const { return _queuedRecords; }
+    int       uploadReadyCount() const;
     bool      uploadLeaseReady(bool force = false) const;
 
 private:
@@ -219,9 +219,9 @@ private:
     void _migrateLegacyQueueFiles();
     void _refreshPendingCount(bool refreshDebriefMirror = false);
     void _prepareQueuedEvent(JsonDocument& doc);
-    uint32_t _appendQueuedEvent(const char* eventType,
-                            JsonDocument& doc,
-                            QueueMetric metric);
+    uint32_t _appendSyncEvent(const char* eventType,
+                              JsonDocument& doc,
+                              QueueMetric metric);
     void _noteQueuedRecord(QueueMetric metric);
     bool _purgeTransientFiles();
     DumpContext _dumpCtx{};

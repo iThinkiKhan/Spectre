@@ -35,6 +35,7 @@
 #include "managers/ReyaxBackend.h"
 #include "managers/SubGhzRecordWriter.h"
 #include "managers/StorageManager.h"
+#include "managers/RAMSpool.h"
 #include "managers/MQTTManager.h"
 #include "managers/PowerManager.h"
 #include "managers/WiFiManager.h"
@@ -445,6 +446,9 @@ static bool _detectBootRecoveryRequest();
 void _applySubGhzStatusToState(const SubGhzStatus& status);
 void _applyPowerSnapshotToState(const PowerSnapshot& power);
 void _initializeHardwareManagers(uint32_t& lastWifiTick);
+static void _logHardwareSectionIfSlow(const char* section,
+                                      uint32_t startMs,
+                                      bool storageOk);
 void _publishHardwareReadyState();
 void _publishUiDataRefresh();
 void _servicePeriodicUiRefresh(const UiRefreshState& uiRefresh,
@@ -477,8 +481,7 @@ enum PhoneProbeReason : uint8_t {
     PHONE_PROBE_BACKLOG = 0,
     PHONE_PROBE_OFFLOAD_PREP,
     PHONE_PROBE_MANUAL,
-    PHONE_PROBE_TIME_SYNC,
-    PHONE_PROBE_AVAILABILITY
+    PHONE_PROBE_TIME_SYNC
 };
 
 enum CompanionPhoneState : uint8_t {
@@ -562,13 +565,17 @@ static constexpr uint32_t ENRICH_MIN_GAP_MS = 60000UL;
 static constexpr size_t PHONE_ENRICH_BATCH_MAX   = PHONE_COMPANION_ENRICH_BATCH_MAX;
 static constexpr size_t ENRICH_QUEUE_DEPTH       = 2;
 static constexpr size_t ENRICH_CLAIM_MAX         = ENRICH_QUEUE_DEPTH * PHONE_ENRICH_BATCH_MAX;
-static constexpr uint32_t REPAIR_BUDGET_MS       = 8;
-static constexpr uint16_t REPAIR_MAX_RECORDS     = 64;
+static constexpr uint32_t REPAIR_BUDGET_MS       = 2;
+static constexpr uint16_t REPAIR_MAX_RECORDS     = 8;
 static constexpr uint32_t REPAIR_UI_QUIET_MS     = 500;
 static constexpr uint32_t REPAIR_HEAP_FREE_GUARD = 96UL * 1024UL;
 static constexpr uint32_t REPAIR_HEAP_BLOCK_GUARD = 32UL * 1024UL;
-static constexpr uint32_t REPAIR_WIFI_CAPTURE_PENDING_LIMIT = 512UL;
+// Minimum gap between maintenance steps while WIFI_CAPTURE owns the radio.
+// Each step is 35-50ms of LittleFS time; 150ms cap gives wifi_tick room.
+static constexpr uint32_t REPAIR_WIFI_CAPTURE_GAP_MS = 150UL;
+static uint32_t g_lastMaintenanceRunMs = 0;
 static constexpr uint32_t HARDWARE_LOOP_GAP_WARN_MS = 250UL;
+static constexpr uint32_t HARDWARE_SECTION_WARN_MS  = 250UL;
 
 struct QueuedEnrichBatch {
     PendingEnrichment records[PHONE_ENRICH_BATCH_MAX];
@@ -619,7 +626,6 @@ static const char* phoneProbeReasonName(PhoneProbeReason reason) {
         case PHONE_PROBE_OFFLOAD_PREP: return "offload_prep";
         case PHONE_PROBE_MANUAL:       return "manual_probe";
         case PHONE_PROBE_TIME_SYNC:    return "time_sync";
-        case PHONE_PROBE_AVAILABILITY: return "availability_probe";
         default:                       return "probe";
     }
 }
@@ -756,11 +762,16 @@ static bool canRunStorageMaintenance(const CompanionScheduler& companion,
         return false;
     }
 
-    const uint32_t pendingUpload =
-        STORAGE.isReady() ? STORAGE.getPendingEventCount() : 0U;
-    if (owner == RADIO_WIFI_CAPTURE &&
-        pendingUpload >= REPAIR_WIFI_CAPTURE_PENDING_LIMIT) {
-        return false;
+    // Throttle while WIFI_CAPTURE owns the radio. Each step takes 35-50ms
+    // of LittleFS time; running them back-to-back monopolizes TaskHardware
+    // and starves frame handling. Cap at one step per REPAIR_WIFI_CAPTURE_GAP_MS
+    // during capture — still drains repairs in minutes, lets wifi_tick breathe.
+    // When idle (RADIO_NONE), no throttle. Caller updates g_lastMaintenanceRunMs
+    // after the step completes.
+    if (owner == RADIO_WIFI_CAPTURE) {
+        if (nowMs - g_lastMaintenanceRunMs < REPAIR_WIFI_CAPTURE_GAP_MS) {
+            return false;
+        }
     }
 
     bool uploadActive = false;
@@ -1496,7 +1507,7 @@ void _printUsbConsoleHelp() {
     Serial.println("[USB]   spool quarantine list  (list /spool_bad files)");
     Serial.println("[USB]   spool quarantine meta  (print quarantine JSON records)");
     Serial.println("[USB]   spool quarantine clear (delete all quarantine files)");
-    Serial.println("[USB]   fieldvault dump    (print FieldVault records to serial)");
+    Serial.println("[USB]   fieldvault dump    (print and clear FieldVault records)");
     Serial.println("[USB]   fieldvault upload  (upload pending FieldVault records only)");
 #if BLE_SMOKE_ENABLED
     Serial.println("[USB]   ble smoke         (suspend WiFi, init/deinit NimBLE, resume promisc)");
@@ -1909,6 +1920,11 @@ void _handleUsbConsoleLine(const char* rawLine) {
 
     if (lower == "fieldvault dump") {
         FieldVault::dumpToSerial();
+        if (FieldVault::clearRetained()) {
+            Serial.println("[FIELD] cleared after dump");
+        } else {
+            Serial.println("[FIELD] clear after dump failed");
+        }
         return;
     }
 
@@ -2757,7 +2773,9 @@ void _logRuntimeHealth(uint32_t nowMs) {
         health.bleConnected = g_state.bleConnected;
         health.gpsValid = g_state.gpsValid;
         health.wifiCount = g_state.wifiNetworkCount;
-        health.pendingFiles = g_state.sessionFilesPending;
+        health.pendingFiles =
+            STORAGE.isReady() ? static_cast<int>(STORAGE.getPendingEventCount())
+                              : g_state.sessionFilesPending;
         health.pendingEnrich =
             g_state.storagePendingEnrichMission + g_state.storagePendingEnrichNoise;
         health.radioOwner = g_state.radioOwner;
@@ -2855,6 +2873,44 @@ void _logRuntimeHealth(uint32_t nowMs) {
                       _subGhzModeShort(health.subGhzMode),
                       health.loraPacketCount,
                       health.subGhzNodeCount);
+
+        if (RAMSpool::isReady()) {
+            const RAMSpool::Stats rs = RAMSpool::snapshot();
+            Serial.printf(
+                "[HEALTH] ramspool enq=%lu cons=%lu inflight=%u/%u high=%u "
+                "drop[full=%lu big=%lu noise=%lu] free=%u\r\n",
+                static_cast<unsigned long>(rs.enqueued),
+                static_cast<unsigned long>(rs.consumed),
+                static_cast<unsigned>(rs.inflight),
+                static_cast<unsigned>(RAMSpool::POOL_SIZE),
+                static_cast<unsigned>(rs.inflightHigh),
+                static_cast<unsigned long>(rs.droppedPoolFull),
+                static_cast<unsigned long>(rs.droppedTooLarge),
+                static_cast<unsigned long>(rs.droppedNoiseSquelch),
+                static_cast<unsigned>(rs.freeSlots));
+            Serial.printf(
+                "[HEALTH] ramspool producer[probe ok=%lu drop=%lu device ok=%lu drop=%lu] "
+                "worker[probe ok=%lu suppressed=%lu dropped=%lu fail=%lu probeSlow=%lu "
+                "device ok=%lu suppressed=%lu dropped=%lu fail=%lu deviceSlow=%lu "
+                "slowTotal=%lu maxMs=%lu]\r\n",
+                static_cast<unsigned long>(rs.producerProbeOk),
+                static_cast<unsigned long>(rs.producerProbeDrop),
+                static_cast<unsigned long>(rs.producerDeviceOk),
+                static_cast<unsigned long>(rs.producerDeviceDrop),
+                static_cast<unsigned long>(rs.workerProbeOk),
+                static_cast<unsigned long>(rs.workerProbeSuppressed),
+                static_cast<unsigned long>(rs.workerProbeDropped),
+                static_cast<unsigned long>(rs.workerProbeFail),
+                static_cast<unsigned long>(rs.workerProbeSlow),
+                static_cast<unsigned long>(rs.workerDeviceOk),
+                static_cast<unsigned long>(rs.workerDeviceSuppressed),
+                static_cast<unsigned long>(rs.workerDeviceDropped),
+                static_cast<unsigned long>(rs.workerDeviceFail),
+                static_cast<unsigned long>(rs.workerDeviceSlow),
+                static_cast<unsigned long>(rs.workerSlow),
+                static_cast<unsigned long>(rs.workerSlowMaxMs));
+            RAMSpool::logStats();
+        }
 
         if (freeHeap < 65536UL || heapFragPct >= 60UL) {
             DLOG_WARN("HEAP",
@@ -3566,15 +3622,13 @@ void _applyExportSummaryToState(const SessionExportSummary& summary,
                                 bool ok) {
     const uint32_t totalPendingUploads =
         STORAGE.isReady() ? STORAGE.getPendingEventCount() : 0;
-    const uint32_t sessionPendingUploads =
-        ok ? summary.pendingUploads : totalPendingUploads;
 
     STATE_WRITE_BEGIN();
     g_state.exportLastOk = ok;
     g_state.exportLastEvents = ok ? summary.totalEvents : 0;
     g_state.exportLastFiles = ok ? summary.exportedFiles : 0;
     g_state.exportLastBytes = ok ? summary.exportedBytes : 0;
-    g_state.exportLastPending = sessionPendingUploads;
+    g_state.exportLastPending = totalPendingUploads;
     strlcpy(g_state.exportLastISO, summary.generatedIso, sizeof(g_state.exportLastISO));
     strlcpy(g_state.exportLastSessionId, summary.sessionId, sizeof(g_state.exportLastSessionId));
     g_state.sessionFilesPending = static_cast<int>(totalPendingUploads);
@@ -3712,6 +3766,24 @@ void _runSessionExport(bool notifyUser) {
     }
 }
 
+static void _logHardwareSectionIfSlow(const char* section,
+                                      uint32_t startMs,
+                                      bool storageOk) {
+    const uint32_t elapsedMs = millis() - startMs;
+    if (elapsedMs < HARDWARE_SECTION_WARN_MS) {
+        return;
+    }
+
+    DLOG_WARN("CORE",
+              "TaskHardware slow section=%s ms=%lu owner=%s pendingUpload=%lu maintPending=%d",
+              section ? section : "?",
+              static_cast<unsigned long>(elapsedMs),
+              RadioArbiter::ownerName(RADIO_ARB.currentOwner()),
+              static_cast<unsigned long>(
+                  STORAGE.isReady() ? STORAGE.getPendingEventCount() : 0U),
+              (storageOk && STORAGE.hasStorageMaintenanceWork()) ? 1 : 0);
+}
+
 // ── Core 0: TaskHardware ──
 
 void TaskHardware(void* pvParameters) {
@@ -3755,6 +3827,10 @@ void TaskHardware(void* pvParameters) {
     String storageUsed = storageOk ? STORAGE.getCachedUsedString() : String();
     _publishStorageState(storageOk, storageUsed);
 
+    // Phase 1 shadow plumbing: PSRAM slot pool + pinned worker on Core 1.
+    // Failure is non-fatal — producers fall back to no-op enqueue.
+    RAMSpool::begin();
+
     if (storageOk) {
         DebugLog::begin();
         FieldVault::begin();
@@ -3790,17 +3866,26 @@ void TaskHardware(void* pvParameters) {
         static uint32_t lastSystemRefresh = 0;
         static uint32_t lastGpsFixSeen = 0;
         static uint32_t lastLoopStartMs = 0;
+        static uint32_t lastLoopGapWarnMs = 0;
+        static uint32_t suppressedLoopGapWarns = 0;
         const uint32_t loopNow = millis();
         if (lastLoopStartMs != 0) {
             const uint32_t loopGapMs = loopNow - lastLoopStartMs;
             if (loopGapMs >= HARDWARE_LOOP_GAP_WARN_MS) {
-                DLOG_WARN("CORE",
-                          "TaskHardware loop gap=%lums owner=%s pendingUpload=%lu maint=%d",
-                          static_cast<unsigned long>(loopGapMs),
-                          RadioArbiter::ownerName(RADIO_ARB.currentOwner()),
-                          static_cast<unsigned long>(
-                              STORAGE.isReady() ? STORAGE.getPendingEventCount() : 0U),
-                          (storageOk && STORAGE.hasStorageMaintenanceWork()) ? 1 : 0);
+                if (loopNow - lastLoopGapWarnMs >= 10000UL) {
+                    DLOG_WARN("CORE",
+                              "TaskHardware loop gap=%lums owner=%s pendingUpload=%lu maintPending=%d suppressed=%lu",
+                              static_cast<unsigned long>(loopGapMs),
+                              RadioArbiter::ownerName(RADIO_ARB.currentOwner()),
+                              static_cast<unsigned long>(
+                                  STORAGE.isReady() ? STORAGE.getPendingEventCount() : 0U),
+                              (storageOk && STORAGE.hasStorageMaintenanceWork()) ? 1 : 0,
+                              static_cast<unsigned long>(suppressedLoopGapWarns));
+                    lastLoopGapWarnMs = loopNow;
+                    suppressedLoopGapWarns = 0;
+                } else {
+                    suppressedLoopGapWarns++;
+                }
             }
         }
         lastLoopStartMs = loopNow;
@@ -4210,16 +4295,6 @@ void TaskHardware(void* pvParameters) {
                 }
             }
 
-            // Field Mode on the phone may already be advertising before
-            // Spectre has enrichment work.  Keep probing lightly so the
-            // link becomes available as soon as the two radios overlap.
-            if (companion.phoneState != COMPANION_PHONE_AVAILABLE &&
-                companion.workState == COMPANION_WORK_IDLE &&
-                !companionProbeWorkPending &&
-                shouldRunPhoneProbe(companion)) {
-                requestPhoneProbeLease(companion, PHONE_PROBE_AVAILABILITY);
-            }
-
             // Start enrichment only after phone is known available and WiFi is in a lull.
             if (shouldRunEnrichment(companion)) {
                 requestPhoneEnrichmentLease(
@@ -4242,7 +4317,9 @@ void TaskHardware(void* pvParameters) {
 
         if (millis() - lastWifiTick >= wifiTickMs) {
             if (ExecutionPolicy::shouldTickWiFi(RADIO_ARB.currentOwner())) {
+                const uint32_t sectionStartMs = millis();
                 WIFI_MGR.tick();
+                _logHardwareSectionIfSlow("wifi_tick", sectionStartMs, storageOk);
             }
             lastWifiTick = millis();
         }
@@ -4258,7 +4335,9 @@ void TaskHardware(void* pvParameters) {
 
         if (millis() - lastBleTick >= bleTickMs) {
             if (ExecutionPolicy::shouldTickBle(RADIO_ARB.currentOwner())) {
+                const uint32_t sectionStartMs = millis();
                 BLE_MGR.tick();
+                _logHardwareSectionIfSlow("ble_tick", sectionStartMs, storageOk);
             }
             lastBleTick = millis();
         }
@@ -4379,10 +4458,12 @@ void TaskHardware(void* pvParameters) {
         uiRefreshMarks.wifiMs = lastWifiRefresh;
         uiRefreshMarks.pwnyMs = lastPwnyRefresh;
         uiRefreshMarks.systemMs = lastSystemRefresh;
+        uint32_t sectionStartMs = millis();
         _servicePeriodicUiRefresh(_readUiRefreshState(),
                                   now,
                                   uiRefreshMarks,
                                   uiRefreshSchedule);
+        _logHardwareSectionIfSlow("ui_refresh", sectionStartMs, storageOk);
         lastWifiRefresh = uiRefreshMarks.wifiMs;
         lastPwnyRefresh = uiRefreshMarks.pwnyMs;
         lastSystemRefresh = uiRefreshMarks.systemMs;
@@ -4393,18 +4474,44 @@ void TaskHardware(void* pvParameters) {
             const uint32_t maintStartMs = millis();
             STORAGE.serviceStorageMaintenanceStep(REPAIR_BUDGET_MS, REPAIR_MAX_RECORDS);
             const uint32_t maintMs = millis() - maintStartMs;
-            if (maintMs >= 25UL) {
+            g_lastMaintenanceRunMs = millis();
+            // Per-step warn threshold raised: ~40ms is the LittleFS-bound floor
+            // for one repair record and is expected. Only warn on true outliers.
+            if (maintMs >= 100UL) {
                 DLOG_WARN("STORAGE",
                           "maintenance step slow ms=%lu owner=%s pendingUpload=%lu",
                           static_cast<unsigned long>(maintMs),
                           RadioArbiter::ownerName(RADIO_ARB.currentOwner()),
                           static_cast<unsigned long>(STORAGE.getPendingEventCount()));
             }
+
+            // Periodic repair-progress line replaces the per-step spam.
+            static uint32_t lastRepairProgressMs = 0;
+            const auto rp = STORAGE.getRepairProgress();
+            if (rp.active && now - lastRepairProgressMs >= 10000UL) {
+                DLOG_INFO("STORAGE",
+                          "repair progress reason=%s seg=%lu/%lu records=%lu elapsed=%lus pendingUpload=%lu",
+                          rp.reason && rp.reason[0] ? rp.reason : "?",
+                          static_cast<unsigned long>(rp.scannedSegments),
+                          static_cast<unsigned long>(rp.totalSegments),
+                          static_cast<unsigned long>(rp.scannedRecords),
+                          static_cast<unsigned long>((now - rp.startedMs) / 1000UL),
+                          static_cast<unsigned long>(STORAGE.getPendingEventCount()));
+                lastRepairProgressMs = now;
+            } else if (!rp.active && lastRepairProgressMs != 0) {
+                DLOG_INFO("STORAGE",
+                          "repair done pendingUpload=%lu",
+                          static_cast<unsigned long>(STORAGE.getPendingEventCount()));
+                lastRepairProgressMs = 0;
+            }
         }
 
+        sectionStartMs = millis();
         _checkRuntimeContracts();
+        _logHardwareSectionIfSlow("runtime_contracts", sectionStartMs, storageOk);
 
         if (now - lastStackLogMs >= STACK_LOG_INTERVAL_MS) {
+            sectionStartMs = millis();
             const UBaseType_t freeWords = uxTaskGetStackHighWaterMark(nullptr);
             if (freeWords < minStackWords) {
                 minStackWords = freeWords;
@@ -4413,8 +4520,11 @@ void TaskHardware(void* pvParameters) {
                       (unsigned long)(freeWords * sizeof(StackType_t)),
                       (unsigned long)(minStackWords * sizeof(StackType_t)));
             lastStackLogMs = now;
+            _logHardwareSectionIfSlow("stack_log", sectionStartMs, storageOk);
         }
+        sectionStartMs = millis();
         _logRuntimeHealth(now);
+        _logHardwareSectionIfSlow("health_log", sectionStartMs, storageOk);
 
         vTaskDelay(10);
     }

@@ -81,6 +81,7 @@ struct WiFiNetwork {
     uint8_t  channel;
     bool     hasHandshake;
     bool     hasPMKID;
+    bool     pmkidChecked;        // true after storage has been queried once
     char     security[12];       // WPA2 / WPA3 / OPEN etc.
     bool     isHidden;           // beacon with empty SSID
     bool     hasWPS;             // WPS IE present
@@ -446,6 +447,7 @@ private:
     bool           _enablePromiscuousCapture(const char* tag);
     bool           _isTrustedSSID(const char* ssid) const;
     bool           _hasStoredCapture(const uint8_t* bssid) const;
+    bool           _refreshStoredCaptureFlag(WiFiNetwork& net);
 
     bool           _radioReady = false;
     uint32_t       _nextRadioInitAttemptMs = 0;
@@ -484,7 +486,7 @@ private:
     void          _pwnySelectNext();
     void          _pwnyStartAttack(uint8_t targetIdx);
     void          _pwnyEndAttack(uint8_t targetIdx, bool success);
-    int16_t       _pwnyScore(int networkIdx) const;
+    int16_t       _pwnyScore(int networkIdx);
     bool          _pwnyTxRateAllowed();
     bool          _sendPwnyMgmtFrame(uint8_t frameControl,
                                      const uint8_t* sourceMAC,

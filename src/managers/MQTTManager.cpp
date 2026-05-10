@@ -13,6 +13,7 @@
 #include "../core/DebugLog.h"
 #include "../core/RuntimeContracts.h"
 #include "../core/CrashBreadcrumb.h"
+#include "RAMSpool.h"
 #include "RadioArbiter.h"
 #include "SettingsManager.h"
 #include "StorageManager.h"
@@ -26,6 +27,7 @@ MQTTManager MQTT_MGR;
 #define LEGACY_QUEUE_MIGRATION_MARKER "/events/mqtt_legacy_migrated.flag"
 
 namespace {
+
 const RuntimeSettings* _settingsView() {
     return SETTINGS.isReady() ? &SETTINGS.get() : nullptr;
 }
@@ -247,7 +249,7 @@ void MQTTManager::begin() {
     _migrateLegacyQueueFiles();
     _refreshPendingCount();
 
-    if (_queuedRecords > 450) {
+    if (_queuedRecords > MQTT_BACKLOG_LARGE_WARN_THRESHOLD) {
         DLOG_WARN("MQTT", "Backlog large: %d records", _queuedRecords);
     } else {
         DLOG_INFO("MQTT", "Backlog loaded: %d records", _queuedRecords);
@@ -275,8 +277,10 @@ bool MQTTManager::uploadLeaseReady(bool force) const {
     if (_uploadPausedByMission()) {
         return false;
     }
+    const uint32_t pendingRecords =
+        STORAGE.isReady() ? STORAGE.getAuthoritativePendingEventCount() : 0U;
     return force ||
-           (_queuedRecords >= MQTT_UPLOAD_READY_THRESHOLD &&
+           (pendingRecords >= MQTT_UPLOAD_READY_THRESHOLD &&
             millis() >= _uploadBackoffUntilMs);
 }
 // ── Dump request ──────────────────────────────────────────────
@@ -289,7 +293,9 @@ bool MQTTManager::requestDump(bool force) {
     }
     if (!uploadLeaseReady(force)) return false;
 
-    _uploadLeaseHoldMs = _calcUploadLeaseMs(_queuedRecords);
+    const uint32_t pendingRecords =
+        STORAGE.isReady() ? STORAGE.getAuthoritativePendingEventCount() : 0U;
+    _uploadLeaseHoldMs = _calcUploadLeaseMs(static_cast<int>(pendingRecords));
 
     bool granted = RADIO_ARB.requestUploadLease(
         _uploadLeaseHoldMs,
@@ -322,7 +328,7 @@ bool MQTTManager::requestDump(bool force) {
         _setUploadUiState(false, "", 0, 0, true);
 
         DLOG_INFO("MQTT", "Upload lease granted — %d records, lease=%lus",
-                  _queuedRecords,
+                  static_cast<unsigned long>(pendingRecords),
                   static_cast<unsigned long>(_uploadLeaseHoldMs / 1000UL));
         return true;
     }
@@ -1723,7 +1729,7 @@ void MQTTManager::_migrateLegacyQueueFiles() {
 
 void MQTTManager::_refreshPendingCount(bool refreshDebriefMirror) {
     const uint32_t totalPending =
-        STORAGE.isReady() ? STORAGE.getPendingEventCount() : 0;
+        STORAGE.isReady() ? STORAGE.getAuthoritativePendingEventCount() : 0;
     const uint32_t sessionPending =
         STORAGE.isReady() ? STORAGE.getSessionPendingEventCount() : 0;
 
@@ -1738,7 +1744,25 @@ void MQTTManager::_refreshPendingCount(bool refreshDebriefMirror) {
     STATE_WRITE_END();
 }
 
-// ── Queue write helpers ───────────────────────────────────────
+bool MQTTManager::dumpAvailable() {
+    return queueDepth() > 0;
+}
+
+int MQTTManager::queueDepth() {
+    if (!STORAGE.isReady()) {
+        return _queuedRecords;
+    }
+    return static_cast<int>(STORAGE.getAuthoritativePendingEventCount());
+}
+
+int MQTTManager::uploadReadyCount() const {
+    if (!STORAGE.isReady()) {
+        return _queuedRecords;
+    }
+    return static_cast<int>(STORAGE.getAuthoritativePendingEventCount());
+}
+
+// ── Capture enqueue / sync append helpers ─────────────────────
 
 void MQTTManager::_prepareQueuedEvent(JsonDocument& doc) {
     char ts[32];
@@ -1760,57 +1784,56 @@ void MQTTManager::_prepareQueuedEvent(JsonDocument& doc) {
     }
 }
 
-uint32_t MQTTManager::_appendQueuedEvent(const char* eventType,
-                                         JsonDocument& doc,
-                                         QueueMetric metric) {
-    static uint32_t s_suppressedDuplicateCount = 0;
-    static uint32_t s_lastSuppressedLogMs = 0;
-
+uint32_t MQTTManager::_appendSyncEvent(const char* eventType,
+                                       JsonDocument& doc,
+                                       QueueMetric metric) {
+    // Exceptional synchronous append path. Normal capture types are routed
+    // through RAMSpool::enqueue() at their capture site and never hit LittleFS
+    // here.
+    const uint32_t appendStartMs = millis();
     const AppendEventResult result =
         STORAGE.appendEventDetailed(eventType, doc.as<JsonObjectConst>());
+    const uint32_t appendMs = millis() - appendStartMs;
+    if (appendMs >= 250UL) {
+        DLOG_WARN("MQTT",
+                  "sync append slow ms=%lu type=%s status=%u",
+                  static_cast<unsigned long>(appendMs),
+                  eventType ? eventType : "unknown",
+                  static_cast<unsigned>(result.status));
+    }
 
     if (!result.ok()) {
         switch (result.status) {
-            case APPEND_SUPPRESSED_DUPLICATE: {
-                s_suppressedDuplicateCount++;
-                const uint32_t now = millis();
-                if ((now - s_lastSuppressedLogMs) >= 10000UL) {
-                    DLOG_DEBUG("MQTT", "append duplicate suppressed count=%lu",
-                               static_cast<unsigned long>(s_suppressedDuplicateCount));
-                    s_suppressedDuplicateCount = 0;
-                    s_lastSuppressedLogMs = now;
-                }
+            case APPEND_SUPPRESSED_DUPLICATE:
                 break;
-            }
-
             case APPEND_DROPPED_POLICY:
                 DLOG_WARN("MQTT", "Dropped %s event by storage policy",
                           eventType ? eventType : "unknown");
                 break;
 
             case APPEND_FAILED_PARSE:
-                DLOG_WARN("MQTT", "Failed to append %s event: parse",
+                DLOG_WARN("MQTT", "Failed to sync append %s event: parse",
                           eventType ? eventType : "unknown");
                 break;
 
             case APPEND_FAILED_NOT_READY:
-                DLOG_WARN("MQTT", "Failed to append %s event: storage not ready",
+                DLOG_WARN("MQTT", "Failed to sync append %s event: storage not ready",
                           eventType ? eventType : "unknown");
                 break;
 
             case APPEND_FAILED_NO_SESSION:
-                DLOG_WARN("MQTT", "Failed to append %s event: no session",
+                DLOG_WARN("MQTT", "Failed to sync append %s event: no session",
                           eventType ? eventType : "unknown");
                 break;
 
             case APPEND_FAILED_IO:
-                DLOG_WARN("MQTT", "Failed to append %s event: I/O",
+                DLOG_WARN("MQTT", "Failed to sync append %s event: I/O",
                           eventType ? eventType : "unknown");
                 break;
 
             case APPEND_FAILED_INVALID:
             default:
-                DLOG_WARN("MQTT", "Failed to append %s event",
+                DLOG_WARN("MQTT", "Failed to sync append %s event",
                           eventType ? eventType : "unknown");
                 break;
         }
@@ -1822,11 +1845,13 @@ uint32_t MQTTManager::_appendQueuedEvent(const char* eventType,
 }
 
 void MQTTManager::_noteQueuedRecord(QueueMetric metric) {
-    _queuedRecords++;
+    const uint32_t totalPending =
+        STORAGE.isReady() ? STORAGE.getAuthoritativePendingEventCount() : 0U;
+    _queuedRecords = static_cast<int>(totalPending);
     STATE_WRITE_BEGIN();
-    g_state.sessionFilesPending = _queuedRecords;
-    g_state.kaliSyncAvailable = true;
-    g_state.kaliSyncPending = true;
+    g_state.sessionFilesPending = static_cast<int>(totalPending);
+    g_state.kaliSyncAvailable = (totalPending > 0);
+    g_state.kaliSyncPending = (totalPending > 0);
     switch (metric) {
         case QUEUE_METRIC_PROBES:
             g_state.sessionProbes++;
@@ -1847,7 +1872,7 @@ void MQTTManager::_noteQueuedRecord(QueueMetric metric) {
     STATE_WRITE_END();
 }
 
-void MQTTManager::queueProbe(const char* mac, const char* ssid,
+bool MQTTManager::queueProbe(const char* mac, const char* ssid,
                               int8_t rssi, uint8_t channel,
                               const char* ieFingerprint) {
     JsonDocument doc;
@@ -1858,7 +1883,19 @@ void MQTTManager::queueProbe(const char* mac, const char* ssid,
     doc["rssi"]          = rssi;
     doc["channel"]       = channel;
     doc["ie_fingerprint"]= ieFingerprint ? ieFingerprint : "";
-    _appendQueuedEvent("probe", doc, QUEUE_METRIC_PROBES);
+    const RAMSpool::CaptureClassification probeCls =
+        RAMSpool::classify("probe", doc.as<JsonObjectConst>());
+    const bool queued = RAMSpool::enqueue("probe",
+                                          doc.as<JsonObjectConst>(),
+                                          RAMSpool::SLOT_PROBE,
+                                          probeCls);
+    if (!queued) {
+        DLOG_WARN("MQTT", "probe enqueue drop mac=%s ssid=%s",
+                  mac ? mac : "",
+                  ssid ? ssid : "");
+        return false;
+    }
+    return true;
 }
 
 void MQTTManager::queueDevice(const char* mac,
@@ -1873,7 +1910,16 @@ void MQTTManager::queueDevice(const char* mac,
     doc["rssi"]           = rssi;
     doc["is_random_mac"]  = isRandomMAC ? 1 : 0;
     doc["source"]         = "spectre_field";
-    _appendQueuedEvent("device", doc, QUEUE_METRIC_DEVICES);
+    const RAMSpool::CaptureClassification deviceCls =
+        RAMSpool::classify("device", doc.as<JsonObjectConst>());
+    const bool queued = RAMSpool::enqueue("device",
+                                          doc.as<JsonObjectConst>(),
+                                          RAMSpool::SLOT_DEVICE,
+                                          deviceCls);
+    if (!queued) {
+        DLOG_WARN("MQTT", "device enqueue drop mac=%s",
+                  mac ? mac : "");
+    }
 }
 
 void MQTTManager::queueDrone(const char* droneID,
@@ -1897,7 +1943,7 @@ void MQTTManager::queueDrone(const char* droneID,
     doc["event_type"]  = "drone_remote_id";
     doc["severity"]    = "CRITICAL";
     doc["category"]    = "drone";
-    _appendQueuedEvent("drone", doc, QUEUE_METRIC_DRONES);
+    _appendSyncEvent("drone", doc, QUEUE_METRIC_DRONES);
 }
 
 void MQTTManager::queuePMKID(const char* ssid,
@@ -1948,7 +1994,7 @@ void MQTTManager::queuePMKID(const char* ssid,
     doc["severity"]     = "WARN";
     doc["category"]     = "capture";
     const uint32_t eventId =
-        _appendQueuedEvent("pmkid", doc, QUEUE_METRIC_PMKIDS);
+        _appendSyncEvent("pmkid", doc, QUEUE_METRIC_PMKIDS);
     if (!eventId) {
         return;
     }
@@ -2000,7 +2046,7 @@ void MQTTManager::queueEvent(const char* eventType,
     doc["ssid"]       = ssid   ? ssid   : "";
     doc["detail"]     = detail ? detail : "";
     doc["category"]   = category ? category : "detection";
-    _appendQueuedEvent("event", doc, QUEUE_METRIC_NONE);
+    _appendSyncEvent("event", doc, QUEUE_METRIC_NONE);
 }
 
 void MQTTManager::noteExternalQueuedRecord() {
@@ -2016,4 +2062,3 @@ void MQTTManager::_timestamp(char* buf, int len) {
         }
     }
 }
-

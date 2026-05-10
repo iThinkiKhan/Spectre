@@ -6,12 +6,18 @@
 #include <map>
 #include <memory>
 #include <functional>
+#include <freertos/semphr.h>
 #include "../core/Session.h"
 #include "../core/EventBus.h"
 #include "../core/SpectreState.h"
 #include "../data/Schema.h"
 #include "SpoolBinaryCodec.h"
 #include "TimeService.h"
+
+namespace RAMSpool {
+struct EventSlot;
+struct CaptureClassification;
+}
 
 // OWNERSHIP CONTRACT
 // - TaskHardware is the sole mutator of persistent storage state.
@@ -331,10 +337,17 @@ public:
     uint32_t appendEvent(const char* type, JsonObjectConst payload,
                          const char* sessionId = nullptr);
 
+    // Synchronous exceptional append only. Normal capture must go through
+    // RAMSpool::enqueue() and be persisted by appendQueuedRecord().
     AppendEventResult appendEventDetailed(const char* type, const char* payloadJson,
-                                         const char* sessionId = nullptr);
+                                         const char* sessionId = nullptr,
+                                         bool deferMetadataFlush = false,
+                                         bool deferUiRefresh = false);
     AppendEventResult appendEventDetailed(const char* type, JsonObjectConst payload,
-                                         const char* sessionId = nullptr);
+                                         const char* sessionId = nullptr,
+                                         bool deferMetadataFlush = false,
+                                         bool deferUiRefresh = false);
+    AppendEventResult appendQueuedRecord(const RAMSpool::EventSlot& slot);
 
     bool     getEventBatch(uint32_t sinceId, int maxCount, JsonDocument& out);
     bool     getEventBatchForSession(const char* sessionId, uint32_t sinceId,
@@ -393,6 +406,7 @@ public:
     // markEventUploaded; passing forceRescan=true is for explicit repair
     // tooling and triggers a full O(spool) scan via recountPendingFromSpool().
     uint32_t getPendingEventCount(bool forceRescan = false);
+    uint32_t getAuthoritativePendingEventCount() const { return _pendingEventCount; }
 
     // Explicit, costly: walks every record in every segment to recompute
     // the pending counter and replace the live value. Reserve for boot
@@ -457,18 +471,46 @@ public:
     uint32_t getDroppedCount() const { return _dedupStats.dropped; }
     bool usingSpoolBackend() const { return true; }
     bool compactSpool();
-    void refreshStorageUiState();
-    void updateStoragePressure();
+    void refreshStorageUiState(bool defer = false, bool recalcPressure = true);
+    bool flushWorkerMetadataBatch(const char* reason = nullptr, bool force = false);
+    void updateStoragePressure(bool allowSideEffects = true);
+    bool hasWorkerMetadataFlushWork() const {
+        return _workerMetadataDirtyPending;
+    }
+    bool hasWorkerUiRefreshWork() const {
+        return _storageUiRefreshPending;
+    }
     bool hasStorageMaintenanceWork() const {
         return _repairRequested ||
                _repairJob.active ||
                _spoolAuditRepairRequired ||
                _spoolSummaryRebuildPending ||
-               _pendingCountDirty;
+               _pendingCountDirty ||
+               _workerMetadataDirtyPending ||
+               _storageUiRefreshPending;
     }
     bool requestSpoolRepair(const char* reason = nullptr);
     bool serviceStorageMaintenanceStep(uint32_t budgetMs, uint16_t maxRecords);
     bool repairStep(uint32_t budgetMs, uint16_t maxRecords);
+
+    struct RepairProgressSnapshot {
+        bool     active           = false;
+        uint32_t scannedRecords   = 0;
+        uint32_t scannedSegments  = 0;
+        uint32_t totalSegments    = 0;
+        uint32_t startedMs        = 0;
+        const char* reason        = "";
+    };
+    RepairProgressSnapshot getRepairProgress() const {
+        RepairProgressSnapshot s;
+        s.active          = _repairJob.active;
+        s.scannedRecords  = _repairJob.audit.scannedRecords;
+        s.scannedSegments = _repairJob.audit.scannedSegments;
+        s.totalSegments   = static_cast<uint32_t>(_spoolIndex.segments.size());
+        s.startedMs       = _repairJob.startMs;
+        s.reason          = _repairJob.reason.c_str();
+        return s;
+    }
 
     void beginHotPathDiagnosticsSuppressed();
     void endHotPathDiagnosticsSuppressed();
@@ -476,7 +518,8 @@ public:
     bool shouldAcceptHandshakeFrame(const char* apMac,
                                     const char* staMac,
                                     const char* ssid,
-                                    uint8_t messageNumber);
+                                    uint8_t messageNumber,
+                                    bool deferUiRefresh = false);
 
     void spoolAuditToSerial(bool repair);
     void spoolDiagToSerial();
@@ -558,6 +601,11 @@ private:
     String      _currentWifiLog;
     String      _currentProbeLog;
     String      _cachedUsedString = "0KB / 0KB";
+    size_t      _cachedTotalBytes = 0;
+    size_t      _cachedUsedBytes = 0;
+    size_t      _cachedFreeBytes = 0;
+    int         _cachedUsedPct = 0;
+    uint32_t    _lastFsStatsRefreshMs = 0;
     uint32_t    _nextEventId = 1;
     uint32_t    _lastCounterSaveMs = 0;
     uint16_t    _eventCounterPendingWrites = 0;
@@ -568,7 +616,18 @@ private:
     uint32_t    _lastSpoolIndexSaveMs = 0;
     uint16_t    _spoolIndexPendingWrites = 0;
     bool        _spoolIndexDirty = false;
+    uint16_t    _workerMetadataPendingWrites = 0;
+    uint32_t    _workerMetadataDirtySinceMs = 0;
+    bool        _workerMetadataDirtyPending = false;
+    uint32_t    _metadataFlushCount = 0;
+    uint32_t    _metadataFlushSlowMs = 0;
+    uint32_t    _storageUiRefreshDeferred = 0;
+    uint32_t    _storageUiRefreshFlush = 0;
+    uint32_t    _storageUiRefreshServiceCount = 0;
+    bool        _storageUiRefreshPending = false;
+    char        _workerBatchFlushReason[32] = {};
     SpoolIndex  _spoolIndex;
+    SemaphoreHandle_t _appendMutex = nullptr;
 
     // Upload-batch deferral: when _uploadBatchActive, watermark updates skip
     // flash writes; _uploadBatchDirty tracks whether endUploadBatch needs to
@@ -623,6 +682,13 @@ private:
     bool   _persistEventCounter(bool force = false);
     bool   _loadEventMeta();
     bool   _persistEventMeta(bool force = false);
+    AppendEventResult _appendEventDetailedInternal(
+        const char* type,
+        JsonObjectConst payload,
+        const char* sessionIdOverride,
+        const RAMSpool::CaptureClassification* classification,
+        bool deferMetadataFlush,
+        bool deferUiRefresh);
     void   _initDefaultConfig();
     String _spoolDir() const;
     String _spoolIndexPath() const;
@@ -739,7 +805,6 @@ private:
                                   JsonObjectConst payload) const;
     StorageLane _eventRecordLane(JsonObjectConst doc) const;
     StoragePriority _eventRecordPriority(JsonObjectConst doc) const;
-    StoragePriority _finalPriorityForStoredEvent(JsonObjectConst doc) const;
     uint16_t _eventRecordValueScore(JsonObjectConst doc) const;
     bool _eventRecordWantsEnrichment(JsonObjectConst doc) const;
     bool _eventRecordPendingEnrichment(JsonObjectConst doc) const;
@@ -748,13 +813,15 @@ private:
     bool _eventRecordIsMission(JsonObjectConst doc) const;
     bool _shouldSuppressDuplicate(const char* type,
                                   JsonObjectConst payload,
-                                  StoragePriority priority);
+                                  StoragePriority priority,
+                                  bool deferUiRefresh = false);
     void _trimDedupWindows();
     const char* _policyText() const;
     void _publishStorageEventIfNeeded(StoragePressureMode oldMode,
                                       StoragePressureMode newMode);
     void _maybeCompactForPressure(StoragePressureMode oldMode,
                                   StoragePressureMode newMode);
+    void _refreshFsStats(bool force = false);
     bool _appendSegmentRecord(SpoolSegmentInfo& seg,
                               JsonDocument& doc,
                               uint32_t* outEventId = nullptr,

@@ -62,7 +62,8 @@ static constexpr uint8_t OFF = 0;
 // MQTT upload
 // -----------------------------------------------------------------------------
 
-#define MQTT_UPLOAD_READY_THRESHOLD   7000
+#define MQTT_UPLOAD_READY_THRESHOLD   15000
+#define MQTT_BACKLOG_LARGE_WARN_THRESHOLD 450   // boot diagnostic only
 #define MQTT_DUMP_FETCH_BATCH_SIZE    16   // records loaded per storage scan
 #define MQTT_DUMP_RECORDS_PER_SLICE    4   // max publish calls per yield
 #define MQTT_DUMP_SLICE_BUDGET_MS     25   // ms
@@ -77,6 +78,22 @@ static constexpr uint8_t OFF = 0;
 #define MQTT_UPLOAD_LEASE_MIN_MS        SPECTRE_SECONDS_TO_MS(MQTT_UPLOAD_LEASE_MIN_SEC)
 #define MQTT_UPLOAD_LEASE_MAX_SEC       1200UL  // seconds
 #define MQTT_UPLOAD_LEASE_MAX_MS        SPECTRE_SECONDS_TO_MS(MQTT_UPLOAD_LEASE_MAX_SEC)
+
+// Spool hot-path metadata durability.
+// Event records are always appended immediately; these limits only batch the
+// smaller sidecar files that can be rebuilt/audited after an interrupted run.
+#define STORAGE_EVENT_COUNTER_SAVE_EVERY_N  64
+#define STORAGE_SPOOL_INDEX_SAVE_EVERY_N    128
+#define STORAGE_HOT_META_SAVE_INTERVAL_MS   15000UL
+
+// WiFi capture retune guard. If esp_wifi_set_channel() blocks for longer than
+// this during promiscuous capture, stretch channel dwell temporarily so capture
+// keeps running instead of spending most TaskHardware time retuning.
+#define WIFI_CHANNEL_HOP_SLOW_WARN_MS       250UL
+#define WIFI_CHANNEL_HOP_SLOW_BACKOFF_MS    10000UL
+#define WIFI_CAPTURE_FILE_CHECK_SLOW_WARN_MS 250UL
+#define WIFI_FRAME_PROCESS_SLOW_WARN_MS     250UL
+#define STORAGE_FS_STATS_CACHE_MS           5000UL
 
 // One-shot startup FieldVault upload. After boot grace, if FieldVault has
 // pending records, fire a single field-only MQTT upload. On success the live
@@ -142,16 +159,16 @@ static constexpr uint8_t OFF = 0;
 #define SPECTRE_DEBUG_AREA_CORE         _SPECTRE_DEBUG_AREA_DEFAULT  // SYS, CORE, STACK, HEAP, BTN
 #endif
 #ifndef SPECTRE_DEBUG_AREA_SETTINGS
-#define SPECTRE_DEBUG_AREA_SETTINGS     _SPECTRE_DEBUG_AREA_DEFAULT  // SETTINGS
+#define SPECTRE_DEBUG_AREA_SETTINGS     OFF  // SETTINGS
 #endif
 #ifndef SPECTRE_DEBUG_AREA_STORAGE
 #define SPECTRE_DEBUG_AREA_STORAGE      _SPECTRE_DEBUG_AREA_DEFAULT  // STOR, STORAGE
 #endif
 #ifndef SPECTRE_DEBUG_AREA_TIME
-#define SPECTRE_DEBUG_AREA_TIME         _SPECTRE_DEBUG_AREA_DEFAULT  // TIME
+#define SPECTRE_DEBUG_AREA_TIME         OFF  // TIME
 #endif
 #ifndef SPECTRE_DEBUG_AREA_RADIO
-#define SPECTRE_DEBUG_AREA_RADIO        _SPECTRE_DEBUG_AREA_DEFAULT  // RADIO, LORA, SUBGHZ
+#define SPECTRE_DEBUG_AREA_RADIO        OFF  // RADIO, LORA, SUBGHZ
 #endif
 #ifndef SPECTRE_DEBUG_AREA_WIFI
 #define SPECTRE_DEBUG_AREA_WIFI         _SPECTRE_DEBUG_AREA_DEFAULT  // WIFI, ANT, DRONE
@@ -169,7 +186,7 @@ static constexpr uint8_t OFF = 0;
 #define SPECTRE_DEBUG_AREA_GPS          _SPECTRE_DEBUG_AREA_DEFAULT  // GPS
 #endif
 #ifndef SPECTRE_DEBUG_AREA_MODE
-#define SPECTRE_DEBUG_AREA_MODE         _SPECTRE_DEBUG_AREA_DEFAULT  // MODE, MISSION, UI
+#define SPECTRE_DEBUG_AREA_MODE         OFF  // MODE, MISSION, UI
 #endif
 
 // -----------------------------------------------------------------------------

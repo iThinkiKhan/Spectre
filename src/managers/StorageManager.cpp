@@ -7,11 +7,13 @@
 #include "../core/RuntimeContracts.h"
 #include "RadioArbiter.h"
 #include "SettingsManager.h"
+#include "RAMSpool.h"
 #include "SpoolBinaryCodec.h"
 #include <algorithm>
 #include <cstdlib>
 #include <map>
 #include <functional>
+#include <freertos/semphr.h>
 #include <esp_heap_caps.h>
 #include <new>
 
@@ -32,6 +34,59 @@ const SpoolEnrichmentDelta* _findSpoolEnrichment(
     }
     return nullptr;
 }
+
+static RAMSpool::CaptureClassification _captureClassification(JsonObjectConst doc) {
+    return RAMSpool::classify(doc["type"] | "", doc);
+}
+
+static void _normalizeCapturedEvent(
+    JsonObject doc,
+    const RAMSpool::CaptureClassification* clsOverride = nullptr) {
+    const RAMSpool::CaptureClassification cls =
+        clsOverride ? *clsOverride : _captureClassification(doc);
+    doc["prio"] = static_cast<uint8_t>(cls.priority);
+    doc["lane"] = static_cast<uint8_t>(cls.lane);
+    doc["lane_name"] =
+        (cls.lane == RAMSpool::LANE_MISSION) ? "MISSION" : "NOISE";
+
+    JsonVariantConst enrichMarker = doc[F_ENRICH_STATE];
+    if (!cls.enrichEligible) {
+        doc[F_ENRICH_STATE] =
+            static_cast<uint8_t>(STORAGE_ENRICH_NOT_ELIGIBLE);
+    } else if (enrichMarker.isNull()) {
+        doc[F_ENRICH_STATE] =
+            static_cast<uint8_t>(STORAGE_ENRICH_PENDING);
+    }
+}
+
+static bool _isSyncAppendHotPathViolationType(const char* type) {
+    return type &&
+           (strcmp(type, "probe") == 0 ||
+            strcmp(type, "device") == 0);
+}
+
+class ScopedSemaphoreLock {
+public:
+    explicit ScopedSemaphoreLock(SemaphoreHandle_t sem) : _sem(sem) {
+        if (_sem) {
+            xSemaphoreTake(_sem, portMAX_DELAY);
+            _locked = true;
+        }
+    }
+
+    ~ScopedSemaphoreLock() {
+        if (_locked) {
+            xSemaphoreGive(_sem);
+        }
+    }
+
+    ScopedSemaphoreLock(const ScopedSemaphoreLock&) = delete;
+    ScopedSemaphoreLock& operator=(const ScopedSemaphoreLock&) = delete;
+
+private:
+    SemaphoreHandle_t _sem = nullptr;
+    bool _locked = false;
+};
 
 static bool _spoolSegmentInfoEquals(const SpoolSegmentInfo& a,
                                     const SpoolSegmentInfo& b) {
@@ -392,24 +447,14 @@ static const char* _binaryEventTypeStringFromCode(uint8_t code) {
 
 static uint8_t _defaultPriorityForBinaryType(const String& typeStr,
                                              const String& eventTypeStr) {
-    if (typeStr == "pmkid") return static_cast<uint8_t>(STORAGE_PRIO_P1);
-    if (typeStr == "drone") return static_cast<uint8_t>(STORAGE_PRIO_P1);
-    if (typeStr == "probe") return static_cast<uint8_t>(STORAGE_PRIO_P2);
-    if (typeStr == "device") return static_cast<uint8_t>(STORAGE_PRIO_P2);
-    if (typeStr == "event" && eventTypeStr == "handshake") {
-        return static_cast<uint8_t>(STORAGE_PRIO_P1);
-    }
-    return static_cast<uint8_t>(STORAGE_PRIO_P3);
+    return static_cast<uint8_t>(
+        RAMSpool::classify(typeStr.c_str(), eventTypeStr.c_str()).priority);
 }
 
 static uint8_t _defaultLaneForBinaryType(const String& typeStr,
                                          const String& eventTypeStr) {
-    if (typeStr == "pmkid") return static_cast<uint8_t>(STORAGE_LANE_MISSION);
-    if (typeStr == "drone") return static_cast<uint8_t>(STORAGE_LANE_MISSION);
-    if (typeStr == "event" && eventTypeStr == "handshake") {
-        return static_cast<uint8_t>(STORAGE_LANE_MISSION);
-    }
-    return static_cast<uint8_t>(STORAGE_LANE_NOISE);
+    return static_cast<uint8_t>(
+        RAMSpool::classify(typeStr.c_str(), eventTypeStr.c_str()).lane);
 }
 
 static void _appendUVarintToBytes(std::vector<uint8_t>& out, uint32_t value) {
@@ -1167,6 +1212,14 @@ bool StorageManager::begin() {
     _ensureDir(PATH_SPOOL_BAD_LOGS);
     _ensureDir(PATH_SPOOL_BAD_META);
 
+    if (!_appendMutex) {
+        _appendMutex = xSemaphoreCreateMutex();
+        if (!_appendMutex) {
+            DLOG_ERROR("STORAGE", "Storage append mutex create failed");
+            return false;
+        }
+    }
+
     if (!_ensureSpoolReady()) {
         DLOG_ERROR("STORAGE", "Spool init failed");
         return false;
@@ -1454,180 +1507,36 @@ String StorageManager::_makeDedupKey(const char* type, JsonObjectConst payload) 
 
 StoragePriority StorageManager::_priorityForEventType(const char* type,
                                                       JsonObjectConst payload) const {
-    const char* safeType = type ? type : "event";
-
-    if (strcmp(safeType, "pmkid") == 0) return STORAGE_PRIO_P1;
-    if (strcmp(safeType, "drone") == 0) return STORAGE_PRIO_P1;
-    if (strcmp(safeType, "probe") == 0) return STORAGE_PRIO_P2;
-    if (strcmp(safeType, "device") == 0) return STORAGE_PRIO_P2;
-    if (strcmp(safeType, "subghz") == 0) return STORAGE_PRIO_P1;
-
-    const char* eventType = payload["event_type"] | "";
-    if (strcmp(eventType, "handshake") == 0) return STORAGE_PRIO_P1;
-
-    return STORAGE_PRIO_P3;
+    return static_cast<StoragePriority>(
+        RAMSpool::classify(type, payload).priority);
 }
 
 StorageLane StorageManager::_laneForEventType(const char* type,
                                               JsonObjectConst payload) const {
-    const char* safeType = type ? type : "event";
-
-    if (strcmp(safeType, "pmkid") == 0) return STORAGE_LANE_MISSION;
-    if (strcmp(safeType, "drone") == 0) return STORAGE_LANE_MISSION;
-
-    const char* eventType = payload["event_type"] | "";
-    if (strcmp(eventType, "handshake") == 0) return STORAGE_LANE_MISSION;
-
-    if (strcmp(safeType, "probe") == 0) return STORAGE_LANE_NOISE;
-    if (strcmp(safeType, "device") == 0) return STORAGE_LANE_NOISE;
-    if (strcmp(safeType, "subghz") == 0) return STORAGE_LANE_NOISE;
-
-    return STORAGE_LANE_NOISE;
+    return RAMSpool::classify(type, payload).lane == RAMSpool::LANE_MISSION
+        ? STORAGE_LANE_MISSION
+        : STORAGE_LANE_NOISE;
 }
 
 StorageLane StorageManager::_eventRecordLane(JsonObjectConst doc) const {
-    const uint8_t lane = doc["lane"] | static_cast<uint8_t>(STORAGE_LANE_NOISE);
-    return lane == static_cast<uint8_t>(STORAGE_LANE_MISSION) ?
-        STORAGE_LANE_MISSION : STORAGE_LANE_NOISE;
+    return RAMSpool::classify(doc["type"] | "", doc["event_type"] | "").lane ==
+        RAMSpool::LANE_MISSION
+            ? STORAGE_LANE_MISSION
+            : STORAGE_LANE_NOISE;
 }
 
 StoragePriority StorageManager::_eventRecordPriority(JsonObjectConst doc) const {
-    const uint8_t priority = doc["prio"] | static_cast<uint8_t>(STORAGE_PRIO_P3);
-    switch (priority) {
-        case STORAGE_PRIO_P0: return STORAGE_PRIO_P0;
-        case STORAGE_PRIO_P1: return STORAGE_PRIO_P1;
-        case STORAGE_PRIO_P2: return STORAGE_PRIO_P2;
-        case STORAGE_PRIO_P3:
-        default:              return STORAGE_PRIO_P3;
-    }
-}
-
-StoragePriority StorageManager::_finalPriorityForStoredEvent(JsonObjectConst doc) const {
-    StoragePriority priority = _eventRecordPriority(doc);
-
-    if (priority != STORAGE_PRIO_P2) {
-        return priority;
-    }
-
-    // Only demote noise-class P2 records. Mission lane remains a fast lane.
-    if (_eventRecordLane(doc) == STORAGE_LANE_MISSION) {
-        return priority;
-    }
-
-    const uint16_t valueScore = _eventRecordValueScore(doc);
-
-    // P2 noise without enough useful material is not worth enrichment.
-    if (valueScore < 2) {
-        return STORAGE_PRIO_P3;
-    }
-
-    return priority;
+    return static_cast<StoragePriority>(
+        RAMSpool::classify(doc["type"] | "", doc["event_type"] | "").priority);
 }
 
 uint16_t StorageManager::_eventRecordValueScore(JsonObjectConst doc) const {
-    static const char* const ignoredKeys[] = {
-        "id",
-        "ts",
-        F_TIMESTAMP_ISO,
-        "type",
-        "status",
-        F_ENRICH_STATE,
-        "prio",
-        "lane",
-        "lane_name",
-        F_SESSION,
-        "session_id",
-        "uploaded_ts",
-        "enriched_ts"
-    };
-    static const char* const usefulKeys[] = {
-        "mac",
-        "bssid",
-        "ap",
-        "sta",
-        "client",
-        "ssid",
-        "rssi",
-        "channel",
-        "pmkid_hex",
-        "hashcat_line",
-        "drone_id",
-        "protocol",
-        "frequency_hz",
-        "payload_hex",
-        "event_type",
-        "detail",
-        "tag"
-    };
-
-    auto matchesKey = [](const char* key,
-                         const char* const* keys,
-                         size_t keyCount) -> bool {
-        for (size_t i = 0; i < keyCount; ++i) {
-            if (strcmp(key, keys[i]) == 0) {
-                return true;
-            }
-        }
-        return false;
-    };
-
-    auto hasUsefulValue = [](JsonVariantConst value) -> bool {
-        if (value.isNull()) {
-            return false;
-        }
-        if (value.is<const char*>()) {
-            const char* text = value.as<const char*>();
-            return text && text[0];
-        }
-        return true;
-    };
-
-    uint16_t score = 0;
-    for (JsonPairConst kv : doc) {
-        const char* key = kv.key().c_str();
-        if (!key || !key[0]) {
-            continue;
-        }
-
-        if (matchesKey(key, ignoredKeys, sizeof(ignoredKeys) / sizeof(ignoredKeys[0]))) {
-            continue;
-        }
-
-        if (!matchesKey(key, usefulKeys, sizeof(usefulKeys) / sizeof(usefulKeys[0]))) {
-            continue;
-        }
-
-        if (!hasUsefulValue(kv.value())) {
-            continue;
-        }
-
-        ++score;
-    }
-
-    return score;
+    return static_cast<uint16_t>(
+        RAMSpool::classify(doc["type"] | "", doc).valueScore);
 }
 
 bool StorageManager::_eventRecordWantsEnrichment(JsonObjectConst doc) const {
-    const StoragePriority priority = _eventRecordPriority(doc);
-
-    if (priority == STORAGE_PRIO_P3) {
-        return false;
-    }
-
-    const uint16_t valueScore = _eventRecordValueScore(doc);
-    if (valueScore == 0) {
-        return false;
-    }
-
-    const StorageLane lane = _eventRecordLane(doc);
-    if (lane == STORAGE_LANE_MISSION || priority <= STORAGE_PRIO_P1) {
-        return true;
-    }
-
-    // New P2 noise records were demoted to P3 at write time when valueScore < 2,
-    // so they never reach this branch. Old spool records predate that demotion
-    // and may still be P2 with low value — keep the explicit guard for them.
-    return valueScore >= 2;
+    return RAMSpool::classify(doc["type"] | "", doc).enrichEligible;
 }
 
 bool StorageManager::_eventRecordPendingEnrichment(JsonObjectConst doc) const {
@@ -1638,7 +1547,7 @@ bool StorageManager::_eventRecordPendingEnrichment(JsonObjectConst doc) const {
     }
 
     // Legacy backlog records predate the marker. Classify them with the same
-    // value filter so old useful records are pulled forward without tagging junk.
+    // cheap capture rules used at write time so old records stay aligned.
     return _eventRecordWantsEnrichment(doc);
 }
 
@@ -1675,7 +1584,8 @@ void StorageManager::_trimDedupWindows() {
 
 bool StorageManager::_shouldSuppressDuplicate(const char* type,
                                               JsonObjectConst payload,
-                                              StoragePriority priority) {
+                                              StoragePriority priority,
+                                              bool deferUiRefresh) {
     if (strcmp(type ? type : "", "subghz") == 0) {
         return false;
     }
@@ -1695,7 +1605,10 @@ bool StorageManager::_shouldSuppressDuplicate(const char* type,
                 entry.lastSeenMs = now;
                 entry.count++;
                 _dedupStats.suppressed++;
-                refreshStorageUiState();
+                if (deferUiRefresh) {
+                    _storageUiRefreshDeferred++;
+                }
+                refreshStorageUiState(deferUiRefresh);
                 return true;
             }
 
@@ -1718,7 +1631,8 @@ bool StorageManager::_shouldSuppressDuplicate(const char* type,
 bool StorageManager::shouldAcceptHandshakeFrame(const char* apMac,
                                                 const char* staMac,
                                                 const char* ssid,
-                                                uint8_t messageNumber) {
+                                                uint8_t messageNumber,
+                                                bool deferUiRefresh) {
     if (messageNumber < 1 || messageNumber > 4) {
         return false;
     }
@@ -1741,13 +1655,19 @@ bool StorageManager::shouldAcceptHandshakeFrame(const char* apMac,
 
             if (hs.complete && (hs.frameMask & bit)) {
                 _dedupStats.dropped++;
-                refreshStorageUiState();
+                if (deferUiRefresh) {
+                    _storageUiRefreshDeferred++;
+                }
+                refreshStorageUiState(deferUiRefresh);
                 return false;
             }
 
             if (hs.frameMask & bit) {
                 _dedupStats.suppressed++;
-                refreshStorageUiState();
+                if (deferUiRefresh) {
+                    _storageUiRefreshDeferred++;
+                }
+                refreshStorageUiState(deferUiRefresh);
                 return false;
             }
 
@@ -1781,7 +1701,9 @@ uint32_t StorageManager::appendEvent(const char* type,
 
 AppendEventResult StorageManager::appendEventDetailed(const char* type,
                                                       const char* payloadJson,
-                                                      const char* sessionIdOverride) {
+                                                      const char* sessionIdOverride,
+                                                      bool deferMetadataFlush,
+                                                      bool deferUiRefresh) {
     if (!type || !type[0]) {
         return {APPEND_FAILED_INVALID, 0};
     }
@@ -1793,16 +1715,45 @@ AppendEventResult StorageManager::appendEventDetailed(const char* type,
             DLOG_WARN("STORAGE", "appendEvent payload parse error");
             return {APPEND_FAILED_PARSE, 0};
         }
-        return appendEventDetailed(type, payloadDoc.as<JsonObjectConst>(), sessionIdOverride);
+        return appendEventDetailed(type,
+                                   payloadDoc.as<JsonObjectConst>(),
+                                   sessionIdOverride,
+                                   deferMetadataFlush,
+                                   deferUiRefresh);
     }
 
     JsonDocument emptyPayload;
-    return appendEventDetailed(type, emptyPayload.as<JsonObjectConst>(), sessionIdOverride);
+    return appendEventDetailed(type,
+                               emptyPayload.as<JsonObjectConst>(),
+                               sessionIdOverride,
+                               deferMetadataFlush,
+                               deferUiRefresh);
 }
 
 AppendEventResult StorageManager::appendEventDetailed(const char* type,
                                                       JsonObjectConst payload,
-                                                      const char* sessionIdOverride) {
+                                                      const char* sessionIdOverride,
+                                                      bool deferMetadataFlush,
+                                                      bool deferUiRefresh) {
+    if (_isSyncAppendHotPathViolationType(type)) {
+        DLOG_WARN("STORAGE", "sync_append_hotpath_violation type=%s", type);
+    }
+
+    return _appendEventDetailedInternal(type,
+                                        payload,
+                                        sessionIdOverride,
+                                        nullptr,
+                                        deferMetadataFlush,
+                                        deferUiRefresh);
+}
+
+AppendEventResult StorageManager::_appendEventDetailedInternal(
+    const char* type,
+    JsonObjectConst payload,
+    const char* sessionIdOverride,
+    const RAMSpool::CaptureClassification* classification,
+    bool deferMetadataFlush,
+    bool deferUiRefresh) {
     if (!_ready) {
         return {APPEND_FAILED_NOT_READY, 0};
     }
@@ -1820,83 +1771,161 @@ AppendEventResult StorageManager::appendEventDetailed(const char* type,
 
     updateStoragePressure();
 
-    StoragePriority priority = _priorityForEventType(type, payload);
-    const StorageLane lane = _laneForEventType(type, payload);
+    const RAMSpool::CaptureClassification cls =
+        classification ? *classification : RAMSpool::classify(type, payload);
+    StoragePriority priority = static_cast<StoragePriority>(cls.priority);
+    const StorageLane lane =
+        (cls.lane == RAMSpool::LANE_MISSION) ? STORAGE_LANE_MISSION
+                                             : STORAGE_LANE_NOISE;
+    auto markUiRefresh = [&]() {
+        if (deferUiRefresh) {
+            _storageUiRefreshDeferred++;
+            refreshStorageUiState(true);
+        } else {
+            refreshStorageUiState();
+        }
+    };
 
     if (!shouldStoreByPriority(priority)) {
         _dedupStats.dropped++;
-        refreshStorageUiState();
+        markUiRefresh();
         return {APPEND_DROPPED_POLICY, 0};
     }
 
-    const char* eventType = type ? type : "event";
-    const char* subType = payload["event_type"] | "";
+    uint32_t eventId = 0;
+    {
+        ScopedSemaphoreLock appendLock(_appendMutex);
 
-    if (strcmp(eventType, "event") == 0 &&
-        strcmp(subType, "handshake") == 0) {
-        const char* apMac = payload["ap"] | payload["bssid"] | "";
-        const char* staMac = payload["sta"] | payload["client"] | "";
-        const char* ssid = payload["ssid"] | "";
-        const uint8_t messageNumber =
-            static_cast<uint8_t>(payload["msg"] | payload["message"] | 0);
+        const char* eventType = type ? type : "event";
+        const char* subType = payload["event_type"] | "";
 
-        if (!shouldAcceptHandshakeFrame(apMac, staMac, ssid, messageNumber)) {
+        if (strcmp(eventType, "event") == 0 &&
+            strcmp(subType, "handshake") == 0) {
+            const char* apMac = payload["ap"] | payload["bssid"] | "";
+            const char* staMac = payload["sta"] | payload["client"] | "";
+            const char* ssid = payload["ssid"] | "";
+            const uint8_t messageNumber =
+                static_cast<uint8_t>(payload["msg"] | payload["message"] | 0);
+
+            if (!shouldAcceptHandshakeFrame(apMac,
+                                            staMac,
+                                            ssid,
+                                            messageNumber,
+                                            deferUiRefresh)) {
+                return {APPEND_SUPPRESSED_DUPLICATE, 0};
+            }
+        } else if (_shouldSuppressDuplicate(eventType,
+                                            payload,
+                                            priority,
+                                            deferUiRefresh)) {
             return {APPEND_SUPPRESSED_DUPLICATE, 0};
         }
-    } else if (_shouldSuppressDuplicate(eventType, payload, priority)) {
-        return {APPEND_SUPPRESSED_DUPLICATE, 0};
-    }
 
-    const uint32_t nowMs = millis();
-    const uint32_t eventId = _nextEventId;
+        const uint32_t nowMs = millis();
+        eventId = _nextEventId;
 
-    _rememberSession(sessionId);
-    JsonDocument eventDoc;
-    JsonObject event = eventDoc.to<JsonObject>();
-    event["id"] = eventId;
-    event["ts"] = nowMs;
-    event["prio"] = static_cast<uint8_t>(priority);
-    event["lane"] = static_cast<uint8_t>(lane);
-    event["lane_name"] = _laneText(lane);
-    {
-        char tsIso[24] = {};
-        TIME_SVC.formatIsoForMillis(nowMs, tsIso, sizeof(tsIso));
-        event[F_TIMESTAMP_ISO] = tsIso;
-    }
-    event["type"] = type;
-    event[F_SESSION] = sessionId;
-    event["status"] = EVT_RAW;
+        _rememberSession(sessionId);
+        JsonDocument eventDoc;
+        JsonObject event = eventDoc.to<JsonObject>();
+        event["id"] = eventId;
+        event["ts"] = nowMs;
+        event["prio"] = static_cast<uint8_t>(priority);
+        event["lane"] = static_cast<uint8_t>(lane);
+        event["lane_name"] = _laneText(lane);
+        {
+            char tsIso[24] = {};
+            TIME_SVC.formatIsoForMillis(nowMs, tsIso, sizeof(tsIso));
+            event[F_TIMESTAMP_ISO] = tsIso;
+        }
+        event["type"] = type;
+        event[F_SESSION] = sessionId;
+        event["status"] = EVT_RAW;
 
-    for (JsonPairConst kv : payload) {
-        const char* key = kv.key().c_str();
-        if (!_isReservedEventKey(key)) {
-            event[key].set(kv.value());
+        for (JsonPairConst kv : payload) {
+            const char* key = kv.key().c_str();
+            if (!_isReservedEventKey(key)) {
+                event[key].set(kv.value());
+            }
+        }
+
+        _normalizeCapturedEvent(event, &cls);
+        priority = static_cast<StoragePriority>(event["prio"] | static_cast<uint8_t>(STORAGE_PRIO_P3));
+
+        if (!_appendSpoolRecord(eventDoc, nullptr)) {
+            return {APPEND_FAILED_IO, 0};
+        }
+
+        _nextEventId++;
+        _eventCounterDirty = true;
+        _eventCounterPendingWrites++;
+        if (deferMetadataFlush) {
+            _workerMetadataDirtyPending = true;
+            if (_workerMetadataPendingWrites < UINT16_MAX) {
+                _workerMetadataPendingWrites++;
+            }
+            if (_workerMetadataPendingWrites == 1) {
+                _workerMetadataDirtySinceMs = nowMs;
+            }
+        } else {
+            _persistEventCounter();
+        }
+
+        _pendingEventCount++;
+        _spoolIndex.pendingTotal = _pendingEventCount;
+        if (deferMetadataFlush) {
+            _workerMetadataDirtyPending = true;
+        } else {
+            _persistEventMeta();
         }
     }
 
-    priority = _finalPriorityForStoredEvent(event);
-    event["prio"] = static_cast<uint8_t>(priority);
-
-    if (_eventRecordWantsEnrichment(event)) {
-        event[F_ENRICH_STATE] = static_cast<uint8_t>(STORAGE_ENRICH_PENDING);
-    }
-
-    uint32_t storedId = 0;
-    if (!_appendSpoolRecord(eventDoc, &storedId)) {
-        return {APPEND_FAILED_IO, 0};
-    }
-
-    _nextEventId++;
-    _eventCounterDirty = true;
-    _eventCounterPendingWrites++;
-    _persistEventCounter();
-
-    _pendingEventCount++;
-    _spoolIndex.pendingTotal = _pendingEventCount;
-    _persistEventMeta();
-    refreshStorageUiState();
+    markUiRefresh();
 
     return {APPEND_OK, eventId};
+}
+
+AppendEventResult StorageManager::appendQueuedRecord(const RAMSpool::EventSlot& slot) {
+    if (!_ready) {
+        return {APPEND_FAILED_NOT_READY, 0};
+    }
+    const RAMSpool::SlotKind slotKind =
+        static_cast<RAMSpool::SlotKind>(slot.slotKind);
+    if (slotKind == RAMSpool::SLOT_SHADOW) {
+        return {APPEND_FAILED_INVALID, 0};
+    }
+    if (!slot.type[0]) {
+        return {APPEND_FAILED_INVALID, 0};
+    }
+
+    JsonDocument payloadDoc;
+    const size_t payloadLen = slot.payloadLen
+        ? static_cast<size_t>(slot.payloadLen)
+        : strnlen(slot.payload, RAMSpool::MAX_PAYLOAD);
+    if (payloadLen == 0) {
+        return {APPEND_FAILED_PARSE, 0};
+    }
+
+    DeserializationError err = deserializeJson(payloadDoc, slot.payload, payloadLen);
+    if (err || !payloadDoc.is<JsonObject>()) {
+        DLOG_WARN("STORAGE", "appendQueuedRecord payload parse error type=%s",
+                  slot.type);
+        return {APPEND_FAILED_PARSE, 0};
+    }
+
+    JsonObjectConst payload = payloadDoc.as<JsonObjectConst>();
+    const char* sessionOverride = payload["session_id"] | "";
+    RAMSpool::CaptureClassification cls;
+    cls.priority = static_cast<RAMSpool::EventPrio>(slot.provPriority);
+    cls.lane = static_cast<RAMSpool::EventLane>(slot.provLane);
+    cls.enrichEligible = slot.enrichEligible != 0;
+    cls.valueScore = slot.valueScore;
+    return _appendEventDetailedInternal(slot.type,
+                                        payload,
+                                        (sessionOverride && sessionOverride[0]) ?
+                                            sessionOverride : nullptr,
+                                        &cls,
+                                        true,
+                                        true);
 }
 
 bool StorageManager::getEventBatch(uint32_t sinceId, int maxCount,
@@ -2502,50 +2531,53 @@ bool StorageManager::markEventUploaded(uint32_t eventId,
 
     if (!sessionId.length()) return false;
 
-    const uint32_t before = _uploadedWatermarkForSession(sessionId);
-    if (eventId <= before) {
-        return true;
-    }
+    ScopedSemaphoreLock appendLock(_appendMutex);
+    {
+        const uint32_t before = _uploadedWatermarkForSession(sessionId);
+        if (eventId <= before) {
+            return true;
+        }
 
-    _setUploadedWatermarkForSession(sessionId, eventId);
+        _setUploadedWatermarkForSession(sessionId, eventId);
 
-    // During an upload batch, keep flash quiet — radio is active. The flush
-    // happens in endUploadBatch() after RADIO_ARB releases the lease, to
-    // avoid the LittleFS-erase-during-active-radio brownout.
-    // The batch flush is the durable boundary; outside batch mode we defer
-    // the counter update until the watermark commit succeeds.
-    if (_uploadBatchActive) {
+        // During an upload batch, keep flash quiet — radio is active. The flush
+        // happens in endUploadBatch() after RADIO_ARB releases the lease, to
+        // avoid the LittleFS-erase-during-active-radio brownout.
+        // The batch flush is the durable boundary; outside batch mode we defer
+        // the counter update until the watermark commit succeeds.
+        if (_uploadBatchActive) {
+            if (_pendingEventCount > 0) {
+                _pendingEventCount--;
+            }
+            _spoolIndex.pendingTotal = _pendingEventCount;
+            _decrementPendingUploadForEvent(eventId, laneHint, "mark_uploaded_batch");
+            _uploadBatchDirty = true;
+            return true;
+        }
+
+        CONTRACT_WARN_ONCE(CONTRACT_STORAGE_MARK_OUTSIDE_BATCH,
+                           "STORAGE",
+                           !RADIO_ARB.isOwner(RADIO_WIFI_UPLOAD),
+                           "event=%lu marked while upload owner active without batch",
+                           static_cast<unsigned long>(eventId));
+
+        if (!_persistSpoolIndex()) {
+            _setUploadedWatermarkForSession(sessionId, before);
+            DLOG_WARN("STORAGE",
+                      "Spool mark persist failed session=%s event=%lu",
+                      sessionId.c_str(),
+                      static_cast<unsigned long>(eventId));
+            return false;
+        }
+
         if (_pendingEventCount > 0) {
             _pendingEventCount--;
         }
         _spoolIndex.pendingTotal = _pendingEventCount;
-        _decrementPendingUploadForEvent(eventId, laneHint, "mark_uploaded_batch");
-        _uploadBatchDirty = true;
-        return true;
-    }
-
-    CONTRACT_WARN_ONCE(CONTRACT_STORAGE_MARK_OUTSIDE_BATCH,
-                       "STORAGE",
-                       !RADIO_ARB.isOwner(RADIO_WIFI_UPLOAD),
-                       "event=%lu marked while upload owner active without batch",
-                       static_cast<unsigned long>(eventId));
-
-    if (!_persistSpoolIndex()) {
-        _setUploadedWatermarkForSession(sessionId, before);
-        DLOG_WARN("STORAGE",
-                  "Spool mark persist failed session=%s event=%lu",
-                  sessionId.c_str(),
-                  static_cast<unsigned long>(eventId));
-        return false;
-    }
-
-    if (_pendingEventCount > 0) {
-        _pendingEventCount--;
-    }
-    _spoolIndex.pendingTotal = _pendingEventCount;
-    _decrementPendingUploadForEvent(eventId, laneHint, "mark_uploaded_single");
-    if (!_spoolAuditRepairRequired && !_repairRequested) {
-        _pendingCountDirty = false;
+        _decrementPendingUploadForEvent(eventId, laneHint, "mark_uploaded_single");
+        if (!_spoolAuditRepairRequired && !_repairRequested) {
+            _pendingCountDirty = false;
+        }
     }
     _persistEventMeta(true);
     refreshStorageUiState();
@@ -2560,93 +2592,92 @@ bool StorageManager::markEventsUploaded(uint32_t upToId) {
     String sessionId = SESS.getId();
     if (!sessionId.length()) return false;
 
-    const uint32_t before = _uploadedWatermarkForSession(sessionId);
-    if (upToId <= before) {
-        return true;
-    }
-
-    // Compute the live decrement BEFORE advancing the watermark so we
-    // never need to rescan the whole spool on the hot path.  When the
-    // upload index is resident we can count exactly; otherwise we mark
-    // the counter as needing an explicit recount (which the runtime
-    // will never run on its own).
-    uint32_t decrement = 0;
-    bool decrementExact = false;
-    if (_uploadIndexResident) {
-        auto it = _uploadIndexBySession.find(sessionId);
-        if (it != _uploadIndexBySession.end()) {
-            for (const auto& pagePtr : it->second.pages) {
-                if (!pagePtr) continue;
-                const UploadIndexPage& page = *pagePtr;
-                for (uint8_t i = 0; i < page.count; ++i) {
-                    const uint32_t id = page.records[i].eventId;
-                    if (id > before && id <= upToId) {
-                        decrement++;
-                    }
-                }
-            }
-            decrementExact = true;
-        }
-    }
-
-    _setUploadedWatermarkForSession(sessionId, upToId);
-
-    if (decrementExact) {
-        if (_uploadBatchActive) {
-            if (decrement > _pendingEventCount) decrement = _pendingEventCount;
-            _pendingEventCount -= decrement;
-            _spoolIndex.pendingTotal = _pendingEventCount;
-            if (decrement > 0) {
-                _pendingCountDirty = true;
-                requestSpoolRepair("bulk_mark_lane_reconcile");
-            }
-        } else {
-            CONTRACT_WARN_ONCE(CONTRACT_STORAGE_MARK_OUTSIDE_BATCH,
-                               "STORAGE",
-                               !RADIO_ARB.isOwner(RADIO_WIFI_UPLOAD),
-                               "bulk mark=%lu while upload owner active without batch",
-                               static_cast<unsigned long>(upToId));
-
-            if (!_persistSpoolIndex()) {
-                _setUploadedWatermarkForSession(sessionId, before);
-                DLOG_WARN("STORAGE", "Spool bulk mark persist failed session=%s upTo=%lu",
-                          sessionId.c_str(),
-                          static_cast<unsigned long>(upToId));
-                return false;
-            }
-
-            if (decrement > _pendingEventCount) decrement = _pendingEventCount;
-            _pendingEventCount -= decrement;
-            _spoolIndex.pendingTotal = _pendingEventCount;
-            if (decrement > 0) {
-                _pendingCountDirty = true;
-                requestSpoolRepair("bulk_mark_lane_reconcile");
-            } else if (!_spoolAuditRepairRequired && !_repairRequested) {
-                _pendingCountDirty = false;
-            }
-            _persistEventMeta(true);
-            refreshStorageUiState();
-            _logSpoolDiagnostics("mark_uploaded_bulk", sessionId);
+    ScopedSemaphoreLock appendLock(_appendMutex);
+    {
+        const uint32_t before = _uploadedWatermarkForSession(sessionId);
+        if (upToId <= before) {
             return true;
         }
-    } else {
-        DLOG_WARN("STORAGE",
-                  "markEventsUploaded bulk without resident index — "
-                  "live counter may drift; explicit recount required "
-                  "session=%s upTo=%lu",
-                  sessionId.c_str(),
-                  static_cast<unsigned long>(upToId));
-        _pendingCountDirty = true;
-        requestSpoolRepair("bulk_mark_inexact");
-    }
 
-    // Defer flash writes while an upload batch is active so brownout-prone
-    // "w" opens stay out of the active-radio window.  No rescan needed —
-    // the live counter already reflects the bulk decrement (or has been
-    // explicitly flagged for repair when the index was not resident).
-    if (_uploadBatchActive) {
-        _uploadBatchDirty = true;
-        return true;
+        // Compute the live decrement BEFORE advancing the watermark so we
+        // never need to rescan the whole spool on the hot path.  When the
+        // upload index is resident we can count exactly; otherwise we mark
+        // the counter as needing an explicit recount (which the runtime
+        // will never run on its own).
+        uint32_t decrement = 0;
+        bool decrementExact = false;
+        if (_uploadIndexResident) {
+            auto it = _uploadIndexBySession.find(sessionId);
+            if (it != _uploadIndexBySession.end()) {
+                for (const auto& pagePtr : it->second.pages) {
+                    if (!pagePtr) continue;
+                    const UploadIndexPage& page = *pagePtr;
+                    for (uint8_t i = 0; i < page.count; ++i) {
+                        const uint32_t id = page.records[i].eventId;
+                        if (id > before && id <= upToId) {
+                            decrement++;
+                        }
+                    }
+                }
+                decrementExact = true;
+            }
+        }
+
+        _setUploadedWatermarkForSession(sessionId, upToId);
+
+        if (decrementExact) {
+            if (_uploadBatchActive) {
+                if (decrement > _pendingEventCount) decrement = _pendingEventCount;
+                _pendingEventCount -= decrement;
+                _spoolIndex.pendingTotal = _pendingEventCount;
+                if (decrement > 0) {
+                    _pendingCountDirty = true;
+                    requestSpoolRepair("bulk_mark_lane_reconcile");
+                }
+            } else {
+                CONTRACT_WARN_ONCE(CONTRACT_STORAGE_MARK_OUTSIDE_BATCH,
+                                   "STORAGE",
+                                   !RADIO_ARB.isOwner(RADIO_WIFI_UPLOAD),
+                                   "bulk mark=%lu while upload owner active without batch",
+                                   static_cast<unsigned long>(upToId));
+
+                if (!_persistSpoolIndex()) {
+                    _setUploadedWatermarkForSession(sessionId, before);
+                    DLOG_WARN("STORAGE", "Spool bulk mark persist failed session=%s upTo=%lu",
+                              sessionId.c_str(),
+                              static_cast<unsigned long>(upToId));
+                    return false;
+                }
+
+                if (decrement > _pendingEventCount) decrement = _pendingEventCount;
+                _pendingEventCount -= decrement;
+                _spoolIndex.pendingTotal = _pendingEventCount;
+                if (decrement > 0) {
+                    _pendingCountDirty = true;
+                    requestSpoolRepair("bulk_mark_lane_reconcile");
+                } else if (!_spoolAuditRepairRequired && !_repairRequested) {
+                    _pendingCountDirty = false;
+                }
+            }
+        } else {
+            DLOG_WARN("STORAGE",
+                      "markEventsUploaded bulk without resident index — "
+                      "live counter may drift; explicit recount required "
+                      "session=%s upTo=%lu",
+                      sessionId.c_str(),
+                      static_cast<unsigned long>(upToId));
+            _pendingCountDirty = true;
+            requestSpoolRepair("bulk_mark_inexact");
+        }
+
+        // Defer flash writes while an upload batch is active so brownout-prone
+        // "w" opens stay out of the active-radio window.  No rescan needed —
+        // the live counter already reflects the bulk decrement (or has been
+        // explicitly flagged for repair when the index was not resident).
+        if (_uploadBatchActive) {
+            _uploadBatchDirty = true;
+            return true;
+        }
     }
 
     _persistEventMeta(true);
@@ -2875,7 +2906,6 @@ bool StorageManager::_scanJsonlSegmentRecords(
         DecodedSpoolRecord rec;
         rec.eventId = doc["id"] | 0U;
         rec.sessionId = String(doc[F_SESSION] | doc["session_id"] | "");
-        rec.doc = doc;
 
         const char* recType = doc["type"] | "";
         if (strcmp(recType, "enrich_delta") == 0) {
@@ -2883,6 +2913,12 @@ bool StorageManager::_scanJsonlSegmentRecords(
         } else {
             rec.recordType = SPOOL_REC_EVENT;
         }
+
+        if (rec.recordType == SPOOL_REC_EVENT) {
+            _normalizeCapturedEvent(doc.as<JsonObject>());
+        }
+
+        rec.doc = doc;
 
         if (!cb(rec)) {
             f.close();
@@ -3476,6 +3512,8 @@ bool StorageManager::_scanBinarySegmentRecords(
             root["lane"] = lane;
             root["lane_name"] = _laneText(static_cast<StorageLane>(lane));
 
+            _normalizeCapturedEvent(root);
+
             rec.recordType = SPOOL_REC_EVENT;
             rec.eventId = recordId;
             rec.sessionId = sessionId;
@@ -3501,22 +3539,22 @@ bool StorageManager::_appendSegmentRecord(SpoolSegmentInfo& seg,
             const uint32_t recordId = doc["id"] | 0U;
             const uint32_t ts = doc["ts"] | 0U;
 
-            uint32_t tsBase = 0U;
-            {
-                File hdrFile = LittleFS.open(_spoolBinarySegmentPath(seg.segmentId), "r");
-                if (!hdrFile) return false;
+            const String segPath = _spoolBinarySegmentPath(seg.segmentId);
+            File segFile = LittleFS.open(segPath, "r+");
+            if (!segFile) return false;
 
-                SpoolBin::SegmentHeaderV2 segHdr;
-                if (!SpoolBin::readSegmentHeaderV2(hdrFile, segHdr)) {
-                    hdrFile.close();
-                    return false;
-                }
-                hdrFile.close();
-
-                tsBase = segHdr.createdMs;
+            SpoolBin::SegmentHeaderV2 segHdr;
+            if (!SpoolBin::readSegmentHeaderV2(segFile, segHdr)) {
+                segFile.close();
+                return false;
             }
 
-            const uint32_t tsDelta = _timestampDeltaFromBase(ts, tsBase);
+            if (segHdr.magic != SpoolBin::SEGMENT_MAGIC || segHdr.version != 2) {
+                segFile.close();
+                return false;
+            }
+
+            const uint32_t tsDelta = _timestampDeltaFromBase(ts, segHdr.createdMs);
             const String sessionId = String((const char*)(doc[F_SESSION] | doc["session_id"] | ""));
             const String typeStr = String((const char*)(doc["type"] | ""));
             const String eventSubtype = String((const char*)(doc["event_type"] | ""));
@@ -3729,16 +3767,47 @@ bool StorageManager::_appendSegmentRecord(SpoolSegmentInfo& seg,
             SpoolBin::SegmentHeaderV2 hdr;
             SpoolBin::AppendRecordLocation loc{};
             SpoolBin::AppendRecordLocation* locOut = outLoc ? &loc : nullptr;
-            if (!SpoolBin::appendRecordV2(
-                    _spoolBinarySegmentPath(seg.segmentId),
+            const uint32_t writeOffset = static_cast<uint32_t>(segFile.size());
+            if (!segFile.seek(writeOffset)) {
+                segFile.close();
+                return false;
+            }
+            const uint32_t appendStartMs = millis();
+            const bool appendOk = SpoolBin::appendRecordToOpen(
+                    segFile,
                     static_cast<uint8_t>(SpoolBin::REC_EVENT),
                     body.data(),
                     static_cast<uint16_t>(body.size()),
                     recordId,
-                    &hdr,
-                    locOut)) {
+                    segHdr);
+            if (appendOk) {
+                hdr = segHdr;
+                if (!SpoolBin::writeSegmentHeaderV2(segFile, hdr)) {
+                    segFile.close();
+                    return false;
+                }
+            }
+            const uint32_t appendMs = millis() - appendStartMs;
+            if (appendMs >= 250UL) {
+                DLOG_WARN("STORAGE",
+                          "Spool binary append slow ms=%lu seg=%lu event=%lu type=%s bytes=%u",
+                          static_cast<unsigned long>(appendMs),
+                          static_cast<unsigned long>(seg.segmentId),
+                          static_cast<unsigned long>(recordId),
+                          typeStr.c_str(),
+                          static_cast<unsigned>(body.size()));
+            }
+            if (!appendOk) {
+                segFile.close();
                 return false;
             }
+
+            if (locOut) {
+                locOut->offset = writeOffset;
+                locOut->len = static_cast<uint32_t>(sizeof(SpoolBin::RecordPrefix)) +
+                              static_cast<uint32_t>(body.size());
+            }
+            segFile.close();
 
             if (outLoc) {
                 *outLoc = loc;
@@ -3970,8 +4039,7 @@ bool StorageManager::endSession() {
     if (!_appendJsonLine(PATH_SESSIONS, entry)) return false;
     _trimJsonLinesFile(PATH_SESSIONS, SESSION_LOG_MAX_LINES);
 
-    _persistEventCounter(true);
-    _persistSpoolIndex(true);
+    flushWorkerMetadataBatch("end_session", true);
     SESS.endSession();
     DLOG_INFO("STORAGE", "Session ended");
     return true;
@@ -3981,9 +4049,9 @@ bool StorageManager::checkpointSessionState() {
     if (!_ready) return false;
 
     bool ok = true;
-    ok &= _persistEventMeta(true);
-    ok &= _persistEventCounter(true);
-    ok &= _persistSpoolIndex(true);
+    if (hasWorkerMetadataFlushWork()) {
+        ok &= flushWorkerMetadataBatch("session_checkpoint", true);
+    }
     refreshStorageUiState();
 
     if (ok) {
@@ -3995,25 +4063,28 @@ bool StorageManager::checkpointSessionState() {
 }
 
 size_t StorageManager::getTotalBytes() {
-    return LittleFS.totalBytes();
+    _refreshFsStats();
+    return _cachedTotalBytes;
 }
 
 size_t StorageManager::getUsedBytes() {
-    return LittleFS.usedBytes();
+    _refreshFsStats();
+    return _cachedUsedBytes;
 }
 
 size_t StorageManager::getFreeBytes() {
-    return LittleFS.totalBytes() - LittleFS.usedBytes();
+    _refreshFsStats();
+    return _cachedFreeBytes;
 }
 
 int StorageManager::getUsedPercent() {
-    if (getTotalBytes() == 0) return 0;
-    return (int)((getUsedBytes() * 100) / getTotalBytes());
+    _refreshFsStats();
+    return _cachedUsedPct;
 }
 
 String StorageManager::getUsedString() {
-    return String(getUsedBytes() / 1024) + "KB / " +
-           String(getTotalBytes() / 1024) + "KB";
+    _refreshFsStats();
+    return _cachedUsedString;
 }
 
 const char* StorageManager::_policyText() const {
@@ -4066,8 +4137,11 @@ void StorageManager::_updateSegmentSummaryFromEventDoc(SpoolSegmentInfo& seg,
                                                        uint32_t eventId,
                                                        uint32_t timestampMs,
                                                        bool pendingUpload) {
-    const StorageLane lane = _eventRecordLane(doc);
-    const StoragePriority prio = _eventRecordPriority(doc);
+    const RAMSpool::CaptureClassification cls = _captureClassification(doc);
+    const StorageLane lane =
+        (cls.lane == RAMSpool::LANE_MISSION) ? STORAGE_LANE_MISSION
+                                              : STORAGE_LANE_NOISE;
+    const StoragePriority prio = static_cast<StoragePriority>(cls.priority);
 
     seg.eventCount++;
 
@@ -4091,8 +4165,7 @@ void StorageManager::_updateSegmentSummaryFromEventDoc(SpoolSegmentInfo& seg,
         default:              seg.p3Count++; break;
     }
 
-    if (_eventRecordWantsEnrichment(doc) &&
-        _eventRecordPendingEnrichment(doc)) {
+    if (cls.enrichEligible && _eventRecordPendingEnrichment(doc)) {
         seg.pendingEnrichmentCount++;
     }
 
@@ -4743,6 +4816,13 @@ bool StorageManager::_beginRepairSegment() {
     while (_repairJob.segmentIndex < _spoolIndex.segments.size()) {
         const SpoolSegmentInfo& seg = _spoolIndex.segments[_repairJob.segmentIndex];
 
+        // Skip the active write-head segment — it is a moving target.
+        // Its live counters are trusted and re-injected in _finalizeRepairJob.
+        if (seg.segmentId == _spoolIndex.activeSegmentId) {
+            _repairJob.segmentIndex++;
+            continue;
+        }
+
         if (_isSegmentQuarantined(seg.segmentId)) {
             _repairJob.audit.quarantinedSegments++;
             _repairJob.segmentChanged = true;
@@ -4811,9 +4891,12 @@ bool StorageManager::_repairJsonlSlice(uint32_t startMs,
         return false;
     }
 
-    while (f.available() &&
-           recordsScanned < maxRecords &&
-           (millis() - startMs) < budgetMs) {
+    while (f.available() && recordsScanned < maxRecords) {
+        // Check budget AFTER the first record so file-open overhead can't
+        // prevent any progress on a 2ms budget.
+        if (recordsScanned > 0 && (millis() - startMs) >= budgetMs) {
+            break;
+        }
         String line = f.readStringUntil('\n');
         _repairJob.fileOffset = f.position();
         line.trim();
@@ -4865,6 +4948,7 @@ bool StorageManager::_repairJsonlSlice(uint32_t startMs,
             if (rec.eventId > watermark) {
                 _repairJob.audit.rebuiltPendingTotal++;
             }
+            _normalizeCapturedEvent(rec.doc.as<JsonObject>());
         } else {
             _repairJob.audit.validEnrichDeltas++;
         }
@@ -4914,9 +4998,12 @@ bool StorageManager::_repairBinaryMetaSlice(uint32_t startMs,
     }
 
     uint32_t skipWarnCount = 0;
-    while (f.position() < f.size() &&
-           recordsScanned < maxRecords &&
-           (millis() - startMs) < budgetMs) {
+    while (f.position() < f.size() && recordsScanned < maxRecords) {
+        // Check budget AFTER the first record so file-open + seek overhead
+        // can't exhaust a 2ms budget before a single record is processed.
+        if (recordsScanned > 0 && (millis() - startMs) >= budgetMs) {
+            break;
+        }
         const size_t remainingBeforePrefix =
             static_cast<size_t>(f.size() - f.position());
         if (remainingBeforePrefix < sizeof(SpoolBin::RecordPrefix)) {
@@ -4998,6 +5085,7 @@ bool StorageManager::_repairBinaryMetaSlice(uint32_t startMs,
                                              hdr.createdMs,
                                              sessionSeed,
                                              decoded)) {
+                _normalizeCapturedEvent(decoded.doc.as<JsonObject>());
                 _updateSegmentSummaryFromDecodedRecord(_repairJob.rebuiltSegment,
                                                        decoded);
             } else {
@@ -5104,15 +5192,33 @@ void StorageManager::_finishRepairSegment() {
 bool StorageManager::_finalizeRepairJob() {
     SpoolRepairJob job = _repairJob;
 
+    // Log if _nextEventId advanced during scan — informational only.
+    // We skip the active write-head segment, so counter advances are expected
+    // and do not invalidate closed-segment repair results.
     if (_nextEventId != job.audit.oldNextEventId) {
-        DLOG_WARN("STORAGE",
-                  "Spool repair restart: spool changed during repair oldNext=%lu now=%lu",
+        DLOG_INFO("STORAGE",
+                  "Spool repair: counter advanced during scan old=%lu now=%lu "
+                  "(active segment skipped, OK)",
                   static_cast<unsigned long>(job.audit.oldNextEventId),
                   static_cast<unsigned long>(_nextEventId));
-        _resetRepairJob();
-        _repairRequested = true;
-        _spoolAuditRepairRequired = true;
-        return false;
+    }
+
+    // Capture the live active-segment state before we may overwrite
+    // _spoolIndex.segments below.  We skipped this segment during scanning
+    // because it is a live write target; fold its current pending counts into
+    // the rebuilt total and re-inject the segment entry after the merge.
+    const uint32_t activeId = _spoolIndex.activeSegmentId;
+    SpoolSegmentInfo activeLiveSnap;
+    bool haveActiveLiveSnap = false;
+    if (activeId != 0) {
+        const SpoolSegmentInfo* ap = _findSegmentInfo(activeId);
+        if (ap) {
+            activeLiveSnap     = *ap;
+            haveActiveLiveSnap = true;
+            job.audit.rebuiltPendingTotal +=
+                activeLiveSnap.pendingUploadMissionCount +
+                activeLiveSnap.pendingUploadNoiseCount;
+        }
     }
 
     const bool sessionsChanged = (job.rebuiltSessions != _spoolIndex.sessions);
@@ -5148,6 +5254,26 @@ bool StorageManager::_finalizeRepairJob() {
                                return seg.segmentId == 0;
                            }),
             _spoolIndex.segments.end());
+
+        // Re-inject the live active segment (it was skipped during scan).
+        // Use the snapshot captured before we overwrote _spoolIndex.segments.
+        if (haveActiveLiveSnap) {
+            const bool present = std::any_of(
+                _spoolIndex.segments.begin(),
+                _spoolIndex.segments.end(),
+                [&](const SpoolSegmentInfo& s) {
+                    return s.segmentId == activeId;
+                });
+            if (!present) {
+                _spoolIndex.segments.push_back(activeLiveSnap);
+                std::sort(_spoolIndex.segments.begin(),
+                          _spoolIndex.segments.end(),
+                          [](const SpoolSegmentInfo& a,
+                             const SpoolSegmentInfo& b) {
+                              return a.segmentId < b.segmentId;
+                          });
+            }
+        }
 
         if (!_spoolIndex.segments.empty()) {
             _spoolIndex.oldestSegmentId = _spoolIndex.segments.front().segmentId;
@@ -5232,12 +5358,19 @@ bool StorageManager::serviceStorageMaintenanceStep(uint32_t budgetMs,
     }
 
     if (!_repairRequested && !_spoolAuditRepairRequired && !_repairJob.active) {
+        if (_storageUiRefreshPending) {
+            refreshStorageUiState(false, false);
+            return true;
+        }
         if (_pendingCountDirty) {
             requestSpoolRepair("counter_trust_degraded");
         } else if (_spoolSummaryRebuildPending || _hasInvalidSpoolSummaries()) {
             _spoolSummaryRebuildPending = true;
             requestSpoolRepair("summary_rebuild_pending");
         } else {
+            if (_workerMetadataDirtyPending) {
+                flushWorkerMetadataBatch("maintenance", false);
+            }
             return true;
         }
     }
@@ -5390,7 +5523,7 @@ void StorageManager::_maybeCompactForPressure(StoragePressureMode oldMode,
               static_cast<unsigned long>(_pendingEventCount));
 }
 
-void StorageManager::updateStoragePressure() {
+void StorageManager::updateStoragePressure(bool allowSideEffects) {
     const StoragePressureMode oldMode = _pressureMode;
     const int usedPct = getUsedPercent();
 
@@ -5408,16 +5541,59 @@ void StorageManager::updateStoragePressure() {
         _retentionPolicy = STORAGE_POLICY_NORMAL;
     }
 
-    _publishStorageEventIfNeeded(oldMode, _pressureMode);
-    _maybeCompactForPressure(oldMode, _pressureMode);
+    if (allowSideEffects) {
+        _publishStorageEventIfNeeded(oldMode, _pressureMode);
+        _maybeCompactForPressure(oldMode, _pressureMode);
+    }
 }
 
-void StorageManager::refreshStorageUiState() {
-    updateStoragePressure();
+void StorageManager::_refreshFsStats(bool force) {
+    const uint32_t now = millis();
+    if (!force &&
+        _cachedTotalBytes != 0 &&
+        (now - _lastFsStatsRefreshMs) < STORAGE_FS_STATS_CACHE_MS) {
+        return;
+    }
+
+    _cachedTotalBytes = LittleFS.totalBytes();
+    _cachedUsedBytes = LittleFS.usedBytes();
+    _cachedFreeBytes = (_cachedTotalBytes > _cachedUsedBytes) ?
+        (_cachedTotalBytes - _cachedUsedBytes) : 0;
+    _cachedUsedPct = (_cachedTotalBytes == 0) ? 0 :
+        static_cast<int>((_cachedUsedBytes * 100) / _cachedTotalBytes);
+    _cachedUsedString = String(_cachedUsedBytes / 1024) + "KB / " +
+                        String(_cachedTotalBytes / 1024) + "KB";
+    _lastFsStatsRefreshMs = now;
+}
+
+void StorageManager::refreshStorageUiState(bool defer, bool recalcPressure) {
+    if (defer) {
+        _storageUiRefreshPending = true;
+        return;
+    }
+
+    if (_storageUiRefreshPending) {
+        _storageUiRefreshFlush++;
+    }
+    _storageUiRefreshPending = false;
+
+    if (recalcPressure) {
+        updateStoragePressure();
+    } else {
+        const uint32_t serviceCount = ++_storageUiRefreshServiceCount;
+        DLOG_INFO("STORAGE",
+                  "worker ui refresh serviced uiRefreshServiceCount=%lu uiDeferred=%lu uiFlush=%lu pressure=%u usedPct=%d pending=%lu",
+                  static_cast<unsigned long>(serviceCount),
+                  static_cast<unsigned long>(_storageUiRefreshDeferred),
+                  static_cast<unsigned long>(_storageUiRefreshFlush),
+                  static_cast<unsigned>(_pressureMode),
+                  static_cast<int>(_cachedUsedPct),
+                  static_cast<unsigned long>(getPendingEventCount()));
+    }
 
     const uint32_t pending = getPendingEventCount();
-    const size_t freeBytes = getFreeBytes();
-    const int usedPct = getUsedPercent();
+    const size_t freeBytes = recalcPressure ? getFreeBytes() : _cachedFreeBytes;
+    const int usedPct = recalcPressure ? getUsedPercent() : _cachedUsedPct;
 
     STATE_WRITE_BEGIN();
     g_state.storageNearlyFull = (_pressureMode >= STORAGE_MODE_WATCH);
@@ -5435,6 +5611,89 @@ void StorageManager::refreshStorageUiState() {
     strlcpy(g_state.storagePolicyText, _policyText(), sizeof(g_state.storagePolicyText));
     g_state.dataRefresh = true;
     STATE_WRITE_END();
+}
+
+bool StorageManager::flushWorkerMetadataBatch(const char* reason, bool force) {
+    if (!_ready) {
+        return false;
+    }
+
+    const bool entryMetadataDirtyPending = _workerMetadataDirtyPending;
+    const bool entryUiRefreshDirty = _storageUiRefreshPending;
+    if (!entryMetadataDirtyPending && !entryUiRefreshDirty) {
+        return false;
+    }
+
+    if (!entryMetadataDirtyPending) {
+        refreshStorageUiState(false, false);
+        return true;
+    }
+
+    const uint32_t now = millis();
+    const bool dueByCount =
+        _workerMetadataPendingWrites >= STORAGE_EVENT_COUNTER_SAVE_EVERY_N;
+    const bool dueByTime =
+        _workerMetadataDirtySinceMs != 0 &&
+        (now - _workerMetadataDirtySinceMs) >= STORAGE_HOT_META_SAVE_INTERVAL_MS;
+    const bool hardFlush = force || dueByCount || dueByTime;
+
+    if (!hardFlush && !force) {
+        if (entryUiRefreshDirty) {
+            refreshStorageUiState(false, false);
+        }
+        return true;
+    }
+
+    const uint32_t startMs = millis();
+    bool ok = true;
+    ok &= _persistEventCounter(hardFlush);
+    ok &= _persistEventMeta(hardFlush);
+    ok &= _persistSpoolIndex(hardFlush);
+
+    if (entryUiRefreshDirty || force) {
+        refreshStorageUiState(false, false);
+    }
+
+    _workerMetadataDirtyPending =
+        _eventCounterDirty || _pendingCountDirty || _spoolIndexDirty;
+    if (!_workerMetadataDirtyPending) {
+        _workerMetadataPendingWrites = 0;
+        _workerMetadataDirtySinceMs = 0;
+    }
+
+    if (reason && reason[0]) {
+        strlcpy(_workerBatchFlushReason, reason, sizeof(_workerBatchFlushReason));
+    } else {
+        strlcpy(_workerBatchFlushReason, "worker_batch", sizeof(_workerBatchFlushReason));
+    }
+
+    const uint32_t elapsed = millis() - startMs;
+    _metadataFlushCount++;
+    if (elapsed > _metadataFlushSlowMs) {
+        _metadataFlushSlowMs = elapsed;
+    }
+    if (elapsed >= 50U) {
+        DLOG_WARN("STORAGE",
+                  "worker metadata flush reason=%s ms=%lu ok=%d dirty=%d",
+                  _workerBatchFlushReason,
+                  static_cast<unsigned long>(elapsed),
+                  ok ? 1 : 0,
+                  _workerMetadataDirtyPending ? 1 : 0);
+    }
+
+    DLOG_INFO("STORAGE",
+              "worker metadata flush metadataFlushCount=%lu reason=%s entryMetadataDirtyPending=%d entryUiRefreshPending=%d metadataDirtyPending=%d uiDeferred=%lu uiFlush=%lu uiRefreshServiceCount=%lu metadataFlushSlowMs=%lu",
+              static_cast<unsigned long>(_metadataFlushCount),
+              _workerBatchFlushReason,
+              entryMetadataDirtyPending ? 1 : 0,
+              entryUiRefreshDirty ? 1 : 0,
+              _workerMetadataDirtyPending ? 1 : 0,
+              static_cast<unsigned long>(_storageUiRefreshDeferred),
+              static_cast<unsigned long>(_storageUiRefreshFlush),
+              static_cast<unsigned long>(_storageUiRefreshServiceCount),
+              static_cast<unsigned long>(_metadataFlushSlowMs));
+
+    return ok;
 }
 
 void StorageManager::checkHealth() {
@@ -5457,6 +5716,7 @@ void StorageManager::checkHealth() {
     if (hadTruthDebt) {
         requestSpoolRepair("health_truth_debt");
     }
+    flushWorkerMetadataBatch("health", true);
     refreshStorageUiState();
     _logSpoolDiagnostics("health");
 }
@@ -6192,7 +6452,8 @@ bool StorageManager::_loadEventMeta() {
 }
 
 bool StorageManager::_persistEventMeta(bool force) {
-    const bool dueByTime = millis() - _lastMetaSaveMs >= 5000UL;
+    const bool dueByTime =
+        millis() - _lastMetaSaveMs >= STORAGE_HOT_META_SAVE_INTERVAL_MS;
     if (!force && !dueByTime) {
         return true;
     }
@@ -6213,8 +6474,10 @@ bool StorageManager::_persistEventMeta(bool force) {
 bool StorageManager::_persistEventCounter(bool force) {
     if (!_eventCounterDirty) return true;
 
-    const bool dueByCount = _eventCounterPendingWrites >= 16;
-    const bool dueByTime = millis() - _lastCounterSaveMs >= 5000;
+    const bool dueByCount =
+        _eventCounterPendingWrites >= STORAGE_EVENT_COUNTER_SAVE_EVERY_N;
+    const bool dueByTime =
+        millis() - _lastCounterSaveMs >= STORAGE_HOT_META_SAVE_INTERVAL_MS;
     if (!force && !dueByCount && !dueByTime) {
         return true;
     }
@@ -6408,8 +6671,10 @@ bool StorageManager::_persistSpoolIndex(bool force) {
         return true;
     }
 
-    const bool dueByCount = _spoolIndexPendingWrites >= 16U;
-    const bool dueByTime = millis() - _lastSpoolIndexSaveMs >= 5000UL;
+    const bool dueByCount =
+        _spoolIndexPendingWrites >= STORAGE_SPOOL_INDEX_SAVE_EVERY_N;
+    const bool dueByTime =
+        millis() - _lastSpoolIndexSaveMs >= STORAGE_HOT_META_SAVE_INTERVAL_MS;
     if (!force && !dueByCount && !dueByTime) {
         return true;
     }
@@ -7142,6 +7407,18 @@ bool StorageManager::appendEnrichDeltasBatch(const SpoolEnrichBatchEntry* entrie
         return false;
     }
 
+    uint32_t applied        = 0;
+    uint32_t failed         = 0;
+    uint32_t firstRecord    = 0;
+    uint32_t lastRecord     = 0;
+    uint32_t firstEvent     = 0;
+    uint32_t lastEvent      = 0;
+    uint32_t tStart         = 0;
+    bool ok                 = false;
+    String lastSession;
+
+    ScopedSemaphoreLock appendLock(_appendMutex);
+    {
     const String segPath = _spoolBinarySegmentPath(seg->segmentId);
 
     File f = LittleFS.open(segPath, "r+");
@@ -7160,14 +7437,8 @@ bool StorageManager::appendEnrichDeltasBatch(const SpoolEnrichBatchEntry* entrie
     }
 
     const uint32_t tsBase   = hdr.createdMs;
-    const uint32_t tStart   = millis();
-    uint32_t applied        = 0;
-    uint32_t failed         = 0;
-    uint32_t firstRecord    = 0;
-    uint32_t lastRecord     = 0;
-    uint32_t firstEvent     = 0;
-    uint32_t lastEvent      = 0;
-    String   lastSession    = _binaryLastSessionBySegment[seg->segmentId];
+    tStart = millis();
+    lastSession = _binaryLastSessionBySegment[seg->segmentId];
 
     for (size_t i = 0; i < count; ++i) {
         const SpoolEnrichBatchEntry& e = entries[i];
@@ -7232,7 +7503,7 @@ bool StorageManager::appendEnrichDeltasBatch(const SpoolEnrichBatchEntry* entrie
         _decrementPendingEnrichmentForEvent(e.eventId);
     }
 
-    bool ok = SpoolBin::writeSegmentHeaderV2(f, hdr);
+    ok = SpoolBin::writeSegmentHeaderV2(f, hdr);
     if (ok) f.flush();
     f.close();
 
@@ -7263,6 +7534,10 @@ bool StorageManager::appendEnrichDeltasBatch(const SpoolEnrichBatchEntry* entrie
         ok = _persistSpoolIndex();
     }
 
+    if (appliedOut) *appliedOut = applied;
+    if (failedOut)  *failedOut  = failed;
+    }
+
     DLOG_INFO("STORAGE",
               "Spool enrich_batch applied=%lu failed=%lu"
               " batchFirstEventId=%lu batchLastEventId=%lu firstRecord=%lu lastRecord=%lu ms=%lu",
@@ -7273,9 +7548,6 @@ bool StorageManager::appendEnrichDeltasBatch(const SpoolEnrichBatchEntry* entrie
               static_cast<unsigned long>(firstRecord),
               static_cast<unsigned long>(lastRecord),
               static_cast<unsigned long>(millis() - tStart));
-
-    if (appliedOut) *appliedOut = applied;
-    if (failedOut)  *failedOut  = failed;
 
     return ok && failed == 0;
 }
@@ -7355,6 +7627,8 @@ bool StorageManager::_appendSpoolEnrichmentDelta(const String& sessionId,
         return false;
     }
 
+    ScopedSemaphoreLock appendLock(_appendMutex);
+    {
     const uint32_t recordId = _nextEventId++;
     const uint32_t ts = millis();
 
@@ -7409,13 +7683,25 @@ bool StorageManager::_appendSpoolEnrichmentDelta(const String& sessionId,
     }
 
     SpoolBin::SegmentHeaderV2 hdr;
-    if (!SpoolBin::appendRecordV2(
+    const uint32_t appendStartMs = millis();
+    const bool appendOk = SpoolBin::appendRecordV2(
             _spoolBinarySegmentPath(seg->segmentId),
             static_cast<uint8_t>(SpoolBin::REC_ENRICH_DELTA),
             body.data(),
             static_cast<uint16_t>(body.size()),
             recordId,
-            &hdr)) {
+            &hdr);
+    const uint32_t appendMs = millis() - appendStartMs;
+    if (appendMs >= 250UL) {
+        DLOG_WARN("STORAGE",
+                  "Spool enrich append slow ms=%lu seg=%lu record=%lu event=%lu bytes=%u",
+                  static_cast<unsigned long>(appendMs),
+                  static_cast<unsigned long>(seg->segmentId),
+                  static_cast<unsigned long>(recordId),
+                  static_cast<unsigned long>(eventId),
+                  static_cast<unsigned>(body.size()));
+    }
+    if (!appendOk) {
         return false;
     }
 
@@ -7442,6 +7728,7 @@ bool StorageManager::_appendSpoolEnrichmentDelta(const String& sessionId,
 
     if ((seg->recordCount % 64U) == 0U) {
         _logSpoolDiagnostics("append_enrich_batch");
+    }
     }
 
 #if SPECTRE_TRACE_ENRICH_DELTA

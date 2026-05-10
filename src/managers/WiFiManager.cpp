@@ -157,11 +157,28 @@ void WiFiManager::tick() {
         lastQueueLog = millis();
     }
 
-    // Process a larger burst during early boot to drain the initial backlog.
+    // Process a larger burst during early boot to drain the initial backlog,
+    // then keep each TaskHardware slice bounded. Under storage pressure a
+    // single accepted frame may append to LittleFS; avoid chaining several
+    // slow appends into one watchdog-hostile hardware loop.
+    const uint32_t tickStartMs = millis();
+    const uint32_t tickBudgetMs = 20UL;
     int limit = (millis() < 5000) ? 32 : 8;
     int processed = 0;
+    static uint32_t slowFrameSuppressed = 0;
     while (_deferredTail != _deferredHead && processed < limit) {
+        // Bail before pulling the next frame if a prior frame in this tick
+        // already blew the budget. Guarantees at least one frame per tick
+        // (so the queue can drain) while preventing chained slow appends.
+        if (processed > 0 && millis() - tickStartMs >= tickBudgetMs) {
+            break;
+        }
         DeferredFrame& f = _deferredQueue[_deferredTail];
+        const uint32_t frameStartMs = millis();
+        const uint8_t frameType = f.frameType;
+        const uint8_t frameSubtype = f.frameSubtype;
+        const int frameLen = f.len;
+        const uint8_t frameChannel = f.channel;
 
         if (f.frameType == 0) {
             _mgmtFrames++;
@@ -192,6 +209,26 @@ void WiFiManager::tick() {
                 (void)addr3;
             }
             _processEAPOL(f.payload, f.len, f.rssi);
+        }
+
+        const uint32_t frameMs = millis() - frameStartMs;
+        if (frameMs >= WIFI_FRAME_PROCESS_SLOW_WARN_MS) {
+            static uint32_t lastSlowFrameLogMs = 0;
+            const uint32_t logNow = millis();
+            if (logNow - lastSlowFrameLogMs >= 10000UL) {
+                DLOG_WARN("WIFI",
+                          "frame slow ms=%lu type=%u subtype=%u len=%d ch=%u suppressed=%lu",
+                          (unsigned long)frameMs,
+                          frameType,
+                          frameSubtype,
+                          frameLen,
+                          frameChannel,
+                          (unsigned long)slowFrameSuppressed);
+                slowFrameSuppressed = 0;
+                lastSlowFrameLogMs = logNow;
+            } else {
+                slowFrameSuppressed++;
+            }
         }
 
         _deferredTail = (_deferredTail + 1) % DEFERRED_QUEUE_SIZE;
@@ -511,12 +548,38 @@ void WiFiManager::_hopChannel() {
         // Stay on target channel during PMKID hunt
         if (_channel != _pmkidTargetChannel) {
             _channel = _pmkidTargetChannel;
+            const uint32_t hopStartMs = millis();
             esp_wifi_set_channel(_channel, WIFI_SECOND_CHAN_NONE);
+            const uint32_t hopMs = millis() - hopStartMs;
+            if (hopMs >= WIFI_CHANNEL_HOP_SLOW_WARN_MS) {
+                DLOG_WARN("WIFI",
+                          "channel hop slow ms=%lu ch=%u mode=%u",
+                          static_cast<unsigned long>(hopMs),
+                          static_cast<unsigned>(_channel),
+                          static_cast<unsigned>(_mode));
+            }
         }
         return;
     }
     _channel = (_channel % 11) + 1;
+    const uint32_t hopStartMs = millis();
     esp_wifi_set_channel(_channel, WIFI_SECOND_CHAN_NONE);
+    const uint32_t hopMs = millis() - hopStartMs;
+    if (hopMs >= WIFI_CHANNEL_HOP_SLOW_WARN_MS) {
+        static uint32_t lastSlowHopLogMs = 0;
+        const uint32_t now = millis();
+        if (_channelDwellMs < WIFI_CHANNEL_HOP_SLOW_BACKOFF_MS) {
+            _channelDwellMs = WIFI_CHANNEL_HOP_SLOW_BACKOFF_MS;
+        }
+        if (now - lastSlowHopLogMs >= 30000UL) {
+            DLOG_WARN("WIFI",
+                      "channel hop slow ms=%lu ch=%u dwell=%lums",
+                      static_cast<unsigned long>(hopMs),
+                      static_cast<unsigned>(_channel),
+                      static_cast<unsigned long>(_channelDwellMs));
+            lastSlowHopLogMs = now;
+        }
+    }
 }
 
 // ── Promiscuous frame handler ──
@@ -1276,16 +1339,16 @@ bool WiFiManager::forcePwnyDeauth() {
     return true;
 }
 
-int16_t WiFiManager::_pwnyScore(int idx) const {
+int16_t WiFiManager::_pwnyScore(int idx) {
     if (idx < 0 || idx >= _networkCount) return -1;
-    const WiFiNetwork& net = _networks[idx];
+    WiFiNetwork& net = _networks[idx];
 
     if (!_ssidHasVisibleChars(net.ssid) || net.isHidden) {
         return -1;
     }
 
     if (net.hasPMKID || net.hasHandshake ||
-        _hasStoredCapture(net.bssid)) {
+        _refreshStoredCaptureFlag(net)) {
         return -1;
     }
 
@@ -1614,6 +1677,7 @@ void WiFiManager::_pwnyTick() {
             if (strcmp(_pmkids[i].bssid, bssidStr) == 0) {
                 t.pmkidCaptured = true;
                 _networks[t.networkIdx].hasPMKID = true;
+                _networks[t.networkIdx].pmkidChecked = true;
                 _pwnyCaptures++;
                 const bool full = (t.eapolMsgMask & 0x0F) == 0x0F;
                 DLOG_INFO("PWNY",
@@ -1867,6 +1931,7 @@ void WiFiManager::_pwnyLoadPriorCaptures() {
                 // Case-insensitive compare
                 if (strcasecmp(netBssid, bssidStr) == 0) {
                     _networks[i].hasPMKID = true;
+                    _networks[i].pmkidChecked = true;
                     DLOG_INFO("PWNY",
                               "Prior capture: %s",
                               _networks[i].ssid);
@@ -1892,6 +1957,28 @@ bool WiFiManager::_hasStoredCapture(const uint8_t* bssid) const {
     char path[32];
     snprintf(path, sizeof(path), PATH_PMKID_DIR "/%s.hc22000", bssidHex);
     return LittleFS.exists(path);
+}
+
+bool WiFiManager::_refreshStoredCaptureFlag(WiFiNetwork& net) {
+    if (net.hasPMKID || net.pmkidChecked) {
+        return net.hasPMKID;
+    }
+
+    const uint32_t startMs = millis();
+    net.hasPMKID = _hasStoredCapture(net.bssid);
+    net.pmkidChecked = true;
+
+    const uint32_t elapsedMs = millis() - startMs;
+    if (elapsedMs >= WIFI_CAPTURE_FILE_CHECK_SLOW_WARN_MS) {
+        char bssidStr[18];
+        _macToStr(net.bssid, bssidStr);
+        DLOG_WARN("WIFI",
+                  "capture file check slow ms=%lu bssid=%s found=%d",
+                  (unsigned long)elapsedMs,
+                  bssidStr,
+                  net.hasPMKID ? 1 : 0);
+    }
+    return net.hasPMKID;
 }
 
 bool WiFiManager::_pwnyIsHandshakeCrackable(
@@ -2137,9 +2224,6 @@ WiFiNetwork* WiFiManager::_findOrCreateNetwork(
         if (_macsEqual(_networks[i].bssid, bssid)) {
             _networks[i].rssi    = rssi;
             _networks[i].lastSeen = millis();
-            if (!_networks[i].hasPMKID) {
-                _networks[i].hasPMKID = _hasStoredCapture(bssid);
-            }
             return &_networks[i];
         }
     }
@@ -2159,7 +2243,6 @@ WiFiNetwork* WiFiManager::_findOrCreateNetwork(
         net.channel   = ch;
         net.firstSeen = millis();
         net.lastSeen  = millis();
-        net.hasPMKID  = _hasStoredCapture(bssid);
         STATE_WRITE_BEGIN();
         g_state.wifiNetworkCount = _networkCount;
         STATE_WRITE_END();
@@ -2174,7 +2257,6 @@ WiFiNetwork* WiFiManager::_findOrCreateNetwork(
     net.channel   = ch;
     net.firstSeen = millis();
     net.lastSeen  = millis();
-    net.hasPMKID  = _hasStoredCapture(bssid);
     strlcpy(net.security, "OPEN", sizeof(net.security));
 
     STATE_WRITE_BEGIN();
@@ -2558,6 +2640,40 @@ void WiFiManager::_syncState() {
     bool emitDroneNotification = false;
     char droneNotifText[48] = {};
 
+    // Build the snapshot fully outside the critical section. g_stateMux is a
+    // portMUX (IRQ-disabled spinlock); holding it across 12×~57B copies plus
+    // strlcpy bound checks lets the other core spin for the full duration.
+    SpectreState::WiFiNetworkSnapshot snap[SpectreState::WIFI_SNAP_COUNT] = {};
+    int snapCount = _networkCount;
+    if (snapCount > SpectreState::WIFI_SNAP_COUNT) {
+        snapCount = SpectreState::WIFI_SNAP_COUNT;
+    }
+    for (int i = 0; i < snapCount; i++) {
+        strlcpy(snap[i].ssid, _networks[i].ssid, sizeof(snap[i].ssid));
+        memcpy(snap[i].bssid, _networks[i].bssid, 6);
+        snap[i].rssi        = _networks[i].rssi;
+        snap[i].channel     = _networks[i].channel;
+        snap[i].hasPMKID    = _networks[i].hasPMKID;
+        snap[i].clientCount = _networks[i].clientCount;
+        strlcpy(snap[i].security, _networks[i].security,
+                sizeof(snap[i].security));
+        snap[i].isHidden    = _networks[i].isHidden;
+    }
+
+    bool droneFire = false;
+    char localDroneId[sizeof(g_state.lastDroneID)] = {};
+    if (_droneDetected) {
+        uint32_t now = millis();
+        if (now - _lastDroneTime >= 5000) {
+            _lastDroneTime = now;
+            _droneDetected = false;
+            droneFire = true;
+            strlcpy(localDroneId, _lastDroneID, sizeof(localDroneId));
+            snprintf(droneNotifText, sizeof(droneNotifText),
+                     "DRONE: %s", localDroneId);
+        }
+    }
+
     STATE_WRITE_BEGIN();
     g_state.wifiChannel      = _channel;
     g_state.wifiOpMode       = _mode;
@@ -2565,43 +2681,18 @@ void WiFiManager::_syncState() {
     g_state.probeDeviceCount = _deviceCount;
     g_state.probePacketCount = _probePacketCount;
     g_state.pmkidCaptured    = _pmkidCount;
-
-    int snapCount = _networkCount;
-    if (snapCount > SpectreState::WIFI_SNAP_COUNT) {
-        snapCount = SpectreState::WIFI_SNAP_COUNT;
+    g_state.wifiSnapCount    = snapCount;
+    if (snapCount > 0) {
+        memcpy(g_state.wifiSnap, snap,
+               sizeof(SpectreState::WiFiNetworkSnapshot) * snapCount);
     }
-    g_state.wifiSnapCount = snapCount;
-    for (int i = 0; i < snapCount; i++) {
-        strlcpy(g_state.wifiSnap[i].ssid,
-                _networks[i].ssid, 33);
-        memcpy(g_state.wifiSnap[i].bssid,
-               _networks[i].bssid, 6);
-        g_state.wifiSnap[i].rssi     = _networks[i].rssi;
-        g_state.wifiSnap[i].channel  = _networks[i].channel;
-        g_state.wifiSnap[i].hasPMKID = _networks[i].hasPMKID;
-        g_state.wifiSnap[i].clientCount =
-            _networks[i].clientCount;
-        strlcpy(g_state.wifiSnap[i].security,
-                _networks[i].security, 12);
-        g_state.wifiSnap[i].isHidden = _networks[i].isHidden;
-        g_state.wifiSnap[i].clientCount  = _networks[i].clientCount;
+    if (droneFire) {
+        g_state.droneAlert = true;
+        g_state.droneCount++;
+        strlcpy(g_state.lastDroneID, localDroneId,
+                sizeof(g_state.lastDroneID));
+        emitDroneNotification = true;
     }
-
-    if (_droneDetected) {
-        uint32_t now = millis();
-        if (now - _lastDroneTime >= 5000) {
-            _lastDroneTime = now;
-            g_state.droneAlert   = true;
-            g_state.droneCount++;
-            strlcpy(g_state.lastDroneID, _lastDroneID,
-                    sizeof(g_state.lastDroneID));
-            _droneDetected = false;
-            emitDroneNotification = true;
-            snprintf(droneNotifText, sizeof(droneNotifText),
-                     "DRONE: %s", _lastDroneID);
-        }
-    }
-
     STATE_WRITE_END();
 
     if (emitDroneNotification) {
@@ -2643,9 +2734,5 @@ bool WiFiManager::_isTrustedSSID(const char* ssid) const {
     }
     return false;
 }
-
-
-
-
 
 
