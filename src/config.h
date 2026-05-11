@@ -62,7 +62,7 @@ static constexpr uint8_t OFF = 0;
 // MQTT upload
 // -----------------------------------------------------------------------------
 
-#define MQTT_UPLOAD_READY_THRESHOLD   15000
+#define MQTT_UPLOAD_READY_THRESHOLD   20000
 #define MQTT_BACKLOG_LARGE_WARN_THRESHOLD 450   // boot diagnostic only
 #define MQTT_DUMP_FETCH_BATCH_SIZE    16   // records loaded per storage scan
 #define MQTT_DUMP_RECORDS_PER_SLICE    4   // max publish calls per yield
@@ -82,9 +82,9 @@ static constexpr uint8_t OFF = 0;
 // Spool hot-path metadata durability.
 // Event records are always appended immediately; these limits only batch the
 // smaller sidecar files that can be rebuilt/audited after an interrupted run.
-#define STORAGE_EVENT_COUNTER_SAVE_EVERY_N  64
-#define STORAGE_SPOOL_INDEX_SAVE_EVERY_N    128
-#define STORAGE_HOT_META_SAVE_INTERVAL_MS   15000UL
+#define STORAGE_EVENT_COUNTER_SAVE_EVERY_N  256
+#define STORAGE_SPOOL_INDEX_SAVE_EVERY_N    512
+#define STORAGE_HOT_META_SAVE_INTERVAL_MS   60000UL
 
 // WiFi capture retune guard. If esp_wifi_set_channel() blocks for longer than
 // this during promiscuous capture, stretch channel dwell temporarily so capture
@@ -122,7 +122,7 @@ static constexpr uint8_t OFF = 0;
 #define SPECTRE_DEBUG_PROFILE_DEV       3
 //-------------------------------------------------------------------------------
 #ifndef SPECTRE_DEBUG_PROFILE
-#define SPECTRE_DEBUG_PROFILE           SPECTRE_DEBUG_PROFILE_DEV
+#define SPECTRE_DEBUG_PROFILE           SPECTRE_DEBUG_PROFILE_DEBUG
 #endif
 
 // Area toggles matter in DEBUG only. RUN ignores them and still logs warnings/errors.
@@ -180,10 +180,10 @@ static constexpr uint8_t OFF = 0;
 #define SPECTRE_DEBUG_AREA_MQTT         _SPECTRE_DEBUG_AREA_DEFAULT  // MQTT
 #endif
 #ifndef SPECTRE_DEBUG_AREA_EXPORT
-#define SPECTRE_DEBUG_AREA_EXPORT       _SPECTRE_DEBUG_AREA_DEFAULT  // EXPORT
+#define SPECTRE_DEBUG_AREA_EXPORT       OFF  // EXPORT
 #endif
 #ifndef SPECTRE_DEBUG_AREA_GPS
-#define SPECTRE_DEBUG_AREA_GPS          _SPECTRE_DEBUG_AREA_DEFAULT  // GPS
+#define SPECTRE_DEBUG_AREA_GPS          OFF  // GPS
 #endif
 #ifndef SPECTRE_DEBUG_AREA_MODE
 #define SPECTRE_DEBUG_AREA_MODE         OFF  // MODE, MISSION, UI

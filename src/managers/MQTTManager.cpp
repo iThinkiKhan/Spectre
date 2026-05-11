@@ -249,10 +249,20 @@ void MQTTManager::begin() {
     _migrateLegacyQueueFiles();
     _refreshPendingCount();
 
-    if (_queuedRecords > MQTT_BACKLOG_LARGE_WARN_THRESHOLD) {
-        DLOG_WARN("MQTT", "Backlog large: %d records", _queuedRecords);
+    const StorageManager::PendingBacklogTrustState backlogState =
+        STORAGE.getBacklogTrustState();
+    if (backlogState == StorageManager::BACKLOG_TRUSTED) {
+        if (_queuedRecords > MQTT_BACKLOG_LARGE_WARN_THRESHOLD) {
+            DLOG_WARN("MQTT", "Backlog large: %d records", _queuedRecords);
+        } else {
+            DLOG_INFO("MQTT", "Backlog loaded: %d records", _queuedRecords);
+        }
+    } else if (backlogState == StorageManager::BACKLOG_DEGRADED) {
+        DLOG_WARN("MQTT",
+                  "Backlog degraded: counter trust degraded pending=%d",
+                  _queuedRecords);
     } else {
-        DLOG_INFO("MQTT", "Backlog loaded: %d records", _queuedRecords);
+        DLOG_WARN("MQTT", "Backlog unknown: repair required");
     }
 
     // Schedule the one-shot startup FieldVault upload window. The actual
@@ -275,6 +285,9 @@ void MQTTManager::tick() {
 
 bool MQTTManager::uploadLeaseReady(bool force) const {
     if (_uploadPausedByMission()) {
+        return false;
+    }
+    if (STORAGE.isReady() && !STORAGE.isPendingEventCountAuthoritative()) {
         return false;
     }
     const uint32_t pendingRecords =
@@ -1732,12 +1745,13 @@ void MQTTManager::_refreshPendingCount(bool refreshDebriefMirror) {
         STORAGE.isReady() ? STORAGE.getAuthoritativePendingEventCount() : 0;
     const uint32_t sessionPending =
         STORAGE.isReady() ? STORAGE.getSessionPendingEventCount() : 0;
+    const bool backlogTrusted = STORAGE.isPendingEventCountAuthoritative();
 
     _queuedRecords = static_cast<int>(totalPending);
     STATE_WRITE_BEGIN();
     g_state.sessionFilesPending = static_cast<int>(totalPending);
-    g_state.kaliSyncAvailable = (totalPending > 0);
-    g_state.kaliSyncPending = (totalPending > 0);
+    g_state.kaliSyncAvailable = backlogTrusted && (totalPending > 0);
+    g_state.kaliSyncPending = backlogTrusted && (totalPending > 0);
     if (refreshDebriefMirror) {
         g_state.exportLastPending = sessionPending;
     }
@@ -1745,10 +1759,16 @@ void MQTTManager::_refreshPendingCount(bool refreshDebriefMirror) {
 }
 
 bool MQTTManager::dumpAvailable() {
+    if (STORAGE.isReady() && !STORAGE.isPendingEventCountAuthoritative()) {
+        return false;
+    }
     return queueDepth() > 0;
 }
 
 int MQTTManager::queueDepth() {
+    if (STORAGE.isReady() && !STORAGE.isPendingEventCountAuthoritative()) {
+        return 0;
+    }
     if (!STORAGE.isReady()) {
         return _queuedRecords;
     }
@@ -1756,6 +1776,9 @@ int MQTTManager::queueDepth() {
 }
 
 int MQTTManager::uploadReadyCount() const {
+    if (STORAGE.isReady() && !STORAGE.isPendingEventCountAuthoritative()) {
+        return 0;
+    }
     if (!STORAGE.isReady()) {
         return _queuedRecords;
     }
@@ -1847,11 +1870,12 @@ uint32_t MQTTManager::_appendSyncEvent(const char* eventType,
 void MQTTManager::_noteQueuedRecord(QueueMetric metric) {
     const uint32_t totalPending =
         STORAGE.isReady() ? STORAGE.getAuthoritativePendingEventCount() : 0U;
+    const bool backlogTrusted = STORAGE.isPendingEventCountAuthoritative();
     _queuedRecords = static_cast<int>(totalPending);
     STATE_WRITE_BEGIN();
     g_state.sessionFilesPending = static_cast<int>(totalPending);
-    g_state.kaliSyncAvailable = (totalPending > 0);
-    g_state.kaliSyncPending = (totalPending > 0);
+    g_state.kaliSyncAvailable = backlogTrusted && (totalPending > 0);
+    g_state.kaliSyncPending = backlogTrusted && (totalPending > 0);
     switch (metric) {
         case QUEUE_METRIC_PROBES:
             g_state.sessionProbes++;

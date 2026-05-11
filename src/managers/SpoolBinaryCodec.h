@@ -9,6 +9,7 @@
 namespace SpoolBin {
 
 static constexpr uint32_t SEGMENT_MAGIC = 0x00325053UL; // "SP2\0"
+static constexpr uint32_t CHECKPOINT_MAGIC = 0x31435053UL; // "SPC1"
 
 struct SegmentHeaderV2 {
     uint32_t magic = SEGMENT_MAGIC;
@@ -37,6 +38,37 @@ struct RecordPrefix {
     uint8_t type = 0;
     uint8_t flags = 0;
     uint16_t length = 0;
+};
+
+// Compact segment-local summary checkpoint appended into binary segments.
+// This is written as a regular record body behind REC_CHECKPOINT.
+struct SpoolSegmentCheckpointV1 {
+    uint32_t magic = CHECKPOINT_MAGIC;
+    uint16_t version = 1;
+    uint32_t segmentId = 0;
+    uint32_t lastEventId = 0;
+    uint32_t recordCount = 0;
+    uint32_t eventCount = 0;
+    uint32_t enrichDeltaCount = 0;
+
+    uint32_t missionCount = 0;
+    uint32_t noiseCount = 0;
+
+    uint32_t pendingUploadMissionCount = 0;
+    uint32_t pendingUploadNoiseCount = 0;
+
+    uint32_t pendingEnrichmentCount = 0;
+
+    uint32_t p0Count = 0;
+    uint32_t p1Count = 0;
+    uint32_t p2Count = 0;
+    uint32_t p3Count = 0;
+
+    uint32_t minTimestampMs = 0;
+    uint32_t maxTimestampMs = 0;
+
+    uint32_t bodyOffset = 0;
+    uint32_t crc32 = 0;
 };
 
 bool writeBytes(fs::File& f, const void* data, size_t len);
@@ -73,6 +105,15 @@ bool appendRecordToOpen(fs::File& f,
                         uint16_t length,
                         uint32_t eventId,
                         SegmentHeaderV2& hdr);
+
+bool appendCheckpointRecordV1(const String& path,
+                              SpoolSegmentCheckpointV1& checkpoint,
+                              AppendRecordLocation* outLoc = nullptr);
+
+bool decodeCheckpointRecordV1(const uint8_t* data,
+                              size_t length,
+                              uint32_t bodyOffset,
+                              SpoolSegmentCheckpointV1& out);
 
 bool createEmptySegmentV2(const String& path, uint32_t segmentId, uint32_t createdMs);
 

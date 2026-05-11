@@ -72,6 +72,12 @@ enum StorageRetentionPolicy : uint8_t {
     STORAGE_POLICY_CRITICAL_ONLY
 };
 
+enum SpoolRepairMode : uint8_t {
+    REPAIR_BACKGROUND = 0,
+    REPAIR_FAST_IDLE,
+    REPAIR_EMERGENCY
+};
+
 enum StoragePriority : uint8_t {
     STORAGE_PRIO_P0 = 0,
     STORAGE_PRIO_P1 = 1,
@@ -160,6 +166,42 @@ struct AppendEventResult {
     }
 };
 
+enum class CounterTrust : uint8_t {
+    Trusted = 0,
+    TrustedSnapshotLagged = 1,
+    Degraded = 2,
+    RepairRequired = 3,
+    EmergencyOnly = 4
+};
+
+using StorageCounterTrustState = CounterTrust;
+
+static constexpr CounterTrust STORAGE_COUNTER_TRUSTED = CounterTrust::Trusted;
+static constexpr CounterTrust STORAGE_COUNTER_TRUSTED_SNAPSHOT_LAGGED =
+    CounterTrust::TrustedSnapshotLagged;
+static constexpr CounterTrust STORAGE_COUNTER_DEGRADED = CounterTrust::Degraded;
+static constexpr CounterTrust STORAGE_COUNTER_REPAIR_REQUIRED =
+    CounterTrust::RepairRequired;
+static constexpr CounterTrust STORAGE_COUNTER_EMERGENCY_ONLY =
+    CounterTrust::EmergencyOnly;
+
+enum SpoolSegmentTrustState : uint8_t {
+    SPOOL_SEGMENT_TRUSTED = 0,
+    SPOOL_SEGMENT_UNTRUSTED = 1,
+    SPOOL_SEGMENT_INVALID = 2
+};
+
+struct QueuedAppendTiming {
+    uint32_t parseMs = 0;
+    uint32_t classifyMs = 0;
+    uint32_t buildDocMs = 0;
+    uint32_t appendSegmentMs = 0;
+    uint32_t indexPersistMs = 0;
+    uint32_t counterMs = 0;
+    uint32_t uiMs = 0;
+    uint32_t totalMs = 0;
+};
+
 enum SpoolSegmentFormat : uint8_t {
     SPOOL_SEGMENT_JSONL = 1,
     SPOOL_SEGMENT_BIN_V2 = 2
@@ -204,6 +246,7 @@ struct SpoolSegmentInfo {
     uint32_t lastEventId = 0;
     uint16_t summaryVersion = 0;
     bool summaryValid = false;  // cache-only; fall back to scan when false
+    uint8_t trustState = SPOOL_SEGMENT_TRUSTED;
 
     uint32_t recordCount = 0;
     uint32_t eventCount = 0;
@@ -244,7 +287,7 @@ struct PendingEventDescriptor {
 };
 
 static constexpr uint32_t UIX_MAGIC = 0x00584955UL; // "UIX\0"
-static constexpr uint16_t UIX_RECORD_LEN_V1 = 68;
+static constexpr uint16_t UIX_RECORD_LEN_V1 = 72;
 
 struct UploadIndexRecordV1 {
     uint32_t magic = UIX_MAGIC;
@@ -255,11 +298,14 @@ struct UploadIndexRecordV1 {
     uint32_t offset = 0;
     uint32_t len = 0;
     uint32_t eventId = 0;
+    uint8_t  lane = static_cast<uint8_t>(STORAGE_LANE_NOISE);
+    uint8_t  priority = static_cast<uint8_t>(STORAGE_PRIO_P3);
+    uint16_t reserved1 = 0;
     char     sessionId[40] = "";
     uint32_t crc = 0;
 };
 
-static_assert(sizeof(UploadIndexRecordV1) == 68,
+static_assert(sizeof(UploadIndexRecordV1) == 72,
               "UploadIndexRecordV1 must stay fixed-size");
 
 struct UploadIndexStats {
@@ -281,11 +327,13 @@ struct UploadIndexPagedSession {
 
 struct SpoolIndex {
     uint32_t version = 1;
+    uint32_t generation = 0;
     uint8_t format = SPOOL_SEGMENT_JSONL;
     uint32_t nextSegmentId = 1;
     uint32_t activeSegmentId = 0;
     uint32_t oldestSegmentId = 0;
     uint32_t pendingTotal = 0;
+    uint32_t nextEventId = 1;
     std::vector<String> sessions;
     std::vector<std::pair<String, uint32_t>> uploadedWatermarks;
     std::vector<SpoolSegmentInfo> segments;
@@ -347,7 +395,13 @@ public:
                                          const char* sessionId = nullptr,
                                          bool deferMetadataFlush = false,
                                          bool deferUiRefresh = false);
-    AppendEventResult appendQueuedRecord(const RAMSpool::EventSlot& slot);
+    AppendEventResult appendQueuedRecord(const RAMSpool::EventSlot& slot,
+                                         QueuedAppendTiming* timing = nullptr);
+
+    void     beginWorkerAppendBatch(const char* reason = nullptr);
+    bool     endWorkerAppendBatch(const char* reason = nullptr,
+                                  bool forceFlush = false);
+    bool     hasOpenWorkerAppendBatch() const;
 
     bool     getEventBatch(uint32_t sinceId, int maxCount, JsonDocument& out);
     bool     getEventBatchForSession(const char* sessionId, uint32_t sinceId,
@@ -407,6 +461,28 @@ public:
     // tooling and triggers a full O(spool) scan via recountPendingFromSpool().
     uint32_t getPendingEventCount(bool forceRescan = false);
     uint32_t getAuthoritativePendingEventCount() const { return _pendingEventCount; }
+    enum PendingBacklogTrustState : uint8_t {
+        BACKLOG_TRUSTED = 0,
+        BACKLOG_DEGRADED = 1,
+        BACKLOG_UNKNOWN = 2
+    };
+    PendingBacklogTrustState getBacklogTrustState() const {
+        switch (_counterTrustState) {
+            case CounterTrust::Trusted:
+            case CounterTrust::TrustedSnapshotLagged:
+                return BACKLOG_TRUSTED;
+            case CounterTrust::Degraded:
+                return BACKLOG_DEGRADED;
+            case CounterTrust::RepairRequired:
+            case CounterTrust::EmergencyOnly:
+            default:
+                return BACKLOG_UNKNOWN;
+        }
+    }
+    bool isPendingEventCountAuthoritative() const {
+        return _counterTrustState != CounterTrust::RepairRequired &&
+               _counterTrustState != CounterTrust::EmergencyOnly;
+    }
 
     // Explicit, costly: walks every record in every segment to recompute
     // the pending counter and replace the live value. Reserve for boot
@@ -469,6 +545,15 @@ public:
     StorageRetentionPolicy getRetentionPolicy() const { return _retentionPolicy; }
     uint32_t getDedupedCount() const { return _dedupStats.suppressed; }
     uint32_t getDroppedCount() const { return _dedupStats.dropped; }
+    CounterTrust getCounterTrustState() const {
+        return _counterTrustState;
+    }
+    const char* getCounterTrustReason() const {
+        return _counterTrustReason.c_str();
+    }
+    uint32_t getCounterTrustSinceMs() const {
+        return _counterTrustSinceMs;
+    }
     bool usingSpoolBackend() const { return true; }
     bool compactSpool();
     void refreshStorageUiState(bool defer = false, bool recalcPressure = true);
@@ -478,20 +563,26 @@ public:
         return _workerMetadataDirtyPending;
     }
     bool hasWorkerUiRefreshWork() const {
-        return _storageUiRefreshPending;
+        return _storageUiRefreshPending && _storageUiRefreshDue();
     }
     bool hasStorageMaintenanceWork() const {
         return _repairRequested ||
-               _repairJob.active ||
                _spoolAuditRepairRequired ||
+               _repairJob.active ||
                _spoolSummaryRebuildPending ||
                _pendingCountDirty ||
                _workerMetadataDirtyPending ||
-               _storageUiRefreshPending;
+               (_storageUiRefreshPending && _storageUiRefreshDue()) ||
+               _workerAppendBatchActive;
+    }
+    bool hasSpoolRepairWork() const {
+        return _repairRequested ||
+               _spoolAuditRepairRequired ||
+               _repairJob.active;
     }
     bool requestSpoolRepair(const char* reason = nullptr);
     bool serviceStorageMaintenanceStep(uint32_t budgetMs, uint16_t maxRecords);
-    bool repairStep(uint32_t budgetMs, uint16_t maxRecords);
+    bool repairStep(SpoolRepairMode mode, uint32_t budgetMs, uint16_t maxRecords);
 
     struct RepairProgressSnapshot {
         bool     active           = false;
@@ -501,6 +592,22 @@ public:
         uint32_t startedMs        = 0;
         const char* reason        = "";
     };
+
+    struct StorageUiSnapshot {
+        bool nearlyFull = false;
+        bool full = false;
+        bool overrun = false;
+        bool dumpAdvised = false;
+        uint8_t mode = 0;
+        uint8_t policy = 0;
+        uint16_t usedPct = 0;
+        uint32_t freeBytes = 0;
+        uint32_t pending = 0;
+        bool repairRequired = false;
+        uint8_t counterTrust = 0;
+        char policyText[20] = "NORMAL";
+    };
+
     RepairProgressSnapshot getRepairProgress() const {
         RepairProgressSnapshot s;
         s.active          = _repairJob.active;
@@ -562,6 +669,16 @@ public:
         bool repaired             = false;
     };
 
+    struct SpoolBootAuditResult {
+        bool repairRequired = false;
+        bool snapshotLagged = false;
+        bool generationMatch = false;
+        bool headerAuditOk = false;
+        bool checkpointAuditOk = false;
+        bool counterOk = false;
+        uint32_t auditedSegments = 0;
+    };
+
 private:
     StorageManager() {}
     enum class SegmentPendingScanResult : uint8_t {
@@ -607,15 +724,21 @@ private:
     int         _cachedUsedPct = 0;
     uint32_t    _lastFsStatsRefreshMs = 0;
     uint32_t    _nextEventId = 1;
+    uint32_t    _storageMetaGeneration = 1;
     uint32_t    _lastCounterSaveMs = 0;
     uint16_t    _eventCounterPendingWrites = 0;
     bool        _eventCounterDirty = false;
+    uint32_t    _eventCounterGeneration = 0;
+    bool        _eventCounterLoaded = false;
     uint32_t    _pendingEventCount = 0;
     bool        _pendingCountDirty = true;
+    uint32_t    _eventMetaGeneration = 0;
+    bool        _eventMetaLoaded = false;
     uint32_t    _lastMetaSaveMs = 0;
     uint32_t    _lastSpoolIndexSaveMs = 0;
     uint16_t    _spoolIndexPendingWrites = 0;
     bool        _spoolIndexDirty = false;
+    bool        _spoolIndexLoadFailed = false;
     uint16_t    _workerMetadataPendingWrites = 0;
     uint32_t    _workerMetadataDirtySinceMs = 0;
     bool        _workerMetadataDirtyPending = false;
@@ -624,10 +747,17 @@ private:
     uint32_t    _storageUiRefreshDeferred = 0;
     uint32_t    _storageUiRefreshFlush = 0;
     uint32_t    _storageUiRefreshServiceCount = 0;
+    uint32_t    _storageUiRefreshDirtySinceMs = 0;
     bool        _storageUiRefreshPending = false;
+    StorageUiSnapshot _storageUiSnapshot = {};
+    bool        _storageUiSnapshotValid = false;
     char        _workerBatchFlushReason[32] = {};
     SpoolIndex  _spoolIndex;
     SemaphoreHandle_t _appendMutex = nullptr;
+    bool        _workerAppendBatchActive = false;
+    CounterTrust _counterTrustState = CounterTrust::Trusted;
+    String      _counterTrustReason;
+    uint32_t    _counterTrustSinceMs = 0;
 
     // Upload-batch deferral: when _uploadBatchActive, watermark updates skip
     // flash writes; _uploadBatchDirty tracks whether endUploadBatch needs to
@@ -649,6 +779,7 @@ private:
     std::vector<DedupWindowEntry> _dedupWindow;
     std::vector<HandshakeProgress> _handshakeWindow;
     std::map<uint32_t, String> _binaryLastSessionBySegment;
+    std::map<uint32_t, SpoolBin::SpoolSegmentCheckpointV1> _binaryCheckpointBySegment;
     std::map<String, UploadIndexPagedSession> _uploadIndexBySession;
     std::map<String, std::map<uint32_t, SpoolEnrichmentDelta>> _uploadEnrichBySession;
     std::vector<String> _uploadIndexSessions;
@@ -657,6 +788,7 @@ private:
     static constexpr uint32_t DEDUP_WINDOW_MS = 5UL * 60UL * 1000UL;
     static constexpr uint32_t HANDSHAKE_WINDOW_MS = 15UL * 60UL * 1000UL;
     static constexpr size_t   DEDUP_WINDOW_MAX = 128;
+    static constexpr uint32_t STORAGE_UI_REFRESH_COALESCE_MS = 250UL;
     static constexpr uint8_t  STORAGE_WATCH_PCT = 80;
     static constexpr uint8_t  STORAGE_FULL_PCT = 92;
     static constexpr uint8_t  STORAGE_OVERRUN_PCT = 97;
@@ -675,20 +807,29 @@ private:
     String _gpsJson();
     bool   _appendToLog(String path, String key, JsonObject& entry);
     bool   _appendJsonLine(const String& path, JsonDocument& doc);
+    void   _bumpStorageMetaGeneration();
     uint32_t _lastUploadedEventIdForSession(const String& sessionId);
     uint32_t _pendingEventCountForSession(const String& sessionId);
     uint32_t _pendingEventCountForSessionFromSpool(const String& sessionId) const;
     bool   _loadEventCounter();
-    bool   _persistEventCounter(bool force = false);
+    bool   _persistEventCounter(bool force = false, const char* reason = nullptr);
     bool   _loadEventMeta();
-    bool   _persistEventMeta(bool force = false);
+    bool   _persistEventMeta(bool force = false, const char* reason = nullptr);
+    bool   _atomicWriteFile(const String& path,
+                            std::function<bool(fs::File&)> writer,
+                            bool keepBackup);
+    bool   _reconcileStorageMetadata();
+    bool   _activeSegmentConfirmsNextEventId(uint32_t nextEventId) const;
+    uint32_t _scanNextEventIdFromSpool() const;
     AppendEventResult _appendEventDetailedInternal(
         const char* type,
         JsonObjectConst payload,
         const char* sessionIdOverride,
         const RAMSpool::CaptureClassification* classification,
         bool deferMetadataFlush,
-        bool deferUiRefresh);
+        bool deferUiRefresh,
+        bool deferPressureRefresh,
+        QueuedAppendTiming* timing = nullptr);
     void   _initDefaultConfig();
     String _spoolDir() const;
     String _spoolIndexPath() const;
@@ -703,22 +844,33 @@ private:
     bool _validateUploadIndexRecord(const UploadIndexRecordV1& rec,
                                     uint32_t expectedSegmentId) const;
     bool _addUploadPtrToMemory(const UploadIndexRecordV1& rec);
+    bool _applyExactUploadedMarks(const String& sessionId,
+                                  const std::vector<UploadIndexRecordV1>& selected,
+                                  uint32_t before,
+                                  uint32_t upToId);
     void _releaseUploadIndexMemory(const char* reason);
     // force=true guarantees an immediate write. force=false is the hot-path
     // mode — it throttles to ~5s and defers while an upload batch is active.
-    bool _persistSpoolIndex(bool force = false);
+    bool _persistSpoolIndex(bool force = false, const char* reason = nullptr);
     bool _openNewSpoolSegment();
     SpoolSegmentInfo* _findSegmentInfo(uint32_t segmentId);
     const SpoolSegmentInfo* _findSegmentInfo(uint32_t segmentId) const;
     void _rememberSession(const String& sessionId);
     uint32_t _uploadedWatermarkForSession(const String& sessionId) const;
     void _setUploadedWatermarkForSession(const String& sessionId, uint32_t eventId);
-    bool _appendSpoolRecord(JsonDocument& doc, uint32_t* outEventId = nullptr);
+    bool _appendSpoolRecord(JsonDocument& doc,
+                            uint32_t* outEventId = nullptr,
+                            bool deferIndexPersist = false,
+                            QueuedAppendTiming* timing = nullptr);
     bool _appendSpoolEnrichmentDelta(const String& sessionId,
                                      uint32_t eventId,
                                      float lat, float lon,
                                      float alt, float accuracy,
                                      const char* tag);
+    bool _maybeWriteBinarySegmentCheckpoint(SpoolSegmentInfo& seg,
+                                            const char* reason,
+                                            bool force = false,
+                                            bool* outWrote = nullptr);
     bool _loadSpoolEnrichmentsForSession(const String& sessionId,
                                          std::vector<SpoolEnrichmentDelta>& enrichments) const;
     bool _loadSpoolEnrichmentIds(const String& sessionId,
@@ -817,15 +969,35 @@ private:
                                   bool deferUiRefresh = false);
     void _trimDedupWindows();
     const char* _policyText() const;
+    const char* _counterTrustText() const;
+    void _setCounterTrustState(CounterTrust state,
+                               const char* reason = nullptr);
+    void _applyCounterDelta(const char* reason,
+                            int32_t pendingUploadDelta,
+                            int32_t pendingEnrichDelta,
+                            int32_t droppedDelta,
+                            int32_t suppressedDelta,
+                            StorageLane lane,
+                            StoragePriority priority);
+    void _applyPendingEventCountDelta(int32_t delta,
+                                      const char* reason,
+                                      bool markMetadataDirty,
+                                      bool markUiRefresh);
     void _publishStorageEventIfNeeded(StoragePressureMode oldMode,
                                       StoragePressureMode newMode);
     void _maybeCompactForPressure(StoragePressureMode oldMode,
                                   StoragePressureMode newMode);
     void _refreshFsStats(bool force = false);
+    void _queueStorageUiRefresh(bool defer);
+    bool _storageUiRefreshDue() const;
+    StorageUiSnapshot _buildStorageUiSnapshot(size_t freeBytes,
+                                              int usedPct) const;
+    bool _storageUiSnapshotChanged(const StorageUiSnapshot& next) const;
     bool _appendSegmentRecord(SpoolSegmentInfo& seg,
                               JsonDocument& doc,
                               uint32_t* outEventId = nullptr,
-                              SpoolBin::AppendRecordLocation* outLoc = nullptr);
+                              SpoolBin::AppendRecordLocation* outLoc = nullptr,
+                              QueuedAppendTiming* timing = nullptr);
     bool _scanSegmentRecords(uint32_t segmentId,
                          std::function<bool(const DecodedSpoolRecord&)> cb) const;
     bool _scanJsonlSegmentRecords(uint32_t segmentId,
@@ -835,6 +1007,16 @@ private:
     const char* _segmentFormatText(uint8_t format) const;
 
     bool _auditAndRepairSpool(const char* reason, bool repair, SpoolAuditResult* out);
+    bool _auditSpoolBoot(SpoolBootAuditResult& audit) const;
+    bool _auditSpoolBinaryHeader(const SpoolSegmentInfo& seg,
+                                 SpoolBin::SegmentHeaderV2& hdr) const;
+    bool _auditSpoolBinaryCheckpointTail(const SpoolSegmentInfo& seg,
+                                         const SpoolBin::SegmentHeaderV2& hdr) const;
+    SpoolRepairMode _selectRepairMode() const;
+    void _repairBudgetsForMode(SpoolRepairMode mode,
+                               uint32_t& budgetMs,
+                               uint16_t& maxRecords) const;
+    bool _shouldDeferWorkerMetadataFlush() const;
     void _startRepairJob(const char* reason);
     void _resetRepairJob();
     bool _beginRepairSegment();

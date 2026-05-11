@@ -1368,7 +1368,7 @@ void DisplayManager::_buildScreenSystem() {
     };
 
     makeSystemRow(30, "STORAGE", &_sysStorageValue, "FREE", &_sysFreeValue);
-    makeSystemRow(54, "PENDING", &_sysPendingValue, "DEDUPE", &_sysDedupeValue);
+    makeSystemRow(54, "TOTAL", &_sysPendingValue, "DEDUPE", &_sysDedupeValue);
     makeSystemRow(78, "MODE", &_sysModeValue, "POLICY", &_sysPolicyValue);
     _sysTimeLabel = makeClippedLabel(_sysLivePanel, "UPTIME", CLR_GREY, FONT_SMALL, 4, 102, 100);
     _sysTimeValue = makeClippedLabel(_sysLivePanel, "--", CLR_CYAN, FONT_SMALL, 4, 114, 100);
@@ -1708,6 +1708,7 @@ void DisplayManager::drawMission(MissionProfile profile) {
         int probes = 0;
         int nodes = 0;
         int pending = 0;
+        const bool backlogTrusted = STORAGE.isPendingEventCountAuthoritative();
         uint8_t subGhzMode = 0;
         uint8_t radioOwner = 0;
         char lastMac[18] = "";
@@ -1718,9 +1719,9 @@ void DisplayManager::drawMission(MissionProfile profile) {
         wifiNetworks = g_state.wifiNetworkCount;
         probes = g_state.probePacketCount;
         nodes = g_state.subGhzNodeCount;
-        pending = STORAGE.isReady()
+        pending = (STORAGE.isReady() && backlogTrusted)
             ? static_cast<int>(STORAGE.getAuthoritativePendingEventCount())
-            : g_state.sessionFilesPending;
+            : -1;
         subGhzMode = g_state.subGhzMode;
         radioOwner = g_state.radioOwner;
         strlcpy(lastMac, g_state.lastProbedMAC, sizeof(lastMac));
@@ -1732,8 +1733,13 @@ void DisplayManager::drawMission(MissionProfile profile) {
         lv_obj_set_style_text_color(_pwnyStatusValue, lv_color_hex(CLR_YELLOW), 0);
 
         char statsBuf[48];
-        snprintf(statsBuf, sizeof(statsBuf), "NET %d  PROBE %d  NODE %d  Q %d",
-                 wifiNetworks, probes, nodes, pending);
+        if (pending >= 0) {
+            snprintf(statsBuf, sizeof(statsBuf), "NET %d  PROBE %d  NODE %d  Q %d",
+                     wifiNetworks, probes, nodes, pending);
+        } else {
+            snprintf(statsBuf, sizeof(statsBuf), "NET %d  PROBE %d  NODE %d  Q ?",
+                     wifiNetworks, probes, nodes);
+        }
         lv_label_set_text(_pwnyStatsValue, statsBuf);
 
         char rowBuf[56];
@@ -1757,6 +1763,7 @@ void DisplayManager::drawMission(MissionProfile profile) {
     uint32_t total = 0;
     uint16_t percent = 0;
     int pending = 0;
+    const bool backlogTrusted = STORAGE.isPendingEventCountAuthoritative();
     char phase[16] = "";
     char timeLocal[24] = "";
 
@@ -1766,9 +1773,9 @@ void DisplayManager::drawMission(MissionProfile profile) {
     published = g_state.uploadPublished;
     total = g_state.uploadTotal;
     percent = g_state.uploadPercent;
-    pending = STORAGE.isReady()
+    pending = (STORAGE.isReady() && backlogTrusted)
         ? static_cast<int>(STORAGE.getAuthoritativePendingEventCount())
-        : g_state.sessionFilesPending;
+        : -1;
     strlcpy(phase, g_state.uploadPhase, sizeof(phase));
     strlcpy(timeLocal, g_state.timeLocal, sizeof(timeLocal));
     STATE_READ_END();
@@ -1779,19 +1786,31 @@ void DisplayManager::drawMission(MissionProfile profile) {
                                 lv_color_hex(uploadActive ? CLR_GREEN : CLR_CYAN), 0);
 
     char statsBuf[48];
-    snprintf(statsBuf, sizeof(statsBuf),
-             "PEND:%d PUB:%lu/%lu %u%%",
-             pending,
-             static_cast<unsigned long>(published),
-             static_cast<unsigned long>(total),
-             static_cast<unsigned>(percent));
+    if (pending >= 0) {
+        snprintf(statsBuf, sizeof(statsBuf),
+                 "PEND:%d PUB:%lu/%lu %u%%",
+                 pending,
+                 static_cast<unsigned long>(published),
+                 static_cast<unsigned long>(total),
+                 static_cast<unsigned>(percent));
+    } else {
+        snprintf(statsBuf, sizeof(statsBuf),
+                 "PEND:? PUB:%lu/%lu %u%%",
+                 static_cast<unsigned long>(published),
+                 static_cast<unsigned long>(total),
+                 static_cast<unsigned>(percent));
+    }
     lv_label_set_text(_pwnyStatsValue, statsBuf);
 
     char rowBuf[8][52] = {};
     snprintf(rowBuf[0], sizeof(rowBuf[0]), "Phase  %s", phase[0] ? phase : "IDLE");
     snprintf(rowBuf[1], sizeof(rowBuf[1]), "Link   %s", wifiConnected ? "ONLINE" : "OFFLINE");
     snprintf(rowBuf[2], sizeof(rowBuf[2]), "Clock  %s", timeLocal[0] ? timeLocal : "--");
-    snprintf(rowBuf[3], sizeof(rowBuf[3]), "Queue  %d pending", pending);
+    if (pending >= 0) {
+        snprintf(rowBuf[3], sizeof(rowBuf[3]), "Queue  %d pending", pending);
+    } else {
+        snprintf(rowBuf[3], sizeof(rowBuf[3]), "Queue  ? pending");
+    }
 
     for (int i = 0; i < 4; ++i) {
         setRow(i, rowBuf[i], i < 3 ? CLR_WHITE : CLR_GREY);
@@ -2750,11 +2769,14 @@ void DisplayManager::drawSystem(float battV, unsigned long uptimeMs,
     bool storageFull;
     bool storageOverrun;
     bool storageDumpAdvised;
+    bool storageRepairRequired;
     uint8_t storageMode;
     uint8_t storagePolicy;
+    uint8_t storageCounterTrust;
     uint16_t storageUsedPct;
     uint32_t storageFreeBytes;
-    uint32_t storagePending;
+    uint32_t storageMissionTotal;
+    uint32_t storageNoiseTotal;
     uint32_t storageDropped;
     uint32_t storageDeduped;
     uint16_t battVoltageMv;
@@ -2775,11 +2797,14 @@ void DisplayManager::drawSystem(float battV, unsigned long uptimeMs,
     storageFull = g_state.storageFull;
     storageOverrun = g_state.storageOverrun;
     storageDumpAdvised = g_state.storageDumpAdvised;
+    storageRepairRequired = g_state.storageRepairRequired;
     storageMode = g_state.storageMode;
     storagePolicy = g_state.storagePolicy;
+    storageCounterTrust = g_state.storageCounterTrust;
     storageUsedPct = g_state.storageUsedPct;
     storageFreeBytes = g_state.storageFreeBytes;
-    storagePending = g_state.storagePending;
+    storageMissionTotal = g_state.storageMissionTotal;
+    storageNoiseTotal = g_state.storageNoiseTotal;
     storageDropped = g_state.storageDropped;
     storageDeduped = g_state.storageDeduped;
     battVoltageMv = g_state.battVoltageMv;
@@ -2849,8 +2874,14 @@ void DisplayManager::drawSystem(float battV, unsigned long uptimeMs,
     }
 
     char pendingLine[24];
-    snprintf(pendingLine, sizeof(pendingLine), "%lu EVT",
-             static_cast<unsigned long>(storagePending));
+    const bool showRepairRequired = storageRepairRequired;
+    if (showRepairRequired) {
+        snprintf(pendingLine, sizeof(pendingLine), "REPAIR REQUIRED");
+    } else {
+        const uint32_t storageTotalRecords = storageMissionTotal + storageNoiseTotal;
+        snprintf(pendingLine, sizeof(pendingLine), "%lu EVT",
+                 static_cast<unsigned long>(storageTotalRecords));
+    }
 
     char dedupeLine[24];
     snprintf(dedupeLine, sizeof(dedupeLine), "%lu DD %lu DR",
@@ -2917,7 +2948,8 @@ void DisplayManager::drawSystem(float battV, unsigned long uptimeMs,
     else if (storageFull) usedColor = CLR_YELLOW;
     else if (storageNearlyFull) usedColor = CLR_CYAN;
 
-    uint32_t pendingColor = storagePending > 0 ? CLR_YELLOW : CLR_WHITE;
+    uint32_t pendingColor = showRepairRequired ? CLR_RED
+                          : ((storageMissionTotal + storageNoiseTotal) > 0 ? CLR_WHITE : CLR_GREY);
     if (storageOverrun) pendingColor = CLR_RED;
 
     uint32_t modeColor = CLR_GREEN;

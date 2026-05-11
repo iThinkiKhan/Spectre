@@ -168,7 +168,8 @@ struct SpectreState {
     uint32_t storageDeduped   = 0;
     uint32_t storageOldestPendingMs = 0;
     bool     storageDumpAdvised = false;
-    bool     storageRepairRequired = false;
+    bool     storageRepairRequired = false;  // CounterTrust::RepairRequired/EmergencyOnly
+    uint8_t  storageCounterTrust = 0;         // CounterTrust value
     char     storagePolicyText[20] = "NORMAL";
     char    sessionId[40]   = "";
     unsigned long uptimeMs  = 0;

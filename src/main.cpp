@@ -1088,14 +1088,19 @@ static bool _buildPendingEnrichmentBatch(EventBatchRecord* out,
         return false;
     }
 
+    const StorageLaneCounts pendingCounts = STORAGE.getPendingEnrichmentCounts();
+    if (pendingCounts.total() == 0) {
+        return true;
+    }
+
     DLOG_INFO("BLE", "Enrichment pending scan begin claimed=%u max=%u",
               static_cast<unsigned>(enrichClaimedCount),
               static_cast<unsigned>(maxCount));
 
-    PendingEventDescriptor pending[PHONE_ENRICH_BATCH_MAX] = {};
+    PendingEventDescriptor pendingBatch[PHONE_ENRICH_BATCH_MAX] = {};
     if (!STORAGE.getPendingEnrichmentBatchExcluding(
             enrichClaimedEventIds, enrichClaimedCount,
-            pending, maxCount, outCount)) {
+            pendingBatch, maxCount, outCount)) {
         DLOG_WARN("BLE", "Failed to read spool enrichment backlog batch");
         return false;
     }
@@ -1105,13 +1110,13 @@ static bool _buildPendingEnrichmentBatch(EventBatchRecord* out,
 
     for (size_t i = 0; i < outCount; ++i) {
         uint32_t eventEpochUtc = 0;
-        out[i].eventId     = pending[i].eventId;
+        out[i].eventId     = pendingBatch[i].eventId;
         out[i].timestampMs =
-            TIME_SVC.epochForMillis(pending[i].timestampMs, eventEpochUtc)
+            TIME_SVC.epochForMillis(pendingBatch[i].timestampMs, eventEpochUtc)
                 ? eventEpochUtc
-                : pending[i].timestampMs;
-        out[i].type        = pending[i].type;
-        out[i].status      = pending[i].status;
+                : pendingBatch[i].timestampMs;
+        out[i].type        = pendingBatch[i].type;
+        out[i].status      = pendingBatch[i].status;
     }
 
     return true;
@@ -1414,6 +1419,16 @@ static void serviceEnrichmentPipeline(CompanionScheduler& cs) {
                     return;
                 }
             }
+        }
+
+        if (!cs.enrichmentRequestIssued &&
+            enrichQueueSize == 0 &&
+            enrichClaimedCount == 0 &&
+            cs.pendingItems == 0 &&
+            !companionHasPriorityReason(cs)) {
+            enrichClearAllClaims();
+            _finishPhoneEnrichment(cs, true);
+            return;
         }
 
         // Issue next request if the queue has room and no request is in flight.
@@ -2749,13 +2764,17 @@ void _logRuntimeHealth(uint32_t nowMs) {
         uint8_t healthOwner = static_cast<uint8_t>(RADIO_ARB.currentOwner());
         crashCheckpointVolatile(CrashPhase::RUNTIME_HEALTH,
                                 healthOwner,
-                                STORAGE.isReady() ? STORAGE.getPendingEventCount() : 0U);
+                                (STORAGE.isReady() &&
+                                 STORAGE.isPendingEventCountAuthoritative())
+                                    ? STORAGE.getPendingEventCount()
+                                    : 0U);
         struct HealthSnapshot {
             bool wifiConnected;
             bool bleConnected;
             bool gpsValid;
             int wifiCount;
             int pendingFiles;
+            bool backlogTrusted;
             uint32_t pendingEnrich;
             uint8_t radioOwner;
             bool timeValid;
@@ -2774,8 +2793,10 @@ void _logRuntimeHealth(uint32_t nowMs) {
         health.gpsValid = g_state.gpsValid;
         health.wifiCount = g_state.wifiNetworkCount;
         health.pendingFiles =
-            STORAGE.isReady() ? static_cast<int>(STORAGE.getPendingEventCount())
-                              : g_state.sessionFilesPending;
+            (STORAGE.isReady() && STORAGE.isPendingEventCountAuthoritative())
+                ? static_cast<int>(STORAGE.getPendingEventCount())
+                : -1;
+        health.backlogTrusted = STORAGE.isPendingEventCountAuthoritative();
         health.pendingEnrich =
             g_state.storagePendingEnrichMission + g_state.storagePendingEnrichNoise;
         health.radioOwner = g_state.radioOwner;
@@ -2788,6 +2809,11 @@ void _logRuntimeHealth(uint32_t nowMs) {
         strlcpy(health.timeSource, g_state.timeSource, sizeof(health.timeSource));
         strlcpy(health.subGhzBackend, g_state.subGhzBackend, sizeof(health.subGhzBackend));
         STATE_READ_END();
+
+        char pendingUploadText[16] = "?";
+        if (health.pendingFiles >= 0) {
+            snprintf(pendingUploadText, sizeof(pendingUploadText), "%d", health.pendingFiles);
+        }
 
         const uint32_t totalHeap = heap_caps_get_total_size(MALLOC_CAP_8BIT);
         const uint32_t freeHeap = heap_caps_get_free_size(MALLOC_CAP_8BIT);
@@ -2815,7 +2841,7 @@ void _logRuntimeHealth(uint32_t nowMs) {
         _updateCoreLoad(nowMs);
 
         DLOG_INFO("HEAP",
-          "heap free=%luKB min=%luKB largest=%luKB frag=%lu%% psramFree=%luKB core=%u/%u%% owner=%s nets=%d pendingUpload=%d pendingEnrich=%lu",
+          "heap free=%luKB min=%luKB largest=%luKB frag=%lu%% psramFree=%luKB core=%u/%u%% owner=%s nets=%d pendingUpload=%s pendingEnrich=%lu",
           static_cast<unsigned long>(kb(freeHeap)),
           static_cast<unsigned long>(kb(minHeap)),
           static_cast<unsigned long>(kb(largestHeap)),
@@ -2825,7 +2851,7 @@ void _logRuntimeHealth(uint32_t nowMs) {
           static_cast<unsigned>(g_coreLoad.busyPct[1]),
           RadioArbiter::ownerName(static_cast<RadioOwner>(health.radioOwner)),
           health.wifiCount,
-          health.pendingFiles,
+          pendingUploadText,
           static_cast<unsigned long>(health.pendingEnrich));
         if (health.timeValid && health.timeLocal[0]) {
             Serial.printf("[HEALTH] time=%s src=%s\r\n", health.timeLocal, health.timeSource);
@@ -2856,13 +2882,13 @@ void _logRuntimeHealth(uint32_t nowMs) {
         Serial.printf("[HEALTH] core usage: core0=%u%% core1=%u%%\r\n",
                       static_cast<unsigned>(g_coreLoad.busyPct[0]),
                       static_cast<unsigned>(g_coreLoad.busyPct[1]));
-        Serial.printf("[HEALTH] radio=%s wifi=%d ble=%d gps=%d nets=%d pendingUpload=%d pendingEnrich=%lu\r\n",
+        Serial.printf("[HEALTH] radio=%s wifi=%d ble=%d gps=%d nets=%d pendingUpload=%s pendingEnrich=%lu\r\n",
                       RadioArbiter::ownerName(static_cast<RadioOwner>(health.radioOwner)),
                       health.wifiConnected ? 1 : 0,
                       health.bleConnected ? 1 : 0,
                       health.gpsValid ? 1 : 0,
                       health.wifiCount,
-                      health.pendingFiles,
+                      pendingUploadText,
                       static_cast<unsigned long>(health.pendingEnrich));
         DLOG_DEBUG("SUBGHZ", "heartbeat");
 

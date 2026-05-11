@@ -1,5 +1,8 @@
 #include "SpoolBinaryCodec.h"
 
+#include <cstddef>
+#include <cstring>
+
 namespace SpoolBin {
 
 bool writeBytes(fs::File& f, const void* data, size_t len) {
@@ -61,6 +64,18 @@ bool readVarintZigZag(fs::File& f, int32_t& out) {
 
     out = static_cast<int32_t>((zz >> 1) ^ (~(zz & 1) + 1));
     return true;
+}
+
+static uint32_t crc32Bytes(const uint8_t* data, size_t len) {
+    uint32_t crc = 0xFFFFFFFFUL;
+    for (size_t i = 0; i < len; i++) {
+        crc ^= data[i];
+        for (uint8_t bit = 0; bit < 8; bit++) {
+            const uint32_t mask = 0U - (crc & 1U);
+            crc = (crc >> 1) ^ (0xEDB88320UL & mask);
+        }
+    }
+    return ~crc;
 }
 
 bool readSegmentHeaderV2(fs::File& f, SegmentHeaderV2& hdr) {
@@ -173,6 +188,93 @@ bool appendRecordToOpen(fs::File& f,
         }
     }
 
+    return true;
+}
+
+bool appendCheckpointRecordV1(const String& path,
+                              SpoolSegmentCheckpointV1& checkpoint,
+                              AppendRecordLocation* outLoc) {
+    fs::File f = LittleFS.open(path, "r+");
+    if (!f) return false;
+
+    SegmentHeaderV2 hdr;
+    if (!readSegmentHeaderV2(f, hdr)) {
+        f.close();
+        return false;
+    }
+
+    if (hdr.magic != SEGMENT_MAGIC || hdr.version != 2) {
+        f.close();
+        return false;
+    }
+
+    const uint32_t writeOffset = static_cast<uint32_t>(f.size());
+    if (!f.seek(writeOffset)) {
+        f.close();
+        return false;
+    }
+
+    checkpoint.magic = CHECKPOINT_MAGIC;
+    checkpoint.version = 1;
+    checkpoint.bodyOffset = static_cast<uint32_t>(f.position() + sizeof(RecordPrefix));
+    checkpoint.crc32 = 0;
+    checkpoint.crc32 = crc32Bytes(reinterpret_cast<const uint8_t*>(&checkpoint),
+                                  offsetof(SpoolSegmentCheckpointV1, crc32));
+
+    RecordPrefix prefix;
+    prefix.type = REC_CHECKPOINT;
+    prefix.flags = 0;
+    prefix.length = static_cast<uint16_t>(sizeof(checkpoint));
+
+    if (!writeBytes(f, &prefix, sizeof(prefix))) {
+        f.close();
+        return false;
+    }
+
+    if (!writeBytes(f, &checkpoint, sizeof(checkpoint))) {
+        f.close();
+        return false;
+    }
+
+    if (outLoc) {
+        outLoc->offset = writeOffset;
+        outLoc->len = static_cast<uint32_t>(sizeof(prefix)) +
+                      static_cast<uint32_t>(sizeof(checkpoint));
+    }
+
+    f.close();
+    return true;
+}
+
+bool decodeCheckpointRecordV1(const uint8_t* data,
+                              size_t length,
+                              uint32_t bodyOffset,
+                              SpoolSegmentCheckpointV1& out) {
+    if (!data && length > 0) {
+        return false;
+    }
+    if (length != sizeof(SpoolSegmentCheckpointV1)) {
+        return false;
+    }
+
+    SpoolSegmentCheckpointV1 checkpoint;
+    memcpy(&checkpoint, data, sizeof(checkpoint));
+
+    if (checkpoint.magic != CHECKPOINT_MAGIC || checkpoint.version != 1) {
+        return false;
+    }
+    if (checkpoint.bodyOffset != bodyOffset) {
+        return false;
+    }
+
+    const uint32_t expected = crc32Bytes(
+        reinterpret_cast<const uint8_t*>(&checkpoint),
+        offsetof(SpoolSegmentCheckpointV1, crc32));
+    if (checkpoint.crc32 != expected) {
+        return false;
+    }
+
+    out = checkpoint;
     return true;
 }
 

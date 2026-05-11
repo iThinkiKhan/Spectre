@@ -13,6 +13,8 @@
 namespace RAMSpool {
 
 static constexpr uint32_t WORKER_SLOW_MS = 250U;
+static constexpr uint32_t WORKER_APPEND_BATCH_MAX_RECORDS = 8U;
+static constexpr uint32_t WORKER_APPEND_BATCH_BUDGET_MS = 40U;
 static constexpr uint32_t PRESSURE_WATCH_FREE_SLOTS = POOL_SIZE / 8U;
 static constexpr uint32_t PRESSURE_FULL_FREE_SLOTS = POOL_SIZE / 32U;
 
@@ -340,85 +342,147 @@ static void _workerTask(void*) {
             continue;
         }
 
-        const EventSlot& slot = s_pool[idx];
-        const SlotKind kind = static_cast<SlotKind>(slot.slotKind);
-        if (_isMigratedKind(kind)) {
-            const uint32_t startMs = millis();
-            const AppendEventResult r = STORAGE.appendQueuedRecord(slot);
-            const uint32_t elapsed = millis() - startMs;
+        STORAGE.beginWorkerAppendBatch("ramspool_batch");
+        const uint32_t batchStartMs = millis();
+        uint32_t processed = 0;
+        QueuedAppendTiming batchTiming = {};
 
-            switch (kind) {
-                case SLOT_PROBE:
-                    if (r.ok()) {
-                        noteWorkerProbeOk(elapsed);
-                    } else if (r.suppressed()) {
-                        noteWorkerProbeSuppressed(elapsed);
-                    } else if (r.dropped()) {
-                        noteWorkerProbeDropped(elapsed);
-                        DLOG_WARN("STORAGE",
-                                  "worker probe dropped status=%u ms=%lu",
-                                  static_cast<unsigned>(r.status),
-                                  static_cast<unsigned long>(elapsed));
-                    } else {
-                        noteWorkerProbeFail(elapsed, static_cast<uint32_t>(r.status));
+        bool morePending = true;
+        while (morePending) {
+            const EventSlot& slot = s_pool[idx];
+            const SlotKind kind = static_cast<SlotKind>(slot.slotKind);
+
+            if (_isMigratedKind(kind)) {
+                QueuedAppendTiming recordTiming = {};
+                const uint32_t startMs = millis();
+                const AppendEventResult r = STORAGE.appendQueuedRecord(slot, &recordTiming);
+                const uint32_t elapsed = millis() - startMs;
+
+                batchTiming.parseMs += recordTiming.parseMs;
+                batchTiming.classifyMs += recordTiming.classifyMs;
+                batchTiming.buildDocMs += recordTiming.buildDocMs;
+                batchTiming.appendSegmentMs += recordTiming.appendSegmentMs;
+                batchTiming.indexPersistMs += recordTiming.indexPersistMs;
+                batchTiming.counterMs += recordTiming.counterMs;
+                batchTiming.uiMs += recordTiming.uiMs;
+                batchTiming.totalMs += recordTiming.totalMs;
+
+                switch (kind) {
+                    case SLOT_PROBE:
+                        if (r.ok()) {
+                            noteWorkerProbeOk(elapsed);
+                        } else if (r.suppressed()) {
+                            noteWorkerProbeSuppressed(elapsed);
+                        } else if (r.dropped()) {
+                            noteWorkerProbeDropped(elapsed);
+                            DLOG_WARN("STORAGE",
+                                      "worker probe dropped status=%u ms=%lu",
+                                      static_cast<unsigned>(r.status),
+                                      static_cast<unsigned long>(elapsed));
+                        } else {
+                            noteWorkerProbeFail(elapsed, static_cast<uint32_t>(r.status));
+                        }
+                        break;
+
+                    case SLOT_DEVICE:
+                    case SLOT_NOISE_P3:
+                        if (r.ok()) {
+                            noteWorkerDeviceOk(elapsed);
+                        } else if (r.suppressed()) {
+                            noteWorkerDeviceSuppressed(elapsed);
+                        } else if (r.dropped()) {
+                            noteWorkerDeviceDropped(elapsed);
+                            DLOG_WARN("STORAGE",
+                                      "worker %s dropped status=%u ms=%lu",
+                                      _slotKindText(kind),
+                                      static_cast<unsigned>(r.status),
+                                      static_cast<unsigned long>(elapsed));
+                        } else {
+                            noteWorkerDeviceFail(elapsed, static_cast<uint32_t>(r.status));
+                        }
+                        break;
+
+                    case SLOT_SHADOW:
+                    default:
+                        break;
+                }
+
+                if (r.ok()) {
+                    const uint32_t now = millis();
+                    s_workerMetaAcceptedSinceFlush++;
+                    if (s_workerMetaAcceptedSinceFlush == 1 && s_workerMetaLastFlushMs == 0) {
+                        s_workerMetaLastFlushMs = now;
                     }
-                    break;
+                }
 
-                case SLOT_DEVICE:
-                case SLOT_NOISE_P3:
-                    if (r.ok()) {
-                        noteWorkerDeviceOk(elapsed);
-                    } else if (r.suppressed()) {
-                        noteWorkerDeviceSuppressed(elapsed);
-                    } else if (r.dropped()) {
-                        noteWorkerDeviceDropped(elapsed);
-                        DLOG_WARN("STORAGE",
-                                  "worker %s dropped status=%u ms=%lu",
-                                  _slotKindText(kind),
-                                  static_cast<unsigned>(r.status),
-                                  static_cast<unsigned long>(elapsed));
-                    } else {
-                        noteWorkerDeviceFail(elapsed, static_cast<uint32_t>(r.status));
-                    }
-                    break;
-
-                case SLOT_SHADOW:
-                default:
-                    break;
+                if (r.ok() && elapsed >= WORKER_SLOW_MS) {
+                    DLOG_WARN("STORAGE",
+                              "queued write slow type=%s total=%lu parse=%lu classify=%lu build=%lu append=%lu index=%lu counter=%lu ui=%lu",
+                              _slotKindText(kind),
+                              static_cast<unsigned long>(elapsed),
+                              static_cast<unsigned long>(recordTiming.parseMs),
+                              static_cast<unsigned long>(recordTiming.classifyMs),
+                              static_cast<unsigned long>(recordTiming.buildDocMs),
+                              static_cast<unsigned long>(recordTiming.appendSegmentMs),
+                              static_cast<unsigned long>(recordTiming.indexPersistMs),
+                              static_cast<unsigned long>(recordTiming.counterMs),
+                              static_cast<unsigned long>(recordTiming.uiMs));
+                }
             }
 
-            if (r.ok() && elapsed >= WORKER_SLOW_MS) {
+            __atomic_add_fetch(&s_consumed, 1, __ATOMIC_RELAXED);
+            xQueueSend(s_freeQ, &idx, 0);
+            _updatePressureState();
+            processed++;
+
+            if (processed >= WORKER_APPEND_BATCH_MAX_RECORDS) {
+                break;
+            }
+            if ((millis() - batchStartMs) >= WORKER_APPEND_BATCH_BUDGET_MS) {
+                break;
+            }
+            morePending = _popNextPendingSlot(idx);
+        }
+
+        const uint32_t closeStartMs = millis();
+        const bool closeOk = STORAGE.endWorkerAppendBatch("ramspool_batch", false);
+        const uint32_t closeMs = millis() - closeStartMs;
+
+        batchTiming.totalMs = millis() - batchStartMs;
+
+        if (processed > 0) {
+            const bool batchSlow = batchTiming.totalMs >= WORKER_SLOW_MS || closeMs >= WORKER_SLOW_MS;
+            if (batchSlow) {
                 DLOG_WARN("STORAGE",
-                          "queued write slow type=%s ms=%lu ok=1",
-                          _slotKindText(kind),
-                          static_cast<unsigned long>(elapsed));
-            }
-            if (r.ok()) {
-                const uint32_t now = millis();
-                s_workerMetaAcceptedSinceFlush++;
-                if (s_workerMetaAcceptedSinceFlush == 1 && s_workerMetaLastFlushMs == 0) {
-                    s_workerMetaLastFlushMs = now;
-                }
-            }
-
-            const uint32_t now = millis();
-            const bool dueByCount =
-                s_workerMetaAcceptedSinceFlush >= STORAGE_EVENT_COUNTER_SAVE_EVERY_N;
-            const bool dueByTime =
-                s_workerMetaLastFlushMs != 0 &&
-                (now - s_workerMetaLastFlushMs) >= STORAGE_HOT_META_SAVE_INTERVAL_MS;
-            if (dueByCount || dueByTime) {
-                if (STORAGE.flushWorkerMetadataBatch("ramspool_batch", false) ||
-                    !STORAGE.hasWorkerMetadataFlushWork()) {
-                    s_workerMetaAcceptedSinceFlush = 0;
-                    s_workerMetaLastFlushMs = millis();
-                }
+                          "queued write slow batch records=%lu total=%lu parse=%lu classify=%lu build=%lu append=%lu index=%lu counter=%lu ui=%lu close=%lu ok=%d",
+                          static_cast<unsigned long>(processed),
+                          static_cast<unsigned long>(batchTiming.totalMs),
+                          static_cast<unsigned long>(batchTiming.parseMs),
+                          static_cast<unsigned long>(batchTiming.classifyMs),
+                          static_cast<unsigned long>(batchTiming.buildDocMs),
+                          static_cast<unsigned long>(batchTiming.appendSegmentMs),
+                          static_cast<unsigned long>(batchTiming.indexPersistMs),
+                          static_cast<unsigned long>(batchTiming.counterMs),
+                          static_cast<unsigned long>(batchTiming.uiMs),
+                          static_cast<unsigned long>(closeMs),
+                          closeOk ? 1 : 0);
             }
         }
 
-        __atomic_add_fetch(&s_consumed, 1, __ATOMIC_RELAXED);
-        xQueueSend(s_freeQ, &idx, 0);
-        _updatePressureState();
+        const uint32_t now = millis();
+        const bool dueByCount =
+            s_workerMetaAcceptedSinceFlush >= STORAGE_EVENT_COUNTER_SAVE_EVERY_N;
+        const bool dueByTime =
+            s_workerMetaLastFlushMs != 0 &&
+            (now - s_workerMetaLastFlushMs) >= STORAGE_HOT_META_SAVE_INTERVAL_MS;
+        if (dueByCount || dueByTime) {
+            if (STORAGE.flushWorkerMetadataBatch("ramspool_batch", false) ||
+                !STORAGE.hasWorkerMetadataFlushWork()) {
+                s_workerMetaAcceptedSinceFlush = 0;
+                s_workerMetaLastFlushMs = millis();
+            }
+        }
+
         taskYIELD();
     }
 }
