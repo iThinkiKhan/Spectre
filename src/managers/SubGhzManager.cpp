@@ -1,5 +1,6 @@
 
 
+
 #include "SubGhzManager.h"
 
 #include "../core/DebugLog.h"
@@ -245,6 +246,7 @@ void SubGhzManager::_refreshStatus() {
     strlcpy(_status.moduleName, _backend->moduleName(), sizeof(_status.moduleName));
     strlcpy(_status.firmware, _backend->firmwareVersion().c_str(), sizeof(_status.firmware));
 }
+
 
 
 

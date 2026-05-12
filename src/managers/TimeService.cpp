@@ -1,4 +1,5 @@
 
+
 #include "TimeService.h"
 
 #include <WiFi.h>
@@ -270,3 +271,4 @@ void TimeService::_formatLocalClock(time_t epochUtc, char* out, size_t len) {
     localtime_r(&epochUtc, &localTm);
     strftime(out, len, "%Y-%m-%d %H:%M:%S", &localTm);
 }
+

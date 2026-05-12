@@ -1,5 +1,6 @@
 
 
+
 #include "CrashBreadcrumb.h"
 #include "DebugLog.h"
 #include <Preferences.h>
@@ -132,4 +133,5 @@ void crashLogPrint() {
         }
     }
 }
+
 

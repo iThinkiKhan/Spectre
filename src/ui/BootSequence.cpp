@@ -1,5 +1,6 @@
 
 
+
 #include "BootSequence.h"
 #include "MascotState.h"
 #include <Arduino.h>
@@ -269,6 +270,7 @@ void runBootSequence(DisplayManager& display, bool loraOk, bool storageOk) {
     Serial.println("[BOOTSEQ] done");
 #endif
 }
+
 
 
 

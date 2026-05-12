@@ -1,5 +1,6 @@
 
 
+
 /*
 Copyright (C) 2019 Intel Corporation
 
@@ -780,6 +781,7 @@ int frdid_build(const FRDID_UAS_Data* UAS_Data, uint8_t* buf, size_t buf_size);
 #endif
 
 #endif // _OPENDRONEID_H_
+
 
 
 

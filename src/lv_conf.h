@@ -1,5 +1,6 @@
 
 
+
 #if 1 /*Set it to "1" to enable content*/
 
 #ifndef LV_CONF_H
@@ -121,6 +122,7 @@
 
 #endif /*LV_CONF_H*/
 #endif /*End of "Content enable"*/
+
 
 
 

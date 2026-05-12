@@ -1,4 +1,5 @@
 
+
 #pragma once
 
 #include <stddef.h>
@@ -129,4 +130,5 @@ static constexpr const char* TEXT_PROMPT_CHAR_UUID = "84f03a80-6d7b-4d4d-9a64-6b
 static constexpr const char* TEXT_INPUT_CHAR_UUID = "84f03a80-6d7b-4d4d-9a64-6b2d6f3a1003";
 static constexpr const char* TEXT_RECEIPT_CHAR_UUID = "84f03a80-6d7b-4d4d-9a64-6b2d6f3a1004";
 static constexpr const char* TEXT_STATUS_CHAR_UUID = "84f03a80-6d7b-4d4d-9a64-6b2d6f3a1005";
+
 

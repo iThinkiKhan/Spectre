@@ -1,5 +1,6 @@
 
 
+
 #pragma once
 #include "lvgl.h"
 
@@ -68,6 +69,7 @@ static inline void theme_style_label(lv_style_t* s, uint32_t color, const lv_fon
     lv_style_set_text_font(s, font);
     lv_style_set_bg_opa(s, LV_OPA_TRANSP);
 }
+
 
 
 

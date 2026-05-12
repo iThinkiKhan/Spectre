@@ -1,5 +1,6 @@
 
 
+
 #pragma once
 
 #define NOTIF_DRONE        1
@@ -11,6 +12,7 @@
 #define NOTIF_EXPORT       7
 #define NOTIF_STORAGE      8
 #define NOTIF_POWER        9
+
 
 
 

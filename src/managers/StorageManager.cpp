@@ -1,5 +1,6 @@
 
 
+
 #include "StorageManager.h"
 #include "../config.h"
 #include "../core/DebugLog.h"
@@ -1351,8 +1352,8 @@ bool StorageManager::begin() {
     }
 
     if (!_ensureSpoolReady()) {
-        DLOG_ERROR("STORAGE", "Spool init failed");
-        return false;
+    DLOG_ERROR("STORAGE", "Spool init failed");
+    return false;
     }
 
 #if STORAGE_FAST_BOOT_DEFER_SPOOL_REPAIR
@@ -1448,13 +1449,42 @@ bool StorageManager::begin() {
 
     _ready = true;
     _resetBinaryUnsupportedAudit();
-    _cachedUsedString = getUsedString();
-    DLOG_INFO("STORAGE", "Ready. Used=%s Free=%uKB / %uKB",
-              _cachedUsedString.c_str(),
-              static_cast<unsigned>(getFreeBytes() / 1024),
-              static_cast<unsigned>(getTotalBytes() / 1024));
 
-    if (getUsedPercent() > 80) {
+    const uint32_t freeInternal =
+        heap_caps_get_free_size(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
+    const uint32_t largestInternal =
+        heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
+    const uint32_t pendingAtBoot = _pendingEventCount;
+
+    const bool bootHeapPressure =
+        pendingAtBoot >= 10000UL ||
+        freeInternal < (128UL * 1024UL) ||
+        largestInternal < (48UL * 1024UL);
+
+    if (bootHeapPressure) {
+        DLOG_WARN("STORAGE",
+                  "Boot heap pressure: deferring post-boot refresh pending=%lu freeInternal=%lu largestInternal=%lu",
+                  static_cast<unsigned long>(pendingAtBoot),
+                  static_cast<unsigned long>(freeInternal),
+                  static_cast<unsigned long>(largestInternal));
+
+        _storageUiRefreshPending = true;
+        _storageUiRefreshDirtySinceMs = millis();
+        return true;
+    }
+
+    _refreshFsStats();
+    const String usedString = _cachedUsedString;
+    const size_t freeBytes = _cachedFreeBytes;
+    const size_t totalBytes = _cachedTotalBytes;
+    const int usedPct = _cachedUsedPct;
+
+    DLOG_INFO("STORAGE", "Ready. Used=%s Free=%uKB / %uKB",
+              usedString.c_str(),
+              static_cast<unsigned>(freeBytes / 1024),
+              static_cast<unsigned>(totalBytes / 1024));
+
+    if (usedPct > 80) {
         BUS.publish(EVT_STORAGE_NEARLY_FULL);
     }
 
@@ -2344,23 +2374,21 @@ bool StorageManager::getUploadEventBatchForSession(const char* sessionIdOverride
         (sessionIdOverride && sessionIdOverride[0]) ?
             String(sessionIdOverride) : SESS.getId();
     if (!sessionId.length()) return true;
-    if (_uploadIndexResident &&
-        _getUploadEventBatchForSessionFromIndex(sessionId, sinceId, maxCount, out)) {
-        return true;
+    if (_uploadIndexResident) {
+        if (!_getUploadEventBatchForSessionFromIndex(sessionId, sinceId, maxCount, out)) {
+            return false;
+        }
+
+        JsonArray indexedBatch = out.as<JsonArray>();
+        if (!indexedBatch.isNull() && indexedBatch.size() > 0) {
+            return true;
+        }
+
+        if (_uploadBatchActive) {
+            _releaseUploadIndexMemory("upload_window_empty");
+        }
     }
 
-    if (_uploadBatchActive) {
-        DLOG_WARN("STORAGE",
-                  "Upload index unavailable during active upload; spool scan fallback disabled session=%s since=%lu",
-                  sessionId.c_str(),
-                  static_cast<unsigned long>(sinceId));
-        return false;
-    }
-
-    DLOG_WARN("STORAGE",
-              "Upload index unavailable; falling back to spool scan session=%s since=%lu",
-              sessionId.c_str(),
-              static_cast<unsigned long>(sinceId));
     return _getEventBatchForSessionFromSpool(sessionId, sinceId, maxCount, out);
 }
 
@@ -2387,8 +2415,10 @@ bool StorageManager::prepareUploadIndexForUpload(uint32_t budgetMs) {
     }
 
     const uint32_t pending = getPendingEventCount();
+    const uint32_t windowedPending =
+        std::min<uint32_t>(pending, STORAGE_UPLOAD_WINDOW_RECORDS);
     const uint32_t estimatedIndexBytes =
-        pending * static_cast<uint32_t>(sizeof(UploadIndexRecordV1));
+        windowedPending * static_cast<uint32_t>(sizeof(UploadIndexRecordV1));
     const uint32_t largestAny =
         heap_caps_get_largest_free_block(MALLOC_CAP_8BIT);
     const uint32_t freeAny =
@@ -2398,11 +2428,12 @@ bool StorageManager::prepareUploadIndexForUpload(uint32_t budgetMs) {
     const uint32_t maxIndexAllocBytes =
         static_cast<uint32_t>(sizeof(UploadIndexPage)) + 4096UL;
     const uint32_t guardBytes = estimatedIndexBytes + 32768UL;
-    if (pending > 0 &&
+    if (windowedPending > 0 &&
         (largestAny < maxIndexAllocBytes || freeAny < (guardBytes * 2U))) {
         DLOG_WARN("STORAGE",
-                  "Upload index prepare rebuilt=0 reason=heap_guard pending=%lu estimate=%lu maxAlloc=%lu largest=%lu free=%lu internalLargest=%lu fallback=1",
+                  "Upload index prepare rebuilt=0 reason=heap_guard pending=%lu window=%lu estimate=%lu maxAlloc=%lu largest=%lu free=%lu internalLargest=%lu fallback=1",
                   static_cast<unsigned long>(pending),
+                  static_cast<unsigned long>(windowedPending),
                   static_cast<unsigned long>(estimatedIndexBytes),
                   static_cast<unsigned long>(maxIndexAllocBytes),
                   static_cast<unsigned long>(largestAny),
@@ -6579,8 +6610,13 @@ void StorageManager::_refreshFsStats(bool force) {
         (_cachedTotalBytes - _cachedUsedBytes) : 0;
     _cachedUsedPct = (_cachedTotalBytes == 0) ? 0 :
         static_cast<int>((_cachedUsedBytes * 100) / _cachedTotalBytes);
-    _cachedUsedString = String(_cachedUsedBytes / 1024) + "KB / " +
-                        String(_cachedTotalBytes / 1024) + "KB";
+    char usedBuf[32];
+    snprintf(usedBuf,
+             sizeof(usedBuf),
+             "%luKB / %luKB",
+             static_cast<unsigned long>(_cachedUsedBytes / 1024UL),
+             static_cast<unsigned long>(_cachedTotalBytes / 1024UL));
+    _cachedUsedString = usedBuf;
     _lastFsStatsRefreshMs = now;
 }
 
@@ -8910,6 +8946,10 @@ bool StorageManager::_rebuildUploadIndexSegment(const SpoolSegmentInfo& seg) {
                         const String& sessionId,
                         uint8_t lane,
                         uint8_t priority) -> bool {
+        if (_uploadIndexStats.indexedEvents >= STORAGE_UPLOAD_WINDOW_RECORDS) {
+            return true;
+        }
+
         if (eventId == 0 || !sessionId.length()) {
             return true;
         }
@@ -9265,6 +9305,24 @@ bool StorageManager::_ensureSpoolReady() {
     }
 
     const bool needPersist = resyncChanged || summaryChanged;
+    const bool activeSegmentValid =
+        _spoolIndex.activeSegmentId != 0 &&
+        _findSegmentInfo(_spoolIndex.activeSegmentId);
+    const bool countersTrusted =
+        _counterTrustState == STORAGE_COUNTER_TRUSTED;
+
+    if (needPersist && activeSegmentValid && countersTrusted) {
+        _spoolIndexDirty = true;
+        _workerMetadataDirtyPending = true;
+        DLOG_INFO("STORAGE",
+                  "Ensure-ready index persist deferred reason=boot_safe_defer active=%lu pending=%lu resyncChanged=%u summaryChanged=%u",
+                  static_cast<unsigned long>(_spoolIndex.activeSegmentId),
+                  static_cast<unsigned long>(_pendingEventCount),
+                  resyncChanged ? 1U : 0U,
+                  summaryChanged ? 1U : 0U);
+        return true;
+    }
+
     if (needPersist &&
         RADIO_ARB.currentOwner() == RADIO_WIFI_CAPTURE &&
         _selectRepairMode() != REPAIR_EMERGENCY) {

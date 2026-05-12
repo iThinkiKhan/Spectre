@@ -1,3 +1,4 @@
+
 #pragma once
 #include "SecretsConfig.h"
 #include "core/ScreenEnum.h"
@@ -62,7 +63,8 @@ static constexpr uint8_t OFF = 0;
 // MQTT upload
 // -----------------------------------------------------------------------------
 
-#define MQTT_UPLOAD_READY_THRESHOLD   20000
+#define MQTT_UPLOAD_READY_THRESHOLD   15000
+#define STORAGE_UPLOAD_WINDOW_RECORDS  5000UL
 #define MQTT_BACKLOG_LARGE_WARN_THRESHOLD 450   // boot diagnostic only
 #define MQTT_DUMP_FETCH_BATCH_SIZE    16   // records loaded per storage scan
 #define MQTT_DUMP_RECORDS_PER_SLICE    4   // max publish calls per yield
@@ -443,4 +445,5 @@ static inline ButtonBindingSet spectreDebriefBindings() {
     return {BUTTON_ACTION_DEBRIEF_EXPORT, BUTTON_ACTION_DEBRIEF_CLEAR,
             BUTTON_ACTION_NONE, BUTTON_ACTION_DEBRIEF_BACK};
 }
+
 

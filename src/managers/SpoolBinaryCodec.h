@@ -1,5 +1,6 @@
 
 
+
 #pragma once
 
 #include <Arduino.h>
@@ -118,5 +119,6 @@ bool decodeCheckpointRecordV1(const uint8_t* data,
 bool createEmptySegmentV2(const String& path, uint32_t segmentId, uint32_t createdMs);
 
 } // namespace SpoolBin
+
 
 

@@ -1,3 +1,4 @@
+
 // LVGL v9 canvas mascot. lv_draw_* primitives via lv_layer_t; no TFT/sprites.
 
 #include "Mascot_LVGL.h"
@@ -913,4 +914,5 @@ void MascotLVGL::_drawPreflight(lv_layer_t* l, int frame) {
     DL(l, cx+6, cy+12, cx+12, cy+5, C(CLR_YELLOW), 2);
     FC(l, cx+6, cy+13, 2, C(CLR_YELLOW));
 }
+
 

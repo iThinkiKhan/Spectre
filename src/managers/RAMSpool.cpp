@@ -1,3 +1,4 @@
+
 #include "RAMSpool.h"
 
 #include "../config.h"
@@ -865,3 +866,4 @@ void logStats() {
 }
 
 }  // namespace RAMSpool
+

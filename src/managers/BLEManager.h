@@ -1,3 +1,4 @@
+
 #pragma once
 
 #include <Arduino.h>
@@ -507,3 +508,4 @@ private:
 };
 
 extern BLEManager BLE_MGR;
+

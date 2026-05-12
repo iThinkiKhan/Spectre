@@ -1,5 +1,6 @@
 
 
+
 #include "BLEManager.h"
 
 // ── Phone companion bring-up decision tree ──
@@ -3309,5 +3310,6 @@ void BLEManager::TextInputCallbacks::onWrite(NimBLECharacteristic* pCharacterist
     (void)connInfo;
     _owner._onTextInputWrite(pCharacteristic);
 }
+
 
 

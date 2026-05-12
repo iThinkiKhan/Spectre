@@ -1,5 +1,6 @@
 
 
+
 #include "PrebootFallback.h"
 
 namespace PrebootFallback {
@@ -26,5 +27,6 @@ void showFatal(TFT_eSPI& tft, const char* line1, const char* line2) {
 }
 
 } // namespace PrebootFallback
+
 
 

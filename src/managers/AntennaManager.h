@@ -1,5 +1,6 @@
 
 
+
 #pragma once
 
 #include <Arduino.h>
@@ -20,6 +21,7 @@ private:
     bool _available = false;
     bool _external  = true;
 };
+
 
 
 

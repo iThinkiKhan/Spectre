@@ -1,3 +1,4 @@
+
 #include "SpoolBinaryCodec.h"
 
 #include <cstddef>
@@ -292,5 +293,6 @@ bool createEmptySegmentV2(const String& path, uint32_t segmentId, uint32_t creat
 }
 
 } // namespace SpoolBin
+
 
 

@@ -1,5 +1,6 @@
 
 
+
 {
   "name": "opendroneid-core-c",
   "version": "0.0.0-local",
@@ -8,6 +9,7 @@
     "srcDir": "src"
   }
 }
+
 
 
 

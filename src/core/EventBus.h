@@ -1,3 +1,4 @@
+
 #pragma once
 #include <Arduino.h>
 #include <freertos/FreeRTOS.h>
@@ -131,3 +132,4 @@ private:
 };
 
 #define BUS EventBus::getInstance()
+

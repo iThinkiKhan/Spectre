@@ -1,5 +1,6 @@
 
 
+
 #include "BadUsbManager.h"
 
 #include <ctype.h>
@@ -711,6 +712,7 @@ void BadUsbManager::_setStatus(const char* status, bool error, const char* detai
         DLOG_INFO("BADUSB", "%s", status ? status : "?");
     }
 }
+
 
 
 

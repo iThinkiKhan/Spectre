@@ -1,5 +1,6 @@
 
 
+
 #include "LoRaManager.h"
 #include "SettingsManager.h"
 
@@ -207,6 +208,7 @@ bool LoRaManager::_parseRCV(const String& line, LoRaPacket& outPacket) {
     outPacket.timestamp = millis();
     return true;
 }
+
 
 
 

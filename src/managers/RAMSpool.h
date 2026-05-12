@@ -1,3 +1,4 @@
+
 #pragma once
 
 #include <Arduino.h>
@@ -128,3 +129,4 @@ void   noteWorkerDeviceDropped(uint32_t ms);
 void   noteWorkerDeviceFail(uint32_t ms, uint32_t status);
 
 }  // namespace RAMSpool
+

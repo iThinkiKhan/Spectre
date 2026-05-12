@@ -1,4 +1,5 @@
 
+
 #include "BleSecureSession.h"
 
 #include <string.h>
@@ -618,4 +619,5 @@ bool BleSecureSession::decrypt(uint8_t channel,
     outLen = cipherLen;
     return true;
 }
+
 

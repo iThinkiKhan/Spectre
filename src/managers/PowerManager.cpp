@@ -1,5 +1,6 @@
 
 
+
 #include "PowerManager.h"
 
 #include <math.h>
@@ -599,6 +600,7 @@ PowerState PowerManager::_resolveState(PowerSource source,
 
     return POWER_STATE_BATTERY_NORMAL;
 }
+
 
 
 

@@ -1,5 +1,6 @@
 
 
+
 #pragma once
 
 // Copy to src/secrets.h for local provisioning. The real src/secrets.h should
@@ -153,4 +154,5 @@
 #ifndef SPECTRE_PHONE_PUBLIC_KEY_HEX
 #define SPECTRE_PHONE_PUBLIC_KEY_HEX ""
 #endif
+
 

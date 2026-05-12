@@ -1,5 +1,6 @@
 
 
+
 #include "AntennaManager.h"
 
 #include <WiFi.h>
@@ -96,6 +97,7 @@ bool AntennaManager::_apply(bool external) {
     return false;
 #endif
 }
+
 
 
 

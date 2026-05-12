@@ -1,5 +1,6 @@
 
 
+
 #pragma once
 #include <Arduino.h>
 #include "config.h"
@@ -51,6 +52,7 @@ private:
     bool _sendATOK(String cmd, int timeoutMs = 500);
     bool _parseRCV(const String& line, LoRaPacket& outPacket);
 };
+
 
 
 

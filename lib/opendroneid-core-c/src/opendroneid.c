@@ -1,5 +1,6 @@
 
 
+
 /*
 Copyright (C) 2019 Intel Corporation
 
@@ -1498,6 +1499,7 @@ void printOperatorID_data(ODID_OperatorID_data *operatorID)
 }
 
 #endif // ODID_DISABLE_PRINTF
+
 
 
 

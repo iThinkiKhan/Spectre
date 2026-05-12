@@ -1,3 +1,4 @@
+
 #pragma once
 #include <Arduino.h>
 #include "DebugConfig.h"
@@ -86,6 +87,7 @@ private:
     static void _writeToFile(const char* line);
     static void _rotateLogs();
 };
+
 
 
 

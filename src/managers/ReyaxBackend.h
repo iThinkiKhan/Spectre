@@ -1,5 +1,6 @@
 
 
+
 #pragma once
 
 #include "ISubGhzBackend.h"
@@ -56,6 +57,7 @@ private:
     uint32_t _lastBeaconMs = 0;
     uint32_t _beaconSeq = 0;
 };
+
 
 
 

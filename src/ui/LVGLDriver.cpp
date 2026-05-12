@@ -1,5 +1,6 @@
 
 
+
 #include "LVGLDriver.h"
 #include <esp_heap_caps.h>
 
@@ -90,5 +91,6 @@ void LVGLDriver::flush(lv_display_t* disp, const lv_area_t* area, uint8_t* px_ma
     _tft->endWrite();
     lv_display_flush_ready(disp);
 }
+
 
 

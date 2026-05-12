@@ -1,5 +1,6 @@
 
 
+
 #pragma once
 
 #include <Arduino.h>
@@ -81,6 +82,7 @@ private:
 };
 
 #define BADUSB_MGR BadUsbManager::getInstance()
+
 
 
 

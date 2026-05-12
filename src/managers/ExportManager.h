@@ -1,5 +1,6 @@
 
 
+
 #pragma once
 
 #include <Arduino.h>
@@ -59,5 +60,6 @@ private:
 };
 
 #define EXPORT_MGR ExportManager::getInstance()
+
 
 

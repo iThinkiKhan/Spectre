@@ -1,5 +1,6 @@
 
 
+
 #include "SettingsManager.h"
 
 #include <ArduinoJson.h>
@@ -464,5 +465,6 @@ bool SettingsManager::_migrate(uint16_t storedVersion) {
               static_cast<unsigned>(CURRENT_SCHEMA_VERSION));
     return _persist();
 }
+
 
 

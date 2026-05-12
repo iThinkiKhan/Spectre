@@ -1,5 +1,6 @@
 
 
+
 #pragma once
 #include <Arduino.h>
 #include <PubSubClient.h>
@@ -231,5 +232,6 @@ private:
 };
 
 extern MQTTManager MQTT_MGR;
+
 
 

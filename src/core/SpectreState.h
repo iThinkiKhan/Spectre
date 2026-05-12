@@ -1,3 +1,4 @@
+
 #pragma once
 #include <Arduino.h>
 #include <freertos/FreeRTOS.h>
@@ -283,3 +284,4 @@ extern portMUX_TYPE g_stateMux;
 #define STATE_READ_END()    portEXIT_CRITICAL(&g_stateMux)
 #define STATE_WRITE_BEGIN() portENTER_CRITICAL(&g_stateMux)
 #define STATE_WRITE_END()   portEXIT_CRITICAL(&g_stateMux)
+

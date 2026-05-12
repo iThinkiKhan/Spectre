@@ -1,5 +1,6 @@
 
 
+
 #include "ExportManager.h"
 
 #include <LittleFS.h>
@@ -606,6 +607,7 @@ bool ExportManager::loadLatestSummary(SessionExportSummary* outSummary) const {
     _summaryFromJson(doc.as<JsonObjectConst>(), *outSummary);
     return true;
 }
+
 
 
 

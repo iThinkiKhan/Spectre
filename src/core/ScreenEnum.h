@@ -1,5 +1,6 @@
 
 
+
 #pragma once
 
 typedef enum {
@@ -12,6 +13,7 @@ typedef enum {
     SCREEN_SYSTEM,
     SCREEN_COUNT
 } Screen;
+
 
 
 

@@ -1,3 +1,4 @@
+
 #include "Session.h"
 
 void Session::begin() {
@@ -34,3 +35,4 @@ String Session::_generateId() {
              static_cast<unsigned long>(randomPart));
     return String(id);
 }
+

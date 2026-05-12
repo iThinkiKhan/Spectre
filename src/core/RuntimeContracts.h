@@ -1,5 +1,6 @@
 
 
+
 #pragma once
 
 #include <Arduino.h>
@@ -35,6 +36,7 @@ private:
                                             ##__VA_ARGS__);         \
         }                                                           \
     } while (0)
+
 
 
 

@@ -1,3 +1,4 @@
+
 #pragma once
 
 #include "../core/ScreenEnum.h"
@@ -120,6 +121,7 @@ inline void markUiRefresh(UiRefreshReason reason,
 }
 
 }  // namespace ExecutionPolicy
+
 
 
 

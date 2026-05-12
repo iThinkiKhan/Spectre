@@ -1,5 +1,6 @@
 
 
+
 #pragma once
 
 #include <Arduino.h>
@@ -233,4 +234,5 @@ inline void crashBreadcrumbClearVolatile(CrashPhase phase) {
 // Call once at boot before any manager initialises.
 // Defined in CrashBreadcrumb.cpp.
 void crashLogPrint();
+
 

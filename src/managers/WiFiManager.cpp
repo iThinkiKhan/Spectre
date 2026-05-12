@@ -1,5 +1,6 @@
 
 
+
 #include "WiFiManager.h"
 #include "AntennaManager.h"
 #include "MQTTManager.h"
@@ -2734,5 +2735,6 @@ bool WiFiManager::_isTrustedSSID(const char* ssid) const {
     }
     return false;
 }
+
 
 

@@ -1,5 +1,6 @@
 
 
+
 #pragma once
 
 #include <Arduino.h>
@@ -89,6 +90,7 @@ private:
 };
 
 #define SETTINGS SettingsManager::getInstance()
+
 
 
 

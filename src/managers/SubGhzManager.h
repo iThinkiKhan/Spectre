@@ -1,5 +1,6 @@
 
 
+
 #pragma once
 
 #include "ISubGhzBackend.h"
@@ -52,6 +53,7 @@ private:
 };
 
 #define SUBGHZ SubGhzManager::getInstance()
+
 
 
 

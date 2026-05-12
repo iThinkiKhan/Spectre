@@ -1,5 +1,6 @@
 
 
+
 #include <Arduino.h>
 #include <TFT_eSPI.h>
 #include <lvgl.h>
@@ -85,6 +86,14 @@ namespace {
     size_t g_usbConsoleLen = 0;
     bool g_usbSerialAttachedAtBoot = false;
     bool g_bootRecoveryMode = false;
+    bool g_bootHeapTriageMode = false;
+
+    constexpr uint32_t BOOT_TRIAGE_PENDING_UPLOAD_THRESHOLD = 10000UL;
+    constexpr uint32_t BOOT_TRIAGE_FREE_INTERNAL_HEAP_BYTES = 128UL * 1024UL;
+    constexpr uint32_t BOOT_TRIAGE_LARGEST_INTERNAL_HEAP_BYTES = 48UL * 1024UL;
+    constexpr uint32_t DEFERRED_BOOT_OPTIONAL_INIT_DELAY_MS = 2000UL;
+    bool g_deferredBootOptionalInitPending = false;
+    uint32_t g_deferredBootOptionalInitAtMs = 0;
 
     struct DisplayFrameState {
     Screen      currentScreen = SCREEN_LORA;
@@ -439,7 +448,13 @@ const char* _screenName(Screen screen);
 void _logRuntimeHealth(uint32_t nowMs);
 bool _waitForDisplayLayerReady(uint32_t timeoutMs);
 void _publishStorageState(bool storageOk, const String& storageUsed);
+static bool _shouldEnterBootHeapTriage(bool storageOk);
+static void _publishBootHeapTriageState(uint32_t pending,
+                                        uint32_t freeInternal,
+                                        uint32_t largestInternal);
 void _loadKnownLocationsIntoState();
+static void _clearStorageSummaryMirror();
+static bool _refreshStorageSummaryMirror(bool force);
 static const char* _resetReasonName(esp_reset_reason_t r);
 static const char* _fieldVaultPowerSourceName(PowerSource source);
 static bool _detectBootRecoveryRequest();
@@ -2177,6 +2192,59 @@ void _publishStorageState(bool storageOk, const String& storageUsed) {
     STATE_WRITE_END();
 }
 
+static bool _shouldEnterBootHeapTriage(bool storageOk) {
+    if (!storageOk || !STORAGE.isReady()) {
+        return false;
+    }
+
+    const uint32_t pending = STORAGE.getPendingEventCount();
+    const uint32_t freeInternal =
+        heap_caps_get_free_size(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
+    const uint32_t largestInternal =
+        heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
+
+    if (pending >= BOOT_TRIAGE_PENDING_UPLOAD_THRESHOLD ||
+        freeInternal < BOOT_TRIAGE_FREE_INTERNAL_HEAP_BYTES ||
+        largestInternal < BOOT_TRIAGE_LARGEST_INTERNAL_HEAP_BYTES) {
+        DLOG_WARN("CORE",
+                  "Boot heap triage requested pending=%lu freeInternal=%lu largestInternal=%lu",
+                  static_cast<unsigned long>(pending),
+                  static_cast<unsigned long>(freeInternal),
+                  static_cast<unsigned long>(largestInternal));
+        return true;
+    }
+
+    return false;
+}
+
+static void _publishBootHeapTriageState(uint32_t pending,
+                                        uint32_t freeInternal,
+                                        uint32_t largestInternal) {
+    STATE_WRITE_BEGIN();
+    g_state.hwInitDone = true;
+    g_state.storageReady = true;
+    g_state.radioBusy = false;
+    g_state.uploadActive = false;
+    g_state.uploadPercent = 0;
+    g_state.uploadPublished = 0;
+    g_state.uploadTotal = pending;
+    strlcpy(g_state.uploadPhase, "TRIAGE", sizeof(g_state.uploadPhase));
+    g_state.sessionFilesPending = static_cast<int>(pending);
+    g_state.kaliSyncAvailable = pending > 0;
+    g_state.kaliSyncPending = pending > 0;
+    g_state.radioOwner = RADIO_NONE;
+    g_state.screenChanged = true;
+    g_state.dataRefresh = true;
+    strlcpy(g_state.storageStr, "triage", sizeof(g_state.storageStr));
+    STATE_WRITE_END();
+
+    DLOG_WARN("CORE",
+              "Boot heap triage active: capture/upload/RAMSpool disabled pending=%lu freeInternal=%lu largestInternal=%lu",
+              static_cast<unsigned long>(pending),
+              static_cast<unsigned long>(freeInternal),
+              static_cast<unsigned long>(largestInternal));
+}
+
 void _loadKnownLocationsIntoState() {
     SpectreState::KnownLocation knownLocs[SpectreState::KNOWN_LOC_COUNT] = {};
     const int locCount = STORAGE.loadKnownLocations(
@@ -2189,6 +2257,29 @@ void _loadKnownLocationsIntoState() {
     STATE_WRITE_END();
 
     DLOG_INFO("STOR", "Loaded %d known locations", locCount);
+}
+
+static void _runOptionalBootInitialization() {
+    DebugLog::begin();
+    FieldVault::begin();
+    _loadKnownLocationsIntoState();
+    if (STORAGE.hasStorageMaintenanceWork()) {
+        _clearStorageSummaryMirror();
+        DLOG_WARN("STORAGE", "Initial storage summary deferred until repair completes");
+    } else {
+        _refreshStorageSummaryMirror(true);
+    }
+
+    const bool exportOk = EXPORT_MGR.begin();
+    if (exportOk) {
+        SessionExportSummary latestExport;
+        if (EXPORT_MGR.loadLatestSummary(&latestExport)) {
+            _applyExportSummaryToState(latestExport, true);
+            DLOG_INFO("EXPORT", "Loaded last export: %s (%lu events)",
+                      latestExport.sessionId,
+                      static_cast<unsigned long>(latestExport.totalEvents));
+        }
+    }
 }
 
 void _applySubGhzStatusToState(const SubGhzStatus& sg) {
@@ -3849,33 +3940,67 @@ void TaskHardware(void* pvParameters) {
         DLOG_WARN("CORE", "Display layer not ready before hardware init");
     }
 
-    bool storageOk = STORAGE.begin();
+        bool storageOk = STORAGE.begin();
     String storageUsed = storageOk ? STORAGE.getCachedUsedString() : String();
     _publishStorageState(storageOk, storageUsed);
+
+    if (storageOk && storageUsed == "triage") {
+        DLOG_WARN("CORE",
+                  "Boot backlog triage active after STORAGE.begin; skipping RAMSpool/hardware init pending=%lu",
+                  static_cast<unsigned long>(STORAGE.getPendingEventCount()));
+
+        STATE_WRITE_BEGIN();
+        g_state.hwInitDone = true;
+        g_state.storageReady = true;
+        g_state.radioBusy = false;
+        g_state.uploadActive = false;
+        g_state.uploadPercent = 0;
+        g_state.uploadPublished = 0;
+        g_state.uploadTotal = STORAGE.getPendingEventCount();
+        strlcpy(g_state.uploadPhase, "TRIAGE", sizeof(g_state.uploadPhase));
+        g_state.sessionFilesPending = static_cast<int>(STORAGE.getPendingEventCount());
+        g_state.kaliSyncAvailable = STORAGE.getPendingEventCount() > 0;
+        g_state.kaliSyncPending = STORAGE.getPendingEventCount() > 0;
+        g_state.radioOwner = RADIO_NONE;
+        g_state.screenChanged = true;
+        g_state.dataRefresh = true;
+        STATE_WRITE_END();
+
+        for (;;) {
+            POWER_MGR.tick(millis());
+            const PowerSnapshot power = POWER_MGR.consumeSnapshot();
+            _applyPowerSnapshotToState(power);
+            _pollUsbSerialConsole();
+            vTaskDelay(pdMS_TO_TICKS(250));
+        }
+    }
+
+    const bool bootHeapPressure =
+        STORAGE.isReady() &&
+        (STORAGE.getPendingEventCount() >= BOOT_TRIAGE_PENDING_UPLOAD_THRESHOLD ||
+         heap_caps_get_free_size(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT) <
+             BOOT_TRIAGE_FREE_INTERNAL_HEAP_BYTES ||
+         heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT) <
+             BOOT_TRIAGE_LARGEST_INTERNAL_HEAP_BYTES);
 
     // Phase 1 shadow plumbing: PSRAM slot pool + pinned worker on Core 1.
     // Failure is non-fatal — producers fall back to no-op enqueue.
     RAMSpool::begin();
 
     if (storageOk) {
-        DebugLog::begin();
-        FieldVault::begin();
-        _loadKnownLocationsIntoState();
-        if (STORAGE.hasStorageMaintenanceWork()) {
-            _clearStorageSummaryMirror();
-            DLOG_WARN("STORAGE", "Initial storage summary deferred until repair completes");
+        if (bootHeapPressure) {
+            g_deferredBootOptionalInitPending = true;
+            g_deferredBootOptionalInitAtMs =
+                millis() + DEFERRED_BOOT_OPTIONAL_INIT_DELAY_MS;
+            DLOG_WARN("CORE",
+                      "Deferring optional boot init pending=%lu freeInternal=%lu largestInternal=%lu",
+                      static_cast<unsigned long>(STORAGE.getPendingEventCount()),
+                      static_cast<unsigned long>(
+                          heap_caps_get_free_size(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT)),
+                      static_cast<unsigned long>(
+                          heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT)));
         } else {
-            _refreshStorageSummaryMirror(true);
-        }
-    }
-    const bool exportOk = EXPORT_MGR.begin();
-    if (exportOk) {
-        SessionExportSummary latestExport;
-        if (EXPORT_MGR.loadLatestSummary(&latestExport)) {
-            _applyExportSummaryToState(latestExport, true);
-            DLOG_INFO("EXPORT", "Loaded last export: %s (%lu events)",
-                      latestExport.sessionId,
-                      static_cast<unsigned long>(latestExport.totalEvents));
+            _runOptionalBootInitialization();
         }
     }
 
@@ -3915,6 +4040,14 @@ void TaskHardware(void* pvParameters) {
             }
         }
         lastLoopStartMs = loopNow;
+
+        if (g_deferredBootOptionalInitPending &&
+            loopNow >= g_deferredBootOptionalInitAtMs) {
+            g_deferredBootOptionalInitPending = false;
+            if (STORAGE.isReady()) {
+                _runOptionalBootInitialization();
+            }
+        }
 
         POWER_MGR.tick(loopNow);
         const PowerSnapshot power = POWER_MGR.consumeSnapshot();

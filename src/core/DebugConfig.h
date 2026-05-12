@@ -1,5 +1,6 @@
 
 
+
 #pragma once
 
 #include <Arduino.h>
@@ -121,4 +122,5 @@ enum DebugProfile : uint8_t {
     DEBUG_PROFILE_DEBUG = 2,
     DEBUG_PROFILE_DEV   = 3,
 };
+
 

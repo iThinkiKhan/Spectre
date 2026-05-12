@@ -1,5 +1,6 @@
 
 
+
 #pragma once
 
 #include <Arduino.h>
@@ -106,6 +107,7 @@ private:
 };
 
 #define POWER_MGR PowerManager::getInstance()
+
 
 
 

@@ -1,5 +1,6 @@
 
 
+
 #pragma once
 
 #include <TFT_eSPI.h>
@@ -12,5 +13,6 @@ void showInit(TFT_eSPI& tft, const char* line1 = "SPECTRE", const char* line2 = 
 void showFatal(TFT_eSPI& tft, const char* line1 = "SPECTRE", const char* line2 = "DISPLAY FAILURE");
 
 } // namespace PrebootFallback
+
 
 

@@ -1,5 +1,6 @@
 
 
+
 #include "DisplayManager.h"
 #include "../config.h"
 #include "../SecretsConfig.h"
@@ -3152,3 +3153,4 @@ lv_obj_t* DisplayManager::_makePanel(lv_obj_t* parent,
     lv_obj_clear_flag(panel, LV_OBJ_FLAG_SCROLLABLE);
     return panel;
 }
+

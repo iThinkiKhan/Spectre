@@ -1,5 +1,6 @@
 
 
+
 #pragma once
 
 #include "SubGhzTypes.h"
@@ -10,5 +11,6 @@ class SubGhzRecordWriter {
 public:
     static bool logPacketRx(StorageManager& storage, const SubGhzPacket& pkt);
 };
+
 
 

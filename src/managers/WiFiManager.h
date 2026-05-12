@@ -1,3 +1,4 @@
+
 // WiFiManager: promiscuous capture, IE fingerprinting, probe tracking,
 // PMKID extraction, ASTM F3411 / DJI Remote ID, behavioral de-anonymization.
 #pragma once
@@ -506,6 +507,7 @@ private:
 };
 
 extern WiFiManager WIFI_MGR;
+
 
 
 

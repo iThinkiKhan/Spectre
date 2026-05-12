@@ -1,3 +1,4 @@
+
 #pragma once
 #include <Arduino.h>
 #include <lvgl.h>
@@ -293,3 +294,4 @@ private:
                                const char* statusText);
     void _syncActionHintsFromState();
 };
+

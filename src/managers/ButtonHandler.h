@@ -1,5 +1,6 @@
 
 
+
 #pragma once
 #include <Arduino.h>
 #include "config.h"
@@ -28,6 +29,7 @@ private:
     static const unsigned long LONG_PRESS_MS = 800;
     static const unsigned long DEBOUNCE_MS = 50;
 };
+
 
 
 

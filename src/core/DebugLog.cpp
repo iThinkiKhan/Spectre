@@ -1,5 +1,6 @@
 
 
+
 #include "DebugLog.h"
 #include "SpectreState.h"
 #include "../managers/RadioArbiter.h"
@@ -379,6 +380,7 @@ bool DebugLog::_shouldMirrorToUsbSerial(char level, const char* tag) {
 int DebugLog::_levelRank(char level) {
     return debugLevelRank(level);
 }
+
 
 
 

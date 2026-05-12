@@ -1,3 +1,4 @@
+
 #include "RadioArbiter.h"
 
 #include "../core/CrashBreadcrumb.h"
@@ -532,3 +533,4 @@ void RadioArbiter::_log(const char* action,
               static_cast<unsigned long>(holdMs),
               safeReason);
 }
+

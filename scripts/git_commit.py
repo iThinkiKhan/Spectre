@@ -1,4 +1,5 @@
 
+
 #!/usr/bin/env python3
 """
 git_commit.py  —  safe commit helper for Spectre on Windows/NTFS
@@ -142,4 +143,5 @@ def main():
 
 if __name__ == '__main__':
     main()
+
 

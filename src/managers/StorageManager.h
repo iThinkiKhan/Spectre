@@ -1,3 +1,4 @@
+
 #pragma once
 #include <Arduino.h>
 #include <LittleFS.h>
@@ -1053,3 +1054,4 @@ private:
 };
 
 #define STORAGE StorageManager::getInstance()
+
