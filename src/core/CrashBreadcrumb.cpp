@@ -103,9 +103,9 @@ void crashLogPrint() {
 
         printed++;
         const CrashPhase phase = static_cast<CrashPhase>(e.phase);
-        const char* tag = e.resolved ? "[ok]    " : "[CRASH?]";
+        const char* tag = e.resolved ? "[ok]" : "[CRASH?]";
 
-        Serial.printf("[BOOT]   #%u seq=%-4lu %s phase=%-16s owner=%u pendingUpload=%-5lu heapFree=%luK largest=%luK min=%luK uptime=%lus\n",
+        Serial.printf("[BOOT] #%u seq=%lu %s phase=%s owner=%u pendingUpload=%lu heapFree=%luK largest=%luK min=%luK uptime=%lus\r\n",
                       static_cast<unsigned>(printed),
                       static_cast<unsigned long>(e.seqNum),
                       tag,

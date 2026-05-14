@@ -3,6 +3,7 @@
 #include "MQTTManager.h"
 #include <LittleFS.h>
 #include <ArduinoJson.h>
+#include <esp_wifi.h>
 #include <algorithm>
 #include <cstdlib>
 #include <vector>
@@ -20,6 +21,30 @@
 #include "StorageManager.h"
 #include "TimeService.h"
 
+// Task handle owned by main.cpp. We need it so the upload path can suspend
+// TaskDisplay for the duration of the upload mission and dodge the OPI-PSRAM
+// flash/PSRAM cache-share race.
+extern TaskHandle_t taskDisplayHandle;
+
+void MQTTManager::_pauseDisplayForUpload() {
+    if (_displayPausedForUpload || !taskDisplayHandle) return;
+    vTaskSuspend(taskDisplayHandle);
+    _displayPausedForUpload = true;
+    DLOG_INFO("MQTT", "TaskDisplay suspended for upload mission");
+}
+
+void MQTTManager::_resumeDisplayAfterUpload() {
+    if (!_displayPausedForUpload || !taskDisplayHandle) return;
+    vTaskResume(taskDisplayHandle);
+    _displayPausedForUpload = false;
+    DLOG_INFO("MQTT", "TaskDisplay resumed after upload mission");
+}
+
+// Upload fetch/publish runs during an active WiFi lease. DEBUG profile is useful
+// elsewhere, but these hot-path traces can destabilize the rail, so leave them
+// compile-time dark unless deliberately instrumenting this path.
+#define DLOG_UPLOAD_TRACE(tag, fmt, ...) \
+    do { if (false) DLOG_DEBUG(tag, fmt, ##__VA_ARGS__); } while (0)
 
 MQTTManager MQTT_MGR;
 
@@ -195,9 +220,17 @@ bool _stateRequiresUploadLease(MQTTState state) {
 
 static constexpr uint32_t kDumpSliceBudgetMs       = MQTT_DUMP_SLICE_BUDGET_MS;
 static constexpr uint8_t  kDumpMaxRecordsPerSlice  = MQTT_DUMP_RECORDS_PER_SLICE;
-static constexpr uint8_t  kFetchBatchSize          = MQTT_DUMP_FETCH_BATCH_SIZE;
 static constexpr uint16_t kProgressLogEveryN       = MQTT_DUMP_PROGRESS_EVERY_N;
 static constexpr uint16_t kDurableCheckpointEveryN = MQTT_DUMP_CHECKPOINT_EVERY_N;
+static constexpr uint32_t kBrokerConnectSettleMs   = 300UL;
+static constexpr uint32_t kBrokerConnectAttemptGapMs = 2000UL;
+static constexpr uint32_t kUploadPublishSettleMs   = 10UL;
+static constexpr size_t   kMaxMqttPayloadBytes     = 1535U;
+// Per-record retention is ~24 B internal (three PSRAM allocations'
+// bookkeeping); the payload itself lives in PSRAM. 256 records × ~24 B ≈
+// 6 KB internal, well within the ~33 KB free at upload time.
+static constexpr uint16_t kUploadRamBucketRecords  = 256U;
+static constexpr int8_t   kUploadWifiTxPowerQdbm   = 32; // 8 dBm, quarter-dBm units.
 
 bool _uploadPausedByMission() {
     RunContext context = RUN_CONTEXT_GENERAL;
@@ -245,7 +278,7 @@ void MQTTManager::begin() {
     _mqtt.setServer(_configuredBrokerHost(), _configuredBrokerPort());
     _mqtt.setBufferSize(2048);
     _mqtt.setKeepAlive(90);
-    _mqtt.setSocketTimeout(60);
+    _mqtt.setSocketTimeout(3);
 
     _migrateLegacyQueueFiles();
     _refreshPendingCount();
@@ -294,6 +327,9 @@ bool MQTTManager::uploadLeaseReady(bool force) const {
     const uint32_t pendingRecords =
         STORAGE.isReady() ? STORAGE.getAuthoritativePendingEventCount() : 0U;
     return force ||
+           (_continuousDrainActive &&
+            pendingRecords > 0 &&
+            millis() >= _uploadBackoffUntilMs) ||
            (pendingRecords >= MQTT_UPLOAD_READY_THRESHOLD &&
             millis() >= _uploadBackoffUntilMs);
 }
@@ -309,7 +345,14 @@ bool MQTTManager::requestDump(bool force) {
 
     const uint32_t pendingRecords =
         STORAGE.isReady() ? STORAGE.getAuthoritativePendingEventCount() : 0U;
-    _uploadLeaseHoldMs = _calcUploadLeaseMs(static_cast<int>(pendingRecords));
+    const uint32_t uploadWindowRecords =
+        std::min<uint32_t>(pendingRecords, STORAGE_UPLOAD_WINDOW_RECORDS);
+    _uploadLeaseHoldMs = _calcUploadLeaseMs(static_cast<int>(uploadWindowRecords));
+    if (force ||
+        pendingRecords >= MQTT_UPLOAD_READY_THRESHOLD ||
+        pendingRecords > uploadWindowRecords) {
+        _continuousDrainActive = true;
+    }
 
     bool granted = RADIO_ARB.requestUploadLease(
         _uploadLeaseHoldMs,
@@ -318,18 +361,55 @@ bool MQTTManager::requestDump(bool force) {
 
     if (granted) {
         _wifiConnectStarted = false;
+        _lastBrokerConnectAttemptMs = 0;
+        _brokerConnectSettleLogged = false;
+        _resumeDumpAfterReconnect = false;
         _dumpCtx = DumpContext{};
         _uploadStartStackWatermarkBytes = _currentTaskStackWatermarkBytes();
+
+        // Capture pauses for the duration of the upload mission. The radio
+        // arbiter has already stopped new captures (we hold RADIO_WIFI_UPLOAD);
+        // drainAndPauseWorker waits for any in-flight RAMSpool slots to finish
+        // flushing to flash, then gates the worker. Eliminates the concurrent
+        // LittleFS R/W race that was triple-faulting the chip during bucket
+        // fill — and matches the product intent: offload quickly, don't
+        // continue capturing.
+        RAMSpool::drainAndPauseWorker(5000);
+
+        // Render one last UI frame announcing the upload, then suspend
+        // TaskDisplay for the whole mission. On ESP32-S3 with OPI PSRAM, flash
+        // and PSRAM share SPI0 cache; an LVGL render that touches PSRAM-backed
+        // fonts/framebuffer overlapping a LittleFS.open() flash op causes a
+        // silent triple-fault. With TaskDisplay suspended, core 1 is quiet
+        // (RAMSpool worker is already paused too).
+        _setUploadUiState(true, "UPLOADING", 0, pendingRecords, true);
+        _pauseDisplayForUpload();
 
         if (!STORAGE.prepareUploadIndexForUpload(_uploadLeaseHoldMs)) {
             DLOG_WARN("MQTT", "Upload index not ready; dump deferred");
             _uploadBackoffUntilMs = millis() + MQTT_FAILED_BACKOFF_MS;
+            _resumeDisplayAfterUpload();
             _setUploadUiState(false, "", 0, 0, false);
+            RAMSpool::resumeWorker();
             RADIO_ARB.release(RADIO_WIFI_UPLOAD, "upload_index_unavailable", false);
             RADIO_ARB.ensureDefaultCapture("upload_index_unavailable");
             _logUploadStackWatermark("index_unavailable");
             return false;
         }
+
+        _startDumpPlan();
+        if (!_fillUploadBucketRadioQuiet(kUploadRamBucketRecords)) {
+            DLOG_WARN("MQTT", "Upload RAM bucket prefill failed; dump deferred");
+            _uploadBackoffUntilMs = millis() + MQTT_FAILED_BACKOFF_MS;
+            _resumeDisplayAfterUpload();
+            _setUploadUiState(false, "", 0, 0, false);
+            RAMSpool::resumeWorker();
+            RADIO_ARB.release(RADIO_WIFI_UPLOAD, "upload_prefill_failed", false);
+            RADIO_ARB.ensureDefaultCapture("upload_prefill_failed");
+            _logUploadStackWatermark("prefill_failed");
+            return false;
+        }
+        _resumeDumpAfterReconnect = true;
 
         // Defer LittleFS watermark flushes until the radio is paused at
         // end-of-dump. Per-ack "w" opens during an active-radio window
@@ -341,8 +421,10 @@ bool MQTTManager::requestDump(bool force) {
         _bleTriggered = force;
         _setUploadUiState(false, "", 0, 0, true);
 
-        DLOG_INFO("MQTT", "Upload lease granted — %d records, lease=%lus",
+        DLOG_INFO("MQTT",
+                  "Upload lease granted — pending=%lu window=%lu lease=%lus",
                   static_cast<unsigned long>(pendingRecords),
+                  static_cast<unsigned long>(uploadWindowRecords),
                   static_cast<unsigned long>(_uploadLeaseHoldMs / 1000UL));
         return true;
     }
@@ -440,6 +522,8 @@ bool MQTTManager::_startStartupFieldDump() {
     }
 
     _wifiConnectStarted = false;
+    _lastBrokerConnectAttemptMs = 0;
+    _brokerConnectSettleLogged = false;
     _dumpCtx = DumpContext{};
     _uploadStartStackWatermarkBytes = _currentTaskStackWatermarkBytes();
 
@@ -457,6 +541,221 @@ bool MQTTManager::_startStartupFieldDump() {
               "Startup field upload — pending=%lu lease=%lus",
               static_cast<unsigned long>(FieldVault::uploadedThrough()),
               static_cast<unsigned long>(_uploadLeaseHoldMs / 1000UL));
+    return true;
+}
+
+void MQTTManager::_prefetchFirstUploadEvent() {
+    (void)_fillUploadBucketRadioQuiet(1);
+}
+
+bool MQTTManager::_fillUploadBucketRadioQuiet(uint16_t maxRecords) {
+    if (!STORAGE.isReady() || maxRecords == 0) {
+        return false;
+    }
+
+    std::vector<String>& sessionIds = _dumpCtx.sessionIds;
+    if (!_dumpCtx.eventsPrefetched) {
+        sessionIds.clear();
+        STORAGE.listEventSessions(sessionIds);
+        _dumpCtx.sessionIndex = 0;
+        _dumpCtx.sinceId = 0;
+        _dumpCtx.sinceIdInitialized = false;
+        _dumpCtx.bucketNumber = 1;
+        _dumpCtx.eventsPrefetched = true;
+    }
+
+    _dumpCtx.uploadBucket.clear();
+    _dumpCtx.uploadBucketIndex = 0;
+    _dumpCtx.uploadBucketComplete = false;
+    _dumpCtx.cachedBatch.clear();
+    _dumpCtx.cachedBatchIndex = 0;
+    _dumpCtx.cachedBatchCount = 0;
+
+    // Cached upload-segment File handle benefits within-fill reads only.
+    // Closing here prevents a long-lived File handle from spanning the
+    // publish phase, which has been observed to churn LittleFS internal
+    // state via watermark/index writes.
+    STORAGE.closeUploadReadFile();
+
+    const uint32_t fillStartMs = millis();
+    if (_dumpCtx.uploadBucket.capacity() < maxRecords) {
+        _dumpCtx.uploadBucket.reserve(maxRecords);
+    }
+
+    DLOG_INFO("MQTT",
+              "Upload RAM bucket fill begin bucket=%u max=%u sessions=%u sessionIndex=%u radioQuiet=1",
+              static_cast<unsigned>(_dumpCtx.bucketNumber),
+              static_cast<unsigned>(maxRecords),
+              static_cast<unsigned>(sessionIds.size()),
+              static_cast<unsigned>(_dumpCtx.sessionIndex));
+
+    while (_dumpCtx.sessionIndex < sessionIds.size() &&
+           _dumpCtx.uploadBucket.size() < maxRecords) {
+        const String& sessionId = sessionIds[_dumpCtx.sessionIndex];
+        if (!_dumpCtx.sinceIdInitialized) {
+            DLOG_INFO("MQTT",
+                      "Upload bucket session start idx=%u sess=%s bucket=%u",
+                      static_cast<unsigned>(_dumpCtx.sessionIndex),
+                      sessionId.c_str(),
+                      static_cast<unsigned>(_dumpCtx.uploadBucket.size()));
+            _dumpCtx.sinceId = STORAGE.getLastUploadedEventId(sessionId.c_str());
+            _dumpCtx.sinceIdInitialized = true;
+        }
+
+        JsonDocument recordDoc;
+        bool foundRecord = false;
+        const uint32_t fetchT0 = millis();
+        if (!_dumpCtx.firstEventFetchLogged) {
+            DLOG_INFO("MQTT",
+                      "First event batch fetch session=%s since=%lu radioQuiet=1",
+                      sessionId.c_str(),
+                      static_cast<unsigned long>(_dumpCtx.sinceId));
+            _dumpCtx.firstEventFetchLogged = true;
+        }
+
+        const bool fetchOk = STORAGE.getNextUploadEventForSession(
+            sessionId.c_str(), _dumpCtx.sinceId,
+            recordDoc, foundRecord);
+        const uint32_t fetchDt = millis() - fetchT0;
+
+        if (!fetchOk) {
+            DLOG_WARN("MQTT",
+                      "Upload RAM bucket fetch failed session=%s since=%lu ms=%lu",
+                      sessionId.c_str(),
+                      static_cast<unsigned long>(_dumpCtx.sinceId),
+                      static_cast<unsigned long>(fetchDt));
+            _dumpCtx.uploadBucket.clear();
+            return false;
+        }
+
+        if (!foundRecord) {
+            _dumpCtx.sessionIndex++;
+            _dumpCtx.sinceId = 0;
+            _dumpCtx.sinceIdInitialized = false;
+            continue;
+        }
+
+        JsonObjectConst record = recordDoc.as<JsonObjectConst>();
+        const uint32_t eventId = record["id"] | 0U;
+        if (eventId == 0) {
+            DLOG_WARN("MQTT",
+                      "Upload RAM bucket record missing id session=%s since=%lu",
+                      sessionId.c_str(),
+                      static_cast<unsigned long>(_dumpCtx.sinceId));
+            _dumpCtx.uploadBucket.clear();
+            return false;
+        }
+
+        const char* type = record["type"] | "event";
+        JsonDocument publishDoc;
+        _copyEventRecordForPublish(record, publishDoc);
+
+        const size_t payloadLen = measureJson(publishDoc);
+        if (payloadLen == 0 || payloadLen > kMaxMqttPayloadBytes) {
+            DLOG_WARN("MQTT",
+                      "Upload RAM bucket payload invalid event=%lu bytes=%u",
+                      static_cast<unsigned long>(eventId),
+                      static_cast<unsigned>(payloadLen));
+            _dumpCtx.uploadBucket.clear();
+            return false;
+        }
+
+        DumpContext::UploadPublishRecord queued;
+        queued.eventId = eventId;
+        queued.lane = record["lane"] | static_cast<uint8_t>(STORAGE_LANE_NOISE);
+
+        // sessionId / topic / payload all live in PSRAM — see note on
+        // UploadPublishRecord. Keeps internal-heap retention near zero.
+        const size_t sessionIdLen = sessionId.length();
+        queued.sessionId = static_cast<char*>(
+            heap_caps_malloc(sessionIdLen + 1U, MALLOC_CAP_SPIRAM));
+        if (!queued.sessionId) {
+            DLOG_WARN("MQTT",
+                      "Upload RAM bucket PSRAM alloc failed (sessionId) event=%lu",
+                      static_cast<unsigned long>(eventId));
+            _dumpCtx.uploadBucket.clear();
+            return false;
+        }
+        memcpy(queued.sessionId, sessionId.c_str(), sessionIdLen + 1U);
+
+        const String topicStr = _mqttTopicForEventType(type);
+        const size_t topicLen = topicStr.length();
+        queued.topic = static_cast<char*>(
+            heap_caps_malloc(topicLen + 1U, MALLOC_CAP_SPIRAM));
+        if (!queued.topic) {
+            DLOG_WARN("MQTT",
+                      "Upload RAM bucket PSRAM alloc failed (topic) event=%lu",
+                      static_cast<unsigned long>(eventId));
+            _dumpCtx.uploadBucket.clear();
+            return false;
+        }
+        memcpy(queued.topic, topicStr.c_str(), topicLen + 1U);
+
+        queued.payload = static_cast<char*>(
+            heap_caps_malloc(payloadLen + 1U, MALLOC_CAP_SPIRAM));
+        if (!queued.payload) {
+            DLOG_WARN("MQTT",
+                      "Upload RAM bucket PSRAM alloc failed (payload) event=%lu bytes=%u",
+                      static_cast<unsigned long>(eventId),
+                      static_cast<unsigned>(payloadLen));
+            _dumpCtx.uploadBucket.clear();
+            return false;
+        }
+        const size_t written = serializeJson(publishDoc, queued.payload,
+                                             payloadLen + 1U);
+        if (written != payloadLen) {
+            DLOG_WARN("MQTT",
+                      "Upload RAM bucket serialize mismatch event=%lu measured=%u written=%u",
+                      static_cast<unsigned long>(eventId),
+                      static_cast<unsigned>(payloadLen),
+                      static_cast<unsigned>(written));
+            _dumpCtx.uploadBucket.clear();
+            return false;
+        }
+        queued.payloadLen = written;
+
+        _dumpCtx.uploadBucket.push_back(std::move(queued));
+        _dumpCtx.sinceId = eventId;
+
+        if (!_dumpCtx.firstEventFetchedOkLogged) {
+            DLOG_INFO("MQTT",
+                      "First event batch fetched ok=1 count=1 ms=%lu radioQuiet=1",
+                      static_cast<unsigned long>(fetchDt));
+            _dumpCtx.firstEventFetchedOkLogged = true;
+        }
+
+        if (fetchDt >= kUploadFetchSlowWarnMs) {
+            DLOG_WARN("MQTT",
+                      "Upload RAM bucket fetch slow session=%s event=%lu ms=%lu",
+                      sessionId.c_str(),
+                      static_cast<unsigned long>(eventId),
+                      static_cast<unsigned long>(fetchDt));
+        }
+    }
+
+    _dumpCtx.uploadBucketComplete =
+        _dumpCtx.sessionIndex >= sessionIds.size();
+
+    DLOG_INFO("MQTT",
+              "Upload RAM bucket fill done bucket=%u records=%u complete=%d ms=%lu",
+              static_cast<unsigned>(_dumpCtx.bucketNumber),
+              static_cast<unsigned>(_dumpCtx.uploadBucket.size()),
+              _dumpCtx.uploadBucketComplete ? 1 : 0,
+              static_cast<unsigned long>(millis() - fillStartMs));
+    _dumpCtx.bucketNumber++;
+    return !_dumpCtx.uploadBucket.empty() || _dumpCtx.uploadBucketComplete;
+}
+
+bool MQTTManager::_disconnectStaForUploadRefill() {
+    if (_mqtt.connected()) {
+        _mqtt.disconnect();
+    }
+    _wifiClient.stop();
+    WiFi.disconnect(true);
+    vTaskDelay(pdMS_TO_TICKS(150));
+    _wifiConnectStarted = false;
+    _lastBrokerConnectAttemptMs = 0;
+    _brokerConnectSettleLogged = false;
     return true;
 }
 
@@ -505,6 +804,8 @@ void MQTTManager::_runStateMachine() {
                 DLOG_INFO("MQTT", "WiFi connected, connecting broker");
                 _state = MQTT_CONNECTING_BROKER;
                 _stateEnteredMs = millis();
+                _lastBrokerConnectAttemptMs = 0;
+                _brokerConnectSettleLogged = false;
                 break;
             }
 
@@ -535,11 +836,26 @@ void MQTTManager::_runStateMachine() {
         case MQTT_CONNECTING_BROKER:
             _refreshUploadLease("mqtt_connecting_broker", _uploadLeaseHoldMs);
             _setUploadUiState(true, "CONNECTED", 0,
-                              static_cast<uint32_t>(_queuedRecords),
+                              std::min<uint32_t>(static_cast<uint32_t>(_queuedRecords),
+                                                 STORAGE_UPLOAD_WINDOW_RECORDS),
                               true);
+            if (elapsed < kBrokerConnectSettleMs) {
+                if (!_brokerConnectSettleLogged) {
+                    DLOG_INFO("MQTT",
+                              "Broker connect settling after WiFi association ms=%lu",
+                              static_cast<unsigned long>(kBrokerConnectSettleMs));
+                    _brokerConnectSettleLogged = true;
+                }
+                break;
+            }
             if (_connectBroker()) {
-                DLOG_INFO("MQTT", "Broker connected, dumping");
-                _startDumpPlan();
+                if (_resumeDumpAfterReconnect) {
+                    DLOG_INFO("MQTT", "Broker connected, resuming dump");
+                    _resumeDumpAfterReconnect = false;
+                } else {
+                    DLOG_INFO("MQTT", "Broker connected, dumping");
+                    _startDumpPlan();
+                }
                 _state = MQTT_DUMPING;
                 _stateEnteredMs = millis();
             } else if (elapsed > MQTT_BROKER_CONNECT_TIMEOUT_MS) {
@@ -554,7 +870,7 @@ void MQTTManager::_runStateMachine() {
             _refreshUploadLease("mqtt_dumping", _uploadLeaseHoldMs);
             _setUploadUiState(true, "UPLOADING",
                               static_cast<uint32_t>(_lastPublished),
-                              static_cast<uint32_t>(_queuedRecords),
+                              _dumpCtx.maxEventsThisLease,
                               true);
             if (_mqtt.connected()) {
                 _mqtt.loop();
@@ -567,9 +883,10 @@ void MQTTManager::_runStateMachine() {
             }
             break;
 
-        case MQTT_DONE:
+        case MQTT_DONE: {
             _setUploadUiState(false, "", 0, 0, false);
             RADIO_ARB.release(RADIO_WIFI_UPLOAD, "dump_complete", false);
+            const bool wasFieldOnlyMode = _fieldOnlyMode;
             DLOG_INFO("MQTT",
                       _fieldOnlyMode ? "Startup field dump complete"
                                      : "Dump complete");
@@ -592,8 +909,23 @@ void MQTTManager::_runStateMachine() {
                             static_cast<uint32_t>(_queuedRecords));
             STORAGE.endUploadBatch();
             _refreshPendingCount(true);
+            if (!wasFieldOnlyMode &&
+                STORAGE.isReady() &&
+                STORAGE.getAuthoritativePendingEventCount() == 0) {
+                _setUploadUiState(true, "CLEANUP",
+                                  static_cast<uint32_t>(_lastPublished),
+                                  _dumpCtx.maxEventsThisLease,
+                                  false);
+                if (!STORAGE.compactSpool()) {
+                    DLOG_WARN("MQTT", "Final spool compact failed after dump");
+                } else {
+                    _refreshPendingCount(true);
+                }
+            }
             crashBreadcrumbClear(CrashPhase::UPLOAD_FLUSH);
             crashBreadcrumbClear(CrashPhase::MQTT_DUMPING);
+            RAMSpool::resumeWorker();
+            _resumeDisplayAfterUpload();
             RADIO_ARB.ensureDefaultCapture("mqtt_done");
             _logUploadStackWatermark("done");
             _state = MQTT_IDLE;
@@ -601,12 +933,16 @@ void MQTTManager::_runStateMachine() {
             // Note: session data NOT cleared here
             // Only cleared on explicit debrief screen long press
             break;
+        }
 
         case MQTT_FAILED:
             _uploadBackoffUntilMs = millis() + MQTT_FAILED_BACKOFF_MS;
             _setUploadUiState(true, "FAILED",
                   static_cast<uint32_t>(_lastPublished),
-                  static_cast<uint32_t>(_queuedRecords),
+                  _dumpCtx.maxEventsThisLease > 0
+                      ? _dumpCtx.maxEventsThisLease
+                      : std::min<uint32_t>(static_cast<uint32_t>(_queuedRecords),
+                                           STORAGE_UPLOAD_WINDOW_RECORDS),
                   false);
             RADIO_ARB.release(RADIO_WIFI_UPLOAD, "dump_failed", false);
             DLOG_WARN("MQTT",
@@ -627,6 +963,8 @@ void MQTTManager::_runStateMachine() {
             _refreshPendingCount(true);
             crashBreadcrumbClear(CrashPhase::UPLOAD_FLUSH);
             crashBreadcrumbClear(CrashPhase::MQTT_DUMPING);
+            RAMSpool::resumeWorker();
+            _resumeDisplayAfterUpload();
             RADIO_ARB.ensureDefaultCapture("mqtt_failed");
             _logUploadStackWatermark("failed");
             _state = MQTT_IDLE;
@@ -644,20 +982,34 @@ bool MQTTManager::_connectWiFi() {
     }
 
     WiFi.setSleep(false);
+    const esp_err_t txPowerResult = esp_wifi_set_max_tx_power(kUploadWifiTxPowerQdbm);
+    if (txPowerResult != ESP_OK) {
+        DLOG_WARN("MQTT", "Upload WiFi TX power cap failed err=%d",
+                  static_cast<int>(txPowerResult));
+    }
     WiFi.begin(network->ssid, network->password);
-    DLOG_INFO("MQTT", "Connecting to upload network: %s timeout=%lus",
+    DLOG_INFO("MQTT", "Connecting to upload network: %s timeout=%lus txPowerQdbm=%d",
               network->ssid,
-              static_cast<unsigned long>(MQTT_WIFI_CONNECT_TIMEOUT_MS / 1000UL));
+              static_cast<unsigned long>(MQTT_WIFI_CONNECT_TIMEOUT_MS / 1000UL),
+              static_cast<int>(kUploadWifiTxPowerQdbm));
     return true;
 }
 
 bool MQTTManager::_connectBroker() {
     if (_mqtt.connected()) return true;
 
+    const uint32_t now = millis();
+    if (_lastBrokerConnectAttemptMs != 0 &&
+        now - _lastBrokerConnectAttemptMs < kBrokerConnectAttemptGapMs) {
+        return false;
+    }
+    _lastBrokerConnectAttemptMs = now;
+
     // PubSubClient may believe the MQTT session is gone while the underlying
     // WiFiClient still holds a half-open TCP socket. Start each broker connect
     // attempt from a clean transport so reconnects do not accumulate state.
     _wifiClient.stop();
+    vTaskDelay(pdMS_TO_TICKS(20));
 
     String clientSuffix = SESS.getId().substring(0, 8);
     if (!clientSuffix.length()) {
@@ -679,11 +1031,19 @@ bool MQTTManager::_connectBroker() {
         return false;
     }
 
-    if (brokerUser[0]) {
-        return _mqtt.connect(clientID, brokerUser, brokerPass);
-    }
-
-    return _mqtt.connect(clientID);
+    DLOG_INFO("MQTT", "Broker connect attempt host=%s port=%u client=%s",
+              brokerHost,
+              static_cast<unsigned>(_configuredBrokerPort()),
+              clientID);
+    const uint32_t t0 = millis();
+    const bool ok = brokerUser[0]
+        ? _mqtt.connect(clientID, brokerUser, brokerPass)
+        : _mqtt.connect(clientID);
+    DLOG_INFO("MQTT", "Broker connect result ok=%d state=%d ms=%lu",
+              ok ? 1 : 0,
+              _mqtt.state(),
+              static_cast<unsigned long>(millis() - t0));
+    return ok;
 }
 
 void MQTTManager::_startDumpPlan() {
@@ -692,16 +1052,17 @@ void MQTTManager::_startDumpPlan() {
 
     _dumpCtx = DumpContext{};
     _fieldOnlyClearAfterRelease = false;
-    // FieldVault drain runs first so high-value tiny records (boot/crash
-    // summaries) publish before bulky event traffic. The phase advances to
-    // HEALTH automatically once the vault is drained or a publish fails.
-    _dumpCtx.phase = DUMP_PHASE_FIELD;
+    // FieldVault reads LittleFS, so regular event upload skips that phase:
+    // event payloads are already RAM-staged before STA comes up. Field-only
+    // startup/manual uploads still use the dedicated drain path.
+    _dumpCtx.phase = _fieldOnlyMode ? DUMP_PHASE_FIELD : DUMP_PHASE_HEALTH;
     _dumpCtx.sessionIndex = 0;
     _dumpCtx.sinceId = 0;
     _dumpCtx.phaseStarted = false;
-    // Snapshot for diagnostics — no hard cap; upload is bounded by lease time.
+    // Snapshot for diagnostics/UI: the upload owner bails repeated 5k storage
+    // buckets until the backlog is empty or the dump fails.
     _dumpCtx.maxEventsThisLease =
-        STORAGE.isReady() ? static_cast<uint32_t>(STORAGE.getPendingEventCount()) : 0U;
+        STORAGE.isReady() ? STORAGE.getPendingEventCount() : 0U;
 
     crashCheckpoint(CrashPhase::MQTT_DUMPING,
                     static_cast<uint8_t>(RADIO_ARB.currentOwner()),
@@ -713,7 +1074,7 @@ void MQTTManager::_startDumpPlan() {
               static_cast<unsigned>(_dumpCtx.maxEventsThisLease));
 
     _setUploadUiState(true, "UPLOADING", 0,
-                      static_cast<uint32_t>(_queuedRecords), true);
+                      _dumpCtx.maxEventsThisLease, true);
 }
 
 bool MQTTManager::_runDumpSlice() {
@@ -835,28 +1196,18 @@ bool MQTTManager::_runDumpSlice() {
             return false;
 
         case DUMP_PHASE_EVENTS: {
-            // sessionIds lives in _dumpCtx so _dumpCtx = {} at dump start
-            // destructs the Strings and frees the vector's backing allocation.
-            std::vector<String>& sessionIds = _dumpCtx.sessionIds;
-
             if (!_dumpCtx.phaseStarted) {
-                sessionIds.clear();
-                const uint32_t listT0 = millis();
-                STORAGE.listEventSessions(sessionIds);
-                const uint32_t listDt = millis() - listT0;
-                DLOG_WARN("MQTT", "Upload sessions listed=%u ms=%lu",
-                          static_cast<unsigned>(sessionIds.size()),
-                          static_cast<unsigned long>(listDt));
-                _dumpCtx.sessionIndex = 0;
-                _dumpCtx.sinceId = 0;
+                DLOG_INFO("MQTT",
+                          "Upload events phase sessions=%u bucketRecords=%u radioHot=1",
+                          static_cast<unsigned>(_dumpCtx.sessionIds.size()),
+                          static_cast<unsigned>(_dumpCtx.uploadBucket.size()));
                 _dumpCtx.phaseStarted = true;
             }
 
             const uint32_t sliceStartMs = millis();
             uint8_t recordsThisSlice = 0;
-            JsonDocument publishDoc;
 
-            while (_dumpCtx.sessionIndex < sessionIds.size()) {
+            while (_dumpCtx.uploadBucketIndex < _dumpCtx.uploadBucket.size()) {
                 if ((millis() - sliceStartMs) >= kDumpSliceBudgetMs) {
                     _mqtt.loop();
                     return false;
@@ -867,165 +1218,37 @@ bool MQTTManager::_runDumpSlice() {
                     return false;
                 }
 
-                const String& sessionId = sessionIds[_dumpCtx.sessionIndex];
-
-                // ── FETCH PHASE ───────────────────────────────────────────
-                // When the cache is empty scan storage once and yield.
-                // Subsequent calls drain the cached records without re-scanning.
-                if (_dumpCtx.cachedBatchCount == 0) {
-                    if (!_dumpCtx.sinceIdInitialized) {
-                        _dumpCtx.sinceId =
-                            STORAGE.getLastUploadedEventId(sessionId.c_str());
-                        _dumpCtx.sinceIdInitialized = true;
-                    }
-
-                    _refreshUploadLease("mqtt_batch", _uploadLeaseHoldMs);
-                    if (_mqtt.connected()) {
-                        _mqtt.loop();
-                        _dumpSlicePause();
-                    } else {
-                        DLOG_WARN("MQTT",
-                                  "Broker disconnected before batch fetch — reconnecting");
-                        if (!_connectBroker()) {
-                            DLOG_WARN("MQTT",
-                                      "Mid-dump reconnect failed at batch boundary");
-                            _lastFailed++;
-                            _dumpCtx.phase = DUMP_PHASE_FAILED;
-                            return true;
-                        }
-                    }
-
-                    if (!_dumpCtx.firstEventFetchLogged) {
-                        DLOG_INFO("MQTT",
-                                  "First event batch fetch session=%s since=%lu",
-                                  sessionId.c_str(),
-                                  static_cast<unsigned long>(_dumpCtx.sinceId));
-                        _dumpCtx.firstEventFetchLogged = true;
-                    }
-
-                    _dumpCtx.cachedBatch.clear();
-                    const uint32_t fetchT0 = millis();
-                    const bool fetchOk = STORAGE.getUploadEventBatchForSession(
-                        sessionId.c_str(), _dumpCtx.sinceId,
-                        kFetchBatchSize, _dumpCtx.cachedBatch);
-                    const uint32_t fetchDt = millis() - fetchT0;
-
-                    if (fetchDt >= kUploadFetchSlowWarnMs) {
-                        DLOG_WARN("MQTT",
-                                  "Upload batch fetch slow session=%s since=%lu ms=%lu",
-                                  sessionId.c_str(),
-                                  static_cast<unsigned long>(_dumpCtx.sinceId),
-                                  static_cast<unsigned long>(fetchDt));
-                    } else if (fetchDt >= kUploadFetchSlowInfoMs) {
-                        DLOG_INFO("MQTT",
-                                  "Upload batch fetch slower than usual session=%s since=%lu ms=%lu",
-                                  sessionId.c_str(),
-                                  static_cast<unsigned long>(_dumpCtx.sinceId),
-                                  static_cast<unsigned long>(fetchDt));
-                    }
-
-                    if (!fetchOk) {
-                        _lastFailed++;
-                        DLOG_WARN("MQTT", "Failed to read upload batch for session %s",
-                                  sessionId.c_str());
-                        _dumpCtx.phase = DUMP_PHASE_FAILED;
-                        return true;
-                    }
-
-                    JsonArray arr = _dumpCtx.cachedBatch.as<JsonArray>();
-                    if (arr.isNull() || arr.size() == 0) {
-                        // Session exhausted — advance and yield
-                        _dumpCtx.sessionIndex++;
-                        _dumpCtx.sinceId = 0;
-                        _dumpCtx.sinceIdInitialized = false;
-                        _dumpCtx.cachedBatchIndex = 0;
-                        _dumpCtx.cachedBatchCount = 0;
-                        _dumpSlicePause();
-                        return false;
-                    }
-
-                    _dumpCtx.cachedBatchIndex = 0;
-                    _dumpCtx.cachedBatchCount =
-                        static_cast<uint16_t>(arr.size());
-
-                    // Yield after the expensive scan; next call drains cache
-                    return false;
-                }
-
-                // ── PROCESS PHASE ─────────────────────────────────────────
-                // Drain one record from the cached batch per while-iteration.
-                JsonArray batch = _dumpCtx.cachedBatch.as<JsonArray>();
-                if (batch.isNull() ||
-                    _dumpCtx.cachedBatchIndex >= _dumpCtx.cachedBatchCount) {
-                    // Defensive: stale cache — reset and re-fetch next call
-                    _dumpCtx.cachedBatchIndex = 0;
-                    _dumpCtx.cachedBatchCount = 0;
-                    continue;
-                }
-
-                JsonObject record =
-                    batch[_dumpCtx.cachedBatchIndex].as<JsonObject>();
-                if (record.isNull()) {
-                    _lastFailed++;
-                    DLOG_WARN("MQTT",
-                              "Upload batch record malformed session=%s since=%lu",
-                              sessionId.c_str(),
-                              static_cast<unsigned long>(_dumpCtx.sinceId));
-                    _dumpCtx.phase = DUMP_PHASE_FAILED;
-                    return true;
-                }
-
-                publishDoc.clear();
-
-                const uint32_t eventId = record["id"] | 0U;
-                if (eventId == 0) {
-                    _lastFailed++;
-                    DLOG_WARN("MQTT",
-                              "Upload batch record missing event id session=%s since=%lu",
-                              sessionId.c_str(),
-                              static_cast<unsigned long>(_dumpCtx.sinceId));
-                    _dumpCtx.phase = DUMP_PHASE_FAILED;
-                    return true;
-                }
-
-                const char* type = record["type"] | "event";
-                const String topic = _mqttTopicForEventType(type);
-
-                if (!_dumpCtx.firstEventFetchedOkLogged) {
-                    DLOG_INFO("MQTT",
-                              "First event fetched ok eventId=%lu type=%s",
-                              static_cast<unsigned long>(eventId),
-                              type);
-                    _dumpCtx.firstEventFetchedOkLogged = true;
-                }
-
-                if (!_dumpCtx.firstEventValidatedLogged) {
-                    DLOG_INFO("MQTT", "First event validated");
-                    _dumpCtx.firstEventValidatedLogged = true;
-                }
-
-                _copyEventRecordForPublish(record, publishDoc);
+                const DumpContext::UploadPublishRecord& record =
+                    _dumpCtx.uploadBucket[_dumpCtx.uploadBucketIndex];
 
                 if (!_dumpCtx.firstEventDocBuiltLogged) {
-                    DLOG_INFO("MQTT", "First event doc built");
+                    DLOG_INFO("MQTT",
+                              "First event payload staged event=%lu bytes=%u",
+                              static_cast<unsigned long>(record.eventId),
+                              static_cast<unsigned>(record.payloadLen));
                     _dumpCtx.firstEventDocBuiltLogged = true;
                 }
 
                 if (!_dumpCtx.firstEventPublishBeginLogged) {
-                    DLOG_INFO("MQTT", "First event publish begin");
+                    DLOG_INFO("MQTT",
+                              "First event publish begin event=%lu bytes=%u stack=%luB",
+                              static_cast<unsigned long>(record.eventId),
+                              static_cast<unsigned>(record.payloadLen),
+                              static_cast<unsigned long>(_currentTaskStackWatermarkBytes()));
                     _dumpCtx.firstEventPublishBeginLogged = true;
                 }
 
                 _refreshUploadLease("mqtt_publish", _uploadLeaseHoldMs);
+                vTaskDelay(pdMS_TO_TICKS(kUploadPublishSettleMs));
 
                 if (!_mqtt.connected()) {
                     DLOG_WARN("MQTT",
                               "Broker disconnected before event=%lu — reconnecting",
-                              static_cast<unsigned long>(eventId));
+                              static_cast<unsigned long>(record.eventId));
                     if (!_connectBroker()) {
                         DLOG_WARN("MQTT",
                                   "Reconnect failed before publish event=%lu",
-                                  static_cast<unsigned long>(eventId));
+                                  static_cast<unsigned long>(record.eventId));
                         _lastFailed++;
                         _dumpCtx.phase = DUMP_PHASE_FAILED;
                         return true;
@@ -1033,52 +1256,42 @@ bool MQTTManager::_runDumpSlice() {
                     _mqtt.loop();
                 }
 
-                if (!_publishJson(topic.c_str(), publishDoc, false, eventId)) {
+                if (!_publishPayload(record.topic,
+                                     record.payload,
+                                     record.payloadLen,
+                                     false)) {
                     const bool samePoisonRecord =
-                        (_lastPoisonEventId == eventId &&
-                         _lastPoisonSessionId == sessionId);
-                    _lastPoisonEventId = eventId;
-                    _lastPoisonSessionId = sessionId;
+                        (_lastPoisonEventId == record.eventId &&
+                         _lastPoisonSessionId == record.sessionId);
+                    _lastPoisonEventId = record.eventId;
+                    _lastPoisonSessionId = record.sessionId;
                     _lastPoisonEventFailures = samePoisonRecord
                         ? static_cast<uint8_t>(_lastPoisonEventFailures + 1)
                         : 1;
 
-                    const size_t payloadBytes = measureJson(publishDoc);
-                    const char* payloadSessionId = publishDoc["session_id"] | "";
-                    const char* payloadTs = publishDoc["ts"] | "";
-                    const char* payloadSensor = publishDoc["sensor"] | "";
                     DLOG_WARN("MQTT",
-                              "Publish failed for session=%s event=%lu type=%s"
-                              " topic=%s payload=%u sessionField=%d tsField=%d sensorField=%d"
+                              "Publish failed for session=%s event=%lu"
+                              " topic=%s payload=%u"
                               " mqttState=%d connected=%d poisonFails=%u/%u",
-                              sessionId.c_str(),
-                              static_cast<unsigned long>(eventId),
-                              type,
-                              topic.c_str(),
-                              static_cast<unsigned>(payloadBytes),
-                              payloadSessionId[0] ? 1 : 0,
-                              payloadTs[0] ? 1 : 0,
-                              payloadSensor[0] ? 1 : 0,
+                              record.sessionId,
+                              static_cast<unsigned long>(record.eventId),
+                              record.topic,
+                              static_cast<unsigned>(record.payloadLen),
                               _mqtt.state(),
                               _mqtt.connected() ? 1 : 0,
                               static_cast<unsigned>(_lastPoisonEventFailures),
                               static_cast<unsigned>(MQTT_POISON_FAIL_LIMIT));
 
                     if (_lastPoisonEventFailures >= MQTT_POISON_FAIL_LIMIT) {
-                        const uint8_t laneHint =
-                            publishDoc["lane"] | static_cast<uint8_t>(STORAGE_LANE_NOISE);
-                        if (STORAGE.markEventUploaded(eventId, sessionId.c_str(), laneHint)) {
+                        if (STORAGE.markEventUploaded(record.eventId,
+                                                      record.sessionId,
+                                                      record.lane)) {
                             DLOG_WARN("MQTT",
                                       "Quarantined poison event session=%s event=%lu after %u failures",
-                                      sessionId.c_str(),
-                                      static_cast<unsigned long>(eventId),
+                                      record.sessionId,
+                                      static_cast<unsigned long>(record.eventId),
                                       static_cast<unsigned>(_lastPoisonEventFailures));
-                            _dumpCtx.sinceId = eventId;
-                            _dumpCtx.cachedBatchIndex++;
-                            if (_dumpCtx.cachedBatchIndex >= _dumpCtx.cachedBatchCount) {
-                                _dumpCtx.cachedBatchIndex = 0;
-                                _dumpCtx.cachedBatchCount = 0;
-                            }
+                            _dumpCtx.uploadBucketIndex++;
                             _lastPoisonEventId = 0;
                             _lastPoisonSessionId = "";
                             _lastPoisonEventFailures = 0;
@@ -1087,8 +1300,8 @@ bool MQTTManager::_runDumpSlice() {
 
                         DLOG_WARN("MQTT",
                                   "Quarantine mark failed for session=%s event=%lu",
-                                  sessionId.c_str(),
-                                  static_cast<unsigned long>(eventId));
+                                  record.sessionId,
+                                  static_cast<unsigned long>(record.eventId));
                     }
 
                     _lastFailed++;
@@ -1097,7 +1310,10 @@ bool MQTTManager::_runDumpSlice() {
                 }
 
                 if (!_dumpCtx.firstEventPublishEndLogged) {
-                    DLOG_INFO("MQTT", "First event publish end");
+                    DLOG_INFO("MQTT",
+                              "First event publish end event=%lu stack=%luB",
+                              static_cast<unsigned long>(record.eventId),
+                              static_cast<unsigned long>(_currentTaskStackWatermarkBytes()));
                     _dumpCtx.firstEventPublishEndLogged = true;
                 }
 
@@ -1106,32 +1322,26 @@ bool MQTTManager::_runDumpSlice() {
                 }
                 _dumpSlicePause();
 
-                const uint8_t laneHint =
-                    publishDoc["lane"] | static_cast<uint8_t>(STORAGE_LANE_NOISE);
-                if (!STORAGE.markEventUploaded(eventId, sessionId.c_str(), laneHint)) {
+                if (!STORAGE.markEventUploaded(record.eventId,
+                                               record.sessionId,
+                                               record.lane)) {
                     _lastFailed++;
                     DLOG_WARN("MQTT",
                               "Failed to mark uploaded event=%lu session=%s",
-                              static_cast<unsigned long>(eventId),
-                              sessionId.c_str());
+                              static_cast<unsigned long>(record.eventId),
+                              record.sessionId);
                     _dumpCtx.phase = DUMP_PHASE_FAILED;
                     return true;
                 }
 
-                _dumpCtx.sinceId = eventId;
-                _dumpCtx.cachedBatchIndex++;
-                if (_dumpCtx.cachedBatchIndex >= _dumpCtx.cachedBatchCount) {
-                    // Cache exhausted: next iteration fetches the next batch
-                    _dumpCtx.cachedBatchIndex = 0;
-                    _dumpCtx.cachedBatchCount = 0;
-                }
+                _dumpCtx.uploadBucketIndex++;
                 _lastPublished++;
                 recordsThisSlice++;
                 _refreshUploadLease("mqtt_progress", _uploadLeaseHoldMs);
 
                 _setUploadUiState(true, "UPLOADING",
                                   static_cast<uint32_t>(_lastPublished),
-                                  static_cast<uint32_t>(_queuedRecords),
+                                  _dumpCtx.maxEventsThisLease,
                                   true);
 
                 // Post-record time yield: placed here so a slow fetch cannot
@@ -1144,22 +1354,112 @@ bool MQTTManager::_runDumpSlice() {
                 // Durable checkpoint: persist watermarks mid-upload so a crash
                 // cannot roll back more than kDurableCheckpointEveryN events.
                 if ((_lastPublished % kDurableCheckpointEveryN) == 0) {
-                    STORAGE.flushUploadCheckpoint();
+                    DLOG_INFO("MQTT",
+                              "Upload checkpoint deferred until radio quiet pub=%d",
+                              _lastPublished);
                 }
 
                 if ((_lastPublished % kProgressLogEveryN) == 0) {
                     DLOG_INFO("MQTT",
-                      "Dump progress pub=%d fail=%d session=%u/%u since=%lu leaseMaxEvents=%u",
+                              "Dump progress pub=%d fail=%d session=%u/%u since=%lu leaseMaxEvents=%u",
                               _lastPublished,
                               _lastFailed,
                               static_cast<unsigned>(_dumpCtx.sessionIndex),
-                              static_cast<unsigned>(sessionIds.size()),
+                              static_cast<unsigned>(_dumpCtx.sessionIds.size()),
                               static_cast<unsigned long>(_dumpCtx.sinceId),
                               static_cast<unsigned>(_dumpCtx.maxEventsThisLease));
                 }
             }
 
-            STORAGE.refreshStorageUiState();
+            const uint32_t remainingAfterBucket =
+                STORAGE.isReady() ? STORAGE.getPendingEventCount() : 0U;
+            if (_lastFailed == 0 && remainingAfterBucket > 0) {
+                _setUploadUiState(true, "INDEX",
+                                  static_cast<uint32_t>(_lastPublished),
+                                  _dumpCtx.maxEventsThisLease,
+                                  true);
+
+                DLOG_INFO("MQTT",
+                          "Upload RAM bucket drained; refilling without disconnect remaining=%lu complete=%d",
+                          static_cast<unsigned long>(remainingAfterBucket),
+                          _dumpCtx.uploadBucketComplete ? 1 : 0);
+
+                // Keep WiFi+MQTT connected through the refill. The bucket
+                // fill is now PSRAM-resident + uses a cached File handle, so
+                // it doesn't need a radio-quiet window. Service the MQTT
+                // client briefly so the broker keepalive doesn't fire.
+                if (_mqtt.connected()) {
+                    _mqtt.loop();
+                }
+
+                if (!STORAGE.flushUploadCheckpoint()) {
+                    _lastFailed++;
+                    DLOG_WARN("MQTT",
+                              "Upload checkpoint failed during refill");
+                    _dumpCtx.phase = DUMP_PHASE_FAILED;
+                    return true;
+                }
+
+                if (_dumpCtx.uploadBucketComplete) {
+                    _dumpCtx.eventsPrefetched = false;
+                    _dumpCtx.sessionIds.clear();
+                    _dumpCtx.sessionIndex = 0;
+                    _dumpCtx.sinceId = 0;
+                    _dumpCtx.sinceIdInitialized = false;
+                    if (!STORAGE.prepareUploadIndexForUpload(_uploadLeaseHoldMs)) {
+                        _lastFailed++;
+                        DLOG_WARN("MQTT",
+                                  "Upload index rebuild failed during refill remaining=%lu",
+                                  static_cast<unsigned long>(remainingAfterBucket));
+                        _dumpCtx.phase = DUMP_PHASE_FAILED;
+                        return true;
+                    }
+                    if (_mqtt.connected()) {
+                        _mqtt.loop();
+                    }
+                }
+
+                const uint32_t refillT0 = millis();
+                if (!_fillUploadBucketRadioQuiet(kUploadRamBucketRecords)) {
+                    _lastFailed++;
+                    DLOG_WARN("MQTT",
+                              "Upload RAM bucket refill failed remaining=%lu",
+                              static_cast<unsigned long>(remainingAfterBucket));
+                    _dumpCtx.phase = DUMP_PHASE_FAILED;
+                    return true;
+                }
+
+                DLOG_INFO("MQTT",
+                          "Upload RAM bucket refilled bucket=%u records=%u remaining=%lu ms=%lu",
+                          static_cast<unsigned>(_dumpCtx.bucketNumber),
+                          static_cast<unsigned>(_dumpCtx.uploadBucket.size()),
+                          static_cast<unsigned long>(remainingAfterBucket),
+                          static_cast<unsigned long>(millis() - refillT0));
+
+                if (_dumpCtx.uploadBucket.empty()) {
+                    if (STORAGE.getPendingEventCount() == 0) {
+                        _dumpCtx.phase = DUMP_PHASE_CENSUS;
+                        _dumpCtx.phaseStarted = false;
+                        return false;
+                    } else {
+                        _lastFailed++;
+                        DLOG_WARN("MQTT",
+                                  "Upload bucket produced no sessions with pending=%lu",
+                                  static_cast<unsigned long>(STORAGE.getPendingEventCount()));
+                        _dumpCtx.phase = DUMP_PHASE_FAILED;
+                    }
+                    return true;
+                }
+
+                _refreshUploadLease("mqtt_bucket", _uploadLeaseHoldMs);
+                // Stay in MQTT_DUMPING — connection is still alive, just
+                // continue publishing the freshly refilled bucket on the
+                // next state-machine tick.
+                if (_mqtt.connected()) {
+                    _mqtt.loop();
+                }
+                return false;
+            }
 
             if (_lastPublished == 0 && _dumpCtx.maxEventsThisLease > 0) {
                 DLOG_WARN("MQTT",
@@ -1184,8 +1484,9 @@ bool MQTTManager::_runDumpSlice() {
             if (_lastFailed == 0) {
                 _setUploadUiState(true, "COMPACT",
                                   static_cast<uint32_t>(_lastPublished),
-                                  static_cast<uint32_t>(_queuedRecords),
+                                  _dumpCtx.maxEventsThisLease,
                                   true);
+                _disconnectStaForUploadRefill();
                 const int compactedSessions = STORAGE.compactAllUploadedEventFiles();
                 DLOG_INFO("MQTT", "Compacted uploaded event files for %d session(s)",
                           compactedSessions);
@@ -1431,7 +1732,7 @@ bool MQTTManager::_purgeTransientFiles() {
     _setUploadUiState(true,
                       (_lastFailed == 0) ? "DONE" : "FAILED",
                       static_cast<uint32_t>(_lastPublished),
-                      static_cast<uint32_t>(_queuedRecords),
+                      _dumpCtx.maxEventsThisLease,
                       true);
     auto shouldDelete = [](const char* dirPath, const String& name) -> bool {
         if (name.length() == 0) {
@@ -1563,11 +1864,104 @@ bool MQTTManager::_purgeTransientFiles() {
     return ok;
 }
 
+bool MQTTManager::_publishPayload(const char* topic,
+                                  const char* payload,
+                                  size_t payloadLen,
+                                  bool retained) {
+    if (!topic || !topic[0] || !payload || payloadLen == 0) {
+        DLOG_WARN("MQTT", "Publish payload invalid topic=%s bytes=%u",
+                  topic ? topic : "(null)",
+                  static_cast<unsigned>(payloadLen));
+        return false;
+    }
+
+    if (payloadLen > kMaxMqttPayloadBytes) {
+        DLOG_WARN("MQTT",
+                  "Payload exceeds publish buffer topic=%s bytes=%u buf=%u retained=%d",
+                  topic,
+                  static_cast<unsigned>(payloadLen),
+                  static_cast<unsigned>(kMaxMqttPayloadBytes),
+                  retained ? 1 : 0);
+        return false;
+    }
+
+    auto publishOnce = [&]() -> bool {
+        if (!_mqtt.connected()) {
+            return false;
+        }
+
+        if (!_mqtt.beginPublish(topic,
+                                static_cast<unsigned int>(payloadLen),
+                                retained)) {
+            return false;
+        }
+
+        const size_t written =
+            _mqtt.write(reinterpret_cast<const uint8_t*>(payload), payloadLen);
+        const bool ended = _mqtt.endPublish();
+        if (written != payloadLen || !ended) {
+            DLOG_WARN("MQTT",
+                      "Stream payload mismatch topic=%s bytes=%u written=%u ended=%d retained=%d",
+                      topic,
+                      static_cast<unsigned>(payloadLen),
+                      static_cast<unsigned>(written),
+                      ended ? 1 : 0,
+                      retained ? 1 : 0);
+            return false;
+        }
+
+        return true;
+    };
+
+    if (_mqtt.connected()) {
+        _mqtt.loop();
+    }
+    bool ok = publishOnce();
+    if (!ok && _mqtt.connected()) {
+        _mqtt.loop();
+        _dumpSlicePause();
+        ok = publishOnce();
+    }
+    if (!ok) {
+        const int mqttState = _mqtt.state();
+        const bool wasConnected = _mqtt.connected();
+        DLOG_WARN("MQTT",
+                  "Publish retry path topic=%s state=%d connected=%d",
+                  topic,
+                  mqttState,
+                  wasConnected ? 1 : 0);
+
+        _mqtt.disconnect();
+        _wifiClient.stop();
+        _dumpSlicePause();
+
+        if (_connectBroker()) {
+            DLOG_INFO("MQTT", "Broker reconnected during dump");
+            _mqtt.loop();
+            _dumpSlicePause();
+            ok = publishOnce();
+        } else {
+            DLOG_WARN("MQTT",
+                      "Broker reconnect failed during dump topic=%s",
+                      topic);
+        }
+    }
+    if (!ok) {
+        DLOG_WARN("MQTT",
+                  "Broker rejected publish topic=%s bytes=%u retained=%d state=%d connected=%d",
+                  topic,
+                  static_cast<unsigned>(payloadLen),
+                  retained ? 1 : 0,
+                  _mqtt.state(),
+                  _mqtt.connected() ? 1 : 0);
+    }
+    return ok;
+}
+
 bool MQTTManager::_publishJson(const char* topic,
                                 JsonDocument& doc,
                                 bool retained,
                                 uint32_t debugEventId) {
-    char buf[1536];
     const size_t measuredLen = measureJson(doc);
     if (measuredLen == 0) {
         DLOG_WARN("MQTT", "Serialize measure failed topic=%s retained=%d",
@@ -1576,36 +1970,52 @@ bool MQTTManager::_publishJson(const char* topic,
         return false;
     }
 
-    if (measuredLen >= sizeof(buf)) {
+    if (measuredLen > kMaxMqttPayloadBytes) {
         DLOG_WARN("MQTT",
                   "Payload exceeds publish buffer topic=%s bytes=%u buf=%u retained=%d",
                   topic ? topic : "(null)",
                   static_cast<unsigned>(measuredLen),
-                  static_cast<unsigned>(sizeof(buf) - 1),
+                  static_cast<unsigned>(kMaxMqttPayloadBytes),
                   retained ? 1 : 0);
         return false;
     }
 
-    size_t len = serializeJson(doc, buf, sizeof(buf));
-    if (len == 0 || len != measuredLen) {
-        DLOG_WARN("MQTT",
-                  "Serialize mismatch topic=%s measured=%u serialized=%u retained=%d",
-                  topic ? topic : "(null)",
-                  static_cast<unsigned>(measuredLen),
-                  static_cast<unsigned>(len),
-                  retained ? 1 : 0);
-        return false;
-    }
+    auto publishOnce = [&]() -> bool {
+        if (!_mqtt.connected()) {
+            return false;
+        }
+
+        if (!_mqtt.beginPublish(topic,
+                                static_cast<unsigned int>(measuredLen),
+                                retained)) {
+            return false;
+        }
+
+        const size_t len = serializeJson(doc, _mqtt);
+        const bool ended = _mqtt.endPublish();
+        if (len == 0 || len != measuredLen || !ended) {
+            DLOG_WARN("MQTT",
+                      "Stream publish mismatch topic=%s measured=%u serialized=%u ended=%d retained=%d",
+                      topic ? topic : "(null)",
+                      static_cast<unsigned>(measuredLen),
+                      static_cast<unsigned>(len),
+                      ended ? 1 : 0,
+                      retained ? 1 : 0);
+            return false;
+        }
+
+        return true;
+    };
 
     // Drain broker ACKs before writing so the TCP send buffer never backs up.
     if (_mqtt.connected()) {
         _mqtt.loop();
     }
-    bool ok = _mqtt.publish(topic, reinterpret_cast<uint8_t*>(buf), len, retained);
+    bool ok = publishOnce();
     if (!ok && _mqtt.connected()) {
         _mqtt.loop();
         _dumpSlicePause();
-        ok = _mqtt.publish(topic, reinterpret_cast<uint8_t*>(buf), len, retained);
+        ok = publishOnce();
     }
     if (!ok) {
         const int mqttState = _mqtt.state();
@@ -1624,7 +2034,7 @@ bool MQTTManager::_publishJson(const char* topic,
             DLOG_INFO("MQTT", "Broker reconnected during dump");
             _mqtt.loop();
             _dumpSlicePause();
-            ok = _mqtt.publish(topic, reinterpret_cast<uint8_t*>(buf), len, retained);
+            ok = publishOnce();
         } else {
             DLOG_WARN("MQTT",
                       "Broker reconnect failed during dump topic=%s",
@@ -1635,7 +2045,7 @@ bool MQTTManager::_publishJson(const char* topic,
         DLOG_WARN("MQTT",
                   "Broker rejected publish topic=%s bytes=%u retained=%d state=%d connected=%d",
                   topic ? topic : "(null)",
-                  static_cast<unsigned>(len),
+                  static_cast<unsigned>(measuredLen),
                   retained ? 1 : 0,
                   _mqtt.state(),
                   _mqtt.connected() ? 1 : 0);
@@ -1749,6 +2159,9 @@ void MQTTManager::_refreshPendingCount(bool refreshDebriefMirror) {
     const bool backlogTrusted = STORAGE.isPendingEventCountAuthoritative();
 
     _queuedRecords = static_cast<int>(totalPending);
+    if (totalPending == 0) {
+        _continuousDrainActive = false;
+    }
     STATE_WRITE_BEGIN();
     g_state.sessionFilesPending = static_cast<int>(totalPending);
     g_state.kaliSyncAvailable = backlogTrusted && (totalPending > 0);

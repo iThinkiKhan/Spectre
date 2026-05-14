@@ -150,6 +150,18 @@ namespace {
     char        storageStr[32] = "0KB";
     };
 
+    struct DisplayPowerState {
+    bool     requestSleep = false;
+    bool     textInputPending = false;
+    bool     wifiListActive = false;
+    bool     missionListActive = false;
+    bool     badUsbListActive = false;
+    bool     debriefActive = false;
+    bool     badUsbArmed = false;
+    bool     badUsbRunning = false;
+    uint8_t  powerState = POWER_STATE_BATTERY_NORMAL;
+    };
+
     struct ButtonRoutingState {
     bool listActive = false;
     bool missionListActive = false;
@@ -681,6 +693,7 @@ static const char* radioOwnerName(RadioOwner owner) {
         case RADIO_WIFI_SCAN:    return "wifi_scan";
         case RADIO_WIFI_PMKID:   return "wifi_pmkid";
         case RADIO_WIFI_UPLOAD:  return "wifi_upload";
+        case RADIO_STORAGE_MAINTENANCE: return "storage_maintenance";
         case RADIO_BLE_TEXT:     return "ble_text";
         case RADIO_BLE_GPS:      return "ble_gps";
         default:                 return "?";
@@ -859,7 +872,8 @@ static void refreshCompanionPending(CompanionScheduler& companion, bool force) {
         owner == RADIO_WIFI_PMKID ||
         owner == RADIO_BLE_GPS ||
         owner == RADIO_BLE_TEXT ||
-        owner == RADIO_WIFI_UPLOAD;
+        owner == RADIO_WIFI_UPLOAD ||
+        owner == RADIO_STORAGE_MAINTENANCE;
 
     // Automatic backlog probes should not perform a full spool scan every time
     // the threshold is exceeded. At 15k-30k records that becomes background
@@ -2265,7 +2279,7 @@ static void _runOptionalBootInitialization() {
     _loadKnownLocationsIntoState();
     if (STORAGE.hasStorageMaintenanceWork()) {
         _clearStorageSummaryMirror();
-        DLOG_WARN("STORAGE", "Initial storage summary deferred until repair completes");
+        DLOG_WARN("STORAGE", "Initial storage summary deferred until maintenance completes");
     } else {
         _refreshStorageSummaryMirror(true);
     }
@@ -2653,7 +2667,8 @@ bool _visibleDisplayDataChanged(const DisplayFrameState& previous,
                    previous.badUsbRunning != next.badUsbRunning;
 
         case SCREEN_SYSTEM:
-            return previous.battVoltage != next.battVoltage ||
+            return next.dataRefresh ||
+                   previous.battVoltage != next.battVoltage ||
                    previous.uptimeMs / 1000UL != next.uptimeMs / 1000UL ||
                    _textChanged(previous.storageStr, next.storageStr);
 
@@ -3760,6 +3775,7 @@ static void _clearStorageSummaryMirror() {
 
     g_state.storageMissionTotal = 0;
     g_state.storageNoiseTotal = 0;
+    g_state.storageRecordTotal = 0;
 
     g_state.storageP0Total = 0;
     g_state.storageP1Total = 0;
@@ -3809,7 +3825,8 @@ static bool _refreshStorageSummaryMirror(bool force) {
         owner == RADIO_WIFI_PMKID ||
         owner == RADIO_BLE_GPS ||
         owner == RADIO_BLE_TEXT ||
-        owner == RADIO_WIFI_UPLOAD;
+        owner == RADIO_WIFI_UPLOAD ||
+        owner == RADIO_STORAGE_MAINTENANCE;
     if (!force && pendingBacklog >= 1000UL && radioActive) {
         return false;
     }
@@ -3936,44 +3953,43 @@ void TaskHardware(void* pvParameters) {
               settingsOk ? "OK" : "FAIL",
               timeOk ? "OK" : "FAIL");
 
-    if (!_waitForDisplayLayerReady(4000UL)) {
-        DLOG_WARN("CORE", "Display layer not ready before hardware init");
+    DLOG_INFO("CORE", "Display ready=%d before storage init",
+              s_displayLayerReady ? 1 : 0);
+    if (!s_displayLayerReady) {
+        crashCheckpoint(CrashPhase::DISPLAY_WAIT,
+                        static_cast<uint8_t>(RADIO_ARB.currentOwner()),
+                        0);
+        crashBreadcrumbClear(CrashPhase::DISPLAY_WAIT);
+        DLOG_WARN("CORE", "Display layer not ready; continuing hardware init");
     }
 
-        bool storageOk = STORAGE.begin();
+    DLOG_INFO("CORE", "Storage begin start heapFree=%lu largest=%lu",
+              static_cast<unsigned long>(
+                  heap_caps_get_free_size(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT)),
+              static_cast<unsigned long>(
+                  heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT)));
+    crashCheckpoint(CrashPhase::STORAGE_BOOT,
+                    static_cast<uint8_t>(RADIO_ARB.currentOwner()),
+                    0);
+    bool storageOk = STORAGE.begin();
+    crashBreadcrumbClear(CrashPhase::STORAGE_BOOT);
+    DLOG_INFO("CORE", "Storage begin done ok=%d ready=%d pending=%lu heapFree=%lu largest=%lu",
+              storageOk ? 1 : 0,
+              STORAGE.isReady() ? 1 : 0,
+              STORAGE.isReady() ? static_cast<unsigned long>(STORAGE.getPendingEventCount()) : 0UL,
+              static_cast<unsigned long>(
+                  heap_caps_get_free_size(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT)),
+              static_cast<unsigned long>(
+                  heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT)));
+    if (storageOk && STORAGE.hasMaintenanceWork()) {
+        crashCheckpoint(CrashPhase::STORAGE_BOOT,
+                        static_cast<uint8_t>(RADIO_ARB.currentOwner()),
+                        STORAGE.getPendingEventCount());
+        STORAGE.runMaintenanceWindow(5000UL, "pre_capture_boot");
+        crashBreadcrumbClear(CrashPhase::STORAGE_BOOT);
+    }
     String storageUsed = storageOk ? STORAGE.getCachedUsedString() : String();
     _publishStorageState(storageOk, storageUsed);
-
-    if (storageOk && storageUsed == "triage") {
-        DLOG_WARN("CORE",
-                  "Boot backlog triage active after STORAGE.begin; skipping RAMSpool/hardware init pending=%lu",
-                  static_cast<unsigned long>(STORAGE.getPendingEventCount()));
-
-        STATE_WRITE_BEGIN();
-        g_state.hwInitDone = true;
-        g_state.storageReady = true;
-        g_state.radioBusy = false;
-        g_state.uploadActive = false;
-        g_state.uploadPercent = 0;
-        g_state.uploadPublished = 0;
-        g_state.uploadTotal = STORAGE.getPendingEventCount();
-        strlcpy(g_state.uploadPhase, "TRIAGE", sizeof(g_state.uploadPhase));
-        g_state.sessionFilesPending = static_cast<int>(STORAGE.getPendingEventCount());
-        g_state.kaliSyncAvailable = STORAGE.getPendingEventCount() > 0;
-        g_state.kaliSyncPending = STORAGE.getPendingEventCount() > 0;
-        g_state.radioOwner = RADIO_NONE;
-        g_state.screenChanged = true;
-        g_state.dataRefresh = true;
-        STATE_WRITE_END();
-
-        for (;;) {
-            POWER_MGR.tick(millis());
-            const PowerSnapshot power = POWER_MGR.consumeSnapshot();
-            _applyPowerSnapshotToState(power);
-            _pollUsbSerialConsole();
-            vTaskDelay(pdMS_TO_TICKS(250));
-        }
-    }
 
     const bool bootHeapPressure =
         STORAGE.isReady() &&
@@ -4256,6 +4272,26 @@ void TaskHardware(void* pvParameters) {
 
         TIME_SVC.tick();
 
+        if (storageOk && RADIO_ARB.isOwner(RADIO_STORAGE_MAINTENANCE)) {
+            const uint32_t maintBudgetMs =
+                STORAGE.isCaptureSafeToResume() ? 5000UL : 30000UL;
+            const uint32_t maintStartMs = millis();
+            const bool captureSafe =
+                STORAGE.runMaintenanceWindow(maintBudgetMs,
+                                             "radio_owner_window");
+            const uint32_t maintMs = millis() - maintStartMs;
+            g_lastMaintenanceRunMs = millis();
+            DLOG_INFO("STORAGE",
+                      "maintenance owner window ms=%lu captureSafe=%d remaining=%s",
+                      static_cast<unsigned long>(maintMs),
+                      captureSafe ? 1 : 0,
+                      STORAGE.maintenanceFlagsText());
+            RADIO_ARB.release(RADIO_STORAGE_MAINTENANCE,
+                              captureSafe ? "storage_maintenance_done"
+                                          : "storage_maintenance_pending");
+            continue;
+        }
+
         if (BLE_MGR.consumeWireGuardDumpTrigger()) {
             MQTT_MGR.requestDump(true);
             DLOG_INFO("BLE", "WireGuard dump triggered");
@@ -4265,7 +4301,8 @@ void TaskHardware(void* pvParameters) {
         if (millis() - lastUploadCheck > 60000) {
             lastUploadCheck = millis();
 
-            if (MQTT_MGR.uploadReadyCount() >= MQTT_UPLOAD_READY_THRESHOLD) {
+            if (MQTT_MGR.uploadReadyCount() >= MQTT_UPLOAD_READY_THRESHOLD ||
+                MQTT_MGR.backlogDrainActive()) {
                 MQTT_MGR.requestDump(false);
             }
 
@@ -4628,41 +4665,13 @@ void TaskHardware(void* pvParameters) {
         lastSystemRefresh = uiRefreshMarks.systemMs;
 
         if (storageOk &&
-            STORAGE.hasStorageMaintenanceWork() &&
-            canRunStorageMaintenance(companion, power, now)) {
-            const uint32_t maintStartMs = millis();
-            STORAGE.serviceStorageMaintenanceStep(REPAIR_BUDGET_MS, REPAIR_MAX_RECORDS);
-            const uint32_t maintMs = millis() - maintStartMs;
-            g_lastMaintenanceRunMs = millis();
-            // Per-step warn threshold raised: ~40ms is the LittleFS-bound floor
-            // for one repair record and is expected. Only warn on true outliers.
-            if (maintMs >= 100UL) {
-                DLOG_WARN("STORAGE",
-                          "maintenance step slow ms=%lu owner=%s pendingUpload=%lu",
-                          static_cast<unsigned long>(maintMs),
-                          RadioArbiter::ownerName(RADIO_ARB.currentOwner()),
-                          static_cast<unsigned long>(STORAGE.getPendingEventCount()));
-            }
-
-            // Periodic repair-progress line replaces the per-step spam.
-            static uint32_t lastRepairProgressMs = 0;
-            const auto rp = STORAGE.getRepairProgress();
-            if (rp.active && now - lastRepairProgressMs >= 10000UL) {
-                DLOG_INFO("STORAGE",
-                          "repair progress reason=%s seg=%lu/%lu records=%lu elapsed=%lus pendingUpload=%lu",
-                          rp.reason && rp.reason[0] ? rp.reason : "?",
-                          static_cast<unsigned long>(rp.scannedSegments),
-                          static_cast<unsigned long>(rp.totalSegments),
-                          static_cast<unsigned long>(rp.scannedRecords),
-                          static_cast<unsigned long>((now - rp.startedMs) / 1000UL),
-                          static_cast<unsigned long>(STORAGE.getPendingEventCount()));
-                lastRepairProgressMs = now;
-            } else if (!rp.active && lastRepairProgressMs != 0) {
-                DLOG_INFO("STORAGE",
-                          "repair done pendingUpload=%lu",
-                          static_cast<unsigned long>(STORAGE.getPendingEventCount()));
-                lastRepairProgressMs = 0;
-            }
+            RADIO_ARB.currentOwner() == RADIO_NONE &&
+            (STORAGE.needsMaintenanceBeforeCapture() ||
+             STORAGE.hasStorageMaintenanceWork())) {
+            RADIO_ARB.requestStorageMaintenanceLease(
+                STORAGE.isCaptureSafeToResume() ? 5000UL : 30000UL,
+                "idle_storage_maintenance",
+                true);
         }
 
         sectionStartMs = millis();

@@ -15,6 +15,7 @@ enum RadioOwner : uint8_t {
     RADIO_WIFI_SCAN,
     RADIO_WIFI_PMKID,
     RADIO_WIFI_UPLOAD,
+    RADIO_STORAGE_MAINTENANCE,
     RADIO_BLE_TEXT,
     RADIO_BLE_GPS
 };
@@ -44,6 +45,9 @@ public:
     bool requestUploadLease(uint32_t holdMs,
                             const char* reason,
                             bool force = false);
+    bool requestStorageMaintenanceLease(uint32_t holdMs,
+                                        const char* reason,
+                                        bool force = false);
     bool requestPmkidHunt(const char* targetBssid,
                           uint32_t holdMs,
                           const char* reason,

@@ -44,6 +44,8 @@ enum class CrashPhase : uint8_t {
     RUNTIME_HEALTH,  // periodic health snapshot / serial diagnostics
     HEAP_INTEGRITY,  // heap_caps_check_integrity_all diagnostic walk
     RADIO_RESUME,    // idle fallback/radio owner resume after release
+    STORAGE_BOOT,    // storage mount / fast boot reconcile / boot maintenance
+    DISPLAY_WAIT,    // hardware task waiting for display layer readiness
 };
 
 struct CrashLogEntry {
@@ -123,6 +125,8 @@ inline const char* crashPhaseName(CrashPhase p) {
         case CrashPhase::RUNTIME_HEALTH: return "runtime_health";
         case CrashPhase::HEAP_INTEGRITY: return "heap_integrity";
         case CrashPhase::RADIO_RESUME:   return "radio_resume";
+        case CrashPhase::STORAGE_BOOT:   return "storage_boot";
+        case CrashPhase::DISPLAY_WAIT:   return "display_wait";
         default:                          return "?";
     }
 }

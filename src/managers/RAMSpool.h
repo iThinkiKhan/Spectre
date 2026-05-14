@@ -40,7 +40,7 @@ enum EventPrio : uint8_t {
 };
 
 constexpr size_t POOL_SIZE   = 1024;
-constexpr size_t MAX_PAYLOAD = 336;  // serialized JSON payload bytes per slot
+constexpr size_t MAX_PAYLOAD = 336;  // binary field-map payload bytes per slot
 
 struct EventSlot {
     uint32_t enqueueSeq;
@@ -52,7 +52,7 @@ struct EventSlot {
     uint8_t  valueScore;
     uint8_t  slotKind;
     char     type[16];
-    char     payload[MAX_PAYLOAD];
+    uint8_t  payload[MAX_PAYLOAD];
 };
 
 struct CaptureClassification {
@@ -111,6 +111,16 @@ struct Stats {
 
 bool   begin();
 bool   isReady();
+
+// Upload-mission gate. drainAndPauseWorker() blocks the storage worker from
+// dequeuing new slots and waits (up to timeoutMs) for any in-flight slots to
+// finish so the upload path can hold the LittleFS lock without contention.
+// resumeWorker() releases the gate and wakes the worker. Producers (capture
+// path) are already gated by the radio arbiter, so once the worker is paused
+// no new flash writes happen from the spool path.
+bool   drainAndPauseWorker(uint32_t timeoutMs);
+void   resumeWorker();
+bool   isWorkerPaused();
 CaptureClassification classify(const char* type, const char* eventType);
 CaptureClassification classify(const char* type, JsonObjectConst payload);
 bool   enqueue(const char* type,

@@ -122,6 +122,12 @@ bool RadioArbiter::requestUploadLease(uint32_t holdMs,
     return requestLease(RADIO_WIFI_UPLOAD, holdMs, reason, force);
 }
 
+bool RadioArbiter::requestStorageMaintenanceLease(uint32_t holdMs,
+                                                  const char* reason,
+                                                  bool force) {
+    return requestLease(RADIO_STORAGE_MAINTENANCE, holdMs, reason, force);
+}
+
 bool RadioArbiter::requestPmkidHunt(const char* targetBssid,
                                     uint32_t holdMs,
                                     const char* reason,
@@ -182,6 +188,18 @@ bool RadioArbiter::ensureDefaultCapture(const char* reason) {
     if (_pendingOwner != RADIO_NONE) {
         return false;
     }
+    if (STORAGE.isReady() && STORAGE.needsMaintenanceBeforeCapture()) {
+        const uint32_t holdMs =
+            STORAGE.isCaptureSafeToResume() ? 5000UL : 30000UL;
+        DLOG_INFO(TAG,
+                  "default capture gated by storage maintenance reason=%s flags=%s hold=%lu",
+                  (reason && reason[0] != '\0') ? reason : "-",
+                  STORAGE.maintenanceFlagsText(),
+                  static_cast<unsigned long>(holdMs));
+        return requestStorageMaintenanceLease(holdMs,
+                                              reason ? reason : "capture_gate",
+                                              true);
+    }
     const bool granted = _switchTo(RADIO_WIFI_CAPTURE, LEASE_INFINITE, reason);
     if (!granted) {
         _fallbackSuppressed = true;
@@ -224,6 +242,7 @@ const char* RadioArbiter::ownerName(RadioOwner owner) {
         case RADIO_WIFI_SCAN:    return "WIFI_SCAN";
         case RADIO_WIFI_PMKID:   return "WIFI_PMKID";
         case RADIO_WIFI_UPLOAD:  return "WIFI_UPLOAD";
+        case RADIO_STORAGE_MAINTENANCE: return "STORAGE_MAINT";
         case RADIO_BLE_TEXT:     return "BLE_TEXT";
         case RADIO_BLE_GPS:      return "BLE_GPS";
         default:                 return "NONE";
@@ -237,6 +256,7 @@ uint8_t RadioArbiter::_priorityFor(RadioOwner owner) const {
         case RADIO_BLE_GPS:      return 160;
         case RADIO_WIFI_PMKID:   return 140;
         case RADIO_WIFI_SCAN:    return 120;
+        case RADIO_STORAGE_MAINTENANCE: return 90;
         case RADIO_WIFI_CAPTURE: return 100;
         default:                 return 0;
     }
@@ -253,6 +273,7 @@ bool RadioArbiter::_canStartOwner(RadioOwner owner) const {
                    (_pmkidIntent == WIFI_PMKID_INTENT_HUNT &&
                     _pmkidTargetBssid[0] != '\0');
         case RADIO_WIFI_UPLOAD:
+        case RADIO_STORAGE_MAINTENANCE:
         case RADIO_WIFI_CAPTURE:
         case RADIO_WIFI_SCAN:
         case RADIO_BLE_TEXT:
@@ -357,6 +378,9 @@ bool RadioArbiter::_startOwner(RadioOwner owner, const char* reason) {
         case RADIO_WIFI_UPLOAD:
             WIFI_MGR.pauseRadio();
             return WIFI_MGR.prepareStationForUpload();
+        case RADIO_STORAGE_MAINTENANCE:
+            WIFI_MGR.pauseRadio();
+            return true;
         case RADIO_BLE_TEXT:
         case RADIO_BLE_GPS:
             WIFI_MGR.suspendRadio();
@@ -385,6 +409,7 @@ void RadioArbiter::_stopOwner(RadioOwner owner, const char* reason) {
         case RADIO_WIFI_SCAN:
         case RADIO_WIFI_PMKID:
         case RADIO_WIFI_UPLOAD:
+        case RADIO_STORAGE_MAINTENANCE:
             WIFI_MGR.pauseRadio();
             break;
 

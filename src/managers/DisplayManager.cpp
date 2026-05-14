@@ -2776,8 +2776,7 @@ void DisplayManager::drawSystem(float battV, unsigned long uptimeMs,
     uint8_t storageCounterTrust;
     uint16_t storageUsedPct;
     uint32_t storageFreeBytes;
-    uint32_t storageMissionTotal;
-    uint32_t storageNoiseTotal;
+    uint32_t storageRecordTotal;
     uint32_t storageDropped;
     uint32_t storageDeduped;
     uint16_t battVoltageMv;
@@ -2804,8 +2803,7 @@ void DisplayManager::drawSystem(float battV, unsigned long uptimeMs,
     storageCounterTrust = g_state.storageCounterTrust;
     storageUsedPct = g_state.storageUsedPct;
     storageFreeBytes = g_state.storageFreeBytes;
-    storageMissionTotal = g_state.storageMissionTotal;
-    storageNoiseTotal = g_state.storageNoiseTotal;
+    storageRecordTotal = g_state.storageRecordTotal;
     storageDropped = g_state.storageDropped;
     storageDeduped = g_state.storageDeduped;
     battVoltageMv = g_state.battVoltageMv;
@@ -2879,9 +2877,8 @@ void DisplayManager::drawSystem(float battV, unsigned long uptimeMs,
     if (showRepairRequired) {
         snprintf(pendingLine, sizeof(pendingLine), "REPAIR REQUIRED");
     } else {
-        const uint32_t storageTotalRecords = storageMissionTotal + storageNoiseTotal;
-        snprintf(pendingLine, sizeof(pendingLine), "%lu EVT",
-                 static_cast<unsigned long>(storageTotalRecords));
+        snprintf(pendingLine, sizeof(pendingLine), "%lu TOTAL",
+                 static_cast<unsigned long>(storageRecordTotal));
     }
 
     char dedupeLine[24];
@@ -2950,7 +2947,7 @@ void DisplayManager::drawSystem(float battV, unsigned long uptimeMs,
     else if (storageNearlyFull) usedColor = CLR_CYAN;
 
     uint32_t pendingColor = showRepairRequired ? CLR_RED
-                          : ((storageMissionTotal + storageNoiseTotal) > 0 ? CLR_WHITE : CLR_GREY);
+                          : (storageRecordTotal > 0 ? CLR_WHITE : CLR_GREY);
     if (storageOverrun) pendingColor = CLR_RED;
 
     uint32_t modeColor = CLR_GREEN;

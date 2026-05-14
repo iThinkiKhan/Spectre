@@ -63,10 +63,10 @@ static constexpr uint8_t OFF = 0;
 // MQTT upload
 // -----------------------------------------------------------------------------
 
-#define MQTT_UPLOAD_READY_THRESHOLD   15000
-#define STORAGE_UPLOAD_WINDOW_RECORDS  5000UL
+#define MQTT_UPLOAD_READY_THRESHOLD   12000
+#define STORAGE_UPLOAD_WINDOW_RECORDS  10000UL
 #define MQTT_BACKLOG_LARGE_WARN_THRESHOLD 450   // boot diagnostic only
-#define MQTT_DUMP_FETCH_BATCH_SIZE    16   // records loaded per storage scan
+#define MQTT_DUMP_FETCH_BATCH_SIZE     4   // records loaded per storage scan
 #define MQTT_DUMP_RECORDS_PER_SLICE    4   // max publish calls per yield
 #define MQTT_DUMP_SLICE_BUDGET_MS     25   // ms
 #define MQTT_DUMP_PROGRESS_EVERY_N     64  // events per progress log
@@ -109,8 +109,8 @@ static constexpr uint8_t OFF = 0;
 #define MQTT_FIELDVAULT_STARTUP_LEASE_MS        30000UL // short upload lease
 
 // One-shot maintenance wipe. Change the tag before turning this ON again.
-#define STORAGE_ONE_SHOT_NON_VAULT_RESET_ENABLED OFF
-#define STORAGE_ONE_SHOT_NON_VAULT_RESET_TAG     "5-3-26-reset-backlog-1k"
+#define STORAGE_ONE_SHOT_NON_VAULT_RESET_ENABLED ON
+#define STORAGE_ONE_SHOT_NON_VAULT_RESET_TAG     "5-14-26-reset-backlog-13k"
 #define STORAGE_FAST_BOOT_DEFER_SPOOL_REPAIR     ON
 
 // -----------------------------------------------------------------------------

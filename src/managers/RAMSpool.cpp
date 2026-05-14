@@ -3,6 +3,7 @@
 
 #include "../config.h"
 #include "../core/DebugLog.h"
+#include "SpoolBinaryCodec.h"
 #include "StorageManager.h"
 
 #include <freertos/FreeRTOS.h>
@@ -24,6 +25,7 @@ static QueueHandle_t s_freeQ        = nullptr;
 static QueueHandle_t s_laneQ[4]     = {nullptr, nullptr, nullptr, nullptr};
 static SemaphoreHandle_t s_enqueueMux = nullptr;
 static TaskHandle_t s_workerTask    = nullptr;
+static volatile bool s_workerPaused = false;
 
 static volatile uint32_t s_seq                = 0;
 static volatile uint32_t s_enqueued           = 0;
@@ -327,17 +329,25 @@ static void _workerTask(void*) {
     DLOG_INFO("STORAGE", "RAMSpool worker started on core %d",
               (int)xPortGetCoreID());
     for (;;) {
+        // Upload-mission gate. When the upload owner pauses the worker, sleep
+        // here until resumeWorker() notifies us. This prevents concurrent
+        // LittleFS writes from the storage worker while the upload path is
+        // reading spool segments — a flash R/W race that causes silent
+        // cache-fault resets on ESP32-S3.
+        if (s_workerPaused) {
+            ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
+            continue;
+        }
         uint16_t idx = 0;
         if (!_popNextPendingSlot(idx)) {
             if (STORAGE.hasWorkerUiRefreshWork()) {
-                STORAGE.refreshStorageUiState(false, false);
+                STORAGE.requestMaintenance(STORAGE_MAINT_DIRTY_SUMMARY,
+                                           "ramspool_idle");
             }
             if (STORAGE.hasWorkerMetadataFlushWork()) {
                 s_workerMetaLastIdleProbeMs = millis();
-                if (STORAGE.flushWorkerMetadataBatch("ramspool_idle", true)) {
-                    s_workerMetaAcceptedSinceFlush = 0;
-                    s_workerMetaLastFlushMs = millis();
-                }
+                STORAGE.requestMaintenance(STORAGE_MAINT_SNAPSHOT_LAGGED,
+                                           "ramspool_idle");
             }
             ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
             continue;
@@ -477,11 +487,10 @@ static void _workerTask(void*) {
             s_workerMetaLastFlushMs != 0 &&
             (now - s_workerMetaLastFlushMs) >= STORAGE_HOT_META_SAVE_INTERVAL_MS;
         if (dueByCount || dueByTime) {
-            if (STORAGE.flushWorkerMetadataBatch("ramspool_batch", false) ||
-                !STORAGE.hasWorkerMetadataFlushWork()) {
-                s_workerMetaAcceptedSinceFlush = 0;
-                s_workerMetaLastFlushMs = millis();
-            }
+            STORAGE.requestMaintenance(STORAGE_MAINT_SNAPSHOT_LAGGED,
+                                       "ramspool_batch");
+            s_workerMetaAcceptedSinceFlush = 0;
+            s_workerMetaLastFlushMs = millis();
         }
 
         taskYIELD();
@@ -605,8 +614,13 @@ bool enqueue(const char* type,
         return false;
     }
 
-    const size_t needed = measureJson(payload);
-    if (needed >= MAX_PAYLOAD) {
+    uint8_t encodedPayload[MAX_PAYLOAD] = {};
+    size_t encodedLen = 0;
+    if (!SpoolBin::encodeFieldMapV1(payload,
+                                    encodedPayload,
+                                    sizeof(encodedPayload),
+                                    encodedLen) ||
+        encodedLen > MAX_PAYLOAD) {
         __atomic_add_fetch(&s_droppedTooLarge, 1, __ATOMIC_RELAXED);
         switch (slotKind) {
             case SLOT_PROBE:
@@ -710,8 +724,8 @@ bool enqueue(const char* type,
         slot.slotKind     = static_cast<uint8_t>(slotKind);
         strlcpy(slot.type, type, sizeof(slot.type));
 
-        const size_t written = serializeJson(payload, slot.payload, MAX_PAYLOAD);
-        slot.payloadLen = static_cast<uint16_t>(written);
+        memcpy(slot.payload, encodedPayload, encodedLen);
+        slot.payloadLen = static_cast<uint16_t>(encodedLen);
 
         if (xQueueSend(s_laneQ[laneIndex], &idx, 0) != pdTRUE) {
             xQueueSend(s_freeQ, &idx, 0);
@@ -760,6 +774,45 @@ bool enqueue(const char* type,
     } while (false);
     xSemaphoreGive(s_enqueueMux);
     return ok;
+}
+
+bool drainAndPauseWorker(uint32_t timeoutMs) {
+    s_workerPaused = true;
+    const uint32_t deadline = millis() + timeoutMs;
+    uint16_t lastInflight = 0xFFFF;
+    while (static_cast<int32_t>(deadline - millis()) > 0) {
+        Stats s = snapshot();
+        if (s.inflight == 0) {
+            DLOG_INFO("STORAGE",
+                      "RAMSpool worker paused inflight=0 lastInflight=%u",
+                      static_cast<unsigned>(lastInflight == 0xFFFF
+                                                ? 0
+                                                : lastInflight));
+            return true;
+        }
+        lastInflight = s.inflight;
+        vTaskDelay(pdMS_TO_TICKS(20));
+    }
+    const Stats finalStats = snapshot();
+    DLOG_WARN("STORAGE",
+              "RAMSpool drain timed out inflight=%u — worker paused anyway",
+              static_cast<unsigned>(finalStats.inflight));
+    return false;
+}
+
+void resumeWorker() {
+    if (!s_workerPaused) {
+        return;
+    }
+    s_workerPaused = false;
+    if (s_workerTask) {
+        xTaskNotifyGive(s_workerTask);
+    }
+    DLOG_INFO("STORAGE", "RAMSpool worker resumed");
+}
+
+bool isWorkerPaused() {
+    return s_workerPaused;
 }
 
 Stats snapshot() {

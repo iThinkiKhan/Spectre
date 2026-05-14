@@ -4,6 +4,7 @@
 #pragma once
 
 #include <Arduino.h>
+#include <ArduinoJson.h>
 #include <LittleFS.h>
 #include <stdint.h>
 
@@ -115,6 +116,15 @@ bool decodeCheckpointRecordV1(const uint8_t* data,
                               size_t length,
                               uint32_t bodyOffset,
                               SpoolSegmentCheckpointV1& out);
+
+bool encodeFieldMapV1(JsonObjectConst doc,
+                      uint8_t* out,
+                      size_t capacity,
+                      size_t& written);
+
+bool decodeFieldMapV1(const uint8_t* data,
+                      size_t length,
+                      JsonObject out);
 
 bool createEmptySegmentV2(const String& path, uint32_t segmentId, uint32_t createdMs);
 

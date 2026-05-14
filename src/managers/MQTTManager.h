@@ -6,6 +6,8 @@
 #include <PubSubClient.h>
 #include <WiFi.h>
 #include <ArduinoJson.h>
+#include <utility>
+#include <esp_heap_caps.h>
 #include "../SecretsConfig.h"
 #include "../core/SpectreState.h"
 #include "../core/Session.h"
@@ -86,8 +88,14 @@ public:
     uint32_t  lastDumpAge()   { return millis() - _lastDumpMs; }
     int       uploadReadyCount() const;
     bool      uploadLeaseReady(bool force = false) const;
+    bool      backlogDrainActive() const { return _continuousDrainActive; }
 
 private:
+    // TaskDisplay suspend/resume around the upload mission. Idempotent — safe
+    // to call resume from every cleanup exit even if pause was never entered.
+    void _pauseDisplayForUpload();
+    void _resumeDisplayAfterUpload();
+
     enum QueueMetric : uint8_t {
         QUEUE_METRIC_NONE = 0,
         QUEUE_METRIC_PROBES,
@@ -111,6 +119,57 @@ private:
     };
 
     struct DumpContext {
+        // Per-record payload + identifiers live in PSRAM. Internal heap is
+        // tight at upload time (~33 KB free); keeping Arduino Strings here
+        // costs ~70 B internal per record and fragments the heap once the
+        // bucket approaches its limit. PSRAM has ~7 MB free; per-record
+        // internal cost reduces to the three-alloc bookkeeping overhead
+        // (~24 B). Non-copyable + move-only so we can't double-free the
+        // PSRAM buffers.
+        struct UploadPublishRecord {
+            char* sessionId = nullptr;
+            char* topic = nullptr;
+            char* payload = nullptr;
+            size_t payloadLen = 0;
+            uint32_t eventId = 0;
+            uint8_t lane = 0xFF;
+
+            UploadPublishRecord() = default;
+            UploadPublishRecord(const UploadPublishRecord&) = delete;
+            UploadPublishRecord& operator=(const UploadPublishRecord&) = delete;
+            UploadPublishRecord(UploadPublishRecord&& o) noexcept
+                : sessionId(o.sessionId),
+                  topic(o.topic),
+                  payload(o.payload),
+                  payloadLen(o.payloadLen),
+                  eventId(o.eventId),
+                  lane(o.lane) {
+                o.sessionId = nullptr;
+                o.topic = nullptr;
+                o.payload = nullptr;
+                o.payloadLen = 0;
+            }
+            UploadPublishRecord& operator=(UploadPublishRecord&& o) noexcept {
+                if (this != &o) {
+                    heap_caps_free(sessionId);
+                    heap_caps_free(topic);
+                    heap_caps_free(payload);
+                    sessionId = o.sessionId; o.sessionId = nullptr;
+                    topic = o.topic; o.topic = nullptr;
+                    payload = o.payload; o.payload = nullptr;
+                    payloadLen = o.payloadLen; o.payloadLen = 0;
+                    eventId = o.eventId;
+                    lane = o.lane;
+                }
+                return *this;
+            }
+            ~UploadPublishRecord() {
+                heap_caps_free(sessionId);
+                heap_caps_free(topic);
+                heap_caps_free(payload);
+            }
+        };
+
         DumpContext()
             : phase(DUMP_PHASE_IDLE),
               sessionIndex(0),
@@ -128,8 +187,13 @@ private:
               firstEventPublishBeginLogged(false),
               firstEventPublishEndLogged(false),
               sinceIdInitialized(false),
+              eventsPrefetched(false),
+              bucketNumber(0),
               sessionIds(),
               cachedBatch(),
+              uploadBucket(),
+              uploadBucketIndex(0),
+              uploadBucketComplete(false),
               cachedBatchIndex(0),
               cachedBatchCount(0) {}
 
@@ -149,15 +213,20 @@ private:
         bool firstEventPublishBeginLogged = false;
         bool firstEventPublishEndLogged = false;
         bool sinceIdInitialized = false;
+        bool eventsPrefetched = false;
+        uint16_t bucketNumber = 0;
         // Session list for DUMP_PHASE_EVENTS. Kept here (not static local) so
         // that _dumpCtx = {} at dump start properly destructs the Strings and
         // releases the vector's backing allocation. A static local would retain
         // peak capacity across cycles and fragment the heap.
         std::vector<String> sessionIds;
-        // Cached batch: filled once per storage scan; drained record-by-record
-        // over subsequent slice calls without re-scanning storage.  Reset to
-        // zero when a batch is exhausted; the next iteration refills it.
+        // Cached upload record: fetched from the binary upload index, then
+        // published on a later slice so storage reads and MQTT writes stay
+        // separated during the hot upload path.
         JsonDocument cachedBatch;
+        std::vector<UploadPublishRecord> uploadBucket;
+        size_t       uploadBucketIndex = 0;
+        bool         uploadBucketComplete = false;
         uint16_t     cachedBatchIndex = 0;
         uint16_t     cachedBatchCount = 0;
     };
@@ -174,10 +243,22 @@ private:
     int           _lastFailed    = 0;
     uint32_t      _uploadBackoffUntilMs = 0;
     uint32_t      _uploadLeaseHoldMs   = 0;  // computed at requestDump(), scales with backlog
+    bool          _continuousDrainActive = false;
     uint32_t      _lastPoisonEventId = 0;
     String        _lastPoisonSessionId;
     uint8_t       _lastPoisonEventFailures = 0;
     uint32_t      _uploadStartStackWatermarkBytes = 0;
+    uint32_t      _lastBrokerConnectAttemptMs = 0;
+    bool          _brokerConnectSettleLogged = false;
+    bool          _resumeDumpAfterReconnect = false;
+    // TaskDisplay is suspended for the duration of the upload mission. With
+    // OPI PSRAM on ESP32-S3 the flash and PSRAM caches share SPI0, so any
+    // LVGL render on core 1 (which reads PSRAM-backed fonts/framebuffer)
+    // overlapping a LittleFS.open() flash op on core 0 can silently
+    // triple-fault the chip. Suspending TaskDisplay for the upload-mission
+    // window eliminates the race; UI freezes on the last-rendered upload
+    // status frame and resumes at MQTT_DONE/MQTT_FAILED.
+    bool          _displayPausedForUpload = false;
 
     // One-shot startup FieldVault upload state. _bootGraceUntilMs is set in
     // begin() and never moves; _startupFieldDumpDone latches true on the
@@ -195,6 +276,9 @@ private:
     bool _connectWiFi();
     bool _connectBroker();
     void _startDumpPlan();
+    void _prefetchFirstUploadEvent();
+    bool _fillUploadBucketRadioQuiet(uint16_t maxRecords);
+    bool _disconnectStaForUploadRefill();
     bool _runDumpSlice();
     void _disconnect();
     void _cleanup();
@@ -215,6 +299,10 @@ private:
     bool _publishJson(const char* topic, JsonDocument& doc,
                       bool retained = false,
                       uint32_t debugEventId = 0);
+    bool _publishPayload(const char* topic,
+                         const char* payload,
+                         size_t payloadLen,
+                         bool retained = false);
 
     // Event backlog management
     void _migrateLegacyQueueFiles();

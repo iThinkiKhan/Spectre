@@ -198,6 +198,7 @@ struct SpectreState {
 
     uint32_t storageMissionTotal        = 0;
     uint32_t storageNoiseTotal          = 0;
+    uint32_t storageRecordTotal         = 0;
 
     uint32_t storageP0Total             = 0;
     uint32_t storageP1Total             = 0;

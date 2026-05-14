@@ -7,6 +7,8 @@
 #include <map>
 #include <memory>
 #include <functional>
+#include <new>
+#include <esp_heap_caps.h>
 #include <freertos/semphr.h>
 #include "../core/Session.h"
 #include "../core/EventBus.h"
@@ -77,6 +79,19 @@ enum SpoolRepairMode : uint8_t {
     REPAIR_BACKGROUND = 0,
     REPAIR_FAST_IDLE,
     REPAIR_EMERGENCY
+};
+
+enum StorageMaintenanceReason : uint32_t {
+    STORAGE_MAINT_NONE = 0,
+    STORAGE_MAINT_DIRTY_SPOOL_INDEX = 1UL << 0,
+    STORAGE_MAINT_DIRTY_SUMMARY = 1UL << 1,
+    STORAGE_MAINT_BOOT_SAFE_DEFERRED_PERSIST = 1UL << 2,
+    STORAGE_MAINT_SNAPSHOT_LAGGED = 1UL << 3,
+    STORAGE_MAINT_UPLOAD_ENRICH_CURSOR_DIRTY = 1UL << 4,
+    STORAGE_MAINT_ACTIVE_SEGMENT_INVALID = 1UL << 5,
+    STORAGE_MAINT_COUNTER_UNTRUSTED = 1UL << 6,
+    STORAGE_MAINT_EMERGENCY_REPAIR = 1UL << 7,
+    STORAGE_MAINT_ACTIVE_SEGMENT_NEAR_FULL = 1UL << 8
 };
 
 enum StoragePriority : uint8_t {
@@ -312,6 +327,8 @@ static_assert(sizeof(UploadIndexRecordV1) == 72,
 struct UploadIndexStats {
     uint32_t indexedEvents = 0;
     uint32_t sessions = 0;
+    uint32_t skippedRecords = 0;
+    uint32_t failedSegments = 0;
 };
 
 static constexpr size_t UPLOAD_INDEX_PAGE_CAPACITY = 32;
@@ -319,6 +336,31 @@ static constexpr size_t UPLOAD_INDEX_PAGE_CAPACITY = 32;
 struct UploadIndexPage {
     UploadIndexRecordV1 records[UPLOAD_INDEX_PAGE_CAPACITY];
     uint8_t count = 0;
+
+    // Force PSRAM allocation. Each page is ~2.3 KB (32 records × 72 B + 1),
+    // which is below CONFIG_SPIRAM_MALLOC_ALWAYSINTERNAL (~16 KB), so the
+    // default `operator new` keeps these in internal heap. A 5000-record
+    // upload window needs ~157 pages = ~360 KB, which catastrophically
+    // exhausts internal heap (boot finishes with ~126 KB free internal) and
+    // leaves LittleFS.open() unable to allocate its file descriptor — the
+    // null-deref triple-faulted the chip silently on ESP32-S3.
+    //
+    // ESP-IDF free() accepts pointers from any heap region, but we override
+    // operator delete to be explicit and to keep the path symmetric with
+    // heap_caps_malloc().
+    static void* operator new(size_t size, const std::nothrow_t&) noexcept {
+        return heap_caps_malloc(size, MALLOC_CAP_SPIRAM);
+    }
+    static void* operator new(size_t size) {
+        // Non-throwing build (Arduino-ESP32 has -fno-exceptions): on PSRAM
+        // exhaustion this returns nullptr and the caller will crash on the
+        // first deref. The nothrow form above is the path used by callers
+        // that check, which is what _addUploadPtrToMemory() does.
+        return heap_caps_malloc(size, MALLOC_CAP_SPIRAM);
+    }
+    static void operator delete(void* p) noexcept {
+        heap_caps_free(p);
+    }
 };
 
 struct UploadIndexPagedSession {
@@ -417,7 +459,15 @@ public:
                                            uint32_t sinceId,
                                            int maxCount,
                                            JsonDocument& out);
+    bool     getNextUploadEventForSession(const char* sessionId,
+                                          uint32_t sinceId,
+                                          JsonDocument& out,
+                                          bool& found);
     bool     prepareUploadIndexForUpload(uint32_t budgetMs);
+    // Close the cached upload segment-read file handle. Safe to call at any
+    // time. Useful between bucket fills to avoid carrying a long-lived File
+    // object across phases that may invalidate LittleFS internal state.
+    void     closeUploadReadFile();
     bool     getNextResolvedEventForSession(const char* sessionId,
                                             uint32_t sinceId,
                                             JsonDocument& out);
@@ -566,24 +616,24 @@ public:
     bool hasWorkerUiRefreshWork() const {
         return _storageUiRefreshPending && _storageUiRefreshDue();
     }
-    bool hasStorageMaintenanceWork() const {
-        return _repairRequested ||
-               _spoolAuditRepairRequired ||
-               _repairJob.active ||
-               _spoolSummaryRebuildPending ||
-               _pendingCountDirty ||
-               _workerMetadataDirtyPending ||
-               (_storageUiRefreshPending && _storageUiRefreshDue()) ||
-               _workerAppendBatchActive;
-    }
+    bool hasMaintenanceWork() const;
+    bool hasStorageMaintenanceWork() const { return hasMaintenanceWork(); }
+    bool needsMaintenanceBeforeCapture() const;
+    bool isCaptureSafeToResume() const;
+    uint32_t maintenanceFlags() const;
+    const char* maintenanceFlagsText() const;
+    void requestMaintenance(StorageMaintenanceReason reason,
+                            const char* source = nullptr);
+    bool runMaintenanceWindow(uint32_t budgetMs,
+                              const char* reason = nullptr);
     bool hasSpoolRepairWork() const {
         return _repairRequested ||
                _spoolAuditRepairRequired ||
                _repairJob.active;
     }
     bool requestSpoolRepair(const char* reason = nullptr);
-    bool serviceStorageMaintenanceStep(uint32_t budgetMs, uint16_t maxRecords);
-    bool repairStep(SpoolRepairMode mode, uint32_t budgetMs, uint16_t maxRecords);
+    bool serviceStorageMaintenanceStep(uint32_t budgetMs, uint32_t maxRecords);
+    bool repairStep(SpoolRepairMode mode, uint32_t budgetMs, uint32_t maxRecords);
 
     struct RepairProgressSnapshot {
         bool     active           = false;
@@ -604,6 +654,19 @@ public:
         uint16_t usedPct = 0;
         uint32_t freeBytes = 0;
         uint32_t pending = 0;
+        bool summaryValid = false;
+        uint32_t missionTotal = 0;
+        uint32_t noiseTotal = 0;
+        uint32_t recordTotal = 0;
+        uint32_t p0Total = 0;
+        uint32_t p1Total = 0;
+        uint32_t p2Total = 0;
+        uint32_t p3Total = 0;
+        uint32_t pendingUploadMission = 0;
+        uint32_t pendingUploadNoise = 0;
+        uint32_t enrichmentDeltas = 0;
+        uint32_t firstEventId = 0;
+        uint32_t lastEventId = 0;
         bool repairRequired = false;
         uint8_t counterTrust = 0;
         char policyText[20] = "NORMAL";
@@ -771,6 +834,10 @@ private:
     bool        _spoolSummaryRebuildPending = false;
     bool        _spoolAuditRepairRequired = false;
     bool        _repairRequested = false;
+    uint32_t    _maintenanceRequestedFlags = STORAGE_MAINT_NONE;
+    bool        _maintenanceCaptureGate = false;
+    bool        _maintenanceFullRebuildAttempted = false;
+    mutable char _maintenanceFlagsTextBuf[192] = {};
     bool        _suppressHotPathDiagnostics = false;
     SpoolRepairJob _repairJob;
 
@@ -785,6 +852,23 @@ private:
     std::map<String, std::map<uint32_t, SpoolEnrichmentDelta>> _uploadEnrichBySession;
     std::vector<String> _uploadIndexSessions;
     UploadIndexStats _uploadIndexStats;
+    uint32_t _uploadIndexWindowLimit = 0;
+    bool     _uploadIndexWindowTruncated = false;
+
+    // Cached segment-file handle for upload reads. Repeated LittleFS.open()
+    // of the same .bin file across many records in a bucket fill is fragile
+    // on this board (cumulative LittleFS internal state, ESP32-S3 + OPI
+    // PSRAM). Keep the file open while consecutive records map to the same
+    // segment; close on segment change, read failure, or upload index
+    // teardown. Also explicitly closed by closeUploadReadFile() at the start
+    // of each bucket fill to avoid carrying the handle across the publish
+    // phase, which can churn LittleFS state via watermark writes etc.
+    fs::File _uploadReadFile;
+    uint32_t _uploadReadSegmentId = 0;
+    uint32_t _uploadReadFileSize = 0;
+    uint8_t  _uploadReadFormat = 0;
+    SpoolBin::SegmentHeaderV2 _uploadReadHeader{};
+    bool     _uploadReadHeaderOk = false;
 
     static constexpr uint32_t DEDUP_WINDOW_MS = 5UL * 60UL * 1000UL;
     static constexpr uint32_t HANDSHAKE_WINDOW_MS = 15UL * 60UL * 1000UL;
@@ -821,6 +905,8 @@ private:
                             bool keepBackup);
     bool   _reconcileStorageMetadata();
     bool   _activeSegmentConfirmsNextEventId(uint32_t nextEventId) const;
+    bool   _activeSegmentNearRotateThreshold() const;
+    bool   _preRotateActiveSegmentIfNearFull(const char* reason);
     uint32_t _scanNextEventIdFromSpool() const;
     AppendEventResult _appendEventDetailedInternal(
         const char* type,
@@ -842,6 +928,7 @@ private:
     bool _loadSpoolIndex();
     bool _rebuildUploadIndex();
     bool _rebuildUploadIndexSegment(const SpoolSegmentInfo& seg);
+    bool _loadUploadIndexSidecarSegment(const SpoolSegmentInfo& seg);
     bool _validateUploadIndexRecord(const UploadIndexRecordV1& rec,
                                     uint32_t expectedSegmentId) const;
     bool _addUploadPtrToMemory(const UploadIndexRecordV1& rec);
@@ -850,6 +937,9 @@ private:
                                   uint32_t before,
                                   uint32_t upToId);
     void _releaseUploadIndexMemory(const char* reason);
+    bool _ensureUploadSegmentFileOpen(uint32_t segmentId, uint8_t format,
+                                      const String& path);
+    void _closeUploadSegmentFile(const char* reason);
     // force=true guarantees an immediate write. force=false is the hot-path
     // mode — it throttles to ~5s and defers while an upload batch is active.
     bool _persistSpoolIndex(bool force = false, const char* reason = nullptr);
@@ -932,6 +1022,10 @@ private:
                                                  uint32_t sinceId,
                                                  int maxCount,
                                                  JsonDocument& out);
+    bool _getNextUploadEventForSessionFromIndex(const String& sessionId,
+                                                uint32_t sinceId,
+                                                JsonDocument& out,
+                                                bool& found);
     bool _decodeBinarySpoolRecordBody(uint32_t segmentId,
                                       uint8_t recordType,
                                       const uint8_t* data,
@@ -1016,19 +1110,19 @@ private:
     SpoolRepairMode _selectRepairMode() const;
     void _repairBudgetsForMode(SpoolRepairMode mode,
                                uint32_t& budgetMs,
-                               uint16_t& maxRecords) const;
+                               uint32_t& maxRecords) const;
     bool _shouldDeferWorkerMetadataFlush() const;
     void _startRepairJob(const char* reason);
     void _resetRepairJob();
     bool _beginRepairSegment();
     bool _repairJsonlSlice(uint32_t startMs,
                            uint32_t budgetMs,
-                           uint16_t maxRecords,
-                           uint16_t& recordsScanned);
+                           uint32_t maxRecords,
+                           uint32_t& recordsScanned);
     bool _repairBinaryMetaSlice(uint32_t startMs,
                                 uint32_t budgetMs,
-                                uint16_t maxRecords,
-                                uint16_t& recordsScanned);
+                                uint32_t maxRecords,
+                                uint32_t& recordsScanned);
     void _finishRepairSegment();
     bool _finalizeRepairJob();
     void _rememberRepairSession(const String& sessionId);
@@ -1048,6 +1142,10 @@ private:
                               const String& metaPath);
     bool _isSegmentQuarantined(uint32_t segmentId) const;
     void _logSpoolAuditResult(const char* reason, const SpoolAuditResult& audit);
+    uint32_t _derivedMaintenanceFlags() const;
+    void _clearMaintenanceFlags(uint32_t flags);
+    const char* _maintenanceReasonText(StorageMaintenanceReason reason) const;
+    const char* _maintenanceFlagsText(uint32_t flags) const;
     // No I/O, no scan. Invariant failures only degrade counter trust and queue
     // explicit maintenance; they never run a spool scan inline.
     bool _checkSpoolInvariants(const char* reason, bool repairIfBad);
