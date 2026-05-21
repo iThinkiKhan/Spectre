@@ -5,4 +5,33 @@
 .vscode/ipch
 src/secrets.h
 
-#
+# Full-codebase snapshot files (reference blobs, not source)
+spectre_full_*.txt
+
+# Build output and caches
+.buildcheck.err.log
+.buildcheck.out.log
+.buildcheck.*.log
+.cache/
+.pio_build/
+.pio_build_check/
+backups/
+
+# Companion app dependencies
+companion_app/node_modules/
+companion_app/.bundle/
+companion_app/.gradle-home/
+companion_app/.idea/
+companion_app/tmp_bundle/
+companion_app/android/build/
+companion_app/android/.gradle/
+companion_app/android/.kotlin/
+companion_app/android/phone-wio-test.txt
+companion_app/android/app/.cxx/
+companion_app/android/app/build/
+companion_app/ios/build/
+companion_app/.gradle/
+companion-app-scaffold/node_modules/
+
+# Windows path artifacts
+C:/

@@ -1,0 +1,27 @@
+# Dependencies
+node_modules/
+
+# React Native / Metro
+.bundle/
+tmp_bundle/
+*.jsbundle
+*.bundle
+
+# Android build outputs and local Gradle cache
+android/.gradle/
+android/build/
+android/app/build/
+android/app/.cxx/
+.gradle-home/
+
+# Local IDE and OS files
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Logs and generated diagnostics
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*

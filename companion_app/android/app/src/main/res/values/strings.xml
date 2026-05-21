@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Spectre Companion</string>
+    <string name="field_service_channel">Field Mode</string>
+    <string name="field_service_channel_description">Keeps the Spectre BLE peripheral available during field carry.</string>
+    <string name="field_service_title">Spectre Field Mode</string>
+    <string name="field_service_text">BLE companion advertising is active.</string>
+    <string name="field_service_stop_action">Stop</string>
+</resources>
