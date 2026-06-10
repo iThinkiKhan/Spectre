@@ -1,8 +1,17 @@
 
+
+
 #include "LoRaManager.h"
 #include "SettingsManager.h"
 
 bool LoRaManager::begin() {
+    if (!_serial) {
+#if LORA_UART == 2
+        _serial = &Serial2;
+#else
+        _serial = &Serial1;
+#endif
+    }
     _serial->begin(115200, SERIAL_8N1, LORA_RX, LORA_TX);
     delay(100);
 
@@ -74,8 +83,8 @@ bool LoRaManager::readPacket(LoRaPacket& outPacket) {
 }
 
 LoRaPacket LoRaManager::getPacket() {
-    LoRaPacket packet = _lastPacket;
-    readPacket(packet);
+    LoRaPacket scratch;
+    readPacket(scratch);
     return _lastPacket;
 }
 
@@ -206,5 +215,7 @@ bool LoRaManager::_parseRCV(const String& line, LoRaPacket& outPacket) {
     outPacket.timestamp = millis();
     return true;
 }
+
+
 
 

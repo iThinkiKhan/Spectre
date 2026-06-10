@@ -1,4 +1,6 @@
 
+
+
 #pragma once
 #include <TFT_eSPI.h>
 #include <lvgl.h>
@@ -21,5 +23,7 @@ private:
     static void* _lvglPoolMem;
     static lv_mem_pool_t _lvglPool;
 };
+
+
 
 

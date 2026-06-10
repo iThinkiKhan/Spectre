@@ -1,4 +1,6 @@
 
+
+
 #include "ExportManager.h"
 
 #include <LittleFS.h>
@@ -177,19 +179,24 @@ bool _loadSessionRecord(const char* sessionId, JsonDocument& out) {
     File f = LittleFS.open(PATH_SESSIONS, "r");
     if (!f) return false;
 
+    // Deserialize candidate lines directly into `out` and stop at the first
+    // match. The previous pattern (deserialize into a loop-local lineDoc,
+    // then copy fields into `out`) walked the whole file even after a hit
+    // and allocated an extra JsonDocument per line; this version avoids
+    // both.
     bool found = false;
     while (f.available()) {
         String line = f.readStringUntil('\n');
         line.trim();
         if (!line.length()) continue;
-        JsonDocument lineDoc;
-        if (deserializeJson(lineDoc, line)) continue;
-        if (strcmp(lineDoc["id"] | "", sessionId) != 0) continue;
         out.clear();
-        for (JsonPair kv : lineDoc.as<JsonObject>()) {
-            out[kv.key().c_str()].set(kv.value());
-        }
+        if (deserializeJson(out, line)) continue;
+        if (strcmp(out["id"] | "", sessionId) != 0) continue;
         found = true;
+        break;
+    }
+    if (!found) {
+        out.clear();
     }
     f.close();
     return found;
@@ -319,6 +326,29 @@ bool _writeManifest(const char* sessionId,
     doc["event_counts"]["pmkid"] = summary.pmkidEvents;
     doc["event_counts"]["other"] = summary.otherEvents;
     doc["event_counts"]["pending_uploads"] = summary.pendingUploads;
+
+    {
+        JsonObject storage = doc["storage"].to<JsonObject>();
+        storage["mission_events"] = summary.missionEvents;
+        storage["noise_events"]   = summary.noiseEvents;
+
+        JsonObject priority = storage["priority"].to<JsonObject>();
+        priority["p0"] = summary.p0Events;
+        priority["p1"] = summary.p1Events;
+        priority["p2"] = summary.p2Events;
+        priority["p3"] = summary.p3Events;
+
+        JsonObject pending = storage["pending"].to<JsonObject>();
+        pending["upload_mission"]  = summary.pendingUploadMission;
+        pending["upload_noise"]    = summary.pendingUploadNoise;
+        pending["enrich_mission"]  = summary.pendingEnrichmentMission;
+        pending["enrich_noise"]    = summary.pendingEnrichmentNoise;
+
+        storage["enrichment_deltas"] = summary.enrichmentDeltas;
+        storage["first_event_id"]    = summary.firstEventId;
+        storage["last_event_id"]     = summary.lastEventId;
+    }
+
     doc["files"]["events"] = eventsPath;
     doc["files"]["events_size"] = _fileSize(eventsPath);
     if (summary.probeEvents > 0) { doc["files"]["probes"] = probesPath; doc["files"]["probes_size"] = _fileSize(probesPath); }
@@ -356,6 +386,26 @@ bool _appendExportIndex(const SessionExportSummary& summary) {
     doc["active"] = summary.activeSession;
     doc["session_dir"] = summary.sessionDir;
     doc["manifest_path"] = summary.manifestPath;
+
+    doc["mission_events"] = summary.missionEvents;
+    doc["noise_events"]   = summary.noiseEvents;
+
+    doc["p0_events"] = summary.p0Events;
+    doc["p1_events"] = summary.p1Events;
+    doc["p2_events"] = summary.p2Events;
+    doc["p3_events"] = summary.p3Events;
+
+    doc["pending_upload_mission"] = summary.pendingUploadMission;
+    doc["pending_upload_noise"]   = summary.pendingUploadNoise;
+
+    doc["pending_enrich_mission"] = summary.pendingEnrichmentMission;
+    doc["pending_enrich_noise"]   = summary.pendingEnrichmentNoise;
+
+    doc["enrichment_deltas"] = summary.enrichmentDeltas;
+
+    doc["first_event_id"] = summary.firstEventId;
+    doc["last_event_id"]  = summary.lastEventId;
+
     String line;
     serializeJson(doc, line);
     const bool ok = writer.writeLine(line);
@@ -381,6 +431,25 @@ void _summaryFromJson(JsonObjectConst src, SessionExportSummary& outSummary) {
     strlcpy(outSummary.sessionDir, src["session_dir"] | "", sizeof(outSummary.sessionDir));
     strlcpy(outSummary.manifestPath, src["manifest_path"] | "", sizeof(outSummary.manifestPath));
     strlcpy(outSummary.generatedIso, src["generated_at"] | "", sizeof(outSummary.generatedIso));
+
+    outSummary.missionEvents = src["mission_events"] | 0U;
+    outSummary.noiseEvents   = src["noise_events"]   | 0U;
+
+    outSummary.p0Events = src["p0_events"] | 0U;
+    outSummary.p1Events = src["p1_events"] | 0U;
+    outSummary.p2Events = src["p2_events"] | 0U;
+    outSummary.p3Events = src["p3_events"] | 0U;
+
+    outSummary.pendingUploadMission = src["pending_upload_mission"] | 0U;
+    outSummary.pendingUploadNoise   = src["pending_upload_noise"]   | 0U;
+
+    outSummary.pendingEnrichmentMission = src["pending_enrich_mission"] | 0U;
+    outSummary.pendingEnrichmentNoise   = src["pending_enrich_noise"]   | 0U;
+
+    outSummary.enrichmentDeltas = src["enrichment_deltas"] | 0U;
+
+    outSummary.firstEventId = src["first_event_id"] | 0U;
+    outSummary.lastEventId  = src["last_event_id"]  | 0U;
 }
 }  // namespace
 
@@ -429,6 +498,31 @@ bool ExportManager::exportCurrentSession(SessionExportSummary* outSummary) {
     strlcpy(summary.sessionDir, sessionDir.c_str(), sizeof(summary.sessionDir));
     strlcpy(summary.manifestPath, manifestPath.c_str(), sizeof(summary.manifestPath));
     TIME_SVC.formatNowIso(summary.generatedIso, sizeof(summary.generatedIso));
+
+    // Single read-model snapshot before the per-event loop.
+    {
+        StorageSessionSummary storageSummary;
+        if (STORAGE.getSessionStorageSummary(sessionId.c_str(), storageSummary)) {
+            summary.missionEvents = storageSummary.missionTotal;
+            summary.noiseEvents   = storageSummary.noiseTotal;
+
+            summary.p0Events = storageSummary.p0Total;
+            summary.p1Events = storageSummary.p1Total;
+            summary.p2Events = storageSummary.p2Total;
+            summary.p3Events = storageSummary.p3Total;
+
+            summary.pendingUploadMission = storageSummary.pendingUploadMission;
+            summary.pendingUploadNoise   = storageSummary.pendingUploadNoise;
+
+            summary.pendingEnrichmentMission = storageSummary.pendingEnrichmentMission;
+            summary.pendingEnrichmentNoise   = storageSummary.pendingEnrichmentNoise;
+
+            summary.enrichmentDeltas = storageSummary.enrichmentDeltas;
+
+            summary.firstEventId = storageSummary.firstEventId;
+            summary.lastEventId  = storageSummary.lastEventId;
+        }
+    }
 
     const bool ok = STORAGE.forEachEventForSession(
         sessionId.c_str(),
@@ -518,5 +612,7 @@ bool ExportManager::loadLatestSummary(SessionExportSummary* outSummary) const {
     _summaryFromJson(doc.as<JsonObjectConst>(), *outSummary);
     return true;
 }
+
+
 
 

@@ -1,4 +1,6 @@
 
+
+
 #include "BadUsbManager.h"
 
 #include <ctype.h>
@@ -7,15 +9,21 @@
 #include "../core/SpectreState.h"
 #include "../managers/StorageManager.h"
 
-#if SOC_USB_OTG_SUPPORTED && CONFIG_TINYUSB_ENABLED && CONFIG_TINYUSB_HID_ENABLED && defined(ARDUINO_USB_MODE) && (ARDUINO_USB_MODE == 0)
-#include "USB.h"
-#include "USBHID.h"
-#include "USBHIDKeyboard.h"
+#if defined(ARDUINO_USB_MODE) && (ARDUINO_USB_MODE == 0)
+  #define SPECTRE_BADUSB_TINYUSB_MODE 1
+#else
+  #define SPECTRE_BADUSB_TINYUSB_MODE 0
+#endif
+
+#if SPECTRE_BADUSB_TINYUSB_MODE
+  #include "USB.h"
+  #include "USBHID.h"
+  #include "USBHIDKeyboard.h"
 #endif
 
 namespace {
 
-#if SOC_USB_OTG_SUPPORTED && CONFIG_TINYUSB_ENABLED && CONFIG_TINYUSB_HID_ENABLED && defined(ARDUINO_USB_MODE) && (ARDUINO_USB_MODE == 0)
+#if SPECTRE_BADUSB_TINYUSB_MODE
 USBHIDKeyboard g_badUsbKeyboard;
 bool g_badUsbUsbStarted = false;
 
@@ -704,5 +712,7 @@ void BadUsbManager::_setStatus(const char* status, bool error, const char* detai
         DLOG_INFO("BADUSB", "%s", status ? status : "?");
     }
 }
+
+
 
 

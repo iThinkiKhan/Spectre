@@ -1,4 +1,6 @@
 
+
+
 param(
     [string]$ProjectRoot = "."
 )
@@ -57,5 +59,7 @@ if ($missing.Count -gt 0) {
 Write-Host ""
 Write-Host "Restore audit passed: all checkpoints present." -ForegroundColor Green
 exit 0
+
+
 
 

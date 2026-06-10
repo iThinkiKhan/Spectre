@@ -15,6 +15,7 @@ spectre_full_*.txt
 .cache/
 .pio_build/
 .pio_build_check/
+.pio_wio_nrf_build/
 backups/
 
 # Companion app dependencies

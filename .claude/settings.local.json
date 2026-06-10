@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pio run *)",
+      "PowerShell(Get-Command pio -ErrorAction SilentlyContinue; Get-Command platformio -ErrorAction SilentlyContinue; ls \"$env:USERPROFILE\\\\.platformio\\\\penv\\\\Scripts\\\\\" 2>$null | Select-Object -First 10)",
+      "PowerShell(& \"$env:USERPROFILE\\\\.platformio\\\\penv\\\\Scripts\\\\pio.exe\" run --project-dir \"C:\\\\PlatformIO\\\\Projects\\\\Spectre\" 2>&1 | Select-Object -Last 60)",
+      "Bash(grep -v \"^\\\\s*//\")",
+      "Read(//c/Users/JimSchneider/.platformio/penv/Scripts/**)",
+      "Read(//c/Users/JimSchneider/.platformio/penv/**)",
+      "Bash(/c/Users/JimSchneider/.platformio/penv/Scripts/platformio.exe run *)"
+    ]
+  }
+}

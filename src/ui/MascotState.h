@@ -1,4 +1,6 @@
 
+
+
 #pragma once
 
 enum MascotState {
@@ -8,6 +10,7 @@ enum MascotState {
     MASCOT_WIFI_RECON,
     MASCOT_SCANNING = MASCOT_WIFI_RECON,
     MASCOT_PWNY,
+    MASCOT_PWNAGOTCHI = MASCOT_PWNY,   // v2 alias
     MASCOT_BAD_USB,
     MASCOT_HOMELAB_SYNC,
     MASCOT_LOW_BATTERY,
@@ -18,5 +21,7 @@ enum MascotState {
     MASCOT_ERROR,
     MASCOT_COUNT
 };
+
+
 
 

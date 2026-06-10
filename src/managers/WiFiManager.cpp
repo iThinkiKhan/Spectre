@@ -1,9 +1,12 @@
 
+
+
 #include "WiFiManager.h"
 #include "AntennaManager.h"
 #include "MQTTManager.h"
 #include "RadioArbiter.h"
 #include "SettingsManager.h"
+#include "StorageManager.h"
 #include "../data/Schema.h"
 #include "../core/EventBus.h"
 #include "../core/NotifTypes.h"
@@ -12,6 +15,7 @@
 #include "../config.h"
 #include <LittleFS.h>
 #include <esp_heap_caps.h>
+#include <ctype.h>
 #include "mbedtls/md5.h"
 #include "esp_wifi.h"
 
@@ -19,6 +23,15 @@ WiFiManager WIFI_MGR;
 
 namespace {
 AntennaManager s_antennaManager;
+
+static constexpr uint32_t PMKID_INDEX_MAGIC = 0x58494D50UL; // "PMIX"
+static constexpr uint16_t PMKID_INDEX_VERSION = 1;
+
+struct PmkidIndexHeader {
+    uint32_t magic = PMKID_INDEX_MAGIC;
+    uint16_t version = PMKID_INDEX_VERSION;
+    uint16_t count = 0;
+};
 
 bool _ssidHasVisibleChars(const char* ssid) {
     if (!ssid) {
@@ -73,9 +86,7 @@ static void _promiscuousCallback(void* buf,
     WIFI_MGR.handleFrame(buf, type);
 }
 
-// ═════════════════════════════════════════════════════════════
-//  Lifecycle
-// ═════════════════════════════════════════════════════════════
+// ── Lifecycle ──
 
 void WiFiManager::begin() {
     _networks = (WiFiNetwork*)ps_malloc(
@@ -90,6 +101,13 @@ void WiFiManager::begin() {
     if (!_networks || !_devices ||
         !_pmkids || !_deferredQueue) {
         DLOG_ERROR("WIFI", "PSRAM alloc failed");
+        // Free any partial successes so we don't strand PSRAM on a
+        // failed init (which usually happens precisely because PSRAM
+        // is tight).
+        if (_networks)      { free(_networks);      _networks = nullptr; }
+        if (_devices)       { free(_devices);       _devices = nullptr; }
+        if (_pmkids)        { free(_pmkids);        _pmkids = nullptr; }
+        if (_deferredQueue) { free(_deferredQueue); _deferredQueue = nullptr; }
         return;
     }
 
@@ -104,6 +122,7 @@ void WiFiManager::begin() {
     memset(_graveyard,0, sizeof(_graveyard));
     memset(_channelActivity, 0, sizeof(_channelActivity));
     memset(_recentProbes, 0, sizeof(_recentProbes));
+    _loadPmkidCaptureIndex();
 
     STATE_WRITE_BEGIN();
     g_state.antennaExternal = WIFI_ANTENNA_DEFAULT_EXTERNAL;
@@ -151,11 +170,28 @@ void WiFiManager::tick() {
         lastQueueLog = millis();
     }
 
-    // Process a larger burst during early boot to drain the initial backlog.
+    // Process a larger burst during early boot to drain the initial backlog,
+    // then keep each TaskHardware slice bounded. Under storage pressure a
+    // single accepted frame may append to LittleFS; avoid chaining several
+    // slow appends into one watchdog-hostile hardware loop.
+    const uint32_t tickStartMs = millis();
+    const uint32_t tickBudgetMs = 20UL;
     int limit = (millis() < 5000) ? 32 : 8;
     int processed = 0;
+    static uint32_t slowFrameSuppressed = 0;
     while (_deferredTail != _deferredHead && processed < limit) {
+        // Bail before pulling the next frame if a prior frame in this tick
+        // already blew the budget. Guarantees at least one frame per tick
+        // (so the queue can drain) while preventing chained slow appends.
+        if (processed > 0 && millis() - tickStartMs >= tickBudgetMs) {
+            break;
+        }
         DeferredFrame& f = _deferredQueue[_deferredTail];
+        const uint32_t frameStartMs = millis();
+        const uint8_t frameType = f.frameType;
+        const uint8_t frameSubtype = f.frameSubtype;
+        const int frameLen = f.len;
+        const uint8_t frameChannel = f.channel;
 
         if (f.frameType == 0) {
             _mgmtFrames++;
@@ -186,6 +222,26 @@ void WiFiManager::tick() {
                 (void)addr3;
             }
             _processEAPOL(f.payload, f.len, f.rssi);
+        }
+
+        const uint32_t frameMs = millis() - frameStartMs;
+        if (frameMs >= WIFI_FRAME_PROCESS_SLOW_WARN_MS) {
+            static uint32_t lastSlowFrameLogMs = 0;
+            const uint32_t logNow = millis();
+            if (logNow - lastSlowFrameLogMs >= 10000UL) {
+                DLOG_WARN("WIFI",
+                          "frame slow ms=%lu type=%u subtype=%u len=%d ch=%u suppressed=%lu",
+                          (unsigned long)frameMs,
+                          frameType,
+                          frameSubtype,
+                          frameLen,
+                          frameChannel,
+                          (unsigned long)slowFrameSuppressed);
+                slowFrameSuppressed = 0;
+                lastSlowFrameLogMs = logNow;
+            } else {
+                slowFrameSuppressed++;
+            }
         }
 
         _deferredTail = (_deferredTail + 1) % DEFERRED_QUEUE_SIZE;
@@ -220,25 +276,21 @@ void WiFiManager::tick() {
         }
     }
 
-    // Periodic behavioral analysis
     if (now - _lastTrendUpdate > 2000) {
         _computeRSSITrends();
         _lastTrendUpdate = now;
     }
 
-    // Social graph update every 10s
     if (now - _lastGraphUpdate > 10000) {
         _updateSocialGraph();
         _lastGraphUpdate = now;
     }
 
-    // Device aging every 30s
     if (now - _lastAgingCheck > AGING_INTERVAL_MS) {
         _ageDevices();
         _lastAgingCheck = now;
     }
 
-    // Deauth flood window reset
     if (_deauthFlood &&
         now - _deauthWindowStart > DEAUTH_WINDOW_MS * 3) {
         _deauthFlood  = false;
@@ -250,9 +302,7 @@ void WiFiManager::tick() {
     _syncState();
 }
 
-// ═════════════════════════════════════════════════════════════
-//  Mode control
-// ═════════════════════════════════════════════════════════════
+// ── Mode control ──
 
 bool WiFiManager::startPromiscuous() {
     if (_mode == WIFI_OP_PWNY || _pwnyManualDeauthRequested || _pwnyTargetCount > 0) {
@@ -266,7 +316,7 @@ bool WiFiManager::startPromiscuous() {
         return false;
     }
 
-    if (!_enablePromiscuousCapture("WIFI")) {
+    if (!_enablePromiscuousCapture("WIFI", false)) {
         esp_wifi_set_promiscuous(false);
         _mode = WIFI_OP_IDLE;
         _radioReady = false;
@@ -276,15 +326,13 @@ bool WiFiManager::startPromiscuous() {
 
     bool promic_on = false;
     esp_wifi_get_promiscuous(&promic_on);
-    Serial.printf("[WIFI] Promiscuous: %s\n",
-                  promic_on ? "YES" : "NO");
+    DLOG_INFO("WIFI", "Promiscuous: %s", promic_on ? "YES" : "NO");
 
     _mode = WIFI_OP_PROMISCUOUS;
     _channelDwellMs = 200;
     _lastChannelHop = millis();
     _radioReady = true;
-    Serial.println("[WIFI] Promiscuous mode started");
-    DLOG_INFO("WIFI", "Promiscuous mode started");
+    DLOG_INFO("WIFI", "Promiscuous mode started data=0");
     return true;
 }
 
@@ -319,21 +367,38 @@ void WiFiManager::pauseRadio() {
     DLOG_INFO("WIFI", "Radio paused");
 }
 
+bool WiFiManager::prepareStationForUpload() {
+    esp_wifi_set_promiscuous(false);
+    WiFi.scanDelete();
+    _mode = WIFI_OP_IDLE;
+    _disarmPwny("UPLOAD");
+
+    if (!_ensureRadioReady()) {
+        DLOG_WARN("WIFI", "Failed to ready STA mode for upload");
+        return false;
+    }
+
+    WiFi.setSleep(false);
+    return true;
+}
+
 void WiFiManager::stopAll() {
     esp_wifi_set_promiscuous(false);
     WiFi.disconnect(true);
-    // Drain in-flight disconnect event before any subsequent mode change
-    // by a caller (prevents esp_wifi_stop/mode-change race).
-    delay(150);
+    // Yield to the event-loop task so the in-flight disconnect event drains
+    // before any subsequent mode change (prevents esp_wifi_stop/mode-change
+    // race that can brown the rail).
+    vTaskDelay(pdMS_TO_TICKS(150));
     _mode = WIFI_OP_IDLE;
     _disarmPwny("IDLE");
 }
 
 void WiFiManager::suspendRadio() {
-    esp_wifi_set_promiscuous(false);
+    pauseRadio();
     WiFi.disconnect(true, true);
-    // Drain in-flight disconnect event before WIFI_OFF mode change.
-    delay(150);
+    // Yield to the event-loop task so the in-flight disconnect event drains
+    // before the WIFI_OFF mode change.
+    vTaskDelay(pdMS_TO_TICKS(150));
     WiFi.mode(WIFI_OFF);
     _mode = WIFI_OP_IDLE;
     _radioReady = false;
@@ -361,7 +426,6 @@ bool WiFiManager::startPMKIDHunt(const char* targetBSSID) {
 
     strlcpy(_pmkidTarget, targetBSSID, sizeof(_pmkidTarget));
 
-    // Find target channel
     for (int i = 0; i < _networkCount; i++) {
         char bssidStr[18];
         _macToStr(_networks[i].bssid, bssidStr);
@@ -371,7 +435,7 @@ bool WiFiManager::startPMKIDHunt(const char* targetBSSID) {
         }
     }
 
-    if (!_enablePromiscuousCapture("WIFI")) {
+    if (!_enablePromiscuousCapture("WIFI", true)) {
         _mode = WIFI_OP_IDLE;
         return false;
     }
@@ -382,42 +446,6 @@ bool WiFiManager::startPMKIDHunt(const char* targetBSSID) {
     return true;
 }
 
-bool WiFiManager::connectTo(const char* ssid, const char* pass) {
-    if (_mode == WIFI_OP_PWNY || _pwnyManualDeauthRequested || _pwnyTargetCount > 0) {
-        _mode = WIFI_OP_IDLE;
-        _disarmPwny("IDLE");
-    }
-
-    if (!_ensureRadioReady()) {
-        DLOG_WARN("WIFI", "Failed to ready STA mode for connect");
-        return false;
-    }
-
-    esp_wifi_set_promiscuous(false);
-    _mode = WIFI_OP_CONNECT;
-
-    WiFi.begin(ssid, pass);
-    uint32_t start = millis();
-    while (WiFi.status() != WL_CONNECTED &&
-           millis() - start < 10000) {
-        delay(200);
-    }
-
-    if (WiFi.status() == WL_CONNECTED) {
-        _mode = WIFI_OP_CONNECTED;
-        STATE_WRITE_BEGIN();
-        g_state.wifiConnected = true;
-        strlcpy(g_state.wifiSSID, ssid,
-                sizeof(g_state.wifiSSID));
-        STATE_WRITE_END();
-        DLOG_INFO("WIFI", "Connected to %s", ssid);
-        return true;
-    }
-
-    // Failed — return to promiscuous
-    DLOG_WARN("WIFI", "Connect failed, returning to promiscuous");
-    return startPromiscuous();
-}
 
 bool WiFiManager::_ensureRadioReady() {
     wifi_mode_t currentMode = WIFI_MODE_NULL;
@@ -437,16 +465,26 @@ bool WiFiManager::_ensureRadioReady() {
     _radioReady = false;
     WiFi.persistent(false);
     esp_wifi_stop();
-    // Drain in-flight disconnect event before the WIFI_OFF mode change —
-    // esp_wifi_stop() races any queued disconnect callback and can brown
-    // the rail if we flip modes too fast.
-    delay(150);
+    // Yield to the event-loop task so the in-flight disconnect event drains
+    // before the WIFI_OFF mode change — esp_wifi_stop() races any queued
+    // disconnect callback and can brown the rail if we flip modes too fast.
+    vTaskDelay(pdMS_TO_TICKS(150));
     WiFi.mode(WIFI_OFF);
-    // Preserve pre-existing settle between WIFI_OFF and WIFI_STA.
-    delay(40);
+    // Hardware settle between WIFI_OFF and WIFI_STA.
+    vTaskDelay(pdMS_TO_TICKS(40));
 
     const bool modeOk = WiFi.mode(WIFI_STA);
-    delay(120);
+    // Poll for STA mode confirmation rather than a fixed delay — exits as
+    // soon as the driver reports WIFI_MODE_STA, with 120ms as a hard ceiling.
+    {
+        const uint32_t deadline = millis() + 120;
+        wifi_mode_t m = WIFI_MODE_NULL;
+        do {
+            vTaskDelay(pdMS_TO_TICKS(10));
+            esp_wifi_get_mode(&m);
+        } while (m != WIFI_MODE_STA &&
+                 static_cast<int32_t>(millis() - deadline) < 0);
+    }
 
     const esp_err_t setModeErr = esp_wifi_set_mode(WIFI_MODE_STA);
     const esp_err_t startErr = esp_wifi_start();
@@ -469,14 +507,6 @@ bool WiFiManager::_ensureRadioReady() {
         return true;
     }
 
-    Serial.printf("[WIFI] radio init failed: modeOk=%d setMode=%s start=%s promOff=%s country=%s getMode=%s current=%d\n",
-                  modeOk ? 1 : 0,
-                  esp_err_to_name(setModeErr),
-                  esp_err_to_name(startErr),
-                  esp_err_to_name(promOffErr),
-                  esp_err_to_name(countryErr),
-                  esp_err_to_name(getModeErr),
-                  static_cast<int>(currentMode));
     DLOG_ERROR("WIFI",
                "Radio init failed: modeOk=%d setMode=%s start=%s promOff=%s country=%s getMode=%s current=%d",
                modeOk ? 1 : 0,
@@ -489,10 +519,13 @@ bool WiFiManager::_ensureRadioReady() {
     return false;
 }
 
-bool WiFiManager::_enablePromiscuousCapture(const char* tag) {
+bool WiFiManager::_enablePromiscuousCapture(const char* tag,
+                                            bool includeDataFrames) {
     wifi_promiscuous_filter_t filter = {};
-    filter.filter_mask = WIFI_PROMIS_FILTER_MASK_MGMT |
-                         WIFI_PROMIS_FILTER_MASK_DATA;
+    filter.filter_mask = WIFI_PROMIS_FILTER_MASK_MGMT;
+    if (includeDataFrames) {
+        filter.filter_mask |= WIFI_PROMIS_FILTER_MASK_DATA;
+    }
 
     const esp_err_t filterErr =
         esp_wifi_set_promiscuous_filter(&filter);
@@ -501,11 +534,6 @@ bool WiFiManager::_enablePromiscuousCapture(const char* tag) {
     const esp_err_t promErr = esp_wifi_set_promiscuous(true);
 
     if (filterErr != ESP_OK || cbErr != ESP_OK || promErr != ESP_OK) {
-        Serial.printf("[%s] promiscuous setup failed: filter=%s cb=%s on=%s\n",
-                      tag,
-                      esp_err_to_name(filterErr),
-                      esp_err_to_name(cbErr),
-                      esp_err_to_name(promErr));
         DLOG_ERROR(tag,
                    "Promiscuous setup failed: filter=%s cb=%s on=%s",
                    esp_err_to_name(filterErr),
@@ -515,6 +543,8 @@ bool WiFiManager::_enablePromiscuousCapture(const char* tag) {
         return false;
     }
 
+    DLOG_DEBUG(tag, "Promiscuous filter data=%d",
+               includeDataFrames ? 1 : 0);
     esp_wifi_set_channel(_channel, WIFI_SECOND_CHAN_NONE);
     return true;
 }
@@ -529,26 +559,48 @@ void WiFiManager::setChannel(uint8_t ch) {
     }
 }
 
-// ═════════════════════════════════════════════════════════════
-//  Channel hopping
-// ═════════════════════════════════════════════════════════════
+// ── Channel hopping ──
 
 void WiFiManager::_hopChannel() {
     if (_mode == WIFI_OP_PMKID && _pmkidTargetChannel > 0) {
         // Stay on target channel during PMKID hunt
         if (_channel != _pmkidTargetChannel) {
             _channel = _pmkidTargetChannel;
+            const uint32_t hopStartMs = millis();
             esp_wifi_set_channel(_channel, WIFI_SECOND_CHAN_NONE);
+            const uint32_t hopMs = millis() - hopStartMs;
+            if (hopMs >= WIFI_CHANNEL_HOP_SLOW_WARN_MS) {
+                DLOG_WARN("WIFI",
+                          "channel hop slow ms=%lu ch=%u mode=%u",
+                          static_cast<unsigned long>(hopMs),
+                          static_cast<unsigned>(_channel),
+                          static_cast<unsigned>(_mode));
+            }
         }
         return;
     }
     _channel = (_channel % 11) + 1;
+    const uint32_t hopStartMs = millis();
     esp_wifi_set_channel(_channel, WIFI_SECOND_CHAN_NONE);
+    const uint32_t hopMs = millis() - hopStartMs;
+    if (hopMs >= WIFI_CHANNEL_HOP_SLOW_WARN_MS) {
+        static uint32_t lastSlowHopLogMs = 0;
+        const uint32_t now = millis();
+        if (_channelDwellMs < WIFI_CHANNEL_HOP_SLOW_BACKOFF_MS) {
+            _channelDwellMs = WIFI_CHANNEL_HOP_SLOW_BACKOFF_MS;
+        }
+        if (now - lastSlowHopLogMs >= 30000UL) {
+            DLOG_WARN("WIFI",
+                      "channel hop slow ms=%lu ch=%u dwell=%lums",
+                      static_cast<unsigned long>(hopMs),
+                      static_cast<unsigned>(_channel),
+                      static_cast<unsigned long>(_channelDwellMs));
+            lastSlowHopLogMs = now;
+        }
+    }
 }
 
-// ═════════════════════════════════════════════════════════════
-//  Promiscuous frame handler
-// ═════════════════════════════════════════════════════════════
+// ── Promiscuous frame handler ──
 
 void WiFiManager::handleFrame(void* buf,
                               wifi_promiscuous_pkt_type_t type) {
@@ -556,6 +608,8 @@ void WiFiManager::handleFrame(void* buf,
     if (!_deferredQueue) return;
 
     wifi_promiscuous_pkt_t* pkt = (wifi_promiscuous_pkt_t*)buf;
+    int copyLen = pkt->rx_ctrl.sig_len;
+    if (copyLen <= 0) return;
 
     int nextHead = (_deferredHead + 1) % DEFERRED_QUEUE_SIZE;
     if (nextHead == _deferredTail) {
@@ -566,7 +620,6 @@ void WiFiManager::handleFrame(void* buf,
     }
 
     DeferredFrame& f = _deferredQueue[_deferredHead];
-    int copyLen = pkt->rx_ctrl.sig_len;
     if (copyLen > 128) copyLen = 128;
     memcpy(f.payload, pkt->payload, copyLen);
     f.len          = copyLen;
@@ -609,9 +662,7 @@ void WiFiManager::_processManagementFrame(const uint8_t* p,
     }
 }
 
-// ═════════════════════════════════════════════════════════════
-//  Probe request processing
-// ═════════════════════════════════════════════════════════════
+// ── Probe request processing ──
 
 void WiFiManager::_processProbeRequest(const uint8_t* p,
                                         int len,
@@ -619,16 +670,13 @@ void WiFiManager::_processProbeRequest(const uint8_t* p,
                                         uint8_t ch) {
     if (len < 24) return;
 
-    // Source MAC is at bytes 10-15
     const uint8_t* srcMAC = p + 10;
     char macStr[18];
     _macToStr(srcMAC, macStr);
 
-    // Tagged parameters start at byte 24
     const uint8_t* tags = p + 24;
     int tagLen = len - 24;
 
-    // Extract SSID from tag 0
     char ssid[33] = "";
     int pos = 0;
     while (pos + 2 <= tagLen) {
@@ -643,15 +691,12 @@ void WiFiManager::_processProbeRequest(const uint8_t* p,
         pos += 2 + tagSz;
     }
 
-    // Compute IE fingerprint
     char ieFP[33] = "";
     _computeIEFingerprint(tags, tagLen, ieFP);
 
-    // Skip fingerprinting for whitelisted targets
     const bool targetWhitelisted = _isTrustedSSID(ssid);
 
     if (!targetWhitelisted) {
-        // Find or create device
         TrackedDevice* dev = _findOrCreateDevice(macStr, srcMAC,
                                                   ieFP, rssi);
         if (dev) {
@@ -681,11 +726,9 @@ void WiFiManager::_processProbeRequest(const uint8_t* p,
 
         _probePacketCount++;
 
-        // Queue to MQTT
         MQTT_MGR.queueProbe(macStr, ssid[0] ? ssid : nullptr,
                              rssi, ch, ieFP);
 
-        // Update last probe display
         STATE_WRITE_BEGIN();
         strlcpy(g_state.lastProbedSSID, ssid,
                 sizeof(g_state.lastProbedSSID));
@@ -696,9 +739,7 @@ void WiFiManager::_processProbeRequest(const uint8_t* p,
     }
 }
 
-// ═════════════════════════════════════════════════════════════
-//  Beacon processing
-// ═════════════════════════════════════════════════════════════
+// ── Beacon processing ──
 
 void WiFiManager::_processBeacon(const uint8_t* p,
                                   int len,
@@ -706,15 +747,12 @@ void WiFiManager::_processBeacon(const uint8_t* p,
                                   uint8_t ch) {
     if (len < 36) return;
 
-    // BSSID at bytes 16-21
     const uint8_t* bssid = p + 16;
 
-    // Tagged params start at 36 (24 header + 8 fixed beacon fields + 4 cap)
     const uint8_t* tags = p + 36;
     int tagLen = len - 36;
     if (tagLen < 2) return;
 
-    // Extract SSID
     char ssid[33] = "";
     bool isHidden = false;
     bool hasWPS   = false;
@@ -749,7 +787,6 @@ void WiFiManager::_processBeacon(const uint8_t* p,
                 ie[2]==0xf2 && ie[3]==0x04) {
                 hasWPS = true;
             }
-            // Check for DJI DroneID
             bool isDJI = false;
             for (int d = 0; d < DJI_OUI_COUNT; d++) {
                 if (ie[0] == DJI_OUIS[d][0] &&
@@ -766,7 +803,6 @@ void WiFiManager::_processBeacon(const uint8_t* p,
         pos += 2 + tagSz;
     }
 
-    // Check whitelist before processing
     const bool whitelisted = _isTrustedSSID(ssid);
     if (whitelisted) {
         _findOrCreateNetwork(ssid, bssid, rssi, ch);
@@ -782,51 +818,40 @@ void WiFiManager::_processBeacon(const uint8_t* p,
                 sizeof(net->security));
         net->lastSeen = millis();
 
-        // Check Karma
         _checkKarma(ssid, bssid, rssi,
                     net->firstSeen == millis());
     }
 }
 
-// ═════════════════════════════════════════════════════════════
-//  Action frame — ASTM Remote ID
-// ═════════════════════════════════════════════════════════════
+// ── Action frame — ASTM Remote ID ──
 
 void WiFiManager::_processActionFrame(const uint8_t* p,
                                        int len,
                                        int8_t rssi,
                                        uint8_t ch) {
     if (len < 26) return;
-    // Action frame body starts at byte 24
     const uint8_t* body = p + 24;
     int bodyLen = len - 24;
     _checkASTMRemoteID(body, bodyLen, rssi, ch);
 }
 
-// ═════════════════════════════════════════════════════════════
-//  EAPOL / PMKID
-// ═════════════════════════════════════════════════════════════
+// ── EAPOL / PMKID ──
 
 void WiFiManager::_processEAPOL(const uint8_t* p,
                                   int len,
                                   int8_t rssi) {
-    // Data frame: 24 byte header + LLC (8 bytes) + EAPOL
     if (len < 36) return;
 
-    // Check LLC SNAP header for EAPOL ethertype 0x888E
     const uint8_t* llc = p + 24;
     if (llc[0] != 0xAA || llc[1] != 0xAA ||
         llc[2] != 0x03) return;
     if (llc[6] != 0x88 || llc[7] != 0x8E) return;
 
-    // AP MAC = bytes 16-21, Client MAC = bytes 10-15
     const uint8_t* apMAC     = p + 16;
     const uint8_t* clientMAC = p + 10;
 
-    // Register this client as associated with the AP
     _registerClientOnNetwork(apMAC, clientMAC, rssi);
 
-    // Find SSID for this AP
     const char* ssid = _findSSIDByBSSID(apMAC);
 
     const uint8_t* eapol = p + 32;
@@ -835,7 +860,6 @@ void WiFiManager::_processEAPOL(const uint8_t* p,
     // Update pwny target EAPOL mask BEFORE _extractPMKID so that any
     // queuePMKID call downstream sees the mask that includes this frame.
     if (_mode == WIFI_OP_PWNY && eapolLen >= 7) {
-        // Determine message number from Key Info field
         uint16_t keyInfo;
         memcpy(&keyInfo, eapol + 5, 2);
         keyInfo = __builtin_bswap16(keyInfo);
@@ -879,9 +903,7 @@ void WiFiManager::_processEAPOL(const uint8_t* p,
                   ssid ? ssid : "");
 }
 
-// ═════════════════════════════════════════════════════════════
-//  IE Fingerprinting
-// ═════════════════════════════════════════════════════════════
+// ── IE Fingerprinting ──
 
 void WiFiManager::_computeIEFingerprint(const uint8_t* tags,
                                           int len,
@@ -898,7 +920,6 @@ void WiFiManager::_computeIEFingerprint(const uint8_t* tags,
         uint8_t tagSz = tags[pos + 1];
         if (pos + 2 + tagSz > len) break;
 
-        // Only hash stable tags
         bool stable = false;
         for (int i = 0; i < STABLE_TAG_COUNT; i++) {
             if (tagID == STABLE_IE_TAGS[i]) {
@@ -908,7 +929,6 @@ void WiFiManager::_computeIEFingerprint(const uint8_t* tags,
         }
 
         if (stable) {
-            // Hash tag ID + size + data
             mbedtls_md5_update(&ctx, tags + pos,
                                2 + tagSz);
         }
@@ -925,25 +945,7 @@ void WiFiManager::_computeIEFingerprint(const uint8_t* tags,
     outHex33[32] = '\0';
 }
 
-uint32_t WiFiManager::_computeIEOrderHash(const uint8_t* tags,
-                                            int len) {
-    // FNV-1a hash of the IE tag ID sequence
-    uint32_t hash = 0x811c9dc5;
-    int pos = 0;
-    while (pos + 2 <= len) {
-        uint8_t tagID = tags[pos];
-        uint8_t tagSz = tags[pos + 1];
-        if (pos + 2 + tagSz > len) break;
-        hash ^= tagID;
-        hash *= 0x01000193;
-        pos += 2 + tagSz;
-    }
-    return hash;
-}
-
-// ═════════════════════════════════════════════════════════════
-//  ASTM F3411 Remote ID Parser
-// ═════════════════════════════════════════════════════════════
+// ── ASTM F3411 Remote ID Parser ──
 
 bool WiFiManager::_checkASTMRemoteID(const uint8_t* body,
                                        int len,
@@ -951,17 +953,14 @@ bool WiFiManager::_checkASTMRemoteID(const uint8_t* body,
                                        uint8_t ch) {
     if (len < 7) return false;
 
-    // Public Action frame: category=4, action=9
     if (body[0] != 4 || body[1] != 9) return false;
 
     const uint8_t* oui = body + 2;
 
-    // Check ASTM OUI fa:0b:bc
     bool isASTM = (oui[0] == ASTM_OUI[0] &&
                    oui[1] == ASTM_OUI[1] &&
                    oui[2] == ASTM_OUI[2]);
 
-    // Check WiFi Alliance OUI 50:6f:9a type 0x13
     bool isNAN = (oui[0] == WIFI_ALLIANCE_OUI[0] &&
                   oui[1] == WIFI_ALLIANCE_OUI[1] &&
                   oui[2] == WIFI_ALLIANCE_OUI[2] &&
@@ -989,17 +988,30 @@ void WiFiManager::_parseRemoteID(const uint8_t* payload,
     ODID_UAS_Data uasData;
     memset(&uasData, 0, sizeof(uasData));
 
-    // Try to decode as packed message first.
+    // Packed messages are variable length. The OpenDroneID decoder assumes the
+    // complete pack buffer exists, so validate the advertised size first.
     if (len >= ODID_MESSAGE_SIZE) {
-        ODID_MessagePack_encoded* pack =
-            (ODID_MessagePack_encoded*)payload;
-        if (decodeMessagePack(&uasData, pack) == ODID_SUCCESS) {
-            _handleDecodedDrone(&uasData, rssi, channel);
-            return;
+        uint8_t msgType = (payload[0] >> 4) & 0x0F;
+        if (msgType == ODID_MESSAGETYPE_PACKED && len >= 3) {
+            const uint8_t singleMessageSize = payload[1];
+            const uint8_t packSize = payload[2];
+            const uint16_t requiredLen =
+                static_cast<uint16_t>(3U) +
+                static_cast<uint16_t>(packSize) * ODID_MESSAGE_SIZE;
+            if (singleMessageSize == ODID_MESSAGE_SIZE &&
+                packSize > 0 &&
+                packSize <= ODID_PACK_MAX_MESSAGES &&
+                len >= static_cast<int>(requiredLen)) {
+                ODID_MessagePack_encoded* pack =
+                    (ODID_MessagePack_encoded*)payload;
+                if (decodeMessagePack(&uasData, pack) == ODID_SUCCESS) {
+                    _handleDecodedDrone(&uasData, rssi, channel);
+                    return;
+                }
+            }
         }
 
         // Single message decode — check type first.
-        uint8_t msgType = (payload[0] >> 4) & 0x0F;
         switch (msgType) {
             case ODID_MESSAGETYPE_BASIC_ID:
                 if (decodeBasicIDMessage(&uasData.BasicID[0],
@@ -1031,7 +1043,6 @@ void WiFiManager::_handleDecodedDrone(ODID_UAS_Data* data,
                                          uint8_t ch) {
     if (!data) return;
 
-    // Need at least an ID or a location to be useful.
     bool hasId  = data->BasicIDValid[0];
     bool hasLoc = data->LocationValid;
     if (!hasId && !hasLoc) return;
@@ -1042,7 +1053,6 @@ void WiFiManager::_handleDecodedDrone(ODID_UAS_Data* data,
                 sizeof(droneId));
     }
 
-    // Use zero coords if no location yet.
     float lat = hasLoc ? data->Location.Latitude : 0.0f;
     float lon = hasLoc ? data->Location.Longitude : 0.0f;
     float alt = hasLoc ? data->Location.AltitudeGeo : 0.0f;
@@ -1084,13 +1094,8 @@ bool WiFiManager::_validateCoordinates(float lat,
     return true;
 }
 
-bool WiFiManager::_validateSpeed(float speed) {
-    return (speed >= 0.0f && speed <= 200.0f);
-}
 
-// ═════════════════════════════════════════════════════════════
-//  DJI DroneID Parser
-// ═════════════════════════════════════════════════════════════
+// ── DJI DroneID Parser ──
 
 bool WiFiManager::_checkDJIDroneID(const uint8_t* payload,
                                      int len,
@@ -1098,7 +1103,6 @@ bool WiFiManager::_checkDJIDroneID(const uint8_t* payload,
                                      uint8_t ch) {
     if (len < 40) return false;
 
-    // Try serial extraction at offsets 5, 6, 7
     char serial[17] = "";
     for (int offset : {5, 6, 7}) {
         if (offset + 16 > len) continue;
@@ -1120,7 +1124,6 @@ bool WiFiManager::_checkDJIDroneID(const uint8_t* payload,
 
     if (strlen(serial) < 8) return false;
 
-    // Try GPS at offsets 24, 32, 40
     for (int offset : {24, 32, 40}) {
         if (offset + 16 > len) continue;
         double lat, lon;
@@ -1136,12 +1139,10 @@ bool WiFiManager::_checkDJIDroneID(const uint8_t* payload,
     strlcpy(_lastDroneID, serial, sizeof(_lastDroneID));
     _droneDetected = true;
 
-    // Rate limit: 5 seconds per MAC
     uint32_t now = millis();
     if (now - _lastDroneTime < 5000) return false;
     _lastDroneTime = now;
 
-    // Queue to MQTT
     MQTT_MGR.queueDrone(_lastDroneID,
                          _lastDroneLat, _lastDroneLon,
                          _lastDroneAlt, "", rssi, ch,
@@ -1149,9 +1150,7 @@ bool WiFiManager::_checkDJIDroneID(const uint8_t* payload,
     return true;
 }
 
-// ═════════════════════════════════════════════════════════════
-//  PMKID Extraction
-// ═════════════════════════════════════════════════════════════
+// ── PMKID Extraction ──
 
 bool WiFiManager::_extractPMKID(const uint8_t* eapol,
                                   int len,
@@ -1160,22 +1159,17 @@ bool WiFiManager::_extractPMKID(const uint8_t* eapol,
                                   const char* ssid) {
     if (len < 99) return false;
 
-    // EAPOL-Key: type=3
     if (eapol[0] != 0x02) return false;  // version
     if (eapol[1] != 0x03) return false;  // type = Key
 
-    // Key Info field at offset 5 (2 bytes)
     uint16_t keyInfo;
     memcpy(&keyInfo, eapol + 5, 2);
     keyInfo = __builtin_bswap16(keyInfo);
 
-    // Must be message 1 of 4-way handshake
-    // Key ACK=1, Key MIC=0, Install=0
     bool keyACK = (keyInfo >> 7) & 1;
     bool keyMIC = (keyInfo >> 8) & 1;
     if (!keyACK || keyMIC) return false;
 
-    // Key Data length at offset 97 (2 bytes)
     uint16_t keyDataLen;
     memcpy(&keyDataLen, eapol + 97, 2);
     keyDataLen = __builtin_bswap16(keyDataLen);
@@ -1183,7 +1177,6 @@ bool WiFiManager::_extractPMKID(const uint8_t* eapol,
     if (keyDataLen < 22 || len < 99 + (int)keyDataLen)
         return false;
 
-    // Search Key Data for RSN IE (tag 48) with PMKID list
     const uint8_t* keyData = eapol + 99;
     int kdPos = 0;
 
@@ -1193,7 +1186,6 @@ bool WiFiManager::_extractPMKID(const uint8_t* eapol,
         if (kdPos + 2 + ieSz > (int)keyDataLen) break;
 
         if (ieID == 48 && ieSz >= 20) {
-            // RSN IE — check for PMKID count at offset 17
             const uint8_t* rsn = keyData + kdPos + 2;
             // Skip version(2) + group cipher(4) +
             //      pairwise count(2) + pairwise(4*N) +
@@ -1205,7 +1197,6 @@ bool WiFiManager::_extractPMKID(const uint8_t* eapol,
                 pmkidCount = __builtin_bswap16(pmkidCount);
 
                 if (pmkidCount >= 1 && ieSz >= 37) {
-                    // PMKID is 16 bytes at offset 19
                     const uint8_t* pmkid = rsn + 19;
 
                     if (_pmkidCount < WIFI_MAX_PMKIDS) {
@@ -1234,11 +1225,9 @@ bool WiFiManager::_extractPMKID(const uint8_t* eapol,
                             }
                         }
 
-                        // Queue to MQTT
                         MQTT_MGR.queuePMKID(ssid, cap.bssid,
                                              cap.clientMAC,
                                              pmkid, eapolMask);
-                        // Write .hc22000 for direct hashcat
                         _writeHC22000(ssid, cap.bssid,
                                       cap.clientMAC, pmkid);
 
@@ -1258,27 +1247,21 @@ bool WiFiManager::_extractPMKID(const uint8_t* eapol,
     return false;
 }
 
-// ═════════════════════════════════════════════════════════════
-//  Client Association Tracking
-// ═════════════════════════════════════════════════════════════
+// ── Client Association Tracking ──
 
 void WiFiManager::_registerClientOnNetwork(
         const uint8_t* apMAC,
         const uint8_t* clientMAC,
         int8_t rssi) {
 
-    // Ignore broadcast and multicast
     if (clientMAC[0] & 0x01) return;
-    // Ignore if client IS the AP
     if (_macsEqual(apMAC, clientMAC)) return;
 
-    // Find the network
     for (int i = 0; i < _networkCount; i++) {
         if (!_macsEqual(_networks[i].bssid, apMAC)) continue;
 
         WiFiNetwork& net = _networks[i];
 
-        // Already tracking this client?
         for (int j = 0; j < net.clientCount; j++) {
             if (_macsEqual(net.clientMACs[j], clientMAC)) {
                 net.clientRSSI[j]     = rssi;
@@ -1287,7 +1270,6 @@ void WiFiManager::_registerClientOnNetwork(
             }
         }
 
-        // Add new client if room
         if (net.clientCount < 8) {
             memcpy(net.clientMACs[net.clientCount],
                    clientMAC, 6);
@@ -1295,7 +1277,6 @@ void WiFiManager::_registerClientOnNetwork(
             net.clientLastSeen[net.clientCount] = millis();
             net.clientCount++;
         }
-        // Update temporal activity bitmap for Pwny
         if (_mode == WIFI_OP_PWNY) {
             _pwnyUpdateActivityBitmap(i);
         }
@@ -1303,9 +1284,7 @@ void WiFiManager::_registerClientOnNetwork(
     }
 }
 
-// ═════════════════════════════════════════════════════════════
-//  Pwny Mode
-// ═════════════════════════════════════════════════════════════
+// ── Pwny Mode ──
 
 bool WiFiManager::startPwnyMode() {
     CONTRACT_WARN_ONCE(CONTRACT_PWNY_OWNER_SYNC,
@@ -1323,10 +1302,9 @@ bool WiFiManager::startPwnyMode() {
     _disarmPwny("SCANNING");
     _pwnyStartMs = millis();
 
-    // Load prior capture state so we don't re-attack already-captured targets
     _pwnyLoadPriorCaptures();
 
-    if (!_enablePromiscuousCapture("PWNY")) {
+    if (!_enablePromiscuousCapture("PWNY", true)) {
         _mode = WIFI_OP_IDLE;
         _radioReady = false;
         _nextRadioInitAttemptMs = millis() + 5000;
@@ -1379,37 +1357,37 @@ bool WiFiManager::forcePwnyDeauth() {
     return true;
 }
 
-int16_t WiFiManager::_pwnyScore(int idx) const {
+int16_t WiFiManager::_pwnyScore(int idx) {
     if (idx < 0 || idx >= _networkCount) return -1;
-    const WiFiNetwork& net = _networks[idx];
+    WiFiNetwork& net = _networks[idx];
 
     if (!_ssidHasVisibleChars(net.ssid) || net.isHidden) {
         return -1;
     }
 
     if (net.hasPMKID || net.hasHandshake ||
-        _hasStoredCapture(net.bssid)) {
+        _refreshStoredCaptureFlag(net)) {
         return -1;
     }
 
-    // Check PwnyTarget completion state instead of WiFiNetwork
     for (int i = 0; i < _pwnyTargetCount; i++) {
         if (_pwnyTargets[i].networkIdx == (uint8_t)idx &&
             _pwnyTargets[i].complete) {
             return -1;
         }
     }
-    // Skip ineligible
     if (_isTrustedSSID(net.ssid))              return -1;
     if (strcmp(net.security, "OPEN") == 0)     return -1;
     if (strcmp(net.security, "")     == 0)     return -1;
 
-    // Skip if on cooldown
+    // Skip if on cooldown. Use a signed-delta compare so the cooldown still
+    // expires correctly across a millis() wraparound (a raw
+    // `now < cooldownUntil` would flip back to true for ~24 days post-wrap).
     uint32_t now = millis();
     for (int i = 0; i < _pwnyTargetCount; i++) {
         if (_pwnyTargets[i].networkIdx == (uint8_t)idx) {
             if (_pwnyTargets[i].complete)      return -1;
-            if (now < _pwnyTargets[i].cooldownUntil) return -1;
+            if (static_cast<int32_t>(now - _pwnyTargets[i].cooldownUntil) < 0) return -1;
         }
     }
 
@@ -1462,7 +1440,6 @@ void WiFiManager::_pwnyRebuildTargets() {
         candidates[candidateCount++] = { (uint8_t)i, s };
     }
 
-    // Sort descending by score (simple insertion sort — small N)
     for (int i = 1; i < candidateCount; i++) {
         Candidate key = candidates[i];
         int j = i - 1;
@@ -1473,7 +1450,6 @@ void WiFiManager::_pwnyRebuildTargets() {
         candidates[j + 1] = key;
     }
 
-    // Rebuild _pwnyTargets preserving existing state
     uint8_t newCount = (uint8_t)min(candidateCount,
                                     (int)PWNY_MAX_TARGETS);
     const uint8_t activeNetIdx =
@@ -1486,7 +1462,6 @@ void WiFiManager::_pwnyRebuildTargets() {
         newTargets[i].networkIdx = ni;
         newTargets[i].score      = candidates[i].score;
 
-        // Find best client (highest RSSI)
         uint8_t bestClient = 0;
         int8_t  bestRSSI   = -127;
         for (int c = 0; c < _networks[ni].clientCount; c++) {
@@ -1497,7 +1472,6 @@ void WiFiManager::_pwnyRebuildTargets() {
         }
         newTargets[i].bestClientIdx = bestClient;
 
-        // Preserve prior state if we've seen this target before
         for (int j = 0; j < _pwnyTargetCount; j++) {
             if (_pwnyTargets[j].networkIdx == ni) {
                 newTargets[i].attackCount   =
@@ -1571,13 +1545,12 @@ void WiFiManager::_pwnySelectNext() {
     for (int i = 0; i < _pwnyTargetCount; i++) {
         PwnyTarget& t = _pwnyTargets[i];
         if (t.complete)              continue;
-        if (now < t.cooldownUntil)   continue;
+        if (static_cast<int32_t>(now - t.cooldownUntil) < 0) continue;
         _pwnyCurrentIdx = (uint8_t)i;
         _pwnyStartAttack((uint8_t)i);
         return;
     }
 
-    // All targets on cooldown or complete
     strlcpy(_pwnyStatusText,
             _pwnyTargetCount > 0 ? "COOLDOWN" : "SCANNING",
             sizeof(_pwnyStatusText));
@@ -1592,7 +1565,6 @@ void WiFiManager::_pwnyStartAttack(uint8_t idx) {
 
     t.attackCount++;
     t.lastAttackMs   = millis();
-    // Set adaptive passive window before escalating to deauth
     t.passiveWindowEnd = millis() +
         _pwnyAdaptivePassiveWindow(t.networkIdx);
     t.phase = 0; // start passive
@@ -1603,7 +1575,6 @@ void WiFiManager::_pwnyStartAttack(uint8_t idx) {
 
     _pwnyAttacking = true;
 
-    // Lock to target channel
     esp_wifi_set_channel(net.channel, WIFI_SECOND_CHAN_NONE);
     _channelDwellMs = 60000; // don't hop while attacking
 
@@ -1631,19 +1602,16 @@ void WiFiManager::_pwnyEndAttack(uint8_t idx, bool success) {
         DLOG_INFO("PWNY", "Target complete: %s",
                   _networks[t.networkIdx].ssid);
 
-        // Notification via event bus — matches rest of WiFiManager
         char captureNotif[48];
         snprintf(captureNotif, sizeof(captureNotif),
                  "CAPTURED: %.20s",
                  _networks[t.networkIdx].ssid);
         _queueWiFiNotification(NOTIF_PMKID, captureNotif);
 
-        // Increment session counter
         STATE_WRITE_BEGIN();
         g_state.sessionPMKIDs++;
         STATE_WRITE_END();
     } else {
-        // Cooldown — scale with attack count
         uint32_t cooldown = PWNY_COOLDOWN_MIN_MS +
             (min((int)t.attackCount, 5) *
              ((PWNY_COOLDOWN_MAX_MS - PWNY_COOLDOWN_MIN_MS) / 5));
@@ -1676,7 +1644,7 @@ void WiFiManager::_syncPwnyState(uint32_t now) {
         d.score       = t.score;
         d.clients     = _networks[ni].clientCount;
         d.complete    = t.complete;
-        d.onCooldown  = (now < t.cooldownUntil);
+        d.onCooldown  = (static_cast<int32_t>(now - t.cooldownUntil) < 0);
         d.pmkid       = t.pmkidCaptured;
         d.eapolSeen   = t.eapolMsgsSeen;
         d.eapolMask   = t.eapolMsgMask;
@@ -1703,7 +1671,6 @@ void WiFiManager::_syncPwnyState(uint32_t now) {
 void WiFiManager::_pwnyTick() {
     uint32_t now = millis();
 
-    // Rebuild target scores periodically
     if (!_pwnyAttacking &&
         now - _pwnyLastScoreMs > PWNY_SCORE_INTERVAL_MS) {
         _pwnyRebuildTargets();
@@ -1730,6 +1697,7 @@ void WiFiManager::_pwnyTick() {
             if (strcmp(_pmkids[i].bssid, bssidStr) == 0) {
                 t.pmkidCaptured = true;
                 _networks[t.networkIdx].hasPMKID = true;
+                _networks[t.networkIdx].pmkidChecked = true;
                 _pwnyCaptures++;
                 const bool full = (t.eapolMsgMask & 0x0F) == 0x0F;
                 DLOG_INFO("PWNY",
@@ -1761,8 +1729,10 @@ void WiFiManager::_pwnyTick() {
             return;
         }
 
-        // Phase management: passive → deauth escalation
-        if (t.phase == 0 && now > t.passiveWindowEnd) {
+        // Phase management: passive → deauth escalation. Signed-delta compare
+        // for wraparound safety against millis() rollover (every ~49.7 days).
+        if (t.phase == 0 &&
+            static_cast<int32_t>(now - t.passiveWindowEnd) > 0) {
             // Passive window expired without capture
             // Escalate to deauth if we have clients
             WiFiNetwork& net = _networks[t.networkIdx];
@@ -1800,8 +1770,8 @@ void WiFiManager::_pwnyTick() {
             }
         }
 
-        // Attack window expired
-        if (now > t.attackWindowEnd) {
+        // Attack window expired (signed-delta compare for wraparound safety).
+        if (static_cast<int32_t>(now - t.attackWindowEnd) > 0) {
             t.phase = 2; // cooldown
             _pwnyEndAttack(_pwnyCurrentIdx, false);
         }
@@ -1940,76 +1910,224 @@ bool WiFiManager::_pwnyActiveAttacksAllowed() const {
     return PWNY_ACTIVE_ATTACKS_ENABLED || _pwnyManualDeauthRequested;
 }
 
-// ═════════════════════════════════════════════════════════════
-//  Pwny helpers — temporal, adaptive, crackability
-// ═════════════════════════════════════════════════════════════
+// ── Pwny helpers — temporal, adaptive, crackability ──
 
-void WiFiManager::_pwnyLoadPriorCaptures() {
-    // Mark networks complete if we already have their hc22000 file
-    if (!LittleFS.exists(PATH_PMKID_DIR)) return;
+void WiFiManager::_loadPmkidCaptureIndex() {
+    _pmkidCaptureIndexLoaded = false;
+    _pmkidCaptureIndexDirty = false;
+    _pmkidCaptureIndexCount = 0;
+    memset(_pmkidCaptureIndex, 0, sizeof(_pmkidCaptureIndex));
+
+    File f = LittleFS.open(PATH_PMKID_INDEX, "r");
+    if (!f) {
+        STORAGE.requestMaintenance(STORAGE_MAINT_CAPTURE_INDEX_DIRTY,
+                                   "pmkid_index_missing");
+        return;
+    }
+
+    PmkidIndexHeader hdr;
+    if (f.read(reinterpret_cast<uint8_t*>(&hdr), sizeof(hdr)) != sizeof(hdr) ||
+        hdr.magic != PMKID_INDEX_MAGIC ||
+        hdr.version != PMKID_INDEX_VERSION ||
+        hdr.count > WIFI_PMKID_INDEX_MAX) {
+        f.close();
+        STORAGE.requestMaintenance(STORAGE_MAINT_CAPTURE_INDEX_DIRTY,
+                                   "pmkid_index_invalid");
+        return;
+    }
+
+    const size_t bytes = static_cast<size_t>(hdr.count) * 6U;
+    if (bytes > 0 &&
+        f.read(reinterpret_cast<uint8_t*>(_pmkidCaptureIndex), bytes) != bytes) {
+        f.close();
+        STORAGE.requestMaintenance(STORAGE_MAINT_CAPTURE_INDEX_DIRTY,
+                                   "pmkid_index_short_read");
+        return;
+    }
+
+    f.close();
+    _pmkidCaptureIndexCount = hdr.count;
+    _pmkidCaptureIndexLoaded = true;
+    DLOG_INFO("PWNY", "PMKID capture index loaded count=%u",
+              static_cast<unsigned>(_pmkidCaptureIndexCount));
+}
+
+bool WiFiManager::_savePmkidCaptureIndex() {
+    if (!_pmkidCaptureIndexLoaded) {
+        return false;
+    }
+
+    File f = LittleFS.open(PATH_PMKID_INDEX, "w");
+    if (!f) {
+        STORAGE.requestMaintenance(STORAGE_MAINT_CAPTURE_INDEX_DIRTY,
+                                   "pmkid_index_open_failed");
+        return false;
+    }
+
+    PmkidIndexHeader hdr;
+    hdr.count = _pmkidCaptureIndexCount;
+    bool ok = f.write(reinterpret_cast<const uint8_t*>(&hdr), sizeof(hdr)) ==
+              sizeof(hdr);
+    const size_t bytes = static_cast<size_t>(_pmkidCaptureIndexCount) * 6U;
+    if (ok && bytes > 0) {
+        ok = f.write(reinterpret_cast<const uint8_t*>(_pmkidCaptureIndex),
+                     bytes) == bytes;
+    }
+    f.close();
+
+    if (!ok) {
+        STORAGE.requestMaintenance(STORAGE_MAINT_CAPTURE_INDEX_DIRTY,
+                                   "pmkid_index_write_failed");
+        return false;
+    }
+
+    _pmkidCaptureIndexDirty = false;
+    return true;
+}
+
+bool WiFiManager::rebuildPmkidCaptureIndex() {
+    if (!RADIO_ARB.isOwner(RADIO_STORAGE_MAINTENANCE)) {
+        CONTRACT_WARN_ONCE(CONTRACT_MAINTENANCE_OWNER_FOR_REPAIR,
+                           "PWNY",
+                           false,
+                           "pmkid index rebuild owner=%s",
+                           RadioArbiter::ownerName(RADIO_ARB.currentOwner()));
+        return false;
+    }
+
+    _pmkidCaptureIndexLoaded = true;
+    _pmkidCaptureIndexDirty = true;
+    _pmkidCaptureIndexCount = 0;
+    memset(_pmkidCaptureIndex, 0, sizeof(_pmkidCaptureIndex));
 
     File dir = LittleFS.open(PATH_PMKID_DIR);
-    if (!dir || !dir.isDirectory()) return;
+    if (!dir || !dir.isDirectory()) {
+        return _savePmkidCaptureIndex();
+    }
 
     File f = dir.openNextFile();
-    while (f) {
-        // Filename: {bssidHex}.hc22000
-        // Reconstruct BSSID string XX:XX:XX:XX:XX:XX
+    while (f && _pmkidCaptureIndexCount < WIFI_PMKID_INDEX_MAX) {
         const char* name = f.name();
-        int nameLen = strlen(name);
-        // Strip path prefix if present
         const char* base = strrchr(name, '/');
-        if (base) base++; else base = name;
+        base = base ? base + 1 : name;
 
-        // Must be 12 hex chars + .hc22000
-        if (nameLen >= 19) {
-            char bssidHex[13] = "";
-            strncpy(bssidHex, base, 12);
-            bssidHex[12] = '\0';
-
-            // Convert to XX:XX:XX:XX:XX:XX
-            char bssidStr[18] = "";
-            snprintf(bssidStr, sizeof(bssidStr),
-                     "%c%c:%c%c:%c%c:%c%c:%c%c:%c%c",
-                     bssidHex[0],  bssidHex[1],
-                     bssidHex[2],  bssidHex[3],
-                     bssidHex[4],  bssidHex[5],
-                     bssidHex[6],  bssidHex[7],
-                     bssidHex[8],  bssidHex[9],
-                     bssidHex[10], bssidHex[11]);
-
-            // Find matching network and mark complete
-            for (int i = 0; i < _networkCount; i++) {
-                char netBssid[18];
-                _macToStr(_networks[i].bssid, netBssid);
-                // Case-insensitive compare
-                if (strcasecmp(netBssid, bssidStr) == 0) {
-                    _networks[i].hasPMKID = true;
-                    DLOG_INFO("PWNY",
-                              "Prior capture: %s",
-                              _networks[i].ssid);
+        const size_t baseLen = strlen(base);
+        if (baseLen >= 20 && strstr(base, ".hc22000")) {
+            uint8_t bssid[6] = {};
+            bool valid = true;
+            for (int i = 0; i < 6; ++i) {
+                const char hi = base[i * 2];
+                const char lo = base[i * 2 + 1];
+                if (!isxdigit(hi) || !isxdigit(lo)) {
+                    valid = false;
                     break;
                 }
+                char byteHex[3] = { hi, lo, '\0' };
+                bssid[i] = static_cast<uint8_t>(strtoul(byteHex, nullptr, 16));
+            }
+            if (valid && !_pmkidCaptureIndexContains(bssid)) {
+                memcpy(_pmkidCaptureIndex[_pmkidCaptureIndexCount], bssid, 6);
+                _pmkidCaptureIndexCount++;
             }
         }
         f = dir.openNextFile();
     }
+
+    const bool ok = _savePmkidCaptureIndex();
+    DLOG_INFO("PWNY", "PMKID capture index rebuilt count=%u ok=%u",
+              static_cast<unsigned>(_pmkidCaptureIndexCount),
+              ok ? 1U : 0U);
+    return ok;
+}
+
+bool WiFiManager::_pmkidCaptureIndexContains(const uint8_t* bssid) const {
+    if (!bssid || !_pmkidCaptureIndexLoaded) {
+        return false;
+    }
+    for (uint16_t i = 0; i < _pmkidCaptureIndexCount; ++i) {
+        if (memcmp(_pmkidCaptureIndex[i], bssid, 6) == 0) {
+            return true;
+        }
+    }
+    return false;
+}
+
+void WiFiManager::_markPmkidCaptureIndexed(const uint8_t* bssid) {
+    if (!bssid) {
+        return;
+    }
+    if (!_pmkidCaptureIndexLoaded) {
+        _pmkidCaptureIndexLoaded = true;
+        _pmkidCaptureIndexCount = 0;
+    }
+    if (_pmkidCaptureIndexContains(bssid)) {
+        return;
+    }
+    if (_pmkidCaptureIndexCount >= WIFI_PMKID_INDEX_MAX) {
+        STORAGE.requestMaintenance(STORAGE_MAINT_CAPTURE_INDEX_DIRTY,
+                                   "pmkid_index_full");
+        return;
+    }
+
+    memcpy(_pmkidCaptureIndex[_pmkidCaptureIndexCount], bssid, 6);
+    _pmkidCaptureIndexCount++;
+    _pmkidCaptureIndexDirty = true;
+    if (!_savePmkidCaptureIndex()) {
+        STORAGE.requestMaintenance(STORAGE_MAINT_CAPTURE_INDEX_DIRTY,
+                                   "pmkid_index_save_failed");
+    }
+}
+
+void WiFiManager::_pwnyLoadPriorCaptures() {
+    if (!_pmkidCaptureIndexLoaded) {
+        STORAGE.requestMaintenance(STORAGE_MAINT_CAPTURE_INDEX_DIRTY,
+                                   "pwny_prior_capture_index_unavailable");
+        return;
+    }
+
+    for (int i = 0; i < _networkCount; i++) {
+        if (_pmkidCaptureIndexContains(_networks[i].bssid)) {
+            _networks[i].hasPMKID = true;
+            _networks[i].pmkidChecked = true;
+            DLOG_INFO("PWNY", "Prior capture: %s", _networks[i].ssid);
+        }
+    }
 }
 
 bool WiFiManager::_hasStoredCapture(const uint8_t* bssid) const {
-    if (!bssid || !LittleFS.exists(PATH_PMKID_DIR)) {
+    if (!bssid) {
         return false;
     }
 
-    char bssidHex[13];
-    snprintf(bssidHex, sizeof(bssidHex),
-             "%02x%02x%02x%02x%02x%02x",
-             bssid[0], bssid[1], bssid[2],
-             bssid[3], bssid[4], bssid[5]);
+    if (!_pmkidCaptureIndexLoaded) {
+        STORAGE.requestMaintenance(STORAGE_MAINT_CAPTURE_INDEX_DIRTY,
+                                   "pmkid_lookup_index_unavailable");
+        return false;
+    }
 
-    char path[32];
-    snprintf(path, sizeof(path), PATH_PMKID_DIR "/%s.hc22000", bssidHex);
-    return LittleFS.exists(path);
+    return _pmkidCaptureIndexContains(bssid);
+}
+
+bool WiFiManager::_refreshStoredCaptureFlag(WiFiNetwork& net) {
+    if (net.hasPMKID || net.pmkidChecked) {
+        return net.hasPMKID;
+    }
+
+    const uint32_t startMs = millis();
+    net.hasPMKID = _hasStoredCapture(net.bssid);
+    net.pmkidChecked = true;
+
+    const uint32_t elapsedMs = millis() - startMs;
+    if (elapsedMs >= WIFI_CAPTURE_FILE_CHECK_SLOW_WARN_MS) {
+        char bssidStr[18];
+        _macToStr(net.bssid, bssidStr);
+        DLOG_WARN("WIFI",
+                  "capture file check slow ms=%lu bssid=%s found=%d",
+                  (unsigned long)elapsedMs,
+                  bssidStr,
+                  net.hasPMKID ? 1 : 0);
+    }
+    return net.hasPMKID;
 }
 
 bool WiFiManager::_pwnyIsHandshakeCrackable(
@@ -2108,9 +2226,7 @@ int16_t WiFiManager::_pwnyTemporalBonus(
     return -5;
 }
 
-// ═════════════════════════════════════════════════════════════
-//  hc22000 Export
-// ═════════════════════════════════════════════════════════════
+// ── hc22000 Export ──
 
 void WiFiManager::_writeHC22000(const char* ssid,
                                   const char* bssid,
@@ -2163,12 +2279,17 @@ void WiFiManager::_writeHC22000(const char* ssid,
              pmkidHex, bssidHex, clientHex, ssidHex);
     f.close();
 
+    uint8_t bssidRaw[6] = {};
+    for (int i = 0; i < 6; ++i) {
+        char byteHex[3] = { bssidHex[i * 2], bssidHex[i * 2 + 1], '\0' };
+        bssidRaw[i] = static_cast<uint8_t>(strtoul(byteHex, nullptr, 16));
+    }
+    _markPmkidCaptureIndexed(bssidRaw);
+
     DLOG_INFO("WIFI", "hc22000: %s", path);
 }
 
-// ═════════════════════════════════════════════════════════════
-//  MAC Utilities
-// ═════════════════════════════════════════════════════════════
+// ── MAC Utilities ──
 
 void WiFiManager::_macToStr(const uint8_t* mac,
                               char* out18) {
@@ -2186,9 +2307,7 @@ bool WiFiManager::_macsEqual(const uint8_t* a,
     return memcmp(a, b, 6) == 0;
 }
 
-// ═════════════════════════════════════════════════════════════
-//  Device / Network Management
-// ═════════════════════════════════════════════════════════════
+// ── Device / Network Management ──
 
 TrackedDevice* WiFiManager::_findOrCreateDevice(
     const char* mac,
@@ -2261,9 +2380,6 @@ WiFiNetwork* WiFiManager::_findOrCreateNetwork(
         if (_macsEqual(_networks[i].bssid, bssid)) {
             _networks[i].rssi    = rssi;
             _networks[i].lastSeen = millis();
-            if (!_networks[i].hasPMKID) {
-                _networks[i].hasPMKID = _hasStoredCapture(bssid);
-            }
             return &_networks[i];
         }
     }
@@ -2283,7 +2399,6 @@ WiFiNetwork* WiFiManager::_findOrCreateNetwork(
         net.channel   = ch;
         net.firstSeen = millis();
         net.lastSeen  = millis();
-        net.hasPMKID  = _hasStoredCapture(bssid);
         STATE_WRITE_BEGIN();
         g_state.wifiNetworkCount = _networkCount;
         STATE_WRITE_END();
@@ -2298,7 +2413,6 @@ WiFiNetwork* WiFiManager::_findOrCreateNetwork(
     net.channel   = ch;
     net.firstSeen = millis();
     net.lastSeen  = millis();
-    net.hasPMKID  = _hasStoredCapture(bssid);
     strlcpy(net.security, "OPEN", sizeof(net.security));
 
     STATE_WRITE_BEGIN();
@@ -2317,9 +2431,7 @@ const char* WiFiManager::_findSSIDByBSSID(
     return nullptr;
 }
 
-// ═════════════════════════════════════════════════════════════
-//  Behavioral Analysis
-// ═════════════════════════════════════════════════════════════
+// ── Behavioral Analysis ──
 
 void WiFiManager::_updateBehavior(TrackedDevice* dev) {
     uint32_t now = millis();
@@ -2357,6 +2469,7 @@ void WiFiManager::_updateRSSIHistory(TrackedDevice* dev,
 }
 
 void WiFiManager::_computeRSSITrends() {
+    static constexpr uint8_t kRssiHistorySize = 8;
     uint32_t now = millis();
     for (int i = 0; i < _deviceCount; i++) {
         TrackedDevice& dev = _devices[i];
@@ -2367,7 +2480,10 @@ void WiFiManager::_computeRSSITrends() {
         int n = dev.rssiCount;
 
         for (int j = 0; j < n; j++) {
-            uint8_t idx = (dev.rssiHead - n + j) % 8;
+            uint8_t idx = (static_cast<uint8_t>(dev.rssiHead % kRssiHistorySize) +
+                           kRssiHistorySize -
+                           static_cast<uint8_t>(n) +
+                           static_cast<uint8_t>(j)) % kRssiHistorySize;
             float x = (now - dev.rssiTimestamps[idx])
                       / 1000.0f;
             float y = dev.rssiHistory[idx];
@@ -2391,7 +2507,10 @@ void WiFiManager::_computeRSSITrends() {
         float mean = sumY / n;
         float var  = 0;
         for (int j = 0; j < n; j++) {
-            uint8_t idx = (dev.rssiHead - n + j) % 8;
+            uint8_t idx = (static_cast<uint8_t>(dev.rssiHead % kRssiHistorySize) +
+                           kRssiHistorySize -
+                           static_cast<uint8_t>(n) +
+                           static_cast<uint8_t>(j)) % kRssiHistorySize;
             float diff = dev.rssiHistory[idx] - mean;
             var += diff * diff;
         }
@@ -2421,17 +2540,14 @@ void WiFiManager::_classifyVendor(TrackedDevice* dev,
 
         if (id == 221 && sz >= 3) {
             const uint8_t* oui = tags + pos + 2;
-            // Apple: 00:17:f2, 00:50:e4
             if (oui[0]==0x00 && oui[1]==0x17 &&
                 oui[2]==0xf2) {
                 dev->vendorClass = VENDOR_APPLE; return;
             }
-            // Samsung: 00:16:32
             if (oui[0]==0x00 && oui[1]==0x16 &&
                 oui[2]==0x32) {
                 dev->vendorClass = VENDOR_SAMSUNG; return;
             }
-            // Microsoft: 00:50:f2
             if (oui[0]==0x00 && oui[1]==0x50 &&
                 oui[2]==0xf2) {
                 dev->vendorClass = VENDOR_MICROSOFT; return;
@@ -2458,9 +2574,7 @@ float WiFiManager::_bloomJaccard(uint32_t a, uint32_t b) {
     return (float)intersect / unionBits;
 }
 
-// ═════════════════════════════════════════════════════════════
-//  MAC Rotation / Graveyard
-// ═════════════════════════════════════════════════════════════
+// ── MAC Rotation / Graveyard ──
 
 void WiFiManager::_checkGraveyard(TrackedDevice* dev) {
     if (!dev->isRandomMAC) return;
@@ -2487,9 +2601,16 @@ void WiFiManager::_checkGraveyard(TrackedDevice* dev) {
                 dev->physicalDeviceID = _nextPhysicalID++;
                 g.physicalDeviceID    = dev->physicalDeviceID;
             }
-            DLOG_INFO("WIFI", "MAC rotation: %s -> %s (phys ID %d)",
-                      g.rawMAC, dev->mac,
-                      dev->physicalDeviceID);
+            char oldMacStr[18];
+            _macToStr(g.rawMAC, oldMacStr);
+            if (_macsEqual(g.rawMAC, dev->rawMAC)) {
+                DLOG_INFO("WIFI", "MAC rotation skipped: %s (phys ID %d)",
+                          oldMacStr, dev->physicalDeviceID);
+            } else {
+                DLOG_INFO("WIFI", "MAC rotation: %s -> %s (phys ID %d)",
+                          oldMacStr, dev->mac,
+                          dev->physicalDeviceID);
+            }
             return;
         }
     }
@@ -2553,9 +2674,7 @@ void WiFiManager::_ageDevices() {
     }
 }
 
-// ═════════════════════════════════════════════════════════════
-//  Social Graph
-// ═════════════════════════════════════════════════════════════
+// ── Social Graph ──
 
 void WiFiManager::_updateSocialGraph() {
     _affinityPairCount = 0;
@@ -2579,9 +2698,7 @@ void WiFiManager::_updateSocialGraph() {
     }
 }
 
-// ═════════════════════════════════════════════════════════════
-//  Karma / Evil-Twin Detection
-// ═════════════════════════════════════════════════════════════
+// ── Karma / Evil-Twin Detection ──
 
 void WiFiManager::_recordRecentProbe(const char* ssid,
                                        const uint8_t* mac,
@@ -2631,9 +2748,7 @@ void WiFiManager::_checkKarma(const char* ssid,
     }
 }
 
-// ═════════════════════════════════════════════════════════════
-//  Analytics
-// ═════════════════════════════════════════════════════════════
+// ── Analytics ──
 
 int WiFiManager::getEstimatedPhysicalDevices() {
     // Count unique physical IDs plus unlinked randoms
@@ -2675,13 +2790,45 @@ void WiFiManager::resetCounters() {
     memset(_channelActivity, 0, sizeof(_channelActivity));
 }
 
-// ═════════════════════════════════════════════════════════════
-//  State sync
-// ═════════════════════════════════════════════════════════════
+// ── State sync ──
 
 void WiFiManager::_syncState() {
     bool emitDroneNotification = false;
     char droneNotifText[48] = {};
+
+    // Build the snapshot fully outside the critical section. g_stateMux is a
+    // portMUX (IRQ-disabled spinlock); holding it across 12×~57B copies plus
+    // strlcpy bound checks lets the other core spin for the full duration.
+    SpectreState::WiFiNetworkSnapshot snap[SpectreState::WIFI_SNAP_COUNT] = {};
+    int snapCount = _networkCount;
+    if (snapCount > SpectreState::WIFI_SNAP_COUNT) {
+        snapCount = SpectreState::WIFI_SNAP_COUNT;
+    }
+    for (int i = 0; i < snapCount; i++) {
+        strlcpy(snap[i].ssid, _networks[i].ssid, sizeof(snap[i].ssid));
+        memcpy(snap[i].bssid, _networks[i].bssid, 6);
+        snap[i].rssi        = _networks[i].rssi;
+        snap[i].channel     = _networks[i].channel;
+        snap[i].hasPMKID    = _networks[i].hasPMKID;
+        snap[i].clientCount = _networks[i].clientCount;
+        strlcpy(snap[i].security, _networks[i].security,
+                sizeof(snap[i].security));
+        snap[i].isHidden    = _networks[i].isHidden;
+    }
+
+    bool droneFire = false;
+    char localDroneId[sizeof(g_state.lastDroneID)] = {};
+    if (_droneDetected) {
+        uint32_t now = millis();
+        if (now - _lastDroneTime >= 5000) {
+            _lastDroneTime = now;
+            _droneDetected = false;
+            droneFire = true;
+            strlcpy(localDroneId, _lastDroneID, sizeof(localDroneId));
+            snprintf(droneNotifText, sizeof(droneNotifText),
+                     "DRONE: %s", localDroneId);
+        }
+    }
 
     STATE_WRITE_BEGIN();
     g_state.wifiChannel      = _channel;
@@ -2690,42 +2837,17 @@ void WiFiManager::_syncState() {
     g_state.probeDeviceCount = _deviceCount;
     g_state.probePacketCount = _probePacketCount;
     g_state.pmkidCaptured    = _pmkidCount;
-
-    // Snapshot networks for display
-    int snapCount = _networkCount;
-    if (snapCount > SpectreState::WIFI_SNAP_COUNT) {
-        snapCount = SpectreState::WIFI_SNAP_COUNT;
+    g_state.wifiSnapCount    = snapCount;
+    if (snapCount > 0) {
+        memcpy(g_state.wifiSnap, snap,
+               sizeof(SpectreState::WiFiNetworkSnapshot) * snapCount);
     }
-    g_state.wifiSnapCount = snapCount;
-    for (int i = 0; i < snapCount; i++) {
-        strlcpy(g_state.wifiSnap[i].ssid,
-                _networks[i].ssid, 33);
-        memcpy(g_state.wifiSnap[i].bssid,
-               _networks[i].bssid, 6);
-        g_state.wifiSnap[i].rssi     = _networks[i].rssi;
-        g_state.wifiSnap[i].channel  = _networks[i].channel;
-        g_state.wifiSnap[i].hasPMKID = _networks[i].hasPMKID;
-        g_state.wifiSnap[i].clientCount =
-            _networks[i].clientCount;
-        strlcpy(g_state.wifiSnap[i].security,
-                _networks[i].security, 12);
-        g_state.wifiSnap[i].isHidden = _networks[i].isHidden;
-        g_state.wifiSnap[i].clientCount  = _networks[i].clientCount;
-    }
-
-    if (_droneDetected) {
-        uint32_t now = millis();
-        if (now - _lastDroneTime >= 5000) {
-            _lastDroneTime = now;
-            g_state.droneAlert   = true;
-            g_state.droneCount++;
-            strlcpy(g_state.lastDroneID, _lastDroneID,
-                    sizeof(g_state.lastDroneID));
-            _droneDetected = false;
-            emitDroneNotification = true;
-            snprintf(droneNotifText, sizeof(droneNotifText),
-                     "DRONE: %s", _lastDroneID);
-        }
+    if (droneFire) {
+        g_state.droneAlert = true;
+        g_state.droneCount++;
+        strlcpy(g_state.lastDroneID, localDroneId,
+                sizeof(g_state.lastDroneID));
+        emitDroneNotification = true;
     }
     STATE_WRITE_END();
 
@@ -2768,13 +2890,5 @@ bool WiFiManager::_isTrustedSSID(const char* ssid) const {
     }
     return false;
 }
-
-void WiFiManager::_logEvent(const char* eventType,
-                              const char* detail) {
-    MQTT_MGR.queueEvent(eventType, "INFO", "", "",
-                         detail, "detection");
-}
-
-
 
 

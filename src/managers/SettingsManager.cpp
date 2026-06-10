@@ -1,4 +1,6 @@
 
+
+
 #include "SettingsManager.h"
 
 #include <ArduinoJson.h>
@@ -382,11 +384,22 @@ bool SettingsManager::_persist() {
     _sanitize(_settings);
 
     bool ok = true;
+    auto putStringOk = [&](const char* key, const char* value) -> bool {
+        const char* safeValue = value ? value : "";
+        const size_t len = strlen(safeValue);
+        const size_t written = _prefs.putString(key, safeValue);
+        if (written == len) return true;
+        if (len == 0) {
+            return _prefs.getString(key, "__spectre_unset__") == "";
+        }
+        return false;
+    };
+
     ok &= _prefs.putUShort(KEY_SCHEMA_VERSION, _settings.schemaVersion) > 0;
     ok &= _prefs.putUShort(KEY_PROVISIONING_VERSION, SPECTRE_PROVISIONING_VERSION) > 0;
-    ok &= _prefs.putString(KEY_DEVICE_NAME, _settings.deviceName) >= 0;
-    ok &= _prefs.putString(KEY_DEVICE_OWNER, _settings.deviceOwner) >= 0;
-    ok &= _prefs.putString(KEY_DEVICE_VERSION, _settings.deviceVersion) >= 0;
+    ok &= putStringOk(KEY_DEVICE_NAME, _settings.deviceName);
+    ok &= putStringOk(KEY_DEVICE_OWNER, _settings.deviceOwner);
+    ok &= putStringOk(KEY_DEVICE_VERSION, _settings.deviceVersion);
     ok &= _prefs.putULong(KEY_LORA_FREQ, _settings.loraFrequency) > 0;
     ok &= _prefs.putUShort(KEY_LORA_NET_ID, _settings.loraNetworkId) > 0;
     ok &= _prefs.putUShort(KEY_LORA_ADDR, _settings.loraAddress) > 0;
@@ -394,29 +407,29 @@ bool SettingsManager::_persist() {
     ok &= _prefs.putUChar(KEY_LORA_BW, _settings.loraBW) > 0;
     ok &= _prefs.putUChar(KEY_LORA_CR, _settings.loraCR) > 0;
     ok &= _prefs.putUChar(KEY_LORA_PREAMBLE, _settings.loraPreamble) > 0;
-    ok &= _prefs.putString(KEY_MQTT_BROKER, _settings.mqttBroker) >= 0;
+    ok &= putStringOk(KEY_MQTT_BROKER, _settings.mqttBroker);
     ok &= _prefs.putUShort(KEY_MQTT_PORT, _settings.mqttPort) > 0;
-    ok &= _prefs.putString(KEY_MQTT_USER, _settings.mqttUser) >= 0;
-    ok &= _prefs.putString(KEY_MQTT_PASSWORD, _settings.mqttPassword) >= 0;
-    ok &= _prefs.putString(KEY_MQTT_TOPIC_BASE, _settings.mqttTopicBase) >= 0;
+    ok &= putStringOk(KEY_MQTT_USER, _settings.mqttUser);
+    ok &= putStringOk(KEY_MQTT_PASSWORD, _settings.mqttPassword);
+    ok &= putStringOk(KEY_MQTT_TOPIC_BASE, _settings.mqttTopicBase);
     ok &= _prefs.putUChar(KEY_WIFI_COUNT, _settings.wifiNetworkCount) > 0;
 
     for (uint8_t i = 0; i < SETTINGS_WIFI_NETWORK_CAPACITY; i++) {
         char key[12] = {};
         _wifiSsidKey(i, key, sizeof(key));
-        if (i < _settings.wifiNetworkCount) _prefs.putString(key, _settings.wifiNetworks[i].ssid);
+        if (i < _settings.wifiNetworkCount) ok &= putStringOk(key, _settings.wifiNetworks[i].ssid);
         else if (_prefs.isKey(key)) _prefs.remove(key);
         _wifiPassKey(i, key, sizeof(key));
-        if (i < _settings.wifiNetworkCount) _prefs.putString(key, _settings.wifiNetworks[i].password);
+        if (i < _settings.wifiNetworkCount) ok &= putStringOk(key, _settings.wifiNetworks[i].password);
         else if (_prefs.isKey(key)) _prefs.remove(key);
     }
 
-    ok &= _prefs.putString(KEY_TIMEZONE, _settings.timezone) >= 0;
-    ok &= _prefs.putString(KEY_ACCENT_HEX, _settings.accentHex) >= 0;
+    ok &= putStringOk(KEY_TIMEZONE, _settings.timezone);
+    ok &= putStringOk(KEY_ACCENT_HEX, _settings.accentHex);
     ok &= _prefs.putULong(KEY_DISPLAY_TIMEOUT, _settings.displayTimeoutMs) > 0;
     ok &= _prefs.putUShort(KEY_BATTERY_CAPACITY, _settings.batteryCapacityMah) > 0;
-    ok &= _prefs.putString(KEY_NTP_1, _settings.ntpServer1) >= 0;
-    ok &= _prefs.putString(KEY_NTP_2, _settings.ntpServer2) >= 0;
+    ok &= putStringOk(KEY_NTP_1, _settings.ntpServer1);
+    ok &= putStringOk(KEY_NTP_2, _settings.ntpServer2);
     ok &= _prefs.putBool(KEY_USB_SERIAL_EN, _settings.usbSerialDebugEnabled);
     ok &= _prefs.putUChar(KEY_USB_SERIAL_LVL,
                           static_cast<uint8_t>(_settings.usbSerialDebugLevel)) > 0;
@@ -454,4 +467,4 @@ bool SettingsManager::_migrate(uint16_t storedVersion) {
 }
 
 
-               
+

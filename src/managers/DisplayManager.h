@@ -6,6 +6,7 @@
 #include "../core/RunContext.h"
 #include "../core/ScreenEnum.h"
 #include "../core/SpectreState.h"
+#include "../ui/Mascot_LVGL.h"
 #include "../ui/Theme.h"
 #include "../ui/MascotState.h"
 
@@ -50,6 +51,7 @@ public:
     void drawWifi(const char* ssid, int networks, const char* probeActivity);
     void drawRecon(MissionProfile selectedProfile);
     void drawSystem(float battV, unsigned long uptimeMs, const char* storage);
+    void drawMissionSummary(unsigned long uptimeMs);
     void drawDebrief();
     void syncFromState();
 
@@ -64,6 +66,7 @@ public:
     void showNotification(uint8_t type, const char* text);
     void pulseMascot(MascotState state, uint32_t durationMs);
     void openWifiList();
+    void refreshWifiList();
     void closeWifiList();
     void scrollWifiList(int delta);
     void wifiListSelect();
@@ -86,8 +89,8 @@ private:
     lv_obj_t*   _statusBar   = nullptr;
     lv_obj_t*   _actionBar   = nullptr;
     lv_obj_t*   _mascotPanel = nullptr;
-    lv_obj_t*   _mascotCanvas = nullptr;
-    lv_obj_t*   _mascotFallbackLabel = nullptr;
+    MascotLVGL  _nativeMascot;
+    bool        _nativeMascotReady = false;
 
     // Status bar labels
     lv_obj_t*   _lblBatt     = nullptr;
@@ -127,7 +130,7 @@ private:
     lv_obj_t*   _sysContent   = nullptr;
     lv_obj_t*   _sysLivePanel = nullptr;
     lv_obj_t*   _debriefPanel = nullptr;
-
+    lv_obj_t*   _missionSummaryContent = nullptr;
 
     // ─── Animation objects ────────────────────────────────────────
     lv_obj_t*   _divCanvas      = nullptr;
@@ -189,6 +192,16 @@ private:
     lv_obj_t*   _sysDumpValue = nullptr;
     lv_obj_t*   _sysRadioValue = nullptr;
     lv_obj_t*   _sysCfgValue = nullptr;
+    lv_obj_t*   _missionSummaryHeaderStatus = nullptr;
+    lv_obj_t*   _missionSummaryDurationValue = nullptr;
+    lv_obj_t*   _missionSummaryRecordValue = nullptr;
+    lv_obj_t*   _missionSummaryCaptureValue = nullptr;
+    lv_obj_t*   _missionSummaryUniqueValue = nullptr;
+    lv_obj_t*   _missionSummaryPendingValue = nullptr;
+    lv_obj_t*   _missionSummaryEnrichValue = nullptr;
+    lv_obj_t*   _missionSummaryGpsValue = nullptr;
+    lv_obj_t*   _missionSummaryContextValue = nullptr;
+    lv_obj_t*   _missionSummaryTagValue = nullptr;
     lv_obj_t*   _debriefDurationValue = nullptr;
     lv_obj_t*   _debriefNetworksValue = nullptr;
     lv_obj_t*   _debriefDevicesValue = nullptr;
@@ -242,8 +255,6 @@ private:
 
     static uint8_t* _divBuf;
 
-    static uint8_t* _mascotBuf;
-
     // Builders
     bool _ensureCanvasBuffers();
     void _buildStatusBar();
@@ -259,6 +270,7 @@ private:
     void _buildScreenWifi();
     void _buildScreenRecon();
     void _buildScreenSystem();
+    void _buildScreenMissionSummary();
 
     // Helpers
     lv_obj_t* _makeLabel(lv_obj_t* parent, const char* text,
@@ -272,7 +284,6 @@ private:
     void      _setActionHints(const ButtonBindingSet& bindings,
                               bool busy = false);
     void      _buildRadarSweep();
-    void      _animatePanelBorder(lv_obj_t* panel, int delayMs);
     void      _setPanelBorderColor(lv_obj_t* panel, uint32_t color);
     void      _setCriticalPowerFx(bool active);
     void      _runGlitchTransition(Screen target);
@@ -296,5 +307,4 @@ private:
                                const char* statusText);
     void _syncActionHintsFromState();
 };
-
 

@@ -1,9 +1,6 @@
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// WiFiManager.h — Spectre Field Intelligence Platform
-// Core WiFi capture engine: promiscuous mode, IE fingerprinting, probe tracking,
-// PMKID extraction, ASTM F3411 / DJI Remote ID, behavioral de-anonymization
-// ═══════════════════════════════════════════════════════════════════════════════
+// WiFiManager: promiscuous capture, IE fingerprinting, probe tracking,
+// PMKID extraction, ASTM F3411 / DJI Remote ID, behavioral de-anonymization.
 #pragma once
 
 #include <Arduino.h>
@@ -85,6 +82,7 @@ struct WiFiNetwork {
     uint8_t  channel;
     bool     hasHandshake;
     bool     hasPMKID;
+    bool     pmkidChecked;        // true after storage has been queried once
     char     security[12];       // WPA2 / WPA3 / OPEN etc.
     bool     isHidden;           // beacon with empty SSID
     bool     hasWPS;             // WPS IE present
@@ -218,10 +216,8 @@ static const int WIFI_MAX_AFFINITY       = 8;
 static const int WIFI_MAX_KARMA          = 4;
 static const int WIFI_GRAVE_SIZE         = 8;
 static const int WIFI_RECENT_PROBE_COUNT = 16;
+static const int WIFI_PMKID_INDEX_MAX    = 128;
 
-// ═════════════════════════════════════════════════════════════════════════════
-//  WiFiManager — the capture engine
-// ═════════════════════════════════════════════════════════════════════════════
 class WiFiManager {
 public:
     // ── lifecycle ────────────────────────────────────────────────────────────
@@ -235,6 +231,7 @@ public:
     void pauseRadio();
     void stopAll();
     void suspendRadio();
+    bool prepareStationForUpload();
     bool startPMKIDHunt(const char* targetBSSID);
     bool startPwnyMode();
     void stopPwnyMode();
@@ -243,7 +240,7 @@ public:
     int  getPwnyTargetCount() const { return _pwnyTargetCount; }
     const PwnyTarget* getPwnyTargets() const { return _pwnyTargets; }
     const char* getPwnyStatusText() const { return _pwnyStatusText; }
-    bool connectTo(const char* ssid, const char* password);
+    bool rebuildPmkidCaptureIndex();
 
     // ── channel ──────────────────────────────────────────────────────────────
     void    setChannel(uint8_t ch);
@@ -371,10 +368,6 @@ private:
     // ── RSSI trend update timer ──────────────────────────────────────────────
     uint32_t      _lastTrendUpdate   = 0;
 
-    // ═════════════════════════════════════════════════════════════════════════
-    //  Private methods
-    // ═════════════════════════════════════════════════════════════════════════
-
     // ── channel hopping ──────────────────────────────────────────────────────
     void          _hopChannel();
 
@@ -392,7 +385,6 @@ private:
     // ── IE fingerprinting ────────────────────────────────────────────────────
     void          _computeIEFingerprint(const uint8_t* taggedParams, int len,
                                          char* outHex33);
-    uint32_t      _computeIEOrderHash(const uint8_t* taggedParams, int len);
 
     // ── Remote ID / drone parsers ────────────────────────────────────────────
     bool          _checkASTMRemoteID(const uint8_t* payload, int len,
@@ -404,7 +396,6 @@ private:
     void          _handleDecodedDrone(ODID_UAS_Data* data,
                                        int8_t rssi, uint8_t ch);
     bool          _validateCoordinates(float lat, float lon, float alt = 0.0f);
-    bool          _validateSpeed(float speed);
 
     // ── PMKID extraction ─────────────────────────────────────────────────────
     bool          _extractPMKID(const uint8_t* eapol, int len,
@@ -453,15 +444,18 @@ private:
     // ── device aging ─────────────────────────────────────────────────────────
     void           _ageDevices();
 
-    // ── event logging ────────────────────────────────────────────────────────
-    void           _logEvent(const char* eventType, const char* detail);
-
     // ── state sync ───────────────────────────────────────────────────────────
     void           _syncState();
     bool           _ensureRadioReady();
-    bool           _enablePromiscuousCapture(const char* tag);
+    bool           _enablePromiscuousCapture(const char* tag,
+                                             bool includeDataFrames);
     bool           _isTrustedSSID(const char* ssid) const;
     bool           _hasStoredCapture(const uint8_t* bssid) const;
+    bool           _refreshStoredCaptureFlag(WiFiNetwork& net);
+    void           _loadPmkidCaptureIndex();
+    bool           _savePmkidCaptureIndex();
+    void           _markPmkidCaptureIndexed(const uint8_t* bssid);
+    bool           _pmkidCaptureIndexContains(const uint8_t* bssid) const;
 
     bool           _radioReady = false;
     uint32_t       _nextRadioInitAttemptMs = 0;
@@ -473,6 +467,10 @@ private:
     uint32_t     _pwnyLastRotateMs   = 0;
     bool         _pwnyAttacking      = false;
     char         _pwnyStatusText[48] = "IDLE";
+    uint8_t      _pmkidCaptureIndex[WIFI_PMKID_INDEX_MAX][6] = {};
+    uint16_t     _pmkidCaptureIndexCount = 0;
+    bool         _pmkidCaptureIndexLoaded = false;
+    bool         _pmkidCaptureIndexDirty = false;
 
     static const uint32_t PWNY_SCORE_INTERVAL_MS   = 10000;
     static const uint32_t PWNY_ATTACK_MIN_MS        = 3000;
@@ -500,7 +498,7 @@ private:
     void          _pwnySelectNext();
     void          _pwnyStartAttack(uint8_t targetIdx);
     void          _pwnyEndAttack(uint8_t targetIdx, bool success);
-    int16_t       _pwnyScore(int networkIdx) const;
+    int16_t       _pwnyScore(int networkIdx);
     bool          _pwnyTxRateAllowed();
     bool          _sendPwnyMgmtFrame(uint8_t frameControl,
                                      const uint8_t* sourceMAC,
@@ -519,8 +517,9 @@ private:
     bool          _pwnyManualDeauthRequested = false;
 };
 
-// ── Global singleton ─────────────────────────────────────────────────────────
 extern WiFiManager WIFI_MGR;
+
+
 
 
 

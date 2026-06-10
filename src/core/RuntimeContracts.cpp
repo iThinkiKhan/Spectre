@@ -1,4 +1,6 @@
 
+
+
 #include "RuntimeContracts.h"
 
 #include <cstdarg>
@@ -46,5 +48,7 @@ void RuntimeContracts::clear(RuntimeContractId id) {
     _reported[id] = false;
     portEXIT_CRITICAL(&_mux);
 }
+
+
 
 

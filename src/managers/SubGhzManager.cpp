@@ -1,4 +1,6 @@
 
+
+
 #include "SubGhzManager.h"
 
 #include "../core/DebugLog.h"
@@ -161,9 +163,17 @@ void SubGhzManager::notePacket(const SubGhzPacket& pkt) {
         }
     }
 
+    // LRU evict: pick the slot with the largest age relative to the incoming
+    // packet's timestamp. Using a signed delta keeps the ordering correct
+    // across a millis() wraparound (a raw `<` compare would treat a freshly
+    // updated post-wrap timestamp as "older" than a pre-wrap one).
     size_t oldest = 0;
+    int32_t oldestAge = static_cast<int32_t>(pkt.timestampMs - _nodes[0].lastSeenMs);
     for (size_t i = 1; i < MAX_NODES; ++i) {
-        if (_nodes[i].lastSeenMs < _nodes[oldest].lastSeenMs) {
+        const int32_t age =
+            static_cast<int32_t>(pkt.timestampMs - _nodes[i].lastSeenMs);
+        if (age > oldestAge) {
+            oldestAge = age;
             oldest = i;
         }
     }
@@ -244,5 +254,7 @@ void SubGhzManager::_refreshStatus() {
     strlcpy(_status.moduleName, _backend->moduleName(), sizeof(_status.moduleName));
     strlcpy(_status.firmware, _backend->firmwareVersion().c_str(), sizeof(_status.firmware));
 }
+
+
 
 

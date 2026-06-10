@@ -1,57 +1,284 @@
 
 #pragma once
-
 #include "SecretsConfig.h"
 #include "core/ScreenEnum.h"
 
-// -----------------------------------------------------------------------------
-// Feature flags
-// -----------------------------------------------------------------------------
+// Spectre config
+//
+// Flip switches with ON/OFF (or 1/0). Time values are seconds unless the name
+// ends in _MS.
 
-// Phone app
-#define PHONE_COMPANION_ENABLED false
-#define PHONE_COMPANION_BOOT_PROBE false
+// Shared switch values. ON is a macro for build-flag use; OFF is a typed
+// constant so it does not collide with enum values like SubGhzMode::OFF.
+#define ON  1
+static constexpr uint8_t OFF = 0;
 
-// Safety gate: passive Pwny capture remains available, but active deauth is
-// disabled unless explicitly enabled here or manually requested from the UI.
-#define PWNY_ACTIVE_ATTACKS_ENABLED false
-
-// Convert human-readable duration knobs into the ms values the code already
-// consumes.
 #define SPECTRE_SECONDS_TO_MS(seconds) ((uint32_t)(seconds) * 1000UL)
 
 // -----------------------------------------------------------------------------
-// Timing and upload behavior
+// Main switches
 // -----------------------------------------------------------------------------
 
-// Fine-grained timing stays in milliseconds to preserve sub-second precision.
-#define BUTTON_LONG_PRESS_MS          800UL
-#define BUTTON_DEBOUNCE_MS            50UL
+#define PHONE_COMPANION_ENABLED     ON
+#define PHONE_COMPANION_ENRICH_THRESHOLD 270UL
+#define PHONE_COMPANION_ENRICH_BATCH_MAX 18
 
-// Human-readable duration knobs: set values in seconds, code keeps using ms.
-#define MQTT_DUMP_INTERVAL_SEC        7200UL
+// -----------------------------------------------------------------------------
+// Enrichment drain policy
+// -----------------------------------------------------------------------------
+// The ESP32 receives enriched records from the phone / WIO and queues them in
+// a tiny in-flight ring (ENRICH_QUEUE_DEPTH batches). Draining that ring means
+// LittleFS sidecar writes, which contend with capture for _appendMutex. The
+// drain policy classifies the queue into IDLE / TRICKLE / TORRENT modes:
+//
+//   IDLE     — queue empty, nothing to do.
+//   TRICKLE  — queue has work but capture should keep priority. Drain one
+//              batch per tick under the mutex; trust serialization to
+//              interleave us with capture appends.
+//   TORRENT  — queue is full or oldest entry has aged past MAX_AGE_MS.
+//              Request a RADIO_STORAGE_MAINTENANCE lease and drain until
+//              empty or the time budget expires.
+//
+// Soft preemption: the torrent lease is requested without force=true by
+// default. Only when the oldest queued batch has waited longer than
+// ENRICH_DRAIN_PREEMPT_AGE_MS do we escalate to force=true, letting the
+// arbiter take the radio from WIFI_CAPTURE.
+//
+// Watermarks are batch counts (queue depth is 2 today). Tune from real
+// session logs once available.
+#define ENRICH_DRAIN_HIGH_WATER       2UL    // batches → torrent
+#define ENRICH_DRAIN_LOW_WATER        1UL    // batches → exit torrent at/below
+#define ENRICH_DRAIN_MAX_AGE_MS       8000UL // oldest age → torrent
+#define ENRICH_DRAIN_PREEMPT_AGE_MS   20000UL// oldest age → preempt capture
+#define ENRICH_DRAIN_TORRENT_BUDGET_MS 250UL // max time held in torrent
+#define ENRICH_DRAIN_LEASE_HOLD_MS    400UL  // maintenance lease hold
+
+// -----------------------------------------------------------------------------
+// Boot options
+// -----------------------------------------------------------------------------
+
+#define BOOT_SEQUENCE_ENABLED       ON
+#define BOOT_SEQUENCE_VERBOSE       OFF   // manual boot serial verbosity override
+#define BOOT_SEQUENCE_VERBOSE_IN_DEBUG ON  // auto-enable boot serial traces in DEBUG/DEV
+#define BOOT_RECOVERY_ENABLED       ON
+#define BOOT_RECOVERY_BUTTON_PIN    BTN_B
+#define BOOT_RECOVERY_HOLD_MS       1500UL
+
+#define BLE_SMOKE_ENABLED           OFF
+
+#define PWNY_ACTIVE_ATTACKS_ENABLED OFF
+
+// -----------------------------------------------------------------------------
+// Timing
+// -----------------------------------------------------------------------------
+
+// Button timing needs sub-second precision, so it stays in milliseconds.
+#define BUTTON_LONG_PRESS_MS          800UL   // ms
+#define BUTTON_DEBOUNCE_MS            50UL    // ms
+
+#define MQTT_DUMP_INTERVAL_SEC        7200UL  // seconds
 #define MQTT_DUMP_INTERVAL_MS         SPECTRE_SECONDS_TO_MS(MQTT_DUMP_INTERVAL_SEC)
-#define MQTT_CONNECT_TIMEOUT_SEC      10UL
-#define MQTT_CONNECT_TIMEOUT_MS       SPECTRE_SECONDS_TO_MS(MQTT_CONNECT_TIMEOUT_SEC)
-#define MQTT_FAILED_BACKOFF_SEC       300UL
+#define MQTT_WIFI_CONNECT_TIMEOUT_SEC 30UL    // seconds
+#define MQTT_WIFI_CONNECT_TIMEOUT_MS  SPECTRE_SECONDS_TO_MS(MQTT_WIFI_CONNECT_TIMEOUT_SEC)
+#define MQTT_BROKER_CONNECT_TIMEOUT_SEC 15UL  // seconds
+#define MQTT_BROKER_CONNECT_TIMEOUT_MS SPECTRE_SECONDS_TO_MS(MQTT_BROKER_CONNECT_TIMEOUT_SEC)
+#define MQTT_FAILED_BACKOFF_SEC       300UL   // seconds
 #define MQTT_FAILED_BACKOFF_MS        SPECTRE_SECONDS_TO_MS(MQTT_FAILED_BACKOFF_SEC)
 #define MQTT_POISON_FAIL_LIMIT        3
-#define MQTT_UPLOAD_READY_THRESHOLD   10
 
-#define SLEEP_TIMEOUT_SEC             300UL
+#define SLEEP_TIMEOUT_SEC             300UL   // seconds
 #define SLEEP_TIMEOUT_MS              SPECTRE_SECONDS_TO_MS(SLEEP_TIMEOUT_SEC)
-#define BACKLIGHT_TIMEOUT_SEC         30UL
+#define BACKLIGHT_TIMEOUT_SEC         30UL    // seconds
 #define BACKLIGHT_TIMEOUT_MS          SPECTRE_SECONDS_TO_MS(BACKLIGHT_TIMEOUT_SEC)
 
-// Power subsystem timing
-#define POWER_CRITICAL_SLEEP_COUNTDOWN_SEC  300UL
+#define POWER_CRITICAL_SLEEP_COUNTDOWN_SEC  300UL  // seconds
 #define POWER_CRITICAL_SLEEP_COUNTDOWN_MS   SPECTRE_SECONDS_TO_MS(POWER_CRITICAL_SLEEP_COUNTDOWN_SEC)
 
-// One-shot maintenance wipe: when enabled, the next boot clears all LittleFS
-// content except /config/vault, then writes the tag below so it only runs once
-// for that tag value.
-#define STORAGE_ONE_SHOT_NON_VAULT_RESET_ENABLED false
-#define STORAGE_ONE_SHOT_NON_VAULT_RESET_TAG     "2026-04-23-non-vault-reset-v1"
+// Radio-arbiter BLE lease hold durations. Used as RadioArbiter::BLE_*_HOLD_MS
+// at call sites; tune here. See RadioArbiter.h for the constexpr surface.
+#define BLE_TEXT_ACTIVE_HOLD_SEC      10UL    // seconds
+#define BLE_TEXT_ACTIVE_HOLD_MS_VAL   SPECTRE_SECONDS_TO_MS(BLE_TEXT_ACTIVE_HOLD_SEC)
+#define BLE_TEXT_IDLE_HOLD_SEC        180UL   // seconds
+#define BLE_TEXT_IDLE_HOLD_MS_VAL     SPECTRE_SECONDS_TO_MS(BLE_TEXT_IDLE_HOLD_SEC)
+#define BLE_PHONE_PROBE_HOLD_SEC      60UL    // seconds
+#define BLE_PHONE_PROBE_HOLD_MS_VAL   SPECTRE_SECONDS_TO_MS(BLE_PHONE_PROBE_HOLD_SEC)
+#define BLE_PHONE_ENRICH_HOLD_SEC     40UL    // seconds
+#define BLE_PHONE_ENRICH_HOLD_MS_VAL  SPECTRE_SECONDS_TO_MS(BLE_PHONE_ENRICH_HOLD_SEC)
+
+// -----------------------------------------------------------------------------
+// MQTT upload
+// -----------------------------------------------------------------------------
+
+#define MQTT_UPLOAD_READY_THRESHOLD   40000
+#define MQTT_BACKLOG_LARGE_WARN_THRESHOLD 10000   // boot diagnostic only
+#define MQTT_DUMP_FETCH_BATCH_SIZE     4   // records loaded per storage scan
+#define MQTT_DUMP_RECORDS_PER_SLICE    4   // max publish calls per yield
+#define MQTT_DUMP_SLICE_BUDGET_MS     25   // ms
+#define MQTT_DUMP_PROGRESS_EVERY_N     64  // events per progress log
+#define MQTT_DUMP_CHECKPOINT_EVERY_N  250  // events per flash checkpoint
+
+// Lease = connect budget + pending events * per-event budget, clamped to min/max.
+#define MQTT_UPLOAD_LEASE_CONNECT_SEC   20UL    // seconds
+#define MQTT_UPLOAD_LEASE_CONNECT_MS    SPECTRE_SECONDS_TO_MS(MQTT_UPLOAD_LEASE_CONNECT_SEC)
+#define MQTT_UPLOAD_LEASE_MS_PER_EVENT  600UL   // ms
+#define MQTT_UPLOAD_LEASE_MIN_SEC       90UL    // seconds
+#define MQTT_UPLOAD_LEASE_MIN_MS        SPECTRE_SECONDS_TO_MS(MQTT_UPLOAD_LEASE_MIN_SEC)
+#define MQTT_UPLOAD_LEASE_MAX_SEC       1200UL  // seconds
+#define MQTT_UPLOAD_LEASE_MAX_MS        SPECTRE_SECONDS_TO_MS(MQTT_UPLOAD_LEASE_MAX_SEC)
+
+// Spool hot-path metadata durability.
+// Event records are always appended immediately; these limits only batch the
+// smaller sidecar files that can be rebuilt/audited after an interrupted run.
+#define STORAGE_EVENT_COUNTER_SAVE_EVERY_N  256
+#define STORAGE_SPOOL_INDEX_SAVE_EVERY_N    512
+#define STORAGE_HOT_META_SAVE_INTERVAL_SEC  60UL    // seconds
+#define STORAGE_HOT_META_SAVE_INTERVAL_MS   SPECTRE_SECONDS_TO_MS(STORAGE_HOT_META_SAVE_INTERVAL_SEC)
+
+// WiFi capture retune guard. If esp_wifi_set_channel() blocks for longer than
+// this during promiscuous capture, stretch channel dwell temporarily so capture
+// keeps running instead of spending most TaskHardware time retuning.
+// _WARN values stay in ms — they're sub-second thresholds.
+#define WIFI_CHANNEL_HOP_SLOW_WARN_MS         250UL  // ms
+#define WIFI_CHANNEL_HOP_SLOW_BACKOFF_SEC     10UL   // seconds
+#define WIFI_CHANNEL_HOP_SLOW_BACKOFF_MS      SPECTRE_SECONDS_TO_MS(WIFI_CHANNEL_HOP_SLOW_BACKOFF_SEC)
+#define WIFI_CAPTURE_FILE_CHECK_SLOW_WARN_MS  250UL  // ms
+#define WIFI_FRAME_PROCESS_SLOW_WARN_MS       250UL  // ms
+#define STORAGE_FS_STATS_CACHE_SEC            5UL    // seconds
+#define STORAGE_FS_STATS_CACHE_MS             SPECTRE_SECONDS_TO_MS(STORAGE_FS_STATS_CACHE_SEC)
+
+// One-shot startup FieldVault upload. After boot grace, if FieldVault has
+// pending records, fire a single field-only MQTT upload. On success the live
+// FieldVault file is cleared. On failure (no broker, publish error) the
+// records remain and retry on the next normal/manual/threshold dump. There is
+// no periodic FieldVault-only retry loop — exactly one attempt per boot.
+#define MQTT_FIELDVAULT_STARTUP_UPLOAD_ENABLED  ON
+#define MQTT_FIELDVAULT_STARTUP_GRACE_SEC       30UL    // seconds after boot before attempt
+#define MQTT_FIELDVAULT_STARTUP_GRACE_MS        SPECTRE_SECONDS_TO_MS(MQTT_FIELDVAULT_STARTUP_GRACE_SEC)
+#define MQTT_FIELDVAULT_STARTUP_MAX_RECORDS     8       // cap per startup attempt
+#define MQTT_FIELDVAULT_STARTUP_LEASE_SEC       30UL    // seconds — short upload lease
+#define MQTT_FIELDVAULT_STARTUP_LEASE_MS        SPECTRE_SECONDS_TO_MS(MQTT_FIELDVAULT_STARTUP_LEASE_SEC)
+
+// One-shot maintenance wipes. Change the tag before turning a reset ON again.
+#define STORAGE_ONE_SHOT_VAULT_RESET_ENABLED     OFF
+#define STORAGE_ONE_SHOT_VAULT_RESET_TAG         "6-8-26-reset-vault"
+#define STORAGE_ONE_SHOT_NON_VAULT_RESET_ENABLED OFF
+#define STORAGE_ONE_SHOT_NON_VAULT_RESET_TAG     "6-8-26-reset-new-pc"
+#define STORAGE_FAST_BOOT_DEFER_SPOOL_REPAIR     ON
+
+// -----------------------------------------------------------------------------
+// Duplicate suppression
+// -----------------------------------------------------------------------------
+// Three compile-time profiles for how aggressively the spool drops repeats:
+//   0 = OFF / ballast        no dedup
+//   1 = STANDARD (default)   time-windowed dedup on P2 records (probe/device).
+//                            Mission records always saved.
+//   2 = STRICT / long-mission drops P3 — records with <2 unique fields, i.e.,
+//                            anything that can't be meaningfully GPS-enriched
+//
+// Pressure-driven retention escalation (STORAGE_POLICY_REDUCED / CRITICAL_ONLY)
+// still applies on top: profile is a floor, pressure can raise it further.
+#define DEDUP_PROFILE_OFF      0
+#define DEDUP_PROFILE_STANDARD 1
+#define DEDUP_PROFILE_STRICT   2
+
+#define DEDUP_PROFILE          DEDUP_PROFILE_STANDARD
+
+// Profile 1 tunables.
+#define DEDUP_WINDOW_SEC       600UL
+#define DEDUP_WINDOW_MS        SPECTRE_SECONDS_TO_MS(DEDUP_WINDOW_SEC)
+#define DEDUP_WINDOW_MAX       256
+
+// Handshake-completion window: holds 4-way frame state long enough to
+// recognize a finished capture and drop replays after that.
+#define HANDSHAKE_WINDOW_SEC   900UL
+#define HANDSHAKE_WINDOW_MS    SPECTRE_SECONDS_TO_MS(HANDSHAKE_WINDOW_SEC)
+
+// -----------------------------------------------------------------------------
+// Debug logging
+// -----------------------------------------------------------------------------
+
+// Profiles: OFF=silent, RUN=warnings/errors, DEBUG=targeted info, DEV=everything.
+#define SPECTRE_DEBUG_PROFILE_OFF       0
+#define SPECTRE_DEBUG_PROFILE_RUN       1
+#define SPECTRE_DEBUG_PROFILE_DEBUG     2
+#define SPECTRE_DEBUG_PROFILE_DEV       3
+//-------------------------------------------------------------------------------
+#ifndef SPECTRE_DEBUG_PROFILE
+#define SPECTRE_DEBUG_PROFILE           SPECTRE_DEBUG_PROFILE_DEBUG
+#endif
+
+#ifndef BOOT_SEQUENCE_VERBOSE_ACTIVE
+  #if (BOOT_SEQUENCE_VERBOSE == ON) || \
+      ((BOOT_SEQUENCE_VERBOSE_IN_DEBUG == ON) && (SPECTRE_DEBUG_PROFILE >= SPECTRE_DEBUG_PROFILE_DEBUG))
+    #define BOOT_SEQUENCE_VERBOSE_ACTIVE OFF
+  #else
+    #define BOOT_SEQUENCE_VERBOSE_ACTIVE OFF
+  #endif
+#endif
+
+// Area toggles matter in DEBUG only. RUN ignores them and still logs warnings/errors.
+#ifndef SPECTRE_DEBUG_AREAS_ALL
+  #if defined(SPECTRE_DEBUG_AREAS_ALL_ENABLED)
+    #define SPECTRE_DEBUG_AREAS_ALL     ON
+  #else
+    #define SPECTRE_DEBUG_AREAS_ALL     ON
+  #endif
+#endif
+
+#ifndef SPECTRE_DEBUG_AREAS_NONE
+  #if defined(SPECTRE_DEBUG_AREAS_NONE_ENABLED)
+    #define SPECTRE_DEBUG_AREAS_NONE    ON
+  #else
+    #define SPECTRE_DEBUG_AREAS_NONE    OFF
+  #endif
+#endif
+
+#if (SPECTRE_DEBUG_AREAS_ALL == ON) && (SPECTRE_DEBUG_AREAS_NONE == ON)
+  #error "Set only one of SPECTRE_DEBUG_AREAS_ALL or SPECTRE_DEBUG_AREAS_NONE"
+#endif
+
+#if (SPECTRE_DEBUG_AREAS_ALL == ON)
+  #define _SPECTRE_DEBUG_AREA_DEFAULT   ON
+#else
+  #define _SPECTRE_DEBUG_AREA_DEFAULT   ON
+#endif
+
+#ifndef SPECTRE_DEBUG_AREA_GENERAL
+#define SPECTRE_DEBUG_AREA_GENERAL      _SPECTRE_DEBUG_AREA_DEFAULT  // catch-all / unmatched tags
+#endif
+#ifndef SPECTRE_DEBUG_AREA_CORE
+#define SPECTRE_DEBUG_AREA_CORE         _SPECTRE_DEBUG_AREA_DEFAULT  // SYS, CORE, STACK, HEAP, BTN
+#endif
+#ifndef SPECTRE_DEBUG_AREA_SETTINGS
+#define SPECTRE_DEBUG_AREA_SETTINGS     OFF  // SETTINGS
+#endif
+#ifndef SPECTRE_DEBUG_AREA_STORAGE
+#define SPECTRE_DEBUG_AREA_STORAGE      _SPECTRE_DEBUG_AREA_DEFAULT  // STOR, STORAGE
+#endif
+#ifndef SPECTRE_DEBUG_AREA_TIME
+#define SPECTRE_DEBUG_AREA_TIME         OFF  // TIME
+#endif
+#ifndef SPECTRE_DEBUG_AREA_RADIO
+#define SPECTRE_DEBUG_AREA_RADIO        OFF  // RADIO, LORA, SUBGHZ
+#endif
+#ifndef SPECTRE_DEBUG_AREA_WIFI
+#define SPECTRE_DEBUG_AREA_WIFI         _SPECTRE_DEBUG_AREA_DEFAULT  // WIFI, ANT, DRONE
+#endif
+#ifndef SPECTRE_DEBUG_AREA_BLE
+#define SPECTRE_DEBUG_AREA_BLE          _SPECTRE_DEBUG_AREA_DEFAULT  // BLE
+#endif
+#ifndef SPECTRE_DEBUG_AREA_MQTT
+#define SPECTRE_DEBUG_AREA_MQTT         _SPECTRE_DEBUG_AREA_DEFAULT  // MQTT
+#endif
+#ifndef SPECTRE_DEBUG_AREA_EXPORT
+#define SPECTRE_DEBUG_AREA_EXPORT       OFF  // EXPORT
+#endif
+#ifndef SPECTRE_DEBUG_AREA_GPS
+#define SPECTRE_DEBUG_AREA_GPS          OFF  // GPS
+#endif
+#ifndef SPECTRE_DEBUG_AREA_MODE
+#define SPECTRE_DEBUG_AREA_MODE         OFF  // MODE, MISSION, UI
+#endif
 
 // -----------------------------------------------------------------------------
 // Display and UI geometry
@@ -93,7 +320,16 @@
 // RYLR998 UART
 #define LORA_TX     18  // ESP TX -> RYLR RX
 #define LORA_RX     17  // ESP RX -> RYLR TX
-#define LORA_UART   1
+#define LORA_UART   2
+
+// Seeed XIAO nRF52840 + Wio-SX1262 UART accessory.
+// Spectre remains the controller; the nRF acts as an external BLE/SX1262
+// coprocessor. SX1262/Meshtastic support is intentionally not enabled here.
+#define WIO_NRF_ACCESSORY_ENABLED ON
+#define WIO_NRF_UART_NUM          1
+#define WIO_NRF_UART_TX           1   // ESP TX -> XIAO D7 RX
+#define WIO_NRF_UART_RX           2   // ESP RX <- XIAO D6 TX
+#define WIO_NRF_BAUD              115200
 
 // Battery
 #define BAT_ADC     4   // LCD_BAT_VOLT pin from pinout
@@ -102,18 +338,11 @@
 // Radio and antenna control
 // -----------------------------------------------------------------------------
 
-// WiFi antenna switching
-// Set WIFI_ANTENNA_SWITCH_MODE and the matching GPIO values for your board's
-// RF switch. GPIO mode drives one control line; dual GPIO mode uses the ESP32
-// WiFi antenna API for boards wired as ANT0/ANT1.
 #define ANTENNA_SWITCH_DISABLED  0
 #define ANTENNA_SWITCH_GPIO      1
 #define ANTENNA_SWITCH_DUAL_GPIO 2
 
 #if defined(BOARD_HAS_PSRAM)
-  // T-Display S3 style RF switch
-  // NOTE: GPIO0 is also used for BTN_A in this config. If BTN_A is GPIO0,
-  // keep switching disabled to avoid breaking button input during recovery.
   #if (BTN_A == 0)
     #define WIFI_ANTENNA_SWITCH_MODE    ANTENNA_SWITCH_DISABLED
   #else
@@ -123,14 +352,12 @@
   #define WIFI_ANTENNA_SWITCH_MODE    ANTENNA_SWITCH_DISABLED
 #endif
 
-#define WIFI_ANTENNA_DEFAULT_EXTERNAL true
+#define WIFI_ANTENNA_DEFAULT_EXTERNAL ON
 
-// GPIO switch mode
 #define WIFI_ANTENNA_CTRL_PIN       0
 #define WIFI_ANTENNA_INTERNAL_LEVEL  LOW
 #define WIFI_ANTENNA_EXTERNAL_LEVEL  HIGH
 
-// Dual GPIO / ANT0-ANT1 mode
 #define WIFI_ANTENNA_GPIO_ANT0      -1
 #define WIFI_ANTENNA_GPIO_ANT1      -1
 #define WIFI_ANTENNA_INTERNAL_PATH   0
@@ -142,19 +369,31 @@
 
 #define POWER_BATTERY_DIVIDER_NUM          2
 #define POWER_BATTERY_DIVIDER_DEN          1
-#define POWER_BATTERY_CAPACITY_DEFAULT_MAH 200
+#define POWER_BATTERY_CAPACITY_DEFAULT_MAH 1100
 #define POWER_BATTERY_CAPACITY_MIN_MAH     50
 #define POWER_BATTERY_CAPACITY_MAX_MAH     5000
 #define POWER_USB_SENSE_PIN                -1
 #define POWER_USB_SENSE_ACTIVE             HIGH
 #define POWER_CHARGE_SENSE_PIN             -1
 #define POWER_CHARGE_SENSE_ACTIVE          LOW
-#define POWER_ECONOMY_PERCENT              30
-#define POWER_CRITICAL_RUNTIME_MIN         7
+#define POWER_ECONOMY_PERCENT              20
+#define POWER_CRITICAL_RUNTIME_MIN         3
 
-// Power thresholds (millivolts)
-#define BAT_WARN_MV     3500
-#define BAT_CRITICAL_MV 3200
+// Battery-life characterization mode. When ON, the automatic deep-sleep that
+// fires POWER_CRITICAL_SLEEP_COUNTDOWN_SEC after entering BATTERY_CRITICAL is
+// suppressed — the device keeps running until the cell collapses on its own.
+// Defaulting to ON: power-saving is being characterized first, and any
+// premature critical-trip would cut off the test before useful data lands.
+// Li-ion cutoff: most boards include a hardware undervoltage cutoff; if not,
+// observe the discharge run and unplug before the cell sags below ~2.9 V.
+#define POWER_RUN_UNTIL_DEAD               ON
+
+// Power thresholds (millivolts). Pushed lower than typical to bias toward
+// "let the battery run all the way out" rather than trip critical early —
+// the runtime estimate has been wrong before, and we'd rather under-warn
+// than auto-sleep on a cell that still has real headroom.
+#define BAT_WARN_MV     3300
+#define BAT_CRITICAL_MV 3000
 
 // -----------------------------------------------------------------------------
 // MQTT
@@ -176,6 +415,7 @@ enum SpectreButtonAction : uint8_t {
     BUTTON_ACTION_SLEEP,
     BUTTON_ACTION_WIFI_REFRESH,
     BUTTON_ACTION_WIFI_SCAN_LIST,
+    BUTTON_ACTION_WIFI_ALLSCAN,
     BUTTON_ACTION_WIFI_LIST_SELECT,
     BUTTON_ACTION_WIFI_LIST_DOWN,
     BUTTON_ACTION_WIFI_LIST_CLOSE,
@@ -202,7 +442,8 @@ enum SpectreButtonAction : uint8_t {
     BUTTON_ACTION_PWNY_FORCE_DEAUTH,
     BUTTON_ACTION_DEBRIEF_EXPORT,
     BUTTON_ACTION_DEBRIEF_CLEAR,
-    BUTTON_ACTION_DEBRIEF_BACK
+    BUTTON_ACTION_DEBRIEF_BACK,
+    BUTTON_ACTION_BLE_TEST
 };
 
 struct ButtonBindingSet {
@@ -221,6 +462,7 @@ static inline const char* spectreButtonActionLabel(SpectreButtonAction action,
         case BUTTON_ACTION_SCREEN_NEXT:       return "NEXT";
         case BUTTON_ACTION_WIFI_REFRESH:      return busy ? "BUSY" : "REFRESH";
         case BUTTON_ACTION_WIFI_SCAN_LIST:    return "LIST";
+        case BUTTON_ACTION_WIFI_ALLSCAN:      return "ALLSCAN";
         case BUTTON_ACTION_WIFI_LIST_SELECT:  return "SELECT";
         case BUTTON_ACTION_WIFI_LIST_DOWN:    return "DOWN";
         case BUTTON_ACTION_WIFI_LIST_CLOSE:   return "EXIT";
@@ -248,6 +490,7 @@ static inline const char* spectreButtonActionLabel(SpectreButtonAction action,
         case BUTTON_ACTION_BADUSB_RUN:        return "RUN";
         case BUTTON_ACTION_BADUSB_CANCEL:     return "STOP";
         case BUTTON_ACTION_PWNY_FORCE_DEAUTH: return "DEAUTH";
+        case BUTTON_ACTION_BLE_TEST:          return "ENRICH";
         default:                              return nullptr;
     }
 }
@@ -258,7 +501,7 @@ static inline ButtonBindingSet spectreScreenBindings(Screen screen) {
             return {BUTTON_ACTION_SUBGHZ_MODE_CYCLE, BUTTON_ACTION_SLEEP,
                     BUTTON_ACTION_LORA_PING, BUTTON_ACTION_SCREEN_NEXT};
         case SCREEN_WIFI:
-            return {BUTTON_ACTION_WIFI_REFRESH, BUTTON_ACTION_NONE,
+            return {BUTTON_ACTION_WIFI_REFRESH, BUTTON_ACTION_WIFI_ALLSCAN,
                     BUTTON_ACTION_WIFI_SCAN_LIST, BUTTON_ACTION_SCREEN_NEXT};
         case SCREEN_BADUSB:
             return {BUTTON_ACTION_BADUSB_ARM, BUTTON_ACTION_BADUSB_RUN,
@@ -266,9 +509,12 @@ static inline ButtonBindingSet spectreScreenBindings(Screen screen) {
         case SCREEN_SYSTEM:
             return {BUTTON_ACTION_SYSTEM_DEBRIEF, BUTTON_ACTION_SESSION_TAG,
                     BUTTON_ACTION_UPLINK_TRIGGER, BUTTON_ACTION_SCREEN_NEXT};
+        case SCREEN_MISSION_SUMMARY:
+            return {BUTTON_ACTION_SESSION_TAG, BUTTON_ACTION_SLEEP,
+                    BUTTON_ACTION_UPLINK_TRIGGER, BUTTON_ACTION_SCREEN_NEXT};
         case SCREEN_MESHTASTIC:
             return {BUTTON_ACTION_NONE, BUTTON_ACTION_SLEEP,
-                    BUTTON_ACTION_NONE, BUTTON_ACTION_SCREEN_NEXT};
+                    BUTTON_ACTION_BLE_TEST, BUTTON_ACTION_SCREEN_NEXT};
         case SCREEN_RECON:
             return {BUTTON_ACTION_MISSION_ENTER, BUTTON_ACTION_MISSION_ENTER,
                     BUTTON_ACTION_MISSION_LIST_OPEN, BUTTON_ACTION_SCREEN_NEXT};
@@ -281,4 +527,24 @@ static inline ButtonBindingSet spectreScreenBindings(Screen screen) {
     }
 }
 
-static inline ButtonBindingSet spectreBadUsbListB
+static inline ButtonBindingSet spectreBadUsbListBindings() {
+    return {BUTTON_ACTION_BADUSB_LIST_SELECT, BUTTON_ACTION_BADUSB_ARM,
+            BUTTON_ACTION_BADUSB_LIST_CLOSE, BUTTON_ACTION_BADUSB_LIST_DOWN};
+}
+
+static inline ButtonBindingSet spectreWifiListBindings() {
+    return {BUTTON_ACTION_WIFI_LIST_SELECT, BUTTON_ACTION_WIFI_LIST_HUNT,
+            BUTTON_ACTION_WIFI_LIST_CLOSE, BUTTON_ACTION_WIFI_LIST_DOWN};
+}
+
+static inline ButtonBindingSet spectreMissionListBindings() {
+    return {BUTTON_ACTION_MISSION_LIST_SELECT, BUTTON_ACTION_MISSION_ENTER,
+            BUTTON_ACTION_MISSION_LIST_CLOSE, BUTTON_ACTION_MISSION_LIST_DOWN};
+}
+
+static inline ButtonBindingSet spectreDebriefBindings() {
+    return {BUTTON_ACTION_DEBRIEF_EXPORT, BUTTON_ACTION_DEBRIEF_CLEAR,
+            BUTTON_ACTION_NONE, BUTTON_ACTION_DEBRIEF_BACK};
+}
+
+

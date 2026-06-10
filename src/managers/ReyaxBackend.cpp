@@ -1,4 +1,6 @@
 
+
+
 #include "ReyaxBackend.h"
 
 #include "SettingsManager.h"
@@ -245,5 +247,7 @@ void ReyaxBackend::_emitBeacon(const char* label) {
         DLOG_WARN("SUBGHZ", "Auto beacon failed mode=%s", label);
     }
 }
+
+
 
 

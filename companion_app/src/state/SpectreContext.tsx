@@ -1,6 +1,6 @@
 /* eslint-disable no-bitwise */
 
-import React, {createContext, useContext, useEffect, useRef, useState} from 'react';
+import React, {createContext, useContext, useEffect, useMemo, useRef, useState} from 'react';
 import {AppState, type AppStateStatus, Platform} from 'react-native';
 
 import {
@@ -53,13 +53,22 @@ import {
   type FinalizedEventBatch,
 } from '../services/enrichment/EnrichmentService';
 import {
+  buildLocationCandidates,
+  flushLocationHistoryPersist,
   getCurrentDeviceLocationFix,
   loadLocationHistory,
-  locationForUnixMs,
-  persistLocationHistory,
+  locationForUnixMsFromCandidates,
   rememberLocationSample,
+  scheduleLocationHistoryPersist,
+  type LocationCandidateSet,
   type LocationHistoryFix,
 } from '../services/enrichment/LocationHistoryStore';
+import {
+  SPECTRE_LOCATION_RECORDER_AVAILABLE,
+  startSpectreLocationRecorder,
+  stopSpectreLocationRecorder,
+  subscribeToSpectreLocationFixes,
+} from '../services/enrichment/SpectreLocationRecorder';
 
 type TabKey = 'link' | 'enrich' | 'ops';
 type LocationMode = 'device' | 'manual' | 'off';
@@ -269,11 +278,10 @@ function locationFromNativeFix(fix: LocationFix): ActiveLocationFix {
 
 function locationForEvent(
   event: EventBatchRecord,
-  activeLocation: ActiveLocationFix | null,
-  history: ActiveLocationFix[],
+  candidates: LocationCandidateSet,
 ): ActiveLocationFix | null {
-  if (activeLocation?.source === 'manual') {
-    return activeLocation;
+  if (candidates.manualOverride) {
+    return candidates.manualOverride;
   }
 
   const eventUnixMs = eventTimestampToUnixMs(event.timestampMs);
@@ -281,7 +289,7 @@ function locationForEvent(
     return null;
   }
 
-  return locationForUnixMs(eventUnixMs, activeLocation, history);
+  return locationForUnixMsFromCandidates(eventUnixMs, candidates);
 }
 
 function buildGpsBase64(location: ActiveLocationFix | null) {
@@ -322,9 +330,13 @@ function buildEnrichmentRecords(
   const normalizedTag = normalizeEnrichmentTag(tag);
   const records: EnrichmentRecord[] = [];
   const wireRecords: EnrichmentRecord[] = [];
+  // Build the pruned device-fix candidate set ONCE for the batch.  The old
+  // implementation re-pruned the entire history per event — quadratic in
+  // batch size on a history near the 200k cap.
+  const candidates = buildLocationCandidates(location, locationHistory);
 
   events.forEach(event => {
-    const eventLocation = locationForEvent(event, location, locationHistory);
+    const eventLocation = locationForEvent(event, candidates);
     if (!eventLocation) {
       wireRecords.push({
         eventId: 0,
@@ -507,6 +519,12 @@ export function SpectreProvider({children}: {children: React.ReactNode}) {
   const [manualLocationDraft, setManualLocationDraft] =
     useState<ManualLocationDraft>(EMPTY_MANUAL_LOCATION);
   const [locationHistoryVersion, setLocationHistoryVersion] = useState(0);
+  const [historyLoaded, setHistoryLoaded] = useState(false);
+  const historyLoadedRef = useRef(false);
+  // True while Field Mode owns phone GPS through the native foreground service.
+  // During that window JS skips fallback polling and SharedPreferences writes.
+  const [nativeRecorderActive, setNativeRecorderActive] = useState(false);
+  const nativeRecorderActiveRef = useRef(false);
   const [eventBatches, setEventBatches] = useState<EventBatchView[]>([]);
   const [lastPublishedBatch, setLastPublishedBatch] =
     useState<BatchTransferSummary | null>(null);
@@ -519,20 +537,28 @@ export function SpectreProvider({children}: {children: React.ReactNode}) {
   const [pulseClock, setPulseClock] = useState(Date.now());
   const [logs, setLogs] = useState<LogEntry[]>([]);
 
-  const activeLocation =
-    locationMode === 'manual'
-      ? manualLocation
-      : locationMode === 'device'
-        ? deviceLocation
-        : null;
-
-  const controlBase64 = buildControlBase64(
-    wireGuardActive,
-    controlPulses,
-    pulseClock,
+  const activeLocation = useMemo(
+    () =>
+      locationMode === 'manual'
+        ? manualLocation
+        : locationMode === 'device'
+          ? deviceLocation
+          : null,
+    [locationMode, manualLocation, deviceLocation],
   );
-  const gpsBase64 = buildGpsBase64(activeLocation);
-  const metadata = buildMetadata(locationMode, autoApplyEnrichment);
+
+  // Memoize the derived wire-format strings.  Without this the provider
+  // re-encoded ~25 bytes through three encoder paths on every render — and
+  // with the 1Hz pulseClock that meant 60 wasted re-encodes per minute.
+  const controlBase64 = useMemo(
+    () => buildControlBase64(wireGuardActive, controlPulses, pulseClock),
+    [wireGuardActive, controlPulses, pulseClock],
+  );
+  const gpsBase64 = useMemo(() => buildGpsBase64(activeLocation), [activeLocation]);
+  const metadata = useMemo(
+    () => buildMetadata(locationMode, autoApplyEnrichment),
+    [locationMode, autoApplyEnrichment],
+  );
   const statusSummary = summarizeStatus(promptState);
 
   const missingPermissionLabels = permissions.missing.map(friendlyPermissionName);
@@ -685,14 +711,26 @@ export function SpectreProvider({children}: {children: React.ReactNode}) {
     );
 
     if (autoApplyRef.current) {
-      setTimeout(() => {
-        swallowPromise(publishBatch(batchId, payload.events, payload.source));
-      }, 0);
+      // publishBatch is async — calling it returns immediately while the
+      // body resolves on the microtask queue.  The old setTimeout(..., 0)
+      // wrapper was redundant.
+      swallowPromise(publishBatch(batchId, payload.events, payload.source));
     }
   };
 
   const refreshDeviceLocation = async () => {
     if (locationMode !== 'device') {
+      return;
+    }
+
+    if (!peripheralState.running) {
+      return;
+    }
+
+    // Persisted history must be loaded before we accept any new samples; a
+    // sample taken against the empty initial ref would, on the next flush,
+    // make the chunked store delete every migrated day-bucket.
+    if (!historyLoaded) {
       return;
     }
 
@@ -710,7 +748,12 @@ export function SpectreProvider({children}: {children: React.ReactNode}) {
       nextLocation,
     );
     setLocationHistoryVersion(previous => previous + 1);
-    swallowPromise(persistLocationHistory(locationHistoryRef.current));
+    // Native recorder owns persistence when active — don't double-write the
+    // SharedPreferences buckets from JS, otherwise we race with the service
+    // and can clobber its appended fixes.
+    if (!nativeRecorderActiveRef.current) {
+      scheduleLocationHistoryPersist(locationHistoryRef.current);
+    }
     setDeviceLocation(nextLocation);
     appendLog(
       `Location updated from phone (${nextLocation.lat.toFixed(5)}, ${nextLocation.lon.toFixed(5)})`,
@@ -806,6 +849,8 @@ export function SpectreProvider({children}: {children: React.ReactNode}) {
         }
         locationHistoryRef.current = history;
         setLocationHistoryVersion(previous => previous + 1);
+        historyLoadedRef.current = true;
+        setHistoryLoaded(true);
         if (history.length > 0) {
           appendLog(`Loaded ${history.length} phone GPS history markers`);
         }
@@ -817,7 +862,78 @@ export function SpectreProvider({children}: {children: React.ReactNode}) {
     };
   }, []);
 
+  // Subscribe to live fixes emitted by the native SpectreLocationService.
+  // Outside active Field Mode, ignore any late event from a service shutdown.
   useEffect(() => {
+    if (!SPECTRE_LOCATION_RECORDER_AVAILABLE) {
+      return;
+    }
+    swallowPromise(stopSpectreLocationRecorder());
+  }, []);
+
+  useEffect(() => {
+    if (!SPECTRE_LOCATION_RECORDER_AVAILABLE) {
+      return;
+    }
+    const unsubscribe = subscribeToSpectreLocationFixes(fix => {
+      if (!nativeRecorderActiveRef.current) {
+        return;
+      }
+      locationHistoryRef.current = rememberLocationSample(
+        locationHistoryRef.current,
+        fix,
+      );
+      setLocationHistoryVersion(previous => previous + 1);
+      setDeviceLocation(fix);
+    });
+    return unsubscribe;
+  }, []);
+
+  // Keep native GPS scoped to Field Mode only.  Native start/stop is also tied
+  // to the peripheral module so notification-based stop works while JS sleeps.
+  useEffect(() => {
+    if (!SPECTRE_LOCATION_RECORDER_AVAILABLE) {
+      return;
+    }
+    const shouldRun = peripheralState.running && locationMode === 'device';
+    if (nativeRecorderActiveRef.current === shouldRun) {
+      return;
+    }
+
+    const applyRecorderState = (active: boolean) => {
+      nativeRecorderActiveRef.current = active;
+      setNativeRecorderActive(active);
+    };
+
+    swallowPromise(
+      (shouldRun
+        ? startSpectreLocationRecorder()
+        : stopSpectreLocationRecorder()
+      ).then(updated => {
+        if (!updated && shouldRun) {
+          appendLog('Phone GPS recorder could not start', 'warn');
+          return;
+        }
+        applyRecorderState(shouldRun);
+        appendLog(
+          shouldRun
+            ? 'Phone GPS recorder active for Field Mode'
+            : 'Phone GPS recorder stopped',
+        );
+        if (shouldRun) {
+          swallowPromise(refreshDeviceLocationRef.current?.());
+        }
+      }),
+    );
+  }, [peripheralState.running, locationMode]);
+
+  // Only tick while there's actually a pulse in flight.  When pulses expire and
+  // the list drains to empty, the cleanup runs and the interval stops — no
+  // more 1Hz wake-ups, re-renders, or downstream re-encodes during idle.
+  useEffect(() => {
+    if (controlPulses.length === 0) {
+      return;
+    }
     const timer = setInterval(() => {
       setPulseClock(Date.now());
       setControlPulses(previous =>
@@ -828,15 +944,18 @@ export function SpectreProvider({children}: {children: React.ReactNode}) {
     return () => {
       clearInterval(timer);
     };
-  }, []);
+  }, [controlPulses.length]);
 
   useEffect(() => {
     swallowPromise(peripheralRef.current?.updateControlValue(controlBase64));
   }, [controlBase64]);
 
   useEffect(() => {
+    if (!peripheralState.running) {
+      return;
+    }
     swallowPromise(peripheralRef.current?.updateGpsValue(gpsBase64));
-  }, [gpsBase64]);
+  }, [gpsBase64, peripheralState.running]);
 
   useEffect(() => {
     swallowPromise(peripheralRef.current?.updateMetadata(metadata));
@@ -854,6 +973,11 @@ export function SpectreProvider({children}: {children: React.ReactNode}) {
         setConnectionState(state);
         setConnectionDetail(detail || '');
         setConnectedDevice(device ?? null);
+        if (state === 'connected') {
+          swallowPromise(
+            peripheralRef.current?.kickAdvertising('text_link_connected'),
+          );
+        }
         if (detail) {
           appendLog(detail, state === 'error' ? 'error' : 'info');
         }
@@ -904,9 +1028,14 @@ export function SpectreProvider({children}: {children: React.ReactNode}) {
         try {
           const notif = decodePhoneNotification(event.base64);
           setNotifications(prev => {
-            // Cap at 50; newest first.  Coalesce duplicates of the same
-            // seq number (defensive — shouldn't happen on a healthy link).
-            if (prev.length > 0 && prev[0].seq === notif.seq && prev[0].type === notif.type) {
+            // Cap at 50; newest first.  Dedup against the whole window — the
+            // previous head-only check could leak the same seq twice if a
+            // distinct notif slipped in between two duplicates.
+            if (
+              prev.some(
+                existing => existing.seq === notif.seq && existing.type === notif.type,
+              )
+            ) {
               return prev;
             }
             const next = [notif, ...prev];
@@ -940,50 +1069,58 @@ export function SpectreProvider({children}: {children: React.ReactNode}) {
       enrichment?.destroy();
       peripheral?.destroy();
       swallowPromise(peripheral?.stop());
+      swallowPromise(stopSpectreLocationRecorder());
     };
   }, []);
 
-  // Slice #6 — track app foreground/background so the GPS poll can pause
-  // when the user isn't actively using the app.
+  // Track app foreground/background so the JS GPS fallback pauses when the
+  // user isn't actively using the app.
   useEffect(() => {
     const subscription = AppState.addEventListener('change', next => {
       setAppState(next);
+      // Nothing can be pending until the bootstrap load resolves, so don't
+      // touch the persist scheduler before then.  Also skip when the native
+      // recorder owns persistence — JS has nothing to flush.
+      if (
+        next !== 'active' &&
+        historyLoadedRef.current &&
+        !nativeRecorderActiveRef.current
+      ) {
+        swallowPromise(flushLocationHistoryPersist());
+      }
     });
-    return () => subscription.remove();
+    return () => {
+      subscription.remove();
+      if (historyLoadedRef.current && !nativeRecorderActiveRef.current) {
+        swallowPromise(flushLocationHistoryPersist());
+      }
+    };
   }, []);
 
-  // Slice #6 — gate the phone-side GPS sample loop on an "active session":
-  //   • the user granted location permissions,
-  //   • the operator picked the device GPS source,
-  //   • the phone peripheral has at least one connected device, AND
-  //   • the app is in the foreground (Android can't sample reliably in
-  //     background without a foreground service anyway).
-  // When the session ends (disconnect, background, mode flip), the interval
-  // tears down and battery-hungry GPS sampling stops.
+  // GPS sampling is owned by the native SpectreLocationService during Field
+  // Mode. This JS interval only fires as a foreground fallback.
   useEffect(() => {
+    if (nativeRecorderActive) {
+      return;
+    }
+
     const sessionActive =
       permissions.allGranted &&
+      peripheralState.running &&
       locationMode === 'device' &&
-      peripheralState.connectedDevices > 0 &&
-      appState === 'active';
+      appState === 'active' &&
+      historyLoaded;
 
     if (!sessionActive) {
-      // Log the OFF transition once per change so the operator can see why
-      // the GPS pulses paused.  We only log the *reason* if any of the
-      // gates is plausibly the trigger (avoids noise on first render).
-      if (permissions.allGranted && locationMode === 'device') {
+      if (permissions.allGranted && peripheralState.running && locationMode === 'device') {
         const reason =
-          peripheralState.connectedDevices === 0
-            ? 'no device connected'
-            : appState !== 'active'
-              ? `app ${appState}`
-              : 'idle';
+          appState !== 'active' ? `app ${appState}` : 'idle';
         appendLog(`Phone GPS poll paused (${reason})`);
       }
       return;
     }
 
-    appendLog('Phone GPS poll active (10s cadence)');
+    appendLog('Phone GPS poll active (10s cadence, JS fallback)');
     swallowPromise(refreshDeviceLocationRef.current?.());
     const timer = setInterval(() => {
       swallowPromise(refreshDeviceLocationRef.current?.());
@@ -993,10 +1130,12 @@ export function SpectreProvider({children}: {children: React.ReactNode}) {
       clearInterval(timer);
     };
   }, [
+    nativeRecorderActive,
     permissions.allGranted,
+    peripheralState.running,
     locationMode,
-    peripheralState.connectedDevices,
     appState,
+    historyLoaded,
   ]);
 
   useEffect(() => {

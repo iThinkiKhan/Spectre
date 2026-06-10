@@ -1,14 +1,22 @@
 
 #include "RadioArbiter.h"
 
+#include "../core/CrashBreadcrumb.h"
 #include "../core/DebugLog.h"
 #include "../core/SpectreState.h"
 #include "BLEManager.h"
 #include "MQTTManager.h"
+#include "PhoneTransportRouter.h"
+#include "StorageManager.h"
+#include "WioNrfAccessory.h"
 #include "WiFiManager.h"
 
 namespace {
 constexpr const char* TAG = "RADIO";
+
+bool isInternalBleOwner(RadioOwner owner) {
+    return owner == RADIO_BLE_TEXT || owner == RADIO_BLE_GPS;
+}
 }
 
 RadioArbiter RADIO_ARB;
@@ -66,6 +74,17 @@ bool RadioArbiter::requestLease(RadioOwner owner,
         return false;
     }
 
+    if (isInternalBleOwner(owner) && PHONE_XPORT.isWioActive()) {
+        DLOG_WARN(TAG,
+                  "reject owner=%s reason=%s wio_ble_proxy=1",
+                  ownerName(owner),
+                  (reason && reason[0] != '\0') ? reason : "-");
+        if (_pendingOwner == owner) {
+            _clearPending();
+        }
+        return false;
+    }
+
     if (!_canStartOwner(owner)) {
         DLOG_WARN(TAG,
                   "reject owner=%s reason=%s missing startup context",
@@ -108,10 +127,22 @@ bool RadioArbiter::requestLease(RadioOwner owner,
     return false;
 }
 
+bool RadioArbiter::requestPhoneProbeLease(const char* reason,
+                                          uint32_t holdMs,
+                                          bool force) {
+    return requestLease(RADIO_BLE_GPS, holdMs, reason, force);
+}
+
 bool RadioArbiter::requestUploadLease(uint32_t holdMs,
                                       const char* reason,
                                       bool force) {
     return requestLease(RADIO_WIFI_UPLOAD, holdMs, reason, force);
+}
+
+bool RadioArbiter::requestStorageMaintenanceLease(uint32_t holdMs,
+                                                  const char* reason,
+                                                  bool force) {
+    return requestLease(RADIO_STORAGE_MAINTENANCE, holdMs, reason, force);
 }
 
 bool RadioArbiter::requestPmkidHunt(const char* targetBssid,
@@ -140,7 +171,9 @@ void RadioArbiter::refreshLease(RadioOwner owner, uint32_t holdMs, const char* r
     }
 }
 
-void RadioArbiter::release(RadioOwner owner, const char* reason) {
+void RadioArbiter::release(RadioOwner owner,
+                           const char* reason,
+                           bool serviceIdleOwner) {
     if (_owner != owner || _owner == RADIO_NONE) {
         return;
     }
@@ -153,7 +186,13 @@ void RadioArbiter::release(RadioOwner owner, const char* reason) {
     }
     _clearActiveOwnerState();
     _lastSwitchMs = millis();
-    _serviceIdleOwner(reason ? reason : "release");
+    if (serviceIdleOwner) {
+        crashCheckpointVolatile(CrashPhase::RADIO_RESUME,
+                                static_cast<uint8_t>(owner),
+                                STORAGE.isReady() ? STORAGE.getPendingEventCount() : 0U);
+        _serviceIdleOwner(reason ? reason : "release");
+        crashBreadcrumbClearVolatile(CrashPhase::RADIO_RESUME);
+    }
 }
 
 bool RadioArbiter::ensureDefaultCapture(const char* reason) {
@@ -165,6 +204,18 @@ bool RadioArbiter::ensureDefaultCapture(const char* reason) {
     }
     if (_pendingOwner != RADIO_NONE) {
         return false;
+    }
+    if (STORAGE.isReady() && STORAGE.needsMaintenanceBeforeCapture()) {
+        const uint32_t holdMs =
+            STORAGE.isCaptureSafeToResume() ? 5000UL : 30000UL;
+        DLOG_INFO(TAG,
+                  "default capture gated by storage maintenance reason=%s flags=%s hold=%lu",
+                  (reason && reason[0] != '\0') ? reason : "-",
+                  STORAGE.maintenanceFlagsText(),
+                  static_cast<unsigned long>(holdMs));
+        return requestStorageMaintenanceLease(holdMs,
+                                              reason ? reason : "capture_gate",
+                                              true);
     }
     const bool granted = _switchTo(RADIO_WIFI_CAPTURE, LEASE_INFINITE, reason);
     if (!granted) {
@@ -208,6 +259,7 @@ const char* RadioArbiter::ownerName(RadioOwner owner) {
         case RADIO_WIFI_SCAN:    return "WIFI_SCAN";
         case RADIO_WIFI_PMKID:   return "WIFI_PMKID";
         case RADIO_WIFI_UPLOAD:  return "WIFI_UPLOAD";
+        case RADIO_STORAGE_MAINTENANCE: return "STORAGE_MAINT";
         case RADIO_BLE_TEXT:     return "BLE_TEXT";
         case RADIO_BLE_GPS:      return "BLE_GPS";
         default:                 return "NONE";
@@ -216,11 +268,12 @@ const char* RadioArbiter::ownerName(RadioOwner owner) {
 
 uint8_t RadioArbiter::_priorityFor(RadioOwner owner) const {
     switch (owner) {
-        case RADIO_BLE_TEXT:     return 200;
-        case RADIO_BLE_GPS:      return 180;
-        case RADIO_WIFI_UPLOAD:  return 160;
+        case RADIO_WIFI_UPLOAD:  return 220;
+        case RADIO_BLE_TEXT:     return 180;
+        case RADIO_BLE_GPS:      return 160;
         case RADIO_WIFI_PMKID:   return 140;
         case RADIO_WIFI_SCAN:    return 120;
+        case RADIO_STORAGE_MAINTENANCE: return 90;
         case RADIO_WIFI_CAPTURE: return 100;
         default:                 return 0;
     }
@@ -237,6 +290,7 @@ bool RadioArbiter::_canStartOwner(RadioOwner owner) const {
                    (_pmkidIntent == WIFI_PMKID_INTENT_HUNT &&
                     _pmkidTargetBssid[0] != '\0');
         case RADIO_WIFI_UPLOAD:
+        case RADIO_STORAGE_MAINTENANCE:
         case RADIO_WIFI_CAPTURE:
         case RADIO_WIFI_SCAN:
         case RADIO_BLE_TEXT:
@@ -314,6 +368,12 @@ void RadioArbiter::_commitOwnerState(RadioOwner owner,
     strlcpy(_reason, reason ? reason : "", sizeof(_reason));
     _lastSwitchMs = millis();
     _log("grant", owner, reason ? reason : "grant", holdMs);
+
+    if (owner == RADIO_WIFI_CAPTURE) {
+        crashCheckpoint(CrashPhase::WIFI_CAPTURE,
+                        static_cast<uint8_t>(owner),
+                        STORAGE.isReady() ? STORAGE.getPendingEventCount() : 0U);
+    }
 }
 
 bool RadioArbiter::_startOwner(RadioOwner owner, const char* reason) {
@@ -334,12 +394,19 @@ bool RadioArbiter::_startOwner(RadioOwner owner, const char* reason) {
             return false;
         case RADIO_WIFI_UPLOAD:
             WIFI_MGR.pauseRadio();
+            return WIFI_MGR.prepareStationForUpload();
+        case RADIO_STORAGE_MAINTENANCE:
+            WIFI_MGR.suspendRadio();
             return true;
         case RADIO_BLE_TEXT:
         case RADIO_BLE_GPS:
-            BLE_MGR.begin();
-            if (!BLE_MGR.isBegun()) {
+            WIFI_MGR.suspendRadio();
+            // suspendRadio() completes the full WiFi driver teardown and
+            // drains in-flight disconnect events before returning — no
+            // additional settle needed here.
+            if (!BLE_MGR.begin()) {
                 DLOG_ERROR(TAG, "BLE begin failed");
+                release(owner, "ble_begin_failed");
                 return false;
             }
             BLE_MGR.setRadioEnabled(true);
@@ -353,9 +420,13 @@ bool RadioArbiter::_startOwner(RadioOwner owner, const char* reason) {
 void RadioArbiter::_stopOwner(RadioOwner owner, const char* reason) {
     switch (owner) {
         case RADIO_WIFI_CAPTURE:
+            WIFI_MGR.pauseRadio();
+            crashBreadcrumbClear(CrashPhase::WIFI_CAPTURE);
+            break;
         case RADIO_WIFI_SCAN:
         case RADIO_WIFI_PMKID:
         case RADIO_WIFI_UPLOAD:
+        case RADIO_STORAGE_MAINTENANCE:
             WIFI_MGR.pauseRadio();
             break;
 
@@ -367,7 +438,10 @@ void RadioArbiter::_stopOwner(RadioOwner owner, const char* reason) {
             break;
 
         case RADIO_BLE_GPS:
-            BLE_MGR.setRadioEnabled(false);
+            // GPS probes are opportunistic. Release the app worker stack before
+            // WiFi capture resumes, but keep NimBLE initialized: deinit(true)
+            // panics consistently on the probe-timeout handoff.
+            BLE_MGR.releaseProbeResources();
             break;
 
         case RADIO_NONE:
@@ -384,15 +458,36 @@ bool RadioArbiter::_switchTo(RadioOwner owner, uint32_t holdMs, const char* reas
     const char* transitionReason = reason ? reason : "switch";
     const RadioOwner previous = _owner;
 
+    if (isInternalBleOwner(owner) && PHONE_XPORT.isWioActive()) {
+        DLOG_WARN(TAG,
+                  "block transition owner=%s reason=%s wio_ble_proxy=1",
+                  ownerName(owner),
+                  transitionReason);
+        return false;
+    }
+
     if (previous != RADIO_NONE) {
         _stopOwner(previous, transitionReason);
         _clearActiveOwnerState();
+    }
+
+    // PMKID modes (pwny / hunt) call back into RADIO_ARB.isOwner() during
+    // their start routines for contract checks.  Pre-claim the owner in state
+    // before invoking _startOwner so those checks see the correct owner rather
+    // than NONE.  _commitOwnerState re-assigns the same value on success
+    // (idempotent); _clearActiveOwnerState rolls it back on failure.
+    if (owner == RADIO_WIFI_PMKID) {
+        _owner = owner;
+        STATE_WRITE_BEGIN();
+        g_state.radioOwner = static_cast<uint8_t>(owner);
+        STATE_WRITE_END();
     }
 
     if (!_startOwner(owner, transitionReason)) {
         if (owner == RADIO_WIFI_PMKID) {
             _resetPmkidIntent();
         }
+        _clearActiveOwnerState();
         _nextIdleRetryMs = millis() + 1000UL;
         DLOG_ERROR(TAG, "transition failed from=%s to=%s reason=%s",
                    ownerName(previous), ownerName(owner), transitionReason);
@@ -488,3 +583,4 @@ void RadioArbiter::_log(const char* action,
               static_cast<unsigned long>(holdMs),
               safeReason);
 }
+

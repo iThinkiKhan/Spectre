@@ -2,6 +2,7 @@
 #pragma once
 
 #include <Arduino.h>
+#include "../config.h"
 
 // OWNERSHIP CONTRACT
 // - TaskHardware is the only caller that may mutate radio ownership.
@@ -15,6 +16,7 @@ enum RadioOwner : uint8_t {
     RADIO_WIFI_SCAN,
     RADIO_WIFI_PMKID,
     RADIO_WIFI_UPLOAD,
+    RADIO_STORAGE_MAINTENANCE,
     RADIO_BLE_TEXT,
     RADIO_BLE_GPS
 };
@@ -22,10 +24,11 @@ enum RadioOwner : uint8_t {
 class RadioArbiter {
 public:
     static constexpr uint32_t LEASE_INFINITE = 0;
-    static constexpr uint32_t BLE_TEXT_ACTIVE_HOLD_MS = 10000UL;
-    static constexpr uint32_t BLE_TEXT_IDLE_HOLD_MS   = 180000UL;
-    static constexpr uint32_t BLE_PHONE_PROBE_HOLD_MS  = 6000UL;
-    static constexpr uint32_t BLE_PHONE_ENRICH_HOLD_MS = 20000UL;
+    // Tune via config.h BLE_*_HOLD_SEC.
+    static constexpr uint32_t BLE_TEXT_ACTIVE_HOLD_MS  = BLE_TEXT_ACTIVE_HOLD_MS_VAL;
+    static constexpr uint32_t BLE_TEXT_IDLE_HOLD_MS    = BLE_TEXT_IDLE_HOLD_MS_VAL;
+    static constexpr uint32_t BLE_PHONE_PROBE_HOLD_MS  = BLE_PHONE_PROBE_HOLD_MS_VAL;
+    static constexpr uint32_t BLE_PHONE_ENRICH_HOLD_MS = BLE_PHONE_ENRICH_HOLD_MS_VAL;
 
     void begin();
     void tick();
@@ -38,9 +41,15 @@ public:
                       const char* reason,
                       bool force = false);
 
+    bool requestPhoneProbeLease(const char* reason,
+                                uint32_t holdMs,
+                                bool force = false);
     bool requestUploadLease(uint32_t holdMs,
                             const char* reason,
                             bool force = false);
+    bool requestStorageMaintenanceLease(uint32_t holdMs,
+                                        const char* reason,
+                                        bool force = false);
     bool requestPmkidHunt(const char* targetBssid,
                           uint32_t holdMs,
                           const char* reason,
@@ -50,12 +59,15 @@ public:
                           bool force = false);
 
     void refreshLease(RadioOwner owner, uint32_t holdMs, const char* reason = nullptr);
-    void release(RadioOwner owner, const char* reason = nullptr);
+    void release(RadioOwner owner,
+                 const char* reason = nullptr,
+                 bool serviceIdleOwner = true);
     bool ensureDefaultCapture(const char* reason = "default");
     void setFallbackOwner(RadioOwner owner, const char* reason = nullptr);
     RadioOwner fallbackOwner() const { return _fallbackOwner; }
 
     RadioOwner currentOwner() const { return _owner; }
+    bool hasPendingOwner(RadioOwner owner) const { return _pendingOwner == owner; }
     bool isOwner(RadioOwner owner) const { return _owner == owner; }
     bool isReady() const { return _begun; }
     bool isBleOwner() const {
@@ -111,3 +123,4 @@ private:
 };
 
 extern RadioArbiter RADIO_ARB;
+

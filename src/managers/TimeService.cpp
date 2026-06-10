@@ -1,14 +1,18 @@
 
+
 #include "TimeService.h"
 
 #include <WiFi.h>
 #include <ctime>
 #include <sys/time.h>
+#include <algorithm>
 
 #include "../core/DebugLog.h"
 #include "BLEManager.h"
+#include "PhoneTransportRouter.h"
 #include "SettingsManager.h"
 #include "MQTTManager.h"
+#include "WioNrfAccessory.h"
 #include "../core/SpectreState.h"
 
 bool TimeService::begin() {
@@ -21,6 +25,7 @@ bool TimeService::begin() {
     _lastTickMs = 0;
     _lastNtpStartMs = 0;
     _ntpStarted = false;
+    _utcAccurate = false;
 
     time_t now = time(nullptr);
     if (now >= static_cast<time_t>(MIN_VALID_EPOCH)) {
@@ -40,7 +45,7 @@ void TimeService::tick() {
     _syncFromGps(nowMs);
 
     const bool dumpActive = MQTT_MGR.isDumping();
-    if (_source != TIME_SOURCE_GPS) {
+    if (!_utcAccurate && _source != TIME_SOURCE_GPS) {
         if (!dumpActive) {
             _syncFromNtp(nowMs);
         }
@@ -75,6 +80,18 @@ bool TimeService::syncFromEpoch(uint32_t epochUtc, TimeSource source,
     const uint32_t prevEpochAtSync = _epochAtSync;
     const uint32_t prevMillisAtSync = _millisAtSync;
 
+    if (source == TIME_SOURCE_GPS && wasValid) {
+        const int64_t projectedEpoch =
+            static_cast<int64_t>(prevEpochAtSync) +
+            (static_cast<int64_t>(static_cast<int32_t>(referenceMs - prevMillisAtSync)) / 1000LL);
+        if (static_cast<int64_t>(epochUtc) + GPS_BACKWARD_GUARD_S < projectedEpoch) {
+            DLOG_WARN("TIME", "Reject stale GPS sync incoming=%lu current=%lu",
+                      static_cast<unsigned long>(epochUtc),
+                      static_cast<unsigned long>(projectedEpoch));
+            return false;
+        }
+    }
+
     bool shouldLog = false;
     if (!wasValid || prevSource != source) {
         shouldLog = true;
@@ -96,6 +113,7 @@ bool TimeService::syncFromEpoch(uint32_t epochUtc, TimeSource source,
     _millisAtSync = referenceMs;
     _source = source;
     _valid = true;
+    _utcAccurate = true;
 
     if (shouldLog) {
         char iso[24] = {};
@@ -112,6 +130,17 @@ bool TimeService::formatNowIso(char* out, size_t len) const {
 
 bool TimeService::formatNowLocal(char* out, size_t len) const {
     return formatLocalForMillis(millis(), out, len);
+}
+
+bool TimeService::epochForMillis(uint32_t monotonicMs, uint32_t& epochUtc) const {
+    const int64_t epoch = _epochForMillis(monotonicMs);
+    if (epoch < static_cast<int64_t>(MIN_VALID_EPOCH) ||
+        epoch > static_cast<int64_t>(UINT32_MAX)) {
+        return false;
+    }
+
+    epochUtc = static_cast<uint32_t>(epoch);
+    return true;
 }
 
 bool TimeService::formatIsoForMillis(uint32_t monotonicMs, char* out, size_t len) const {
@@ -165,9 +194,113 @@ String TimeService::dayStampForMillis(uint32_t monotonicMs) const {
     return String(buf);
 }
 
+bool TimeService::acquireUtcFromSavedWiFi(uint32_t totalTimeoutMs) {
+    if (_utcAccurate) {
+        return true;
+    }
+    if (!SETTINGS.isReady() && !SETTINGS.begin()) {
+        DLOG_WARN("TIME", "Quick NTP skipped: settings unavailable");
+        return false;
+    }
+
+    const RuntimeSettings settings = SETTINGS.snapshot();
+    if (settings.wifiNetworkCount == 0) {
+        DLOG_WARN("TIME", "Quick NTP skipped: no saved WiFi networks");
+        return false;
+    }
+
+    applyTimezone(settings.timezone);
+
+    const uint32_t startMs = millis();
+    const uint32_t deadlineMs = startMs + totalTimeoutMs;
+
+    auto timeRemaining = [&]() -> uint32_t {
+        const int32_t remaining =
+            static_cast<int32_t>(deadlineMs - millis());
+        return remaining > 0 ? static_cast<uint32_t>(remaining) : 0U;
+    };
+
+    auto waitForNtp = [&](uint32_t waitMs) -> bool {
+        configTzTime(settings.timezone, settings.ntpServer1, settings.ntpServer2);
+        _ntpStarted = true;
+        _lastNtpStartMs = millis();
+        DLOG_INFO("TIME", "Quick NTP requested via %s / %s",
+                  settings.ntpServer1,
+                  settings.ntpServer2);
+
+        const uint32_t ntpDeadline = millis() + waitMs;
+        while (static_cast<int32_t>(millis() - ntpDeadline) < 0) {
+            const time_t now = time(nullptr);
+            if (now >= static_cast<time_t>(MIN_VALID_EPOCH)) {
+                return syncFromEpoch(static_cast<uint32_t>(now),
+                                     TIME_SOURCE_NTP,
+                                     millis());
+            }
+            vTaskDelay(pdMS_TO_TICKS(100));
+        }
+        return false;
+    };
+
+    if (WiFi.status() == WL_CONNECTED) {
+        const uint32_t waitMs = std::min(QUICK_NTP_WAIT_MS, timeRemaining());
+        if (waitMs > 0 && waitForNtp(waitMs)) {
+            WiFi.disconnect(false, false);
+            _publishState(millis());
+            return true;
+        }
+    }
+
+    for (uint8_t i = 0; i < settings.wifiNetworkCount && timeRemaining() > 0; ++i) {
+        const WiFiCredential& network = settings.wifiNetworks[i];
+        if (!network.ssid[0]) {
+            continue;
+        }
+
+        WiFi.disconnect(false, false);
+        vTaskDelay(pdMS_TO_TICKS(40));
+        WiFi.setSleep(false);
+        WiFi.begin(network.ssid, network.password);
+
+        const uint32_t connectBudget =
+            std::min(QUICK_WIFI_CONNECT_SLICE_MS, timeRemaining());
+        const uint32_t connectDeadline = millis() + connectBudget;
+        DLOG_INFO("TIME", "Quick NTP WiFi connect ssid=%s timeout=%lums",
+                  network.ssid,
+                  static_cast<unsigned long>(connectBudget));
+
+        while (WiFi.status() != WL_CONNECTED &&
+               static_cast<int32_t>(millis() - connectDeadline) < 0) {
+            vTaskDelay(pdMS_TO_TICKS(100));
+        }
+
+        if (WiFi.status() != WL_CONNECTED) {
+            DLOG_WARN("TIME", "Quick NTP WiFi connect failed ssid=%s",
+                      network.ssid);
+            continue;
+        }
+
+        const uint32_t waitMs = std::min(QUICK_NTP_WAIT_MS, timeRemaining());
+        if (waitMs > 0 && waitForNtp(waitMs)) {
+            WiFi.disconnect(false, false);
+            _publishState(millis());
+            DLOG_INFO("TIME", "Quick NTP UTC acquired ssid=%s",
+                      network.ssid);
+            return true;
+        }
+
+        DLOG_WARN("TIME", "Quick NTP wait expired ssid=%s", network.ssid);
+    }
+
+    WiFi.disconnect(false, false);
+    _publishState(millis());
+    DLOG_WARN("TIME", "Quick NTP UTC unavailable within %lums",
+              static_cast<unsigned long>(totalTimeoutMs));
+    return false;
+}
+
 void TimeService::_syncFromGps(uint32_t nowMs) {
     uint32_t gpsEpoch = 0;
-    if (!BLE_MGR.getBestTimeEpoch(gpsEpoch)) return;
+    if (!PHONE_XPORT.getBestTimeEpoch(gpsEpoch)) return;
 
     if (!_valid || _source != TIME_SOURCE_GPS) {
         syncFromEpoch(gpsEpoch, TIME_SOURCE_GPS, nowMs);
@@ -221,6 +354,7 @@ void TimeService::_publishState(uint32_t referenceMs) const {
 
     STATE_WRITE_BEGIN();
     g_state.timeValid = _valid;
+    g_state.utcAccurate = _utcAccurate;
     strlcpy(g_state.timeSource, sourceName(), sizeof(g_state.timeSource));
     strlcpy(g_state.timeISO, iso, sizeof(g_state.timeISO));
     strlcpy(g_state.timeLocal, local, sizeof(g_state.timeLocal));
@@ -247,5 +381,3 @@ void TimeService::_formatLocalClock(time_t epochUtc, char* out, size_t len) {
     localtime_r(&epochUtc, &localTm);
     strftime(out, len, "%Y-%m-%d %H:%M:%S", &localTm);
 }
-
-

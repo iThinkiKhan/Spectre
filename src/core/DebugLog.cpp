@@ -1,15 +1,38 @@
 
+
+
 #include "DebugLog.h"
 #include "SpectreState.h"
+#include "../managers/LogStreamer.h"
+#include "../managers/RadioArbiter.h"
 #include <LittleFS.h>
 #include <stdarg.h>
 #include <esp_heap_caps.h>
+
+namespace {
+bool debugLogFlushRisky() {
+    switch (RADIO_ARB.currentOwner()) {
+        case RADIO_WIFI_CAPTURE:
+        case RADIO_WIFI_SCAN:
+        case RADIO_WIFI_PMKID:
+        case RADIO_WIFI_UPLOAD:
+        case RADIO_STORAGE_MAINTENANCE:
+            return true;
+        case RADIO_NONE:
+        case RADIO_BLE_TEXT:
+        case RADIO_BLE_GPS:
+        default:
+            return false;
+    }
+}
+}
 
 // ── Static member definitions ─────────────────────────────────
 char     DebugLog::_fallbackBuf[DebugLog::FALLBACK_BUF_SIZE] = {};
 char*    DebugLog::_buf         = nullptr;
 int      DebugLog::_bufSize     = DebugLog::BUF_SIZE;
 int      DebugLog::_head        = 0;
+int      DebugLog::_tail        = 0;
 int      DebugLog::_used        = 0;
 int      DebugLog::_lineCount   = 0;
 bool     DebugLog::_ready       = false;
@@ -19,8 +42,44 @@ uint32_t DebugLog::_serialAreaMask = DEBUG_AREA_OPERATORS;
 uint32_t DebugLog::_lastFlush   = 0;
 portMUX_TYPE DebugLog::_mux     = portMUX_INITIALIZER_UNLOCKED;
 
+// Default to OFF until applyProfile() runs. _minLevelRank=99 makes enabled()
+// reject every level even before the profile branch is reached, so anything
+// that logs before init produces no churn.
+DebugProfile DebugLog::_profile             = DEBUG_PROFILE_OFF;
+int          DebugLog::_minLevelRank        = 99;
+uint32_t     DebugLog::_subsystemMask       = 0;
+bool         DebugLog::_areaMaskAll         = false;
+uint32_t     DebugLog::_autoFlushIntervalMs = 0;
+
 const char DebugLog::LOG_PATH[] = "/logs/debug.log";
 const char DebugLog::LOG_BAK[]  = "/logs/debug.log.1";
+
+void DebugLog::applyProfile(DebugProfile profile, uint32_t subsystemMask) {
+    _profile = profile;
+    _subsystemMask = subsystemMask;
+    switch (profile) {
+        case DEBUG_PROFILE_OFF:
+            _minLevelRank = 99;          // reject everything
+            _areaMaskAll = false;
+            _autoFlushIntervalMs = 0;    // never auto-flush
+            break;
+        case DEBUG_PROFILE_RUN:
+            _minLevelRank = 2;           // WARN+
+            _areaMaskAll = true;         // any subsystem
+            _autoFlushIntervalMs = 0;    // no auto-flush in field
+            break;
+        case DEBUG_PROFILE_DEBUG:
+            _minLevelRank = 1;           // INFO+
+            _areaMaskAll = false;
+            _autoFlushIntervalMs = 120000UL;
+            break;
+        case DEBUG_PROFILE_DEV:
+            _minLevelRank = 0;           // VERBOSE+
+            _areaMaskAll = false;
+            _autoFlushIntervalMs = 30000UL;
+            break;
+    }
+}
 
 void DebugLog::begin() {
     if (_ready) {
@@ -35,11 +94,19 @@ void DebugLog::begin() {
     char prior[FALLBACK_BUF_SIZE] = {};
     int priorLen = 0;
     if (_used > 0 && _buf != nullptr) {
+        const int priorCapacity = _bufSize - 1;
         priorLen = _used;
+        if (priorCapacity > 0 && priorLen > priorCapacity) {
+            priorLen = priorCapacity;
+        }
         if (priorLen > static_cast<int>(sizeof(prior) - 1)) {
             priorLen = sizeof(prior) - 1;
         }
-        memcpy(prior, _buf, priorLen);
+        if (priorLen > 0 && priorCapacity > 0) {
+            for (int i = 0; i < priorLen; ++i) {
+                prior[i] = _buf[(_head + i) % priorCapacity];
+            }
+        }
     }
 
     char* nextBuf = (char*)ps_malloc(BUF_SIZE);
@@ -50,16 +117,110 @@ void DebugLog::begin() {
     } else {
         _buf = nextBuf;
         _bufSize = BUF_SIZE;
+        _head = 0;
+        _tail = 0;
         _used = 0;
         if (priorLen > 0) {
             memcpy(_buf, prior, priorLen);
+            _head = 0;
+            _tail = priorLen % (_bufSize - 1);
             _used = priorLen;
-            _buf[_used] = '\0';
+            if (priorLen < _bufSize - 1) {
+                _buf[_tail] = '\0';
+            }
+        } else {
+            _buf[0] = '\0';
         }
     }
     _ready = true;
     log(DEBUG_LEVEL_INFO, "DLOG", "DebugLog started - build %s %s",
         __DATE__, __TIME__);
+}
+
+void DebugLog::copyTail(uint8_t* out,
+                        size_t outCap,
+                        size_t maxLines,
+                        size_t& outBytes,
+                        uint16_t& outLines) {
+    outBytes = 0;
+    outLines = 0;
+    if (!out || outCap == 0 || maxLines == 0 || !_buf || !_ready) {
+        return;
+    }
+
+    // Linear snapshot of the current ring contents.  BUF_SIZE is ~2 KB, so a
+    // static scratch in BSS is acceptable; the alternative (per-call alloc) is
+    // a non-starter inside a critical section.
+    static char scratch[BUF_SIZE];
+
+    portENTER_CRITICAL(&_mux);
+    const int capacity = _bufSize - 1;
+    int used = _used;
+    if (used > static_cast<int>(sizeof(scratch))) {
+        used = static_cast<int>(sizeof(scratch));
+    }
+    for (int i = 0; i < used; ++i) {
+        scratch[i] = _buf[(_head + i) % capacity];
+    }
+    portEXIT_CRITICAL(&_mux);
+
+    if (used <= 0) {
+        return;
+    }
+
+    // Track up to MAX_TRACKED most recent line offsets while walking forward.
+    constexpr size_t MAX_TRACKED = 32;
+    const size_t track = (maxLines < MAX_TRACKED) ? maxLines : MAX_TRACKED;
+    int starts[MAX_TRACKED] = {};
+    int lens[MAX_TRACKED]   = {};
+    size_t trackedCount = 0;
+    size_t trackedHead  = 0;
+
+    int lineStart = 0;
+    for (int i = 0; i < used; ++i) {
+        if (scratch[i] == '\n') {
+            int endExclusive = i;
+            if (endExclusive > lineStart && scratch[endExclusive - 1] == '\r') {
+                endExclusive--;
+            }
+            const int slot = static_cast<int>(trackedHead);
+            starts[slot] = lineStart;
+            lens[slot]   = endExclusive - lineStart;
+            trackedHead = (trackedHead + 1) % track;
+            if (trackedCount < track) {
+                trackedCount++;
+            }
+            lineStart = i + 1;
+        }
+    }
+
+    if (trackedCount == 0) {
+        return;
+    }
+
+    // Walk tracked slots oldest-first.
+    size_t readSlot = (trackedHead + track - trackedCount) % track;
+    size_t written = 0;
+    uint16_t emitted = 0;
+    for (size_t i = 0; i < trackedCount; ++i) {
+        const int s = starts[readSlot];
+        const int l = lens[readSlot];
+        readSlot = (readSlot + 1) % track;
+
+        const size_t need = static_cast<size_t>(l) + 1;  // line + trailing null
+        if (written + need > outCap) {
+            break;
+        }
+        if (l > 0) {
+            memcpy(out + written, scratch + s, static_cast<size_t>(l));
+        }
+        out[written + l] = 0;
+        written += need;
+        emitted++;
+    }
+
+    outBytes = written;
+    outLines = emitted;
 }
 
 void DebugLog::configureUsbSerial(bool enabled, char minLevel, uint32_t areaMask) {
@@ -82,9 +243,14 @@ void DebugLog::setUsbSerialAreaMask(uint32_t areaMask) {
 
 void DebugLog::log(char level, const char* tag,
                    const char* fmt, ...) {
+    // Defensive recheck: callers that bypass DLOG_* macros still get gated.
+    if (!enabled(level, tag)) {
+        return;
+    }
+
     _ensureBuffer();
-    char line[192];
-    char msg[128];
+    char line[256];
+    char msg[192];
 
     va_list args;
     va_start(args, fmt);
@@ -99,50 +265,100 @@ void DebugLog::log(char level, const char* tag,
         Serial.print(line);
     }
 
-    // Write to ring buffer under critical section
     portENTER_CRITICAL(&_mux);
-    const int maxUsed = _bufSize - 1;  // reserve room for terminator
+    const int capacity = _bufSize - 1;
     int len = strlen(line);
-    if (len > maxUsed) len = maxUsed;
-
-    // Simple append — if buffer full, lose oldest
-    if (_used + len > maxUsed) {
-        // Shift buffer to make room
-        int overflow = (_used + len) - maxUsed;
-        if (overflow > _used) overflow = _used;
-        if (overflow > 0) {
-            memmove(_buf, _buf + overflow,
-                    _used - overflow);
-            _used -= overflow;
-        }
+    if (len > capacity) {
+        len = capacity;
     }
-    memcpy(_buf + _used, line, len);
+
+    // Drop oldest bytes until there is room.
+    while (_used + len > capacity) {
+        _head = (_head + 1) % capacity;
+        _used--;
+    }
+
+    for (int i = 0; i < len; ++i) {
+        _buf[_tail] = line[i];
+        _tail = (_tail + 1) % capacity;
+    }
+
     _used += len;
-    _buf[_used] = '\0';
+
+    // Keep a terminator for simple debugging only when there is spare room.
+    // Do not rely on _buf being linear anymore.
+    if (_used < capacity) {
+        _buf[_tail] = '\0';
+    }
+
     _lineCount++;
     portEXIT_CRITICAL(&_mux);
+
+    // Fan-out: copy the formatted line into the active log-stream lease (if
+    // any).  Cheap when no stream is live (single load + branch).
+    LOG_STREAMER.ingestLine(line, static_cast<size_t>(len));
+
+    // Profile-controlled auto-flush. OFF/RUN have _autoFlushIntervalMs=0 so
+    // no LittleFS writes happen on the routine log path. DEBUG/DEV throttle
+    // and skip while an upload is active or a risky radio owner holds the
+    // bus, keeping file IO out of the upload/capture windows.
+    if (_autoFlushIntervalMs == 0) {
+        return;
+    }
 
     bool uploadActive = false;
     STATE_READ_BEGIN();
     uploadActive = g_state.uploadActive;
     STATE_READ_END();
 
-    // Auto-flush every 30 seconds if ready, but keep LittleFS writes out of
-    // the active upload window. Manual/crash flushes still go through flush().
     uint32_t now = millis();
-    if (_ready && !uploadActive && now - _lastFlush > 30000) {
+    if (_ready &&
+        !uploadActive &&
+        !debugLogFlushRisky() &&
+        now - _lastFlush > _autoFlushIntervalMs) {
         flush();
     }
 }
 
 void DebugLog::logCrash(const char* fmt, ...) {
-    char msg[128];
+    char msg[192];
     va_list args;
     va_start(args, fmt);
     vsnprintf(msg, sizeof(msg), fmt, args);
     va_end(args);
 
-    log('E', "CRASH", "%s", msg);
+    // Crash records bypass the profile gate (OFF/RUN must still capture
+    // them) so we cannot route through log(). Hand-roll the same ring
+    // append + serial mirror that log() does, then force a flush.
+    char line[256];
+    uint32_t ms = millis();
+    snprintf(line, sizeof(line), "[%lu][E][CRASH] %s\r\n", ms, msg);
+
+    if (_serialEnabled) {
+        Serial.print(line);
+    }
+
+    _ensureBuffer();
+    portENTER_CRITICAL(&_mux);
+    const int capacity = _bufSize - 1;
+    int len = strlen(line);
+    if (len > capacity) {
+        len = capacity;
+    }
+    while (_used + len > capacity) {
+        _head = (_head + 1) % capacity;
+        _used--;
+    }
+    for (int i = 0; i < len; ++i) {
+        _buf[_tail] = line[i];
+        _tail = (_tail + 1) % capacity;
+    }
+    _used += len;
+    if (_used < capacity) {
+        _buf[_tail] = '\0';
+    }
+    _lineCount++;
+    portEXIT_CRITICAL(&_mux);
 
     // Force immediate flush on crash
     flush();
@@ -151,13 +367,19 @@ void DebugLog::logCrash(const char* fmt, ...) {
 void DebugLog::flush() {
     if (!_ready || _used == 0) return;
 
-    portENTER_CRITICAL(&_mux);
     char snapshot[BUF_SIZE];
     int snapLen = _used;
-    memcpy(snapshot, _buf, snapLen);
+
+    portENTER_CRITICAL(&_mux);
+    const int capacity = _bufSize - 1;
+    snapLen = _used;
+    for (int i = 0; i < snapLen; ++i) {
+        snapshot[i] = _buf[(_head + i) % capacity];
+    }
     snapshot[snapLen] = '\0';
-    _used    = 0;
-    _head    = 0;
+    _head = 0;
+    _tail = 0;
+    _used = 0;
     portEXIT_CRITICAL(&_mux);
 
     _lastFlush = millis();
@@ -204,7 +426,20 @@ void DebugLog::dumpToSerial() {
     // Also dump in-memory buffer
     if (_used > 0) {
         Serial.println("--- PENDING BUFFER ---");
-        Serial.print(_buf);
+
+        char snapshot[BUF_SIZE];
+        int snapLen = 0;
+
+        portENTER_CRITICAL(&_mux);
+        const int capacity = _bufSize - 1;
+        snapLen = _used;
+        for (int i = 0; i < snapLen; ++i) {
+            snapshot[i] = _buf[(_head + i) % capacity];
+        }
+        snapshot[snapLen] = '\0';
+        portEXIT_CRITICAL(&_mux);
+
+        Serial.print(snapshot);
     }
     Serial.println("=== END LOG ===");
 }
@@ -216,6 +451,8 @@ void DebugLog::_ensureBuffer() {
 
     _buf = _fallbackBuf;
     _bufSize = sizeof(_fallbackBuf);
+    _head = 0;
+    _tail = 0;
     _used = 0;
     _buf[0] = '\0';
 }
@@ -229,71 +466,13 @@ bool DebugLog::_shouldMirrorToUsbSerial(char level, const char* tag) {
         return false;
     }
 
-    return (_serialAreaMask & _areaMaskForTag(tag)) != 0;
+    return (_serialAreaMask & debugAreaMaskForTag(tag)) != 0;
 }
 
 int DebugLog::_levelRank(char level) {
-    switch (sanitizeDebugLevel(level)) {
-        case DEBUG_LEVEL_ERROR:
-            return 3;
-        case DEBUG_LEVEL_WARN:
-            return 2;
-        case DEBUG_LEVEL_INFO:
-            return 1;
-        case DEBUG_LEVEL_VERBOSE:
-        default:
-            return 0;
-    }
+    return debugLevelRank(level);
 }
 
-uint32_t DebugLog::_areaMaskForTag(const char* tag) {
-    if (!tag || !tag[0]) {
-        return DEBUG_AREA_GENERAL;
-    }
 
-    if (strcmp(tag, "SYS") == 0 ||
-        strcmp(tag, "CORE") == 0 ||
-        strcmp(tag, "STACK") == 0 ||
-        strcmp(tag, "HEAP") == 0 ||
-        strcmp(tag, "BTN") == 0) {
-        return DEBUG_AREA_CORE;
-    }
-    if (strcmp(tag, "SETTINGS") == 0) {
-        return DEBUG_AREA_SETTINGS;
-    }
-    if (strcmp(tag, "STOR") == 0 ||
-        strcmp(tag, "STORAGE") == 0) {
-        return DEBUG_AREA_STORAGE;
-    }
-    if (strcmp(tag, "TIME") == 0) {
-        return DEBUG_AREA_TIME;
-    }
-    if (strcmp(tag, "RADIO") == 0 ||
-        strcmp(tag, "LORA") == 0) {
-        return DEBUG_AREA_RADIO;
-    }
-    if (strcmp(tag, "WIFI") == 0 ||
-        strcmp(tag, "ANT") == 0 ||
-        strcmp(tag, "DRONE") == 0) {
-        return DEBUG_AREA_WIFI;
-    }
-    if (strcmp(tag, "BLE") == 0) {
-        return DEBUG_AREA_BLE;
-    }
-    if (strcmp(tag, "MQTT") == 0) {
-        return DEBUG_AREA_MQTT;
-    }
-    if (strcmp(tag, "EXPORT") == 0) {
-        return DEBUG_AREA_EXPORT;
-    }
-    if (strcmp(tag, "GPS") == 0) {
-        return DEBUG_AREA_GPS;
-    }
-    if (strcmp(tag, "MODE") == 0) {
-        return DEBUG_AREA_MODE;
-    }
-
-    return DEBUG_AREA_GENERAL;
-}
 
 

@@ -1,4 +1,6 @@
 
+
+
 #include "DisplayManager.h"
 #include "../config.h"
 #include "../SecretsConfig.h"
@@ -6,12 +8,14 @@
 #include "../core/SpectreState.h"
 #include "../core/NotifTypes.h"
 #include "../core/DebugLog.h"
+#include "../core/ScreenInfo.h"
 #include "../managers/BadUsbManager.h"
 #include "../managers/SubGhzTypes.h"
 #include "../managers/RadioArbiter.h"
 #include "../managers/SettingsManager.h"
 #include "../ui/LVGLDriver.h"
 #include <cstdio>
+#include <esp_heap_caps.h>
 
 
 // RENDER OWNERSHIP
@@ -23,14 +27,16 @@
 // Do not add new runtime TFT or sprite rendering paths here.
 
 
-static const int MASC_W = 68;
-static const int MASC_H = 120;
 static const int DIV_W = 8;
 static const int LIST_VISIBLE_ROWS = 8;
-uint8_t* DisplayManager::_mascotBuf = nullptr;
-uint8_t* DisplayManager::_divBuf = nullptr;
-static uint8_t g_mascotBuf[MASC_W * MASC_H * sizeof(lv_color_t)];
-static uint8_t g_divBuf[DIV_W * (THEME_CONTENT_H + THEME_ACTION_H) * sizeof(lv_color_t)];
+static const int WIFI_LIST_ROW_Y = 17;
+static const int WIFI_LIST_ROW_STEP = 12;
+static const int WIFI_LIST_TEXT_W = 186;
+static const int WIFI_LIST_BAR_X = 204;
+// Canvas pixel buffers — allocated from PSRAM on first use to keep the
+// divider buffer out of internal BSS.  LVGL's software
+// renderer only accesses them via the CPU, so PSRAM is safe here.
+uint8_t* DisplayManager::_divBuf    = nullptr;
 
 namespace {
 
@@ -269,8 +275,15 @@ ButtonBindingSet displayBindingsFromState() {
 }
 
 bool DisplayManager::_ensureCanvasBuffers() {
-    if (!_mascotBuf) _mascotBuf = g_mascotBuf;
-    if (!_divBuf) _divBuf = g_divBuf;
+    if (!_divBuf) {
+        constexpr size_t sz = DIV_W * (THEME_CONTENT_H + THEME_ACTION_H) * sizeof(lv_color_t);
+        _divBuf = static_cast<uint8_t*>(
+            heap_caps_malloc(sz, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT));
+        if (!_divBuf) {
+            _divBuf = static_cast<uint8_t*>(malloc(sz));
+        }
+        if (!_divBuf) return false;
+    }
     return true;
 }
 
@@ -280,13 +293,11 @@ void DisplayManager::begin() {
     lv_obj_set_style_bg_color(root, lv_color_hex(CLR_BLACK), 0);
     lv_obj_set_style_bg_opa(root, LV_OPA_COVER, 0);
 
-    // Build persistent chrome
     _buildStatusBar();
     _buildMascotPanel();
     _buildDivider();
     _buildActionBar();
 
-    // Build all screen content containers (hidden by default)
     _buildScreenLora();
     _buildScreenPwny();
     _buildScreenMeshtastic();
@@ -294,21 +305,31 @@ void DisplayManager::begin() {
     _buildScreenBadUsb();
     _buildScreenRecon();
     _buildScreenSystem();
+    _buildScreenMissionSummary();
 
-    // Start animations
     _buildRadarSweep();
 
-    // Animate panel borders with offsets so they breathe out of sync
-    _animatePanelBorder(_statusBar,   0);
-    _animatePanelBorder(_actionBar,   300);
-    _animatePanelBorder(_mascotPanel, 600);
+    // Panel borders: fixed at full brightness (amber)
+    _setPanelBorderColor(_statusBar,   0xD09000);
+    _setPanelBorderColor(_actionBar,   0xD09000);
+    _setPanelBorderColor(_mascotPanel, 0xD09000);
 
-    // Initial screen draw
     setScreen(SCREEN_LORA);
     drawLora("NONE", "OFF", 0, 0, "--", 0, 0, 0);
 }
 
 void DisplayManager::setActionHints(const ButtonBindingSet& bindings) {
+    bool overlayActive = false;
+    STATE_READ_BEGIN();
+    overlayActive = g_state.wifiListActive ||
+                    g_state.missionListActive ||
+                    g_state.badUsbListActive ||
+                    g_state.debriefActive;
+    STATE_READ_END();
+    if (overlayActive) {
+        _syncActionHintsFromState();
+        return;
+    }
     _setActionHints(bindings);
 }
 
@@ -323,7 +344,6 @@ void DisplayManager::_syncActionHintsFromState() {
 void DisplayManager::_buildNotifPanel() {
     if (_notifPanel) return;
 
-    // Full width panel sitting above screen top
     _notifPanel = lv_obj_create(lv_screen_active());
     lv_obj_set_size(_notifPanel, THEME_SCREEN_W, 38);
     lv_obj_set_pos(_notifPanel, 0, -38);  // hidden above screen
@@ -337,12 +357,10 @@ void DisplayManager::_buildNotifPanel() {
     lv_obj_set_style_radius(_notifPanel, 0, 0);
     lv_obj_clear_flag(_notifPanel, LV_OBJ_FLAG_SCROLLABLE);
 
-    // Icon label on left
     _notifIcon = lv_label_create(_notifPanel);
     lv_obj_set_style_text_font(_notifIcon, FONT_SMALL, 0);
     lv_obj_set_pos(_notifIcon, 6, 10);
 
-    // Main text
     _notifLabel = lv_label_create(_notifPanel);
     lv_obj_set_style_text_font(_notifLabel, FONT_BODY, 0);
     lv_obj_set_pos(_notifLabel, 30, 8);
@@ -354,7 +372,6 @@ void DisplayManager::_showNotif(uint8_t type,
                                  const char* text) {
     if (!_notifPanel) _buildNotifPanel();
 
-    // Color and icon by type
     lv_color_t col = lv_color_hex(0x00F0FF);  // default cyan
     const char* icon = ">";
 
@@ -397,7 +414,6 @@ void DisplayManager::_showNotif(uint8_t type,
             break;
     }
 
-    // Style panel border and text colors
     lv_obj_set_style_border_color(_notifPanel, col, 0);
     lv_obj_set_style_bg_color(_notifPanel,
         lv_color_hex(0x080808), 0);
@@ -408,7 +424,6 @@ void DisplayManager::_showNotif(uint8_t type,
     lv_obj_set_style_text_color(_notifLabel, col, 0);
     lv_label_set_text(_notifLabel, text);
 
-    // Slide down animation
     lv_anim_t a;
     lv_anim_init(&a);
     lv_anim_set_var(&a, _notifPanel);
@@ -420,10 +435,11 @@ void DisplayManager::_showNotif(uint8_t type,
     lv_anim_set_path_cb(&a, lv_anim_path_ease_out);
     lv_anim_start(&a);
 
-    // Switch mascot to alert
-    STATE_READ_BEGIN();
-    _priorMascot = g_state.mascotState;
-    STATE_READ_END();
+    if (!_notifActive) {
+        STATE_READ_BEGIN();
+        _priorMascot = g_state.mascotState;
+        STATE_READ_END();
+    }
 
     STATE_WRITE_BEGIN();
     g_state.mascotState = MASCOT_ALERT;
@@ -470,6 +486,9 @@ void DisplayManager::syncFromState() {
         case SCREEN_SYSTEM:
             drawSystem(battV, uptimeMs, storage);
             break;
+        case SCREEN_MISSION_SUMMARY:
+            drawMissionSummary(uptimeMs);
+            break;
         default:
             break;
     }
@@ -478,7 +497,6 @@ void DisplayManager::syncFromState() {
 void DisplayManager::_dismissNotif() {
     if (!_notifPanel || !_notifActive) return;
 
-    // Slide back up
     lv_anim_t a;
     lv_anim_init(&a);
     lv_anim_set_var(&a, _notifPanel);
@@ -490,7 +508,6 @@ void DisplayManager::_dismissNotif() {
     lv_anim_set_path_cb(&a, lv_anim_path_ease_in);
     lv_anim_start(&a);
 
-    // Restore prior mascot state
     STATE_WRITE_BEGIN();
     g_state.mascotState  = _priorMascot;
     g_state.droneAlert   = false;
@@ -519,6 +536,7 @@ void DisplayManager::setScreen(Screen s) {
             case SCREEN_RECON:      return _reconContent;
             case SCREEN_MISSION:    return _pwnyContent;
             case SCREEN_SYSTEM:     return _sysContent;
+            case SCREEN_MISSION_SUMMARY: return _missionSummaryContent;
             default:                return nullptr;
         }
     };
@@ -529,8 +547,7 @@ void DisplayManager::setScreen(Screen s) {
     }
 
     if (_currentScreen == s) {
-        const char* names[] = {"LRA","MSH","WFI","USB","MIS","RCN","SYS"};
-        if (_lblScreen) lv_label_set_text(_lblScreen, names[s]);
+        if (_lblScreen) lv_label_set_text(_lblScreen, screenShortTag(s));
         return;
     }
 
@@ -550,6 +567,7 @@ void DisplayManager::setScreen(Screen s) {
     if (_reconContent && _reconContent != nextContent) lv_obj_add_flag(_reconContent, LV_OBJ_FLAG_HIDDEN);
     if (_pwnyContent  && _pwnyContent  != nextContent) lv_obj_add_flag(_pwnyContent,  LV_OBJ_FLAG_HIDDEN);
     if (_sysContent   && _sysContent   != nextContent) lv_obj_add_flag(_sysContent,   LV_OBJ_FLAG_HIDDEN);
+    if (_missionSummaryContent && _missionSummaryContent != nextContent) lv_obj_add_flag(_missionSummaryContent, LV_OBJ_FLAG_HIDDEN);
 
     lv_obj_remove_flag(nextContent, LV_OBJ_FLAG_HIDDEN);
     lv_obj_move_foreground(nextContent);
@@ -580,9 +598,7 @@ void DisplayManager::setScreen(Screen s) {
 
     _currentScreen = s;
 
-    // Update screen name in status bar
-    const char* names[] = {"LRA","MSH","WFI","USB","MIS","RCN","SYS"};
-    if (_lblScreen) lv_label_set_text(_lblScreen, names[s]);
+    if (_lblScreen) lv_label_set_text(_lblScreen, screenShortTag(s));
 
     if (_radarLine) {
         const bool radarActive = (s == SCREEN_WIFI);
@@ -602,31 +618,24 @@ void DisplayManager::_buildStatusBar() {
                             0, 0, THEME_SCREEN_W, THEME_STATUS_H,
                             0x111111, accent);
 
-    // SPECTRE branding
     _makeLabel(_statusBar, "SPECTRE", accent, FONT_BODY,
                 LV_ALIGN_LEFT_MID, 4, 0);
 
-    // Battery
     _lblBatt = _makeLabel(_statusBar, "PWR", CLR_GREEN, FONT_SMALL,
                           LV_ALIGN_LEFT_MID, 68, 0);
 
-    // WiFi
     _lblWifi = _makeLabel(_statusBar, "W:--", CLR_GREY, FONT_SMALL,
                           LV_ALIGN_LEFT_MID, 104, 0);
 
-    // BLE
     _lblBle = _makeLabel(_statusBar, "BLE", CLR_GREY, FONT_SMALL,
                          LV_ALIGN_LEFT_MID, 154, 0);
 
-    // LoRa indicator
     _lblLora = _makeLabel(_statusBar, "LORA", CLR_YELLOW, FONT_SMALL,
                           LV_ALIGN_LEFT_MID, 194, 0);
 
-    // Screen name — right aligned
     _lblScreen = _makeLabel(_statusBar, "LRA", CLR_CYAN, FONT_SMALL,
                             LV_ALIGN_RIGHT_MID, -4, 0);
 
-    // Bottom border line
     static lv_point_precise_t pts[] = {{0, THEME_STATUS_H - 1},
                                        {THEME_SCREEN_W, THEME_STATUS_H - 1}};
     lv_obj_t* line = lv_line_create(lv_screen_active());
@@ -682,7 +691,6 @@ void DisplayManager::updateStatus(const StatusBar& sb) {
         _setPanelBorderColor(_mascotPanel, edgeColor);
     }
 
-    // Radio owner indicator replaces static W:--
     const char* radioTxt;
     uint32_t    radioCol;
     switch ((RadioOwner)sb.radioOwner) {
@@ -719,14 +727,9 @@ void DisplayManager::_buildMascotPanel() {
                               0, THEME_STATUS_H,
                               THEME_MASCOT_W,
                               THEME_CONTENT_H + THEME_ACTION_H,
-                              0x0A0A0A, CLR_BLACK);
+                              CLR_BLACK, CLR_BLACK);
 
-    _mascotCanvas = lv_canvas_create(_mascotPanel);
-    lv_canvas_set_buffer(_mascotCanvas, _mascotBuf,
-                         MASC_W, MASC_H, LV_COLOR_FORMAT_NATIVE);
-    lv_obj_align(_mascotCanvas, LV_ALIGN_CENTER, 0, 0);
-    lv_canvas_fill_bg(_mascotCanvas,
-                      lv_color_hex(CLR_BLACK), LV_OPA_COVER);
+    _nativeMascotReady = _nativeMascot.begin(_mascotPanel);
 }
 
 // ─── Divider ──────────────────────────────────────────────────
@@ -748,7 +751,6 @@ void DisplayManager::_buildDivider() {
 
     _divTimer = lv_timer_create(_divTimerCb, 90, this);
 
-    // Arc spark objects
     _divArcL = lv_obj_create(lv_screen_active());
     lv_obj_set_size(_divArcL, 10, 2);
     lv_obj_set_style_bg_color(_divArcL, lv_color_hex(CLR_CYAN), 0);
@@ -836,13 +838,11 @@ void DisplayManager::_fireSpark() {
     int pulseY = _divPulseY + THEME_STATUS_H;
     int x = THEME_DIVIDER_X;
 
-    // Primary spark at pulse position
     lv_obj_set_pos(_divArcL, x - 10, pulseY + 8);
     lv_obj_set_pos(_divArcR, x + 4,  pulseY + 8);
     lv_obj_set_style_bg_opa(_divArcL, LV_OPA_COVER, 0);
     lv_obj_set_style_bg_opa(_divArcR, LV_OPA_COVER, 0);
 
-    // Secondary spark at random offset
     int offset = random(-20, 20);
     int sy = pulseY + 8 + offset;
     int top = THEME_STATUS_H;
@@ -868,7 +868,6 @@ void DisplayManager::_fireSpark() {
     lv_obj_set_style_radius(arcR2, 0, 0);
     lv_obj_clear_flag(arcR2, LV_OBJ_FLAG_SCROLLABLE);
 
-    // Fade out all four arc objects
     auto fadeOut = [&](lv_obj_t* obj, int dur) {
         lv_anim_t a;
         lv_anim_init(&a);
@@ -886,7 +885,6 @@ void DisplayManager::_fireSpark() {
     fadeOut(arcL2, 200);
     fadeOut(arcR2, 200);
 
-    // Delete temporary objects after fade completes
     auto delayDelete = [&](lv_obj_t* obj) {
         lv_anim_t d;
         lv_anim_init(&d);
@@ -911,33 +909,7 @@ void DisplayManager::updateDivider() {
     }
 }
 
-// ─── Animated panel borders ───────────────────────────────────
-
-static void _borderColorAnimCb(void* obj, int32_t v) {
-    uint32_t color;
-    if      (v > 80) color = 0xD09000;
-    else if (v > 50) color = 0xA06000;
-    else if (v > 20) color = 0x7A3800;
-    else             color = 0x502000;
-    lv_obj_set_style_border_color((lv_obj_t*)obj,
-                                  lv_color_hex(color), 0);
-}
-
-void DisplayManager::_animatePanelBorder(lv_obj_t* panel, int delayMs) {
-    if (!panel) return;
-
-    lv_anim_t a;
-    lv_anim_init(&a);
-    lv_anim_set_var(&a, panel);
-    lv_anim_set_exec_cb(&a, _borderColorAnimCb);
-    lv_anim_set_values(&a, 0, 100);
-    lv_anim_set_duration(&a, 3000);
-    lv_anim_set_delay(&a, delayMs);
-    lv_anim_set_repeat_count(&a, LV_ANIM_REPEAT_INFINITE);
-    lv_anim_set_playback_duration(&a, 3000);
-    lv_anim_set_path_cb(&a, lv_anim_path_ease_in_out);
-    lv_anim_start(&a);
-}
+// ─── Panel border colour ──────────────────────────────────────
 
 void DisplayManager::_setPanelBorderColor(lv_obj_t* panel, uint32_t color) {
     if (!panel) return;
@@ -951,18 +923,14 @@ void DisplayManager::_setCriticalPowerFx(bool active) {
 
     _criticalPowerFxActive = active;
     if (active) {
-        lv_anim_del(_statusBar, _borderColorAnimCb);
-        lv_anim_del(_actionBar, _borderColorAnimCb);
-        lv_anim_del(_mascotPanel, _borderColorAnimCb);
-        _setPanelBorderColor(_statusBar, 0xC02020);
-        _setPanelBorderColor(_actionBar, 0xC02020);
+        _setPanelBorderColor(_statusBar,   0xC02020);
+        _setPanelBorderColor(_actionBar,   0xC02020);
         _setPanelBorderColor(_mascotPanel, 0xC02020);
-        return;
+    } else {
+        _setPanelBorderColor(_statusBar,   0xD09000);
+        _setPanelBorderColor(_actionBar,   0xD09000);
+        _setPanelBorderColor(_mascotPanel, 0xD09000);
     }
-
-    _animatePanelBorder(_statusBar, 0);
-    _animatePanelBorder(_actionBar, 300);
-    _animatePanelBorder(_mascotPanel, 600);
 }
 
 // ─── Radar sweep ──────────────────────────────────────────────
@@ -1057,11 +1025,13 @@ void DisplayManager::triggerDataPulse() {
 }
 
 void DisplayManager::drawMascotFrame(MascotState state, int frame) {
-    if (!_mascotCanvas) return;
-    lv_canvas_fill_bg(_mascotCanvas, lv_color_hex(0x000000), LV_OPA_COVER);
+    if (!_nativeMascotReady) return;
 
     if (_mascotPulseActive) {
-        if (millis() < _mascotPulseUntilMs) {
+        // Signed-delta compare so the pulse still expires across a millis()
+        // wraparound. `millis() < _mascotPulseUntilMs` flips back to true
+        // when millis() wraps past the stored deadline.
+        if (static_cast<int32_t>(millis() - _mascotPulseUntilMs) < 0) {
             if (!_notifActive) {
                 state = _mascotPulseState;
             }
@@ -1070,969 +1040,9 @@ void DisplayManager::drawMascotFrame(MascotState state, int frame) {
         }
     }
 
-    const int cx = 34;   // canvas center x
-    const int cy = 52;   // canvas center y
-
-    // =========================================================================
-    // COLOR PALETTE
-    // =========================================================================
-    const lv_color_t COL_WHITE    = lv_color_hex(0xFFFFFF);
-    const lv_color_t COL_YELLOW   = lv_color_hex(0xFCE700);
-    const lv_color_t COL_CYAN     = lv_color_hex(0x00F0FF);
-    const lv_color_t COL_RED      = lv_color_hex(0xFF003C);
-    const lv_color_t COL_GREEN    = lv_color_hex(0x00FF9C);
-    const lv_color_t COL_HOTPINK  = lv_color_hex(0xFF00FF);
-    const lv_color_t COL_DIM_YEL  = lv_color_hex(0xA07800);
-    const lv_color_t COL_DIM_CYAN = lv_color_hex(0x007880);
-    const lv_color_t COL_GREY     = lv_color_hex(0x8A8A8A);
-    const lv_color_t COL_BLACK    = lv_color_hex(0x000000);
-    const lv_color_t COL_OLIVE    = lv_color_hex(0x5DC000);
-    const lv_color_t COL_DKGREY   = lv_color_hex(0x2A2A2A);
-
-    // =========================================================================
-    // SHARED GEOMETRY — base ghost body
-    // =========================================================================
-    const int bodyW = 52;
-    const int bodyH = 56;
-    const int bodyX = cx - bodyW / 2;   // 10
-    const int bodyY = cy - bodyH / 2;   // 24
-
-    // Eye base positions (relative to body top-left)
-    const int eyeBaseW  = 12;
-    const int eyeBaseH  = 14;
-    const int eyeLX     = bodyX + 8;    // left eye x
-    const int eyeRX     = bodyX + 32;   // right eye x
-    const int eyeBaseY  = bodyY + 16;   // eye y
-
-    // Breathing: subtle vertical oscillation on a ~3s cycle
-    // produces values -1, 0, +1
-    int breathCycle = frame % 90;
-    int breathOff   = (breathCycle < 30) ? 0 : (breathCycle < 60) ? -1 : 0;
-
-    // =========================================================================
-    // HELPER LAMBDAS (inline, zero-overhead on ESP32)
-    // =========================================================================
-
-    // Initialize drawing layer
-    lv_layer_t layer;
-    lv_canvas_init_layer(_mascotCanvas, &layer);
-
-    // --- Draw a filled rounded rect ---
-    auto drawRect = [&](int x, int y, int w, int h,
-                        lv_color_t col, lv_opa_t opa, int rad) {
-        lv_draw_rect_dsc_t r;
-        lv_draw_rect_dsc_init(&r);
-        r.bg_color = col;
-        r.bg_opa = opa;
-        r.radius = rad;
-        r.border_width = 0;
-        lv_area_t area = {(int32_t)x, (int32_t)y,
-                          (int32_t)(x + w - 1), (int32_t)(y + h - 1)};
-        lv_draw_rect(&layer, &r, &area);
-    };
-
-    // --- Draw a rect outline (no fill) ---
-    auto drawRectOutline = [&](int x, int y, int w, int h,
-                               lv_color_t col, lv_opa_t opa,
-                               int rad, int bw) {
-        lv_draw_rect_dsc_t r;
-        lv_draw_rect_dsc_init(&r);
-        r.bg_opa = LV_OPA_TRANSP;
-        r.radius = rad;
-        r.border_color = col;
-        r.border_opa = opa;
-        r.border_width = bw;
-        lv_area_t area = {(int32_t)x, (int32_t)y,
-                          (int32_t)(x + w - 1), (int32_t)(y + h - 1)};
-        lv_draw_rect(&layer, &r, &area);
-    };
-
-    // --- Draw an arc ---
-    auto drawArc = [&](int acx, int acy, int radius,
-                       int startAngle, int endAngle,
-                       lv_color_t col, int width, lv_opa_t opa) {
-        lv_draw_arc_dsc_t a;
-        lv_draw_arc_dsc_init(&a);
-        a.color = col;
-        a.width = width;
-        a.opa = opa;
-        a.center.x   = acx;
-        a.center.y   = acy;
-        a.radius     = radius;
-        a.start_angle = startAngle;
-        a.end_angle  = endAngle;
-        lv_draw_arc(&layer, &a);
-    };
-
-    // --- Draw a line segment ---
-    auto drawLine = [&](int x1, int y1, int x2, int y2,
-                        lv_color_t col, int width, lv_opa_t opa) {
-        lv_draw_line_dsc_t l;
-        lv_draw_line_dsc_init(&l);
-        l.color = col;
-        l.width = width;
-        l.opa = opa;
-        l.p1.x = x1;
-        l.p1.y = y1;
-        l.p2.x = x2;
-        l.p2.y = y2;
-        lv_draw_line(&layer, &l);
-    };
-
-    // --- Draw a small filled dot/square ---
-    auto drawDot = [&](int x, int y, int sz,
-                       lv_color_t col, lv_opa_t opa) {
-        drawRect(x - sz/2, y - sz/2, sz, sz, col, opa, sz/2);
-    };
-
-    // =========================================================================
-    // DRAW BASE GHOST BODY (shared across all states)
-    // Consists of: glow -> body -> tail bumps -> eyes
-    // State-specific code can override colors/positions before calling this
-    // =========================================================================
-
-    // State-dependent overrides
-    lv_color_t bodyColor   = COL_WHITE;
-    lv_opa_t   bodyOpa     = LV_OPA_COVER;
-    lv_opa_t   glowOpa     = 18;
-    lv_opa_t   highlightOpa = 38;
-    int        eyeYOff     = 0;       // vertical eye offset
-    int        eyeXOff     = 0;       // horizontal eye offset (both eyes)
-    int        eyeHMod     = 0;       // eye height modifier
-    int        eyeWMod     = 0;       // eye width modifier
-    int        bodyYOff    = breathOff; // breathing offset
-    bool       drawEyes    = true;
-    bool       drawTail    = true;
-    bool       drawGlow    = true;
-    bool       customBody  = false;   // if true, state draws its own body
-    bool       drawBrows   = true;
-    int        browTilt    = 0;
-    int        mouthStyle  = 0;       // 0=flat 1=smile 2=open 3=smirk 4=frown
-    int        mouthYOff   = 0;
-    int        mouthW      = 12;
-    const int  propSwing   = (frame % 24 < 12) ? 1 : -1;
-
-    // =========================================================================
-    // STATE MACHINE
-    // =========================================================================
-    switch (state) {
-
-    // =====================================================================
-    // STANDBY — Relaxed, headphones, satellite dish, half-lidded eyes
-    // =====================================================================
-    case MASCOT_STANDBY: {
-        // Half-lidded eyes
-        eyeHMod = -5;
-        eyeYOff = 2;
-        browTilt = -1;
-        mouthStyle = 0;
-        mouthW = 10;
-
-        // Slow blink every ~60 frames
-        int blinkPhase = frame % 60;
-        if (blinkPhase < 3) {
-            eyeHMod = -11;  // 1px tall
-            eyeYOff = 5;
-        }
-
-        // Draw body first (uses shared code below), then accessories on top
-        // --- fall through to shared body draw, then post-draw accessories ---
-        break;
-    }
-
-    // =====================================================================
-    // BOOT_ATTENTION — Military salute, helmet, wide alert eyes
-    // =====================================================================
-    case MASCOT_BOOT_ATTENTION: {
-        eyeHMod = 2;   // wider eyes
-        eyeWMod = 1;
-        browTilt = 1;
-        mouthStyle = 1;
-        mouthW = 10;
-        break;
-    }
-
-    // =====================================================================
-    // LORA_RECON — Listening, eyes right, directional antenna
-    // =====================================================================
-    case MASCOT_LORA_RECON: {
-        eyeXOff = 3;   // looking right
-        browTilt = 1;
-        mouthStyle = 0;
-        break;
-    }
-
-    // =====================================================================
-    // WIFI_RECON — Scanning, eyes up, WiFi arcs
-    // =====================================================================
-    case MASCOT_WIFI_RECON: {
-        eyeYOff = -2;   // looking up
-        browTilt = -1;
-        mouthStyle = 2;
-        mouthW = 8;
-        break;
-    }
-
-    // =====================================================================
-    // PWNY — Active capture/attack mode, red tint, devil horns, menacing eyes
-    // =====================================================================
-    case MASCOT_PWNY: {
-        eyeWMod = 1;
-        browTilt = 4;
-        mouthStyle = 3;
-        mouthYOff = -1;
-        break;
-    }
-
-    // =====================================================================
-    // HOMELAB — Nerdy, glasses, desk, looking down
-    // =====================================================================
-    case MASCOT_HOMELAB_SYNC: {
-        eyeYOff = 3;    // looking down
-        browTilt = -1;
-        mouthStyle = 1;
-        mouthW = 10;
-        break;
-    }
-
-    // =====================================================================
-    // LOW_BATTERY — Tired, dim, droopy
-    // =====================================================================
-    case MASCOT_LOW_BATTERY: {
-        bodyColor = lv_color_hex(0xAAAAAA);
-        eyeYOff = 2;
-        eyeWMod = -2;
-        highlightOpa = 28;
-        browTilt = -2;
-        mouthStyle = 4;
-        mouthYOff = 1;
-        mouthW = 10;
-
-        // Body opacity pulsing between 180 and 255
-        int pulsePhase = frame % 40;
-        int pulseVal = (pulsePhase < 20) ? pulsePhase : (40 - pulsePhase);
-        bodyOpa = (lv_opa_t)(180 + (pulseVal * 75 / 20));
-        glowOpa = 15;
-        break;
-    }
-
-    // =====================================================================
-    // ALERT — Alarmed, wide eyes, flashing, exclamation mark
-    // =====================================================================
-    case MASCOT_ALERT: {
-        eyeHMod = 4;  // very wide eyes
-        browTilt = -3;
-        mouthStyle = 2;
-        mouthW = 9;
-        // Flash body between white and yellow
-        if (frame % 6 < 3) {
-            glowOpa = 24;
-        }
-        break;
-    }
-
-    // =====================================================================
-    // TRANSMIT — Focused, arm extended, radio waves
-    // =====================================================================
-    case MASCOT_TRANSMIT: {
-        // Confident forward eyes
-        eyeWMod = 1;
-        browTilt = 2;
-        mouthStyle = 3;
-        mouthW = 10;
-        break;
-    }
-
-    // =====================================================================
-    // RECON_WALK — Moving, bobbing, trenchcoat, data trail
-    // =====================================================================
-    case MASCOT_RECON_WALK: {
-        int bob = (frame % 12 < 6) ? -2 : 0;
-        bodyYOff = bob;
-        eyeXOff = -1;  // looking in walk direction (left)
-        browTilt = 1;
-        mouthStyle = 0;
-        break;
-    }
-
-    // =====================================================================
-    // PREFLIGHT — Professional checklist, clipboard, helmet
-    // =====================================================================
-    case MASCOT_PREFLIGHT: {
-        eyeYOff = 4;  // looking down at clipboard
-        browTilt = 1;
-        mouthStyle = 1;
-        mouthW = 9;
-        break;
-    }
-
-    // =====================================================================
-    // ERROR — Distressed, X eyes, glitch, spiral
-    // =====================================================================
-    case MASCOT_ERROR: {
-        // Rapid opacity flicker
-        int flick = frame % 4;
-        bodyOpa = (flick < 2) ? LV_OPA_COVER : 160;
-        highlightOpa = 18;
-
-        // Glitch: occasional horizontal body offset
-        if ((frame % 17) < 2) {
-            // Will be applied as a shift in the custom draw
-        }
-        drawEyes = false;  // we draw custom X eyes
-        drawBrows = false;
-        mouthStyle = 4;
-        break;
-    }
-
-    default:
-        break;
-    }
-
-    // =========================================================================
-    // SHARED BODY RENDERING
-    // =========================================================================
-    if (!customBody) {
-        int bx = bodyX;
-        int by = bodyY + bodyYOff;
-
-        // Glitch offset for ERROR state
-        int glitchOff = 0;
-        if (state == MASCOT_ERROR && (frame % 17) < 2) {
-            glitchOff = ((frame % 5) - 2) * 3;  // -6 to +6 px
-        }
-        bx += glitchOff;
-
-        // --- GLOW EFFECT ---
-        if (drawGlow) {
-            drawRect(bx - 3, by - 3, bodyW + 6, bodyH + 6,
-                     bodyColor, glowOpa, 12);
-        }
-
-        // --- FLOOR SHADOW ---
-        drawRect(bx + 6, by + bodyH + 13, bodyW - 12, 5,
-                 COL_DKGREY, 96, 3);
-
-        // --- MAIN BODY ---
-        drawRect(bx, by, bodyW, bodyH, bodyColor, bodyOpa, 12);
-        drawRect(bx + 4, by + 4, bodyW - 18, 10,
-                 COL_WHITE, highlightOpa, 8);
-
-        // --- GHOST TAIL (three bumps) ---
-        if (drawTail) {
-            int tailY = by + bodyH - 6;
-            // Tail sway: each bump oscillates slightly
-            int sw0 = ((frame + 0) % 30 < 15) ? 0 : 1;
-            int sw1 = ((frame + 10) % 30 < 15) ? 0 : -1;
-            int sw2 = ((frame + 20) % 30 < 15) ? 0 : 1;
-
-            drawRect(bx + 2 + sw0,  tailY, 13, 13, bodyColor, bodyOpa, 7);
-            drawRect(bx + 19 + sw1, tailY, 13, 13, bodyColor, bodyOpa, 7);
-            drawRect(bx + 36 + sw2, tailY, 13, 13, bodyColor, bodyOpa, 7);
-        }
-
-        // --- EYES ---
-        if (drawEyes) {
-            int ew = eyeBaseW + eyeWMod;
-            int eh = eyeBaseH + eyeHMod;
-            int ex_l = eyeLX + eyeXOff + glitchOff;
-            int ex_r = eyeRX + eyeXOff + glitchOff;
-            int ey = eyeBaseY + eyeYOff + bodyYOff;
-
-            drawRect(ex_l, ey, ew, eh, COL_BLACK, LV_OPA_COVER, 3);
-            drawRect(ex_r, ey, ew, eh, COL_BLACK, LV_OPA_COVER, 3);
-
-            // Eye shine — tiny 2px white dot in upper-right of each eye
-            if (eh > 4) {
-                drawRect(ex_l + ew - 4, ey + 2, 2, 2,
-                         COL_WHITE, 120, 1);
-                drawRect(ex_r + ew - 4, ey + 2, 2, 2,
-                         COL_WHITE, 120, 1);
-            }
-
-            if (drawBrows) {
-                int browY = ey - 4;
-                drawLine(ex_l - 1, browY + max(0, browTilt),
-                         ex_l + ew + 1, browY + max(0, -browTilt),
-                         COL_BLACK, 1, 180);
-                drawLine(ex_r - 1, browY + max(0, -browTilt),
-                         ex_r + ew + 1, browY + max(0, browTilt),
-                         COL_BLACK, 1, 180);
-            }
-        }
-
-        const int mouthX = bx + (bodyW - mouthW) / 2;
-        const int mouthY = by + 37 + mouthYOff;
-        switch (mouthStyle) {
-            case 0:
-                drawRect(mouthX, mouthY, mouthW, 2, COL_BLACK, 220, 1);
-                break;
-            case 1:
-                drawArc(cx + glitchOff, mouthY - 1, max(4, mouthW / 2), 18, 164,
-                        COL_BLACK, 2, LV_OPA_COVER);
-                break;
-            case 2:
-                drawRect(cx + glitchOff - 4, mouthY - 1, 8, 9, COL_BLACK, LV_OPA_COVER, 4);
-                break;
-            case 3:
-                drawArc(cx + glitchOff + 1, mouthY - 1, max(4, mouthW / 2), 20, 120,
-                        COL_BLACK, 2, LV_OPA_COVER);
-                drawRect(cx + glitchOff + 3, mouthY + 1, 3, 2, COL_BLACK, 220, 1);
-                break;
-            case 4:
-                drawArc(cx + glitchOff, mouthY + 5, max(4, mouthW / 2), 200, 340,
-                        COL_BLACK, 2, LV_OPA_COVER);
-                break;
-            default:
-                break;
-        }
-    }
-
-    // =========================================================================
-    // STATE-SPECIFIC OVERLAYS & ACCESSORIES
-    // (drawn AFTER the base body)
-    // =========================================================================
-    switch (state) {
-
-    // -----------------------------------------------------------------
-    // STANDBY — Headphones + satellite dish
-    // -----------------------------------------------------------------
-    case MASCOT_STANDBY: {
-        int by = bodyY + bodyYOff;
-
-        // Headphones band — cyan arc over the top of the head
-        drawArc(cx, by + 6, 26, 200, 340, COL_CYAN, 3, LV_OPA_COVER);
-
-        // Ear pieces — small filled circles on each side
-        drawDot(cx - 24, by + 12, 6, COL_CYAN, LV_OPA_COVER);
-        drawDot(cx + 24, by + 12, 6, COL_CYAN, LV_OPA_COVER);
-
-        // Satellite dish — vertical stem + arc on top-right
-        int dishX = cx + 20;
-        int dishBaseY = by - 2;
-        drawLine(dishX, dishBaseY, dishX, dishBaseY - 14,
-                 COL_DIM_CYAN, 2, LV_OPA_COVER);
-
-        // Dish arc at top — pulses brightness
-        bool dishBright = (frame % 8) < 4;
-        lv_opa_t dishOpa = dishBright ? LV_OPA_COVER : 100;
-        lv_color_t dishCol = dishBright ? COL_CYAN : COL_DIM_CYAN;
-        drawArc(dishX, dishBaseY - 14, 6, 270, 360,
-                dishCol, 2, dishOpa);
-        // Small dot at dish tip
-        drawDot(dishX + 1, dishBaseY - 16, 2, dishCol, dishOpa);
-
-        if ((frame % 18) < 8) {
-            drawLine(cx - 28, by + 4, cx - 24, by + 1,
-                     COL_DIM_CYAN, 1, 120);
-            drawLine(cx - 23, by + 1, cx - 20, by + 4,
-                     COL_DIM_CYAN, 1, 120);
-        }
-
-        break;
-    }
-
-    // -----------------------------------------------------------------
-    // BOOT_ATTENTION — Helmet + saluting arm
-    // -----------------------------------------------------------------
-    case MASCOT_BOOT_ATTENTION: {
-        int by = bodyY + bodyYOff;
-
-        // Olive green helmet — sits on top of head
-        drawRect(bodyX - 2, by - 10, bodyW + 4, 14, COL_OLIVE, LV_OPA_COVER, 4);
-        // Helmet brim — slightly wider, thinner
-        drawRect(bodyX - 4, by, bodyW + 8, 4, COL_OLIVE, LV_OPA_COVER, 2);
-        // Helmet band — dark accent stripe
-        drawRect(bodyX, by - 4, bodyW, 3, COL_DKGREY, 180, 1);
-
-        // Right arm in salute — angled up-right
-        // Arm: rounded rect from right side of body up toward forehead
-        int armX = bodyX + bodyW - 4;
-        int armY = by + 4;
-        drawRect(armX, armY - 12, 8, 20, COL_WHITE, bodyOpa, 4);
-        // Forearm angled to forehead
-        drawLine(armX + 4, armY - 10, armX - 2, armY - 20,
-                 COL_WHITE, 6, bodyOpa);
-        // Hand — small rounded rect at salute point
-        drawRect(armX - 4, armY - 24, 8, 6, COL_WHITE, bodyOpa, 3);
-
-        break;
-    }
-
-    // -----------------------------------------------------------------
-    // LORA_RECON — Directional antenna + signal rings
-    // -----------------------------------------------------------------
-    case MASCOT_LORA_RECON: {
-        int by = bodyY + bodyYOff;
-
-        // Antenna stem — extends from right side of body
-        int antBaseX = bodyX + bodyW;
-        int antBaseY = by + 12;
-        int antTipX  = antBaseX + 12;
-        int antTipY  = antBaseY - 10;
-
-        // Stem line
-        drawLine(antBaseX, antBaseY, antBaseX + 8, antBaseY,
-                 COL_YELLOW, 2, LV_OPA_COVER);
-        // Angled part going up
-        drawLine(antBaseX + 8, antBaseY, antTipX, antTipY,
-                 COL_YELLOW, 2, LV_OPA_COVER);
-        // Tip dot
-        drawDot(antTipX, antTipY, 4, COL_YELLOW, LV_OPA_COVER);
-
-        // Signal rings — three concentric arcs pulsing outward
-        int sigPhase = frame % 12;
-        for (int i = 0; i < 3; i++) {
-            int ringFrame = (sigPhase + i * 4) % 12;
-            // Each ring fades as it expands
-            lv_opa_t ringOpa = (lv_opa_t)(200 - ringFrame * 16);
-            if (ringOpa < 30) ringOpa = 30;
-            int ringRad = 6 + ringFrame * 2;
-
-            drawArc(antTipX, antTipY, ringRad, 280, 350,
-                    COL_YELLOW, 1, ringOpa);
-        }
-
-        break;
-    }
-
-    // -----------------------------------------------------------------
-    // WIFI_RECON — WiFi arcs above head
-    // -----------------------------------------------------------------
-    case MASCOT_WIFI_RECON: {
-        int by = bodyY + bodyYOff;
-        int wifiCX = cx + 18;
-        int wifiCY = by + 10;
-
-        int phase = frame % 15;
-
-        drawRect(bodyX + bodyW - 2, by + 20, 14, 8, COL_DKGREY, LV_OPA_COVER, 3);
-        drawRect(bodyX + bodyW + 8, by + 22, 6, 4, COL_GREY, LV_OPA_COVER, 2);
-        drawLine(bodyX + bodyW - 2, by + 24, bodyX + bodyW - 10, by + 20 + propSwing,
-                 COL_WHITE, 4, 180);
-
-        // Three WiFi rings — sequential appearance
-        int radii[3] = {10, 18, 26};
-        int thresholds[3] = {3, 7, 11};
-        lv_opa_t opacities[3] = {LV_OPA_COVER, 180, 120};
-
-        for (int i = 0; i < 3; i++) {
-            if (phase > thresholds[i]) {
-                // Fade in: opacity ramps up after threshold
-                int fadeFrames = phase - thresholds[i];
-                lv_opa_t opa = (lv_opa_t)((fadeFrames * opacities[i]) / 4);
-                if (opa > opacities[i]) opa = opacities[i];
-
-                drawArc(wifiCX, wifiCY, radii[i], 225, 315,
-                        COL_CYAN, 2, opa);
-            }
-        }
-
-        // Small dot at center of WiFi origin
-        drawDot(wifiCX, wifiCY, 3, COL_CYAN, LV_OPA_COVER);
-
-        drawDot(cx - 18, by - 10, 2, COL_DIM_CYAN, 80);
-        drawDot(cx - 12, by - 16, 2, COL_DIM_CYAN, 48);
-
-        break;
-    }
-
-    // -----------------------------------------------------------------
-    // PWNY — Devil horns, menacing eyes, smirk, scan line
-    // -----------------------------------------------------------------
-    case MASCOT_PWNY: {
-        int bx = bodyX;
-        int by = bodyY + bodyYOff;
-
-        // Devil horns — drawn as small triangles on top of head
-        // Left horn
-        drawLine(bx + 8,  by - 2, bx + 2,  by - 16,
-                 COL_HOTPINK, 3, LV_OPA_COVER);
-        drawLine(bx + 2,  by - 16, bx + 14, by - 2,
-                 COL_HOTPINK, 2, LV_OPA_COVER);
-        // Right horn
-        drawLine(bx + 42, by - 2, bx + 48, by - 16,
-                 COL_HOTPINK, 3, LV_OPA_COVER);
-        drawLine(bx + 48, by - 16, bx + 36, by - 2,
-                 COL_HOTPINK, 2, LV_OPA_COVER);
-
-        // Menacing eye modification — black triangles over inner top corners
-        // to create angular V-shape look
-        int ey = eyeBaseY + bodyYOff;
-        int ew = eyeBaseW + eyeWMod;
-        // Left eye: triangle on inner-top (right side of left eye)
-        drawLine(eyeLX + ew, ey, eyeLX + ew - 5, ey + 4,
-                 lv_color_hex(0xFF1A1A), 2, LV_OPA_COVER);
-        // Right eye: triangle on inner-top (left side of right eye)
-        drawLine(eyeRX, ey, eyeRX + 5, ey + 4,
-                 lv_color_hex(0xFF1A1A), 2, LV_OPA_COVER);
-
-        // Smirk — small curved line below and between eyes
-        int smirkY = ey + eyeBaseH + 4;
-        drawArc(cx, smirkY - 2, 7, 30, 150,
-                COL_BLACK, 2, 220);
-
-        // Scan line — sweeping horizontal line for menace
-        int scanY = by + ((frame % 50) * bodyH / 50);
-        drawRect(bx, scanY, bodyW, 1, COL_RED, 32, 0);
-
-        break;
-    }
-
-    // -----------------------------------------------------------------
-    // HOMELAB — Glasses, desk, tiny screen with scrolling code
-    // -----------------------------------------------------------------
-    case MASCOT_HOMELAB_SYNC: {
-        int by = bodyY + bodyYOff;
-
-        // Glasses — two rectangles with bridge, drawn over eyes
-        int glassY = eyeBaseY + eyeYOff + bodyYOff - 2;
-        int glassH = eyeBaseH + 4;
-        int glassW = eyeBaseW + 4;
-
-        // Glass frames (outline)
-        drawRectOutline(eyeLX - 2, glassY, glassW, glassH,
-                        COL_GREY, LV_OPA_COVER, 2, 1);
-        drawRectOutline(eyeRX - 2, glassY, glassW, glassH,
-                        COL_GREY, LV_OPA_COVER, 2, 1);
-        // Bridge between glasses
-        drawLine(eyeLX + glassW - 2, glassY + glassH / 2,
-                 eyeRX - 2, glassY + glassH / 2,
-                 COL_GREY, 1, LV_OPA_COVER);
-
-        // Desk — flat grey rectangle below body
-        int deskY = by + bodyH + 12;
-        int deskW = 40;
-        int deskX = cx - deskW / 2;
-        drawRect(deskX, deskY, deskW, 4, COL_GREY, LV_OPA_COVER, 1);
-
-        // Tiny screen on desk
-        int scrW = 24;
-        int scrH = 12;
-        int scrX = cx - scrW / 2;
-        int scrY = deskY - scrH;
-        drawRect(scrX, scrY, scrW, scrH, COL_DKGREY, LV_OPA_COVER, 1);
-        // Screen bezel
-        drawRectOutline(scrX - 1, scrY - 1, scrW + 2, scrH + 2,
-                        COL_GREY, 180, 1, 1);
-
-        drawRect(cx + 16, deskY - 6, 6, 6, COL_CYAN, 120, 2);
-        drawLine(cx + 18, deskY - 6, cx + 18, deskY - 12,
-                 COL_CYAN, 1, 120);
-        drawRect(cx - 24, deskY - 5, 6, 5, COL_YELLOW, 140, 1);
-        drawLine(cx - 18, deskY - 3, cx - 14, deskY - 5,
-                 COL_DIM_YEL, 1, 120);
-
-        // Scrolling green code lines on screen
-        int scrollOff = frame % 6;
-        for (int i = 0; i < 4; i++) {
-            int lineY = scrY + 2 + ((i * 3 + scrollOff) % scrH);
-            if (lineY >= scrY + 1 && lineY < scrY + scrH - 1) {
-                int lineW = 6 + ((i * 7 + frame) % 12);
-                if (lineW > scrW - 4) lineW = scrW - 4;
-                drawRect(scrX + 2, lineY, lineW, 1,
-                         COL_GREEN, 180, 0);
-            }
-        }
-
-        break;
-    }
-
-    // -----------------------------------------------------------------
-    // LOW_BATTERY — Battery icon, flashing red outline
-    // -----------------------------------------------------------------
-    case MASCOT_LOW_BATTERY: {
-        int by = bodyY + bodyYOff;
-
-        // Battery icon above head
-        int batW = 18;
-        int batH = 10;
-        int batX = cx - batW / 2;
-        int batY = by - 16;
-
-        // Flash red outline
-        bool flashRed = (frame % 10) < 3;
-        lv_color_t batCol = flashRed ? COL_RED : COL_GREY;
-
-        // Battery outline
-        drawRectOutline(batX, batY, batW, batH, batCol, LV_OPA_COVER, 2, 1);
-        // Terminal nub on right
-        drawRect(batX + batW, batY + 3, 3, 4, batCol, LV_OPA_COVER, 1);
-
-        // Empty inside — just a small sliver to show nearly dead
-        int fillW = 2;
-        drawRect(batX + 2, batY + 2, fillW, batH - 4,
-                 COL_RED, flashRed ? LV_OPA_COVER : 80, 0);
-
-        // "ZZZ" sleep indication — subtle
-        int zzPhase = (frame / 15) % 3;
-        for (int i = 0; i <= zzPhase; i++) {
-            int zx = cx + 18 + i * 5;
-            int zy = by - 8 - i * 6;
-            lv_opa_t zopa = (lv_opa_t)(180 - i * 50);
-            // 'Z' drawn as three lines
-            drawLine(zx, zy, zx + 4, zy, COL_GREY, 1, zopa);
-            drawLine(zx + 4, zy, zx, zy + 4, COL_GREY, 1, zopa);
-            drawLine(zx, zy + 4, zx + 4, zy + 4, COL_GREY, 1, zopa);
-        }
-
-        break;
-    }
-
-    // -----------------------------------------------------------------
-    // ALERT — Exclamation mark, flashing, wide eyes, raised arms
-    // -----------------------------------------------------------------
-    case MASCOT_ALERT: {
-        int by = bodyY + bodyYOff;
-
-        // Bold exclamation mark above head — yellow
-        int exX = cx - 2;
-        int exY = by - 22;
-        // Stem
-        drawRect(exX, exY, 5, 12, COL_YELLOW, LV_OPA_COVER, 2);
-        // Dot
-        drawRect(exX, exY + 15, 5, 4, COL_YELLOW, LV_OPA_COVER, 2);
-
-        // Arms thrown up in alarm
-        // Left arm — angled up-left
-        drawLine(bodyX, by + 10, bodyX - 10, by - 8,
-                 bodyColor, 5, bodyOpa);
-        drawRect(bodyX - 13, by - 12, 7, 6, bodyColor, bodyOpa, 3);
-
-        // Right arm — angled up-right
-        drawLine(bodyX + bodyW, by + 10, bodyX + bodyW + 10, by - 8,
-                 bodyColor, 5, bodyOpa);
-        drawRect(bodyX + bodyW + 7, by - 12, 7, 6, bodyColor, bodyOpa, 3);
-
-        // Stress lines — small dashes radiating from body
-        if (frame % 4 < 2) {
-            drawLine(bodyX - 4, by + 4, bodyX - 8, by + 2,
-                     COL_YELLOW, 1, 150);
-            drawLine(bodyX + bodyW + 4, by + 4, bodyX + bodyW + 8, by + 2,
-                     COL_YELLOW, 1, 150);
-        }
-
-        break;
-    }
-
-    // -----------------------------------------------------------------
-    // TRANSMIT — Extended arm, radio wave pulses
-    // -----------------------------------------------------------------
-    case MASCOT_TRANSMIT: {
-        int by = bodyY + bodyYOff;
-
-        // Right arm extended forward (to the right)
-        int armX = bodyX + bodyW - 2;
-        int armY = by + bodyH / 2 - 4;
-        drawRect(armX, armY, 16, 8, COL_YELLOW, LV_OPA_COVER, 4);
-
-        // Hand at tip
-        drawDot(armX + 18, armY + 4, 5, COL_YELLOW, LV_OPA_COVER);
-
-        // Radio wave arcs pulsing from arm tip
-        int waveTipX = armX + 18;
-        int waveTipY = armY + 4;
-        int wavePhase = frame % 10;
-
-        for (int i = 0; i < 3; i++) {
-            int ringT = (wavePhase + i * 3) % 10;
-            int ringRad = 5 + ringT * 2;
-            lv_opa_t ringOpa = (lv_opa_t)(220 - ringT * 22);
-            if (ringOpa < 20) ringOpa = 20;
-
-            drawArc(waveTipX, waveTipY, ringRad, 310, 50,
-                    COL_CYAN, 2, ringOpa);
-        }
-
-        // Floating data particles near waves
-        for (int p = 0; p < 2; p++) {
-            int px = waveTipX + 8 + ((frame + p * 17) % 14);
-            int py = waveTipY - 6 + ((frame + p * 11) % 12);
-            lv_opa_t popa = (lv_opa_t)(150 - ((frame + p * 7) % 8) * 15);
-            drawDot(px, py, 2, COL_CYAN, popa);
-        }
-
-        break;
-    }
-
-    // -----------------------------------------------------------------
-    // RECON_WALK — Trenchcoat, data trail, bobbing motion
-    // -----------------------------------------------------------------
-    case MASCOT_RECON_WALK: {
-        int by = bodyY + bodyYOff;
-
-        // Trenchcoat — slightly wider, darker, extends below body
-        int coatX = bodyX - 3;
-        int coatW = bodyW + 6;
-        int coatH = bodyH + 14;
-        drawRect(coatX, by + 6, coatW, coatH - 6,
-                 COL_DKGREY, 200, 4);
-
-        // Popped collar — two small angled rects at top of coat
-        drawLine(coatX, by + 6, coatX + 4, by - 1,
-                 COL_DKGREY, 3, 220);
-        drawLine(coatX + coatW, by + 6, coatX + coatW - 4, by - 1,
-                 COL_DKGREY, 3, 220);
-
-        // Coat lapel line down the center
-        drawLine(cx, by + 8, cx, by + bodyH + 8,
-                 COL_BLACK, 1, 100);
-
-        // Data trail — 3 small dots behind body (to the right, he walks left)
-        for (int t = 0; t < 3; t++) {
-            int trailX = bodyX + bodyW + 6 + t * 7;
-            int trailY = by + bodyH / 2 + ((frame + t * 5) % 4) - 2;
-            lv_opa_t trailOpa = (lv_opa_t)(180 - t * 55);
-            int trailSz = 3 - t;
-            if (trailSz < 1) trailSz = 1;
-            drawRect(trailX, trailY, trailSz, trailSz,
-                     COL_CYAN, trailOpa, 0);
-        }
-
-        // Walking leg animation — two small bumps alternating
-        int legPhase = (frame % 12) < 6;
-        int legY = by + bodyH + coatH - 14;
-        if (legPhase) {
-            drawRect(cx - 8, legY, 6, 4, COL_WHITE, 180, 2);
-            drawRect(cx + 4, legY + 2, 6, 4, COL_WHITE, 140, 2);
-        } else {
-            drawRect(cx - 8, legY + 2, 6, 4, COL_WHITE, 140, 2);
-            drawRect(cx + 4, legY, 6, 4, COL_WHITE, 180, 2);
-        }
-
-        break;
-    }
-
-    // -----------------------------------------------------------------
-    // PREFLIGHT — Helmet, clipboard with animated checkmarks
-    // -----------------------------------------------------------------
-    case MASCOT_PREFLIGHT: {
-        int by = bodyY + bodyYOff;
-
-        // Helmet (same as BOOT_ATTENTION)
-        drawRect(bodyX - 2, by - 10, bodyW + 4, 14, COL_OLIVE, LV_OPA_COVER, 4);
-        drawRect(bodyX - 4, by, bodyW + 8, 4, COL_OLIVE, LV_OPA_COVER, 2);
-        drawRect(bodyX, by - 4, bodyW, 3, COL_DKGREY, 180, 1);
-
-        // Clipboard in front of body
-        int clipW = 28;
-        int clipH = 30;
-        int clipX = cx - clipW / 2;
-        int clipY = by + bodyH - 8;
-
-        // Clipboard body
-        drawRect(clipX, clipY, clipW, clipH, COL_GREY, 220, 3);
-        // Clipboard clip at top
-        drawRect(clipX + clipW / 2 - 4, clipY - 3, 8, 5,
-                 COL_DIM_CYAN, LV_OPA_COVER, 2);
-        drawRect(clipX + clipW - 8, clipY + 2, 5, 8,
-                 COL_YELLOW, 110, 1);
-
-        // Checklist lines — 3 items
-        int checkPhase = (frame / 10) % 4;  // 0-3, which items completed
-        if (checkPhase > 3) checkPhase = 3;
-
-        for (int i = 0; i < 3; i++) {
-            int lineY = clipY + 6 + i * 8;
-            int lineX = clipX + 10;
-            int lineW = clipW - 14;
-
-            bool completed = (i < checkPhase);
-            lv_color_t lineCol = completed ? COL_GREEN : COL_CYAN;
-
-            // Line
-            drawRect(lineX, lineY, lineW, 1, lineCol, 200, 0);
-
-            // Checkbox area
-            if (completed) {
-                // Checkmark — two short lines forming a V
-                drawLine(clipX + 3, lineY,
-                         clipX + 5, lineY + 3,
-                         COL_GREEN, 1, LV_OPA_COVER);
-                drawLine(clipX + 5, lineY + 3,
-                         clipX + 8, lineY - 2,
-                         COL_GREEN, 1, LV_OPA_COVER);
-            } else {
-                // Empty checkbox
-                drawRectOutline(clipX + 3, lineY - 1, 5, 5,
-                                COL_CYAN, 150, 1, 1);
-            }
-        }
-
-        drawLine(clipX + clipW + 2, clipY + 8,
-                 clipX + clipW + 6 + propSwing, clipY + 2,
-                 COL_WHITE, 2, 180);
-
-        break;
-    }
-
-    // -----------------------------------------------------------------
-    // ERROR — X over body, X eyes, spiral, glitch effects
-    // -----------------------------------------------------------------
-    case MASCOT_ERROR: {
-        int bx = bodyX;
-        int by = bodyY + bodyYOff;
-
-        // Glitch offset
-        int glitchOff = 0;
-        if ((frame % 17) < 2) {
-            glitchOff = ((frame % 5) - 2) * 3;
-        }
-        bx += glitchOff;
-
-        // X over the body — two red diagonal lines
-        drawLine(bx + 4, by + 4, bx + bodyW - 4, by + bodyH - 4,
-                 COL_RED, 2, 200);
-        drawLine(bx + bodyW - 4, by + 4, bx + 4, by + bodyH - 4,
-                 COL_RED, 2, 200);
-
-        // X eyes — draw eye rects then cross them with red
-        int ey = eyeBaseY + bodyYOff;
-        int elx = eyeLX + glitchOff;
-        int erx = eyeRX + glitchOff;
-
-        // Eye backgrounds
-        drawRect(elx, ey, eyeBaseW, eyeBaseH, COL_BLACK, LV_OPA_COVER, 3);
-        drawRect(erx, ey, eyeBaseW, eyeBaseH, COL_BLACK, LV_OPA_COVER, 3);
-
-        // Red X over left eye
-        drawLine(elx + 1, ey + 1, elx + eyeBaseW - 1, ey + eyeBaseH - 1,
-                 COL_RED, 2, LV_OPA_COVER);
-        drawLine(elx + eyeBaseW - 1, ey + 1, elx + 1, ey + eyeBaseH - 1,
-                 COL_RED, 2, LV_OPA_COVER);
-
-        // Red X over right eye
-        drawLine(erx + 1, ey + 1, erx + eyeBaseW - 1, ey + eyeBaseH - 1,
-                 COL_RED, 2, LV_OPA_COVER);
-        drawLine(erx + eyeBaseW - 1, ey + 1, erx + 1, ey + eyeBaseH - 1,
-                 COL_RED, 2, LV_OPA_COVER);
-
-        // Spiral above head — rotating arc
-        int spiralAngle = (frame * 12) % 360;
-        drawArc(cx + glitchOff, by - 10, 8,
-                spiralAngle, spiralAngle + 270,
-                COL_RED, 2, 180);
-        drawArc(cx + glitchOff, by - 10, 4,
-                spiralAngle + 90, spiralAngle + 300,
-                COL_RED, 1, 120);
-
-        // Glitch scan lines — random horizontal slices
-        int glitchY1 = by + ((frame * 7) % bodyH);
-        int glitchY2 = by + ((frame * 13) % bodyH);
-        drawRect(bx - 3, glitchY1, bodyW + 6, 2,
-                 COL_RED, 50, 0);
-        drawRect(bx + 5, glitchY2, bodyW - 10, 1,
-                 COL_CYAN, 40, 0);
-
-        break;
-    }
-
-    default:
-        break;
-    }
-
-    // Finish layer — commits all draw calls to canvas
-    lv_canvas_finish_layer(_mascotCanvas, &layer);
+    const int x = (THEME_MASCOT_W - SPR_FULL_W) / 2;
+    const int y = 8;
+    _nativeMascot.draw(x, y, state, frame);
 }
 
 // ─── Action bar ───────────────────────────────────────────────
@@ -2367,11 +1377,11 @@ void DisplayManager::_buildScreenSystem() {
     };
 
     makeSystemRow(30, "STORAGE", &_sysStorageValue, "FREE", &_sysFreeValue);
-    makeSystemRow(54, "PENDING", &_sysPendingValue, "DEDUPE", &_sysDedupeValue);
-    makeSystemRow(78, "MODE", &_sysModeValue, "POLICY", &_sysPolicyValue);
+    makeSystemRow(54, "EVENTS", &_sysPendingValue, "DEDUPE", &_sysDedupeValue);
+    makeSystemRow(78, "MAINT", &_sysModeValue, "WORK", &_sysPolicyValue);
     _sysTimeLabel = makeClippedLabel(_sysLivePanel, "UPTIME", CLR_GREY, FONT_SMALL, 4, 102, 100);
     _sysTimeValue = makeClippedLabel(_sysLivePanel, "--", CLR_CYAN, FONT_SMALL, 4, 114, 100);
-    makeClippedLabel(_sysLivePanel, "DUMP", CLR_GREY, FONT_SMALL, 140, 102, 100);
+    makeClippedLabel(_sysLivePanel, "LAST", CLR_GREY, FONT_SMALL, 140, 102, 100);
     _sysDumpValue = makeClippedLabel(_sysLivePanel, "READY", CLR_GREEN, FONT_SMALL, 140, 114, 100);
     makeClippedLabel(_sysLivePanel, "RADIO", CLR_GREY, FONT_SMALL, 4, 126, 100);
     _sysRadioValue = makeClippedLabel(_sysLivePanel, "IDLE", CLR_CYAN, FONT_SMALL, 4, 138, 100);
@@ -2660,7 +1670,6 @@ void DisplayManager::drawMission(MissionProfile profile) {
             const bool eapolFull = (t.eapolMask & 0x0F) == 0x0F;
 
             if (t.complete && t.pmkid && eapolFull) {
-                // Gold standard: PMKID + full 4-way
                 snprintf(rowBuf, sizeof(rowBuf),
                          "[**] %-12s PMKID+4W", t.ssid);
             } else if (t.complete && t.pmkid) {
@@ -2708,6 +1717,7 @@ void DisplayManager::drawMission(MissionProfile profile) {
         int probes = 0;
         int nodes = 0;
         int pending = 0;
+        const bool backlogTrusted = STORAGE.isPendingEventCountAuthoritative();
         uint8_t subGhzMode = 0;
         uint8_t radioOwner = 0;
         char lastMac[18] = "";
@@ -2718,7 +1728,9 @@ void DisplayManager::drawMission(MissionProfile profile) {
         wifiNetworks = g_state.wifiNetworkCount;
         probes = g_state.probePacketCount;
         nodes = g_state.subGhzNodeCount;
-        pending = g_state.sessionFilesPending;
+        pending = (STORAGE.isReady() && backlogTrusted)
+            ? static_cast<int>(STORAGE.getAuthoritativePendingEventCount())
+            : -1;
         subGhzMode = g_state.subGhzMode;
         radioOwner = g_state.radioOwner;
         strlcpy(lastMac, g_state.lastProbedMAC, sizeof(lastMac));
@@ -2730,8 +1742,13 @@ void DisplayManager::drawMission(MissionProfile profile) {
         lv_obj_set_style_text_color(_pwnyStatusValue, lv_color_hex(CLR_YELLOW), 0);
 
         char statsBuf[48];
-        snprintf(statsBuf, sizeof(statsBuf), "NET %d  PROBE %d  NODE %d  Q %d",
-                 wifiNetworks, probes, nodes, pending);
+        if (pending >= 0) {
+            snprintf(statsBuf, sizeof(statsBuf), "NET %d  PROBE %d  NODE %d  Q %d",
+                     wifiNetworks, probes, nodes, pending);
+        } else {
+            snprintf(statsBuf, sizeof(statsBuf), "NET %d  PROBE %d  NODE %d  Q ?",
+                     wifiNetworks, probes, nodes);
+        }
         lv_label_set_text(_pwnyStatsValue, statsBuf);
 
         char rowBuf[56];
@@ -2755,6 +1772,7 @@ void DisplayManager::drawMission(MissionProfile profile) {
     uint32_t total = 0;
     uint16_t percent = 0;
     int pending = 0;
+    const bool backlogTrusted = STORAGE.isPendingEventCountAuthoritative();
     char phase[16] = "";
     char timeLocal[24] = "";
 
@@ -2764,7 +1782,9 @@ void DisplayManager::drawMission(MissionProfile profile) {
     published = g_state.uploadPublished;
     total = g_state.uploadTotal;
     percent = g_state.uploadPercent;
-    pending = g_state.sessionFilesPending;
+    pending = (STORAGE.isReady() && backlogTrusted)
+        ? static_cast<int>(STORAGE.getAuthoritativePendingEventCount())
+        : -1;
     strlcpy(phase, g_state.uploadPhase, sizeof(phase));
     strlcpy(timeLocal, g_state.timeLocal, sizeof(timeLocal));
     STATE_READ_END();
@@ -2775,19 +1795,31 @@ void DisplayManager::drawMission(MissionProfile profile) {
                                 lv_color_hex(uploadActive ? CLR_GREEN : CLR_CYAN), 0);
 
     char statsBuf[48];
-    snprintf(statsBuf, sizeof(statsBuf),
-             "PEND:%d PUB:%lu/%lu %u%%",
-             pending,
-             static_cast<unsigned long>(published),
-             static_cast<unsigned long>(total),
-             static_cast<unsigned>(percent));
+    if (pending >= 0) {
+        snprintf(statsBuf, sizeof(statsBuf),
+                 "PEND:%d PUB:%lu/%lu %u%%",
+                 pending,
+                 static_cast<unsigned long>(published),
+                 static_cast<unsigned long>(total),
+                 static_cast<unsigned>(percent));
+    } else {
+        snprintf(statsBuf, sizeof(statsBuf),
+                 "PEND:? PUB:%lu/%lu %u%%",
+                 static_cast<unsigned long>(published),
+                 static_cast<unsigned long>(total),
+                 static_cast<unsigned>(percent));
+    }
     lv_label_set_text(_pwnyStatsValue, statsBuf);
 
     char rowBuf[8][52] = {};
     snprintf(rowBuf[0], sizeof(rowBuf[0]), "Phase  %s", phase[0] ? phase : "IDLE");
     snprintf(rowBuf[1], sizeof(rowBuf[1]), "Link   %s", wifiConnected ? "ONLINE" : "OFFLINE");
     snprintf(rowBuf[2], sizeof(rowBuf[2]), "Clock  %s", timeLocal[0] ? timeLocal : "--");
-    snprintf(rowBuf[3], sizeof(rowBuf[3]), "Queue  %d pending", pending);
+    if (pending >= 0) {
+        snprintf(rowBuf[3], sizeof(rowBuf[3]), "Queue  %d pending", pending);
+    } else {
+        snprintf(rowBuf[3], sizeof(rowBuf[3]), "Queue  ? pending");
+    }
 
     for (int i = 0; i < 4; ++i) {
         setRow(i, rowBuf[i], i < 3 ? CLR_WHITE : CLR_GREY);
@@ -2813,11 +1845,20 @@ void DisplayManager::drawWifi(const char* ssid, int networks,
     (void)ssid;
     (void)probeActivity;
     bool scanPending = false;
+    bool overlayActive = false;
     STATE_READ_BEGIN();
     scanPending = g_state.wifiScanPending;
+    overlayActive = g_state.wifiListActive ||
+                    g_state.missionListActive ||
+                    g_state.badUsbListActive ||
+                    g_state.debriefActive;
     STATE_READ_END();
     const ButtonBindingSet bindings = spectreScreenBindings(SCREEN_WIFI);
-    _setActionHints(bindings, scanPending);
+    if (overlayActive) {
+        _syncActionHintsFromState();
+    } else {
+        _setActionHints(bindings, scanPending);
+    }
     char netStr[8];
     snprintf(netStr, sizeof(netStr), "%d", networks);
     lv_label_set_text(_wifiNetworksValue, netStr);
@@ -2825,7 +1866,6 @@ void DisplayManager::drawWifi(const char* ssid, int networks,
                                 lv_color_hex(networks > 0 ? CLR_YELLOW : CLR_GREY),
                                 0);
 
-    // Read live data from state
     int devices, probes;
     char lastMAC[18], lastSSID[33];
     STATE_READ_BEGIN();
@@ -2851,7 +1891,6 @@ void DisplayManager::drawWifi(const char* ssid, int networks,
     lv_label_set_text(_wifiLastSSIDValue, lastSSID[0] ? lastSSID : "--");
     lv_label_set_text(_wifiLastMACValue, lastMAC[0] ? lastMAC : "--");
 
-    // Channel
     uint8_t ch;
     STATE_READ_BEGIN();
     ch = g_state.wifiChannel;
@@ -2896,49 +1935,25 @@ void DisplayManager::_buildWifiList() {
     lv_obj_set_pos(_wifiListEmptyLabel, 4, 22);
     lv_obj_add_flag(_wifiListEmptyLabel, LV_OBJ_FLAG_HIDDEN);
 
-    for (int i = 0; i < 8; i++) {
-        _wifiListRows[i] = lv_obj_create(_wifiListPanel);
-        lv_obj_set_pos(_wifiListRows[i], 0, 16 + i * 14);
-        lv_obj_set_size(_wifiListRows[i],
-            THEME_SCREEN_W - THEME_DIVIDER_X - 3, 13);
-        lv_obj_set_style_bg_opa(_wifiListRows[i],
-                                 LV_OPA_TRANSP, 0);
-        lv_obj_set_style_border_width(_wifiListRows[i],
-                                       0, 0);
-        lv_obj_set_style_radius(_wifiListRows[i], 0, 0);
-        lv_obj_clear_flag(_wifiListRows[i],
-                           LV_OBJ_FLAG_SCROLLABLE);
-        lv_obj_set_style_pad_all(_wifiListRows[i], 0, 0);
-
-        _wifiListSecLabel[i] = lv_label_create(_wifiListRows[i]);
-        lv_obj_set_style_text_font(_wifiListSecLabel[i], FONT_SMALL, 0);
-        lv_obj_set_pos(_wifiListSecLabel[i], 0, 0);
-
-        _wifiListSSIDLabel[i] = lv_label_create(_wifiListRows[i]);
-        lv_obj_set_style_text_font(_wifiListSSIDLabel[i], FONT_SMALL, 0);
-        lv_obj_set_pos(_wifiListSSIDLabel[i], 10, 0);
-
-        _wifiListChannelLabel[i] = lv_label_create(_wifiListRows[i]);
-        lv_obj_set_style_text_font(_wifiListChannelLabel[i], FONT_SMALL, 0);
-        lv_obj_set_style_text_color(_wifiListChannelLabel[i], lv_color_hex(0x007880), 0);
-        lv_obj_set_pos(_wifiListChannelLabel[i], 120, 0);
+    for (int i = 0; i < LIST_VISIBLE_ROWS; i++) {
+        _wifiListRows[i] = makeClippedLabel(_wifiListPanel, "", CLR_WHITE,
+                                            FONT_SMALL, 4,
+                                            WIFI_LIST_ROW_Y + i * WIFI_LIST_ROW_STEP,
+                                            WIFI_LIST_TEXT_W);
+        lv_obj_add_flag(_wifiListRows[i], LV_OBJ_FLAG_HIDDEN);
 
         for (int b = 0; b < 4; b++) {
-            _wifiListBars[i][b] = lv_obj_create(_wifiListRows[i]);
+            _wifiListBars[i][b] = lv_obj_create(_wifiListPanel);
             lv_obj_set_size(_wifiListBars[i][b], 3, 4 + b * 2);
-            lv_obj_set_pos(_wifiListBars[i][b], 140 + b * 5, 9 - b * 2);
+            lv_obj_set_pos(_wifiListBars[i][b],
+                           WIFI_LIST_BAR_X + b * 5,
+                           WIFI_LIST_ROW_Y + 9 + i * WIFI_LIST_ROW_STEP - b * 2);
             lv_obj_set_style_bg_opa(_wifiListBars[i][b], LV_OPA_COVER, 0);
             lv_obj_set_style_border_width(_wifiListBars[i][b], 0, 0);
             lv_obj_set_style_radius(_wifiListBars[i][b], 0, 0);
             lv_obj_clear_flag(_wifiListBars[i][b], LV_OBJ_FLAG_SCROLLABLE);
+            lv_obj_add_flag(_wifiListBars[i][b], LV_OBJ_FLAG_HIDDEN);
         }
-
-        _wifiListTagLabel[i] = lv_label_create(_wifiListRows[i]);
-        lv_label_set_text(_wifiListTagLabel[i], "KEY");
-        lv_obj_set_style_text_font(_wifiListTagLabel[i], FONT_SMALL, 0);
-        lv_obj_set_style_text_color(_wifiListTagLabel[i], lv_color_hex(0x00FF9C), 0);
-        lv_obj_set_pos(_wifiListTagLabel[i], 162, 0);
-        lv_obj_add_flag(_wifiListTagLabel[i], LV_OBJ_FLAG_HIDDEN);
     }
 
     _wifiListScrollbar = lv_obj_create(_wifiListPanel);
@@ -2968,11 +1983,15 @@ void DisplayManager::openWifiList() {
     _setActionHints(bindings);
 }
 
+void DisplayManager::refreshWifiList() {
+    _updateWifiList();
+}
+
 void DisplayManager::_updateWifiList() {
     if (!_wifiListOpen || !_wifiListPanel) return;
     lv_obj_move_foreground(_wifiListPanel);
 
-    SpectreState::WiFiNetworkSnapshot nets[8] = {};
+    SpectreState::WiFiNetworkSnapshot nets[LIST_VISIBLE_ROWS] = {};
     int netCount, selected, scroll;
     STATE_READ_BEGIN();
     netCount = g_state.wifiSnapCount;
@@ -2981,11 +2000,23 @@ void DisplayManager::_updateWifiList() {
     if (netCount > SpectreState::WIFI_SNAP_COUNT) {
         netCount = SpectreState::WIFI_SNAP_COUNT;
     }
-    const int visibleCount = min(8, max(0, netCount - scroll));
+    const int originalSelected = selected;
+    const int originalScroll = scroll;
+    if (netCount <= 0 || selected < 0) selected = 0;
+    if (selected >= netCount && netCount > 0) selected = netCount - 1;
+    scroll = clampListScroll(selected, scroll, LIST_VISIBLE_ROWS, netCount);
+    const int visibleCount = min(LIST_VISIBLE_ROWS, max(0, netCount - scroll));
     for (int i = 0; i < visibleCount; ++i) {
         nets[i] = g_state.wifiSnap[scroll + i];
     }
     STATE_READ_END();
+
+    if (selected != originalSelected || scroll != originalScroll) {
+        STATE_WRITE_BEGIN();
+        g_state.wifiListSelected = selected;
+        g_state.wifiListScroll = scroll;
+        STATE_WRITE_END();
+    }
 
     if (_wifiListEmptyLabel) {
         lv_label_set_text(_wifiListEmptyLabel,
@@ -2997,12 +2028,17 @@ void DisplayManager::_updateWifiList() {
         }
     }
 
-    for (int i = 0; i < 8; i++) {
+    for (int i = 0; i < LIST_VISIBLE_ROWS; i++) {
         lv_obj_t* row = _wifiListRows[i];
 
         int netIdx = scroll + i;
         if (netIdx >= netCount) {
             lv_obj_add_flag(row, LV_OBJ_FLAG_HIDDEN);
+            for (int b = 0; b < 4; b++) {
+                if (_wifiListBars[i][b]) {
+                    lv_obj_add_flag(_wifiListBars[i][b], LV_OBJ_FLAG_HIDDEN);
+                }
+            }
             continue;
         }
         lv_obj_remove_flag(row, LV_OBJ_FLAG_HIDDEN);
@@ -3011,54 +2047,19 @@ void DisplayManager::_updateWifiList() {
         bool isSelected  = (netIdx == selected);
         bool hasPMKID    = net.hasPMKID;
 
-        lv_obj_set_style_bg_color(row,
-            isSelected ?
-            lv_color_hex(0x1A1A00) :
-            lv_color_hex(0x000000), 0);
-        lv_obj_set_style_bg_opa(row,
-            isSelected ? LV_OPA_COVER : LV_OPA_TRANSP, 0);
-
-        const char* secIcon = "";
-        lv_color_t  secCol  = lv_color_hex(0x8A8A8A);
+        char secChar = '-';
         if (strcmp(net.security, "WPA") == 0) {
-            secIcon = "o";
-            secCol  = lv_color_hex(0xFCE700);
+            secChar = 'W';
         } else if (strcmp(net.security, "WPA2") == 0 ||
                    strcmp(net.security, "WPA3") == 0) {
-            secIcon = "";
+            secChar = net.security[3] ? net.security[3] : '2';
+        } else if (strcmp(net.security, "OPEN") == 0) {
+            secChar = 'O';
         }
 
-        if (secIcon[0]) {
-            lv_label_set_text(_wifiListSecLabel[i], secIcon);
-            lv_obj_set_style_text_color(_wifiListSecLabel[i], secCol, 0);
-            lv_obj_remove_flag(_wifiListSecLabel[i], LV_OBJ_FLAG_HIDDEN);
-        } else {
-            lv_obj_add_flag(_wifiListSecLabel[i], LV_OBJ_FLAG_HIDDEN);
-        }
-
-        char ssidTrunc[16];
+        char ssidTrunc[12];
         strlcpy(ssidTrunc, net.ssid[0] ? net.ssid : "<hidden>",
                 sizeof(ssidTrunc));
-
-        lv_label_set_text(_wifiListSSIDLabel[i], ssidTrunc);
-        lv_obj_set_style_text_color(_wifiListSSIDLabel[i],
-            isSelected ?
-            lv_color_hex(0xFCE700) :
-            lv_color_hex(0xFFFFFF), 0);
-
-        char chStr[8];
-        if (net.clientCount > 0) {
-            snprintf(chStr, sizeof(chStr),
-                     "%2d/%dc", net.channel, net.clientCount);
-        } else {
-            snprintf(chStr, sizeof(chStr), "%2d", net.channel);
-        }
-        lv_label_set_text(_wifiListChannelLabel[i], chStr);
-        // Highlight channel label when clients present
-        lv_obj_set_style_text_color(_wifiListChannelLabel[i],
-            net.clientCount > 0 ?
-            lv_color_hex(0xFCE700) :
-            lv_color_hex(0x007880), 0);
 
         int rssi = net.rssi;
         int bars = 0;
@@ -3067,26 +2068,52 @@ void DisplayManager::_updateWifiList() {
         else if (rssi >= -75) bars = 2;
         else if (rssi >= -85) bars = 1;
 
-        for (int b = 0; b < 4; b++) {
-            lv_obj_set_style_bg_color(_wifiListBars[i][b],
-                b < bars ?
-                lv_color_hex(0x00F0FF) :
-                lv_color_hex(0x1A1A1A), 0);
+        char rowText[48];
+        if (net.clientCount > 0) {
+            snprintf(rowText, sizeof(rowText), "%c %-10s %c%02u %uc %4d %s",
+                     isSelected ? '>' : ' ',
+                     ssidTrunc,
+                     secChar,
+                     static_cast<unsigned>(net.channel),
+                     static_cast<unsigned>(net.clientCount),
+                     rssi,
+                     hasPMKID ? "KEY" : "");
+        } else {
+            snprintf(rowText, sizeof(rowText), "%c %-10s %c%02u    %4d %s",
+                     isSelected ? '>' : ' ',
+                     ssidTrunc,
+                     secChar,
+                     static_cast<unsigned>(net.channel),
+                     rssi,
+                     hasPMKID ? "KEY" : "");
         }
 
-        if (hasPMKID) {
-            lv_obj_remove_flag(_wifiListTagLabel[i], LV_OBJ_FLAG_HIDDEN);
-        } else {
-            lv_obj_add_flag(_wifiListTagLabel[i], LV_OBJ_FLAG_HIDDEN);
+        lv_label_set_text(row, rowText);
+        lv_obj_set_style_text_color(row,
+                                    lv_color_hex(isSelected ? CLR_YELLOW :
+                                                 (hasPMKID ? CLR_GREEN : CLR_WHITE)),
+                                    0);
+
+        for (int b = 0; b < 4; b++) {
+            if (!_wifiListBars[i][b]) continue;
+            lv_obj_set_style_bg_color(_wifiListBars[i][b],
+                                      lv_color_hex(b < bars ? CLR_CYAN : 0x1A1A1A),
+                                      0);
+            lv_obj_remove_flag(_wifiListBars[i][b], LV_OBJ_FLAG_HIDDEN);
         }
     }
 
-    if (netCount > 8) {
-        int barH = (8 * 112) / netCount;
-        int barY = (scroll * 112) / netCount;
+    _setActionHints(spectreWifiListBindings());
+
+    if (netCount > LIST_VISIBLE_ROWS) {
+        constexpr int trackH = LIST_VISIBLE_ROWS * WIFI_LIST_ROW_STEP;
+        int barH = (LIST_VISIBLE_ROWS * trackH) / netCount;
+        if (barH < 8) barH = 8;
+        int barY = (scroll * trackH) / netCount;
         lv_obj_set_size(_wifiListScrollbar, 2, barH);
         lv_obj_set_pos(_wifiListScrollbar,
-            THEME_SCREEN_W - THEME_DIVIDER_X - 5, barY);
+            THEME_SCREEN_W - THEME_DIVIDER_X - 5,
+            WIFI_LIST_ROW_Y + barY);
         lv_obj_remove_flag(_wifiListScrollbar, LV_OBJ_FLAG_HIDDEN);
     } else if (_wifiListScrollbar) {
         lv_obj_add_flag(_wifiListScrollbar, LV_OBJ_FLAG_HIDDEN);
@@ -3750,12 +2777,17 @@ void DisplayManager::drawSystem(float battV, unsigned long uptimeMs,
     bool storageNearlyFull;
     bool storageFull;
     bool storageOverrun;
-    bool storageDumpAdvised;
-    uint8_t storageMode;
-    uint8_t storagePolicy;
+    bool storageRepairRequired;
+    uint8_t storageMaintenanceStatus;
+    uint32_t storageMaintenanceFlags;
+    uint32_t storageMaintenanceLastRunMs;
+    uint32_t storageMaintenanceLastDurationMs;
     uint16_t storageUsedPct;
     uint32_t storageFreeBytes;
-    uint32_t storagePending;
+    uint32_t storageRecordTotal;
+    uint32_t storageEventTotal;
+    uint32_t storageMissionTotal;
+    uint32_t storageNoiseTotal;
     uint32_t storageDropped;
     uint32_t storageDeduped;
     uint16_t battVoltageMv;
@@ -3767,7 +2799,7 @@ void DisplayManager::drawSystem(float battV, unsigned long uptimeMs,
     uint8_t radioOwner;
     char timeLocal[24];
     char timeSource[12];
-    char storagePolicyText[20];
+    char storageMaintenanceText[32];
 
     STATE_READ_BEGIN();
     ext = g_state.antennaExternal;
@@ -3775,12 +2807,17 @@ void DisplayManager::drawSystem(float battV, unsigned long uptimeMs,
     storageNearlyFull = g_state.storageNearlyFull;
     storageFull = g_state.storageFull;
     storageOverrun = g_state.storageOverrun;
-    storageDumpAdvised = g_state.storageDumpAdvised;
-    storageMode = g_state.storageMode;
-    storagePolicy = g_state.storagePolicy;
+    storageRepairRequired = g_state.storageRepairRequired;
+    storageMaintenanceStatus = g_state.storageMaintenanceStatus;
+    storageMaintenanceFlags = g_state.storageMaintenanceFlags;
+    storageMaintenanceLastRunMs = g_state.storageMaintenanceLastRunMs;
+    storageMaintenanceLastDurationMs = g_state.storageMaintenanceLastDurationMs;
     storageUsedPct = g_state.storageUsedPct;
     storageFreeBytes = g_state.storageFreeBytes;
-    storagePending = g_state.storagePending;
+    storageRecordTotal = g_state.storageRecordTotal;
+    storageEventTotal = g_state.storageEventTotal;
+    storageMissionTotal = g_state.storageMissionTotal;
+    storageNoiseTotal = g_state.storageNoiseTotal;
     storageDropped = g_state.storageDropped;
     storageDeduped = g_state.storageDeduped;
     battVoltageMv = g_state.battVoltageMv;
@@ -3792,7 +2829,7 @@ void DisplayManager::drawSystem(float battV, unsigned long uptimeMs,
     radioOwner = g_state.radioOwner;
     strlcpy(timeLocal, g_state.timeLocal, sizeof(timeLocal));
     strlcpy(timeSource, g_state.timeSource, sizeof(timeSource));
-    strlcpy(storagePolicyText, g_state.storagePolicyText, sizeof(storagePolicyText));
+    strlcpy(storageMaintenanceText, g_state.storageMaintenanceText, sizeof(storageMaintenanceText));
     STATE_READ_END();
 
     settingsReady = SETTINGS.isReady();
@@ -3803,11 +2840,20 @@ void DisplayManager::drawSystem(float battV, unsigned long uptimeMs,
     const char* headerStatus = "STORAGE OK";
     uint32_t headerColor = CLR_GREEN;
 
-    if (storageOverrun) {
+    if (storageMaintenanceStatus == STORAGE_MAINT_UI_RUNNING) {
+        headerStatus = "MAINT RUN";
+        headerColor = CLR_CYAN;
+    } else if (storageMaintenanceStatus == STORAGE_MAINT_UI_INCOMPLETE) {
+        headerStatus = "MAINT INCOMP";
+        headerColor = CLR_YELLOW;
+    } else if (storageMaintenanceStatus == STORAGE_MAINT_UI_PENDING) {
+        headerStatus = "MAINT PEND";
+        headerColor = CLR_YELLOW;
+    } else if (storageOverrun) {
         headerStatus = "OVERRUN";
         headerColor = CLR_RED;
     } else if (storageFull) {
-        headerStatus = "DUMP ADVISED";
+        headerStatus = "PHONE SYNC";
         headerColor = CLR_YELLOW;
     } else if (storageNearlyFull) {
         headerStatus = "WATCH";
@@ -3816,26 +2862,6 @@ void DisplayManager::drawSystem(float battV, unsigned long uptimeMs,
         headerStatus = "SETTINGS OFFLINE";
         headerColor = CLR_RED;
     }
-
-    auto modeName = [&](uint8_t mode) -> const char* {
-        switch (mode) {
-            case 0: return "NORMAL";
-            case 1: return "WATCH";
-            case 2: return "FULL";
-            case 3: return "OVERRUN";
-            default: return "UNKNOWN";
-        }
-    };
-
-    auto policyName = [&](uint8_t policy, const char* fallback) -> const char* {
-        if (fallback && fallback[0]) return fallback;
-        switch (policy) {
-            case 0: return "NORMAL";
-            case 1: return "REDUCED";
-            case 2: return "CRITICAL";
-            default: return "UNKNOWN";
-        }
-    };
 
     char usedLine[24];
     snprintf(usedLine, sizeof(usedLine), "%u%% USED", storageUsedPct);
@@ -3850,20 +2876,64 @@ void DisplayManager::drawSystem(float battV, unsigned long uptimeMs,
     }
 
     char pendingLine[24];
-    snprintf(pendingLine, sizeof(pendingLine), "%lu EVT",
-             static_cast<unsigned long>(storagePending));
+    const bool showRepairRequired = storageRepairRequired;
+    const uint32_t summaryEventTotal = storageMissionTotal + storageNoiseTotal;
+    const uint32_t displayEventTotal =
+        storageEventTotal > 0U ? storageEventTotal : summaryEventTotal;
+    if (showRepairRequired) {
+        snprintf(pendingLine, sizeof(pendingLine), "REPAIR REQUIRED");
+    } else if (displayEventTotal > 0U || storageRecordTotal == 0U) {
+        snprintf(pendingLine, sizeof(pendingLine), "%lu EVENTS",
+                 static_cast<unsigned long>(displayEventTotal));
+    } else {
+        snprintf(pendingLine, sizeof(pendingLine), "%lu RECORDS",
+                 static_cast<unsigned long>(storageRecordTotal));
+    }
 
     char dedupeLine[24];
     snprintf(dedupeLine, sizeof(dedupeLine), "%lu DD %lu DR",
              static_cast<unsigned long>(storageDeduped),
              static_cast<unsigned long>(storageDropped));
 
-    char modeLine[24];
-    snprintf(modeLine, sizeof(modeLine), "%s", modeName(storageMode));
+    const char* maintStateText = "UNKNOWN";
+    uint32_t maintColor = CLR_GREY;
+    switch (storageMaintenanceStatus) {
+        case STORAGE_MAINT_UI_COMPLETE:
+            maintStateText = "COMPLETE";
+            maintColor = CLR_GREEN;
+            break;
+        case STORAGE_MAINT_UI_PENDING:
+            maintStateText = "PENDING";
+            maintColor = CLR_YELLOW;
+            break;
+        case STORAGE_MAINT_UI_RUNNING:
+            maintStateText = "RUNNING";
+            maintColor = CLR_CYAN;
+            break;
+        case STORAGE_MAINT_UI_INCOMPLETE:
+            maintStateText = "INCOMPLETE";
+            maintColor = CLR_YELLOW;
+            break;
+        case STORAGE_MAINT_UI_OFFLINE:
+            maintStateText = "OFFLINE";
+            maintColor = CLR_RED;
+            break;
+        case STORAGE_MAINT_UI_UNKNOWN:
+        default:
+            break;
+    }
 
-    char policyLine[24];
-    snprintf(policyLine, sizeof(policyLine), "%s",
-             policyName(storagePolicy, storagePolicyText));
+    char maintLine[24];
+    snprintf(maintLine, sizeof(maintLine), "%s", maintStateText);
+
+    char maintWorkLine[32];
+    if (storageMaintenanceText[0]) {
+        snprintf(maintWorkLine, sizeof(maintWorkLine), "%.31s", storageMaintenanceText);
+    } else if (storageMaintenanceFlags == 0) {
+        snprintf(maintWorkLine, sizeof(maintWorkLine), "none");
+    } else {
+        snprintf(maintWorkLine, sizeof(maintWorkLine), "queued");
+    }
 
     unsigned long s  = uptimeMs / 1000UL;
     unsigned long m  = s / 60UL;
@@ -3918,16 +2988,21 @@ void DisplayManager::drawSystem(float battV, unsigned long uptimeMs,
     else if (storageFull) usedColor = CLR_YELLOW;
     else if (storageNearlyFull) usedColor = CLR_CYAN;
 
-    uint32_t pendingColor = storagePending > 0 ? CLR_YELLOW : CLR_WHITE;
+    uint32_t pendingColor = showRepairRequired ? CLR_RED : usedColor;
     if (storageOverrun) pendingColor = CLR_RED;
 
-    uint32_t modeColor = CLR_GREEN;
-    if (storageOverrun) modeColor = CLR_RED;
-    else if (storageFull) modeColor = CLR_YELLOW;
-    else if (storageNearlyFull) modeColor = CLR_CYAN;
-
-    uint32_t dumpColor = storageDumpAdvised ? CLR_YELLOW : CLR_GREEN;
-    const char* dumpText = storageDumpAdvised ? "PHONE ON" : "READY";
+    char maintLastLine[24];
+    if (storageMaintenanceLastRunMs == 0) {
+        snprintf(maintLastLine, sizeof(maintLastLine), "NO WINDOW");
+    } else if (storageMaintenanceLastDurationMs >= 1000UL) {
+        snprintf(maintLastLine, sizeof(maintLastLine), "%lus AGO %lus",
+                 static_cast<unsigned long>((millis() - storageMaintenanceLastRunMs) / 1000UL),
+                 static_cast<unsigned long>(storageMaintenanceLastDurationMs / 1000UL));
+    } else {
+        snprintf(maintLastLine, sizeof(maintLastLine), "%lus AGO %lums",
+                 static_cast<unsigned long>((millis() - storageMaintenanceLastRunMs) / 1000UL),
+                 static_cast<unsigned long>(storageMaintenanceLastDurationMs));
+    }
 
     lv_label_set_text(_sysHeaderStatus, headerStatus);
     lv_obj_set_style_text_color(_sysHeaderStatus, lv_color_hex(headerColor), 0);
@@ -3943,17 +3018,19 @@ void DisplayManager::drawSystem(float battV, unsigned long uptimeMs,
     lv_obj_set_style_text_color(_sysDedupeValue,
                                 lv_color_hex(storageDropped > 0 ? CLR_YELLOW : CLR_CYAN), 0);
 
-    lv_label_set_text(_sysModeValue, modeLine);
-    lv_obj_set_style_text_color(_sysModeValue, lv_color_hex(modeColor), 0);
-    lv_label_set_text(_sysPolicyValue, policyLine);
-    lv_obj_set_style_text_color(_sysPolicyValue, lv_color_hex(CLR_WHITE), 0);
+    lv_label_set_text(_sysModeValue, maintLine);
+    lv_obj_set_style_text_color(_sysModeValue, lv_color_hex(maintColor), 0);
+    lv_label_set_text(_sysPolicyValue, maintWorkLine);
+    lv_obj_set_style_text_color(_sysPolicyValue,
+                                lv_color_hex(storageMaintenanceFlags ? CLR_YELLOW : CLR_GREY), 0);
 
     lv_label_set_text(_sysTimeLabel, timeValid ? timeSource : "UPTIME");
     lv_label_set_text(_sysTimeValue, timeLine);
     lv_obj_set_style_text_color(_sysTimeValue, lv_color_hex(timeValid ? CLR_GREEN : CLR_CYAN), 0);
 
-    lv_label_set_text(_sysDumpValue, dumpText);
-    lv_obj_set_style_text_color(_sysDumpValue, lv_color_hex(dumpColor), 0);
+    lv_label_set_text(_sysDumpValue, maintLastLine);
+    lv_obj_set_style_text_color(_sysDumpValue,
+                                lv_color_hex(storageMaintenanceLastRunMs ? CLR_CYAN : CLR_GREY), 0);
     lv_label_set_text(_sysRadioValue, radioLine);
     lv_label_set_text(_sysCfgValue, cfgLine);
     lv_obj_set_style_text_color(_sysCfgValue,
@@ -3984,14 +3061,16 @@ void DisplayManager::drawDebrief() {
     uint32_t exportLastBytes;
     uint32_t exportLastPending;
     char exportLastISO[24];
-    char exportLastSessionId[20];
+    char exportLastSessionId[40];
     STATE_READ_BEGIN();
     nets    = g_state.sessionNetworks;
     devs    = g_state.sessionDevices;
     probes  = g_state.sessionProbes;
     pmkids  = g_state.sessionPMKIDs;
     drones  = g_state.sessionDrones;
-    files   = g_state.sessionFilesPending;
+    files   = STORAGE.isReady()
+        ? static_cast<int>(STORAGE.getAuthoritativePendingEventCount())
+        : g_state.sessionFilesPending;
     tagSet  = g_state.sessionTagSet;
     strlcpy(tag, g_state.sessionTag, sizeof(tag));
     uptime  = millis();
@@ -4074,8 +3153,8 @@ void DisplayManager::drawDebrief() {
         lv_label_set_text(_debriefLowerValue, lastLine);
         lv_obj_set_style_text_color(_debriefLowerValue, lv_color_hex(CLR_GREEN), 0);
     } else if (exportLastOk && exportLastSessionId[0]) {
-        char lastId[20] = {};
-        snprintf(lastId, sizeof(lastId), "%.19s", exportLastSessionId);
+        char lastId[40] = {};
+        snprintf(lastId, sizeof(lastId), "%.39s", exportLastSessionId);
         lv_label_set_text(_debriefLowerValue, lastId);
         lv_obj_set_style_text_color(_debriefLowerValue,
                                     lv_color_hex(exportLastPending > 0 ? CLR_YELLOW : CLR_GREEN), 0);
@@ -4088,6 +3167,197 @@ void DisplayManager::drawDebrief() {
         lv_label_set_text(_debriefLowerValue, "NONE");
         lv_obj_set_style_text_color(_debriefLowerValue, lv_color_hex(CLR_GREY), 0);
     }
+}
+
+void DisplayManager::_buildScreenMissionSummary() {
+    _missionSummaryContent = _makePanel(lv_screen_active(),
+                                        THEME_CONTENT_X, THEME_CONTENT_Y,
+                                        THEME_CONTENT_W, THEME_CONTENT_H,
+                                        CLR_BLACK, CLR_BLACK);
+    lv_obj_add_flag(_missionSummaryContent, LV_OBJ_FLAG_HIDDEN);
+
+    const uint32_t accent = displayAccentColor();
+    static lv_point_precise_t sep[] = {{0,26},{THEME_CONTENT_W,26}};
+
+    _makeLabel(_missionSummaryContent, "MISSION SUMMARY", accent, FONT_HEADER,
+               LV_ALIGN_TOP_LEFT, 4, 4);
+    _missionSummaryHeaderStatus =
+        makeClippedLabel(_missionSummaryContent, "BOOT RUN", CLR_CYAN,
+                         FONT_SMALL, 140, 8, 100, LV_TEXT_ALIGN_RIGHT);
+
+    lv_obj_t* line = lv_line_create(_missionSummaryContent);
+    lv_line_set_points(line, sep, 2);
+    lv_obj_set_style_line_color(line, lv_color_hex(accent), 0);
+    lv_obj_set_style_line_width(line, 1, 0);
+
+    auto makeSummaryPair = [&](int x, int y, const char* label, lv_obj_t** value) {
+        makeClippedLabel(_missionSummaryContent, label, CLR_GREY, FONT_SMALL, x, y, 110);
+        *value = makeClippedLabel(_missionSummaryContent, "--", CLR_WHITE,
+                                  FONT_SMALL, x, y + 12, 110);
+    };
+
+    makeSummaryPair(4,   30, "ACTIVE", &_missionSummaryDurationValue);
+    makeSummaryPair(126, 30, "RECORDS", &_missionSummaryRecordValue);
+    makeSummaryPair(4,   54, "CAPTURE", &_missionSummaryCaptureValue);
+    makeSummaryPair(126, 54, "UNIQUE", &_missionSummaryUniqueValue);
+    makeSummaryPair(4,   78, "UPLOAD PEND", &_missionSummaryPendingValue);
+    makeSummaryPair(126, 78, "ENRICH PEND", &_missionSummaryEnrichValue);
+    makeSummaryPair(4,  102, "GPS ENRICH", &_missionSummaryGpsValue);
+    makeSummaryPair(126,102, "CONTEXT", &_missionSummaryContextValue);
+    makeSummaryPair(4,  126, "TAG", &_missionSummaryTagValue);
+}
+
+void DisplayManager::drawMissionSummary(unsigned long uptimeMs) {
+    if (!_missionSummaryContent) return;
+
+    const ButtonBindingSet bindings = spectreScreenBindings(SCREEN_MISSION_SUMMARY);
+    _setActionHints(bindings);
+
+    int sessionProbes = 0;
+    int sessionDevices = 0;
+    int sessionPMKIDs = 0;
+    int sessionDrones = 0;
+    int uniqueNetworks = 0;
+    int uniqueDevices = 0;
+    int probePackets = 0;
+    int pmkidCaptured = 0;
+    uint32_t pendingUploadMission = 0;
+    uint32_t pendingUploadNoise = 0;
+    uint32_t pendingEnrichMission = 0;
+    uint32_t pendingEnrichNoise = 0;
+    uint8_t runContext = RUN_CONTEXT_GENERAL;
+    uint8_t activeMissionProfile = MISSION_RECON;
+    bool uploadActive = false;
+    bool gpsAvailable = false;
+    bool gpsValid = false;
+    uint32_t gpsLastFix = 0;
+    uint32_t companionPending = 0;
+    uint8_t companionPhone = 0;
+    bool tagSet = false;
+    char tag[32] = {};
+
+    STATE_READ_BEGIN();
+    sessionProbes = g_state.sessionProbes;
+    sessionDevices = g_state.sessionDevices;
+    sessionPMKIDs = g_state.sessionPMKIDs;
+    sessionDrones = g_state.sessionDrones;
+    uniqueNetworks = g_state.wifiNetworkCount;
+    uniqueDevices = g_state.probeDeviceCount;
+    probePackets = g_state.probePacketCount;
+    pmkidCaptured = g_state.pmkidCaptured;
+    pendingUploadMission = g_state.storagePendingUploadMission;
+    pendingUploadNoise = g_state.storagePendingUploadNoise;
+    pendingEnrichMission = g_state.storagePendingEnrichMission;
+    pendingEnrichNoise = g_state.storagePendingEnrichNoise;
+    runContext = g_state.runContext;
+    activeMissionProfile = g_state.activeMissionProfile;
+    uploadActive = g_state.uploadActive;
+    gpsAvailable = g_state.gpsAvailable;
+    gpsValid = g_state.gpsValid;
+    gpsLastFix = g_state.gpsLastFix;
+    companionPending = g_state.companionPending;
+    companionPhone = g_state.companionPhone;
+    tagSet = g_state.sessionTagSet;
+    strlcpy(tag, g_state.sessionTag, sizeof(tag));
+    STATE_READ_END();
+
+    const unsigned long seconds = uptimeMs / 1000UL;
+    const unsigned long minutes = seconds / 60UL;
+    const unsigned long hours = minutes / 60UL;
+
+    char buf[40];
+    snprintf(buf, sizeof(buf), "%luh %02lum %02lus",
+             hours,
+             minutes % 60UL,
+             seconds % 60UL);
+    lv_label_set_text(_missionSummaryDurationValue, buf);
+    lv_obj_set_style_text_color(_missionSummaryDurationValue, lv_color_hex(CLR_CYAN), 0);
+
+    snprintf(buf, sizeof(buf), "P%d D%d", sessionProbes, sessionDevices);
+    lv_label_set_text(_missionSummaryRecordValue, buf);
+    lv_obj_set_style_text_color(_missionSummaryRecordValue,
+                                lv_color_hex((sessionProbes + sessionDevices) > 0 ? CLR_WHITE : CLR_GREY),
+                                0);
+
+    snprintf(buf, sizeof(buf), "PMK%d DRN%d", sessionPMKIDs, sessionDrones);
+    lv_label_set_text(_missionSummaryCaptureValue, buf);
+    lv_obj_set_style_text_color(_missionSummaryCaptureValue,
+                                lv_color_hex((sessionPMKIDs + sessionDrones) > 0 ? CLR_GREEN : CLR_GREY),
+                                0);
+
+    snprintf(buf, sizeof(buf), "N%d D%d", uniqueNetworks, uniqueDevices);
+    lv_label_set_text(_missionSummaryUniqueValue, buf);
+    lv_obj_set_style_text_color(_missionSummaryUniqueValue,
+                                lv_color_hex((uniqueNetworks + uniqueDevices) > 0 ? CLR_YELLOW : CLR_GREY),
+                                0);
+
+    snprintf(buf, sizeof(buf), "M%lu N%lu",
+             static_cast<unsigned long>(pendingUploadMission),
+             static_cast<unsigned long>(pendingUploadNoise));
+    lv_label_set_text(_missionSummaryPendingValue, buf);
+    lv_obj_set_style_text_color(_missionSummaryPendingValue,
+                                lv_color_hex((pendingUploadMission + pendingUploadNoise) > 0 ? CLR_YELLOW : CLR_GREEN),
+                                0);
+
+    snprintf(buf, sizeof(buf), "M%lu N%lu",
+             static_cast<unsigned long>(pendingEnrichMission),
+             static_cast<unsigned long>(pendingEnrichNoise));
+    lv_label_set_text(_missionSummaryEnrichValue, buf);
+    lv_obj_set_style_text_color(_missionSummaryEnrichValue,
+                                lv_color_hex((pendingEnrichMission + pendingEnrichNoise) > 0 ? CLR_CYAN : CLR_GREY),
+                                0);
+
+    if (gpsValid) {
+        snprintf(buf, sizeof(buf), "FIX %lus",
+                 static_cast<unsigned long>((millis() - gpsLastFix) / 1000UL));
+    } else if (gpsAvailable) {
+        snprintf(buf, sizeof(buf), "AVAILABLE");
+    } else if (companionPhone == 1) {
+        snprintf(buf, sizeof(buf), "PHONE READY");
+    } else {
+        snprintf(buf, sizeof(buf), "NO FIX");
+    }
+    lv_label_set_text(_missionSummaryGpsValue, buf);
+    lv_obj_set_style_text_color(_missionSummaryGpsValue,
+                                lv_color_hex(gpsValid ? CLR_GREEN : (gpsAvailable ? CLR_CYAN : CLR_GREY)),
+                                0);
+
+    const RunContext context = sanitizeRunContext(runContext);
+    const MissionProfile profile = sanitizeMissionProfile(activeMissionProfile);
+    if (context == RUN_CONTEXT_MISSION) {
+        snprintf(buf, sizeof(buf), "%s", missionProfileName(profile));
+    } else if (uploadActive) {
+        snprintf(buf, sizeof(buf), "UPLINK");
+    } else {
+        snprintf(buf, sizeof(buf), "GENERAL");
+    }
+    lv_label_set_text(_missionSummaryContextValue, buf);
+    lv_obj_set_style_text_color(_missionSummaryContextValue,
+                                lv_color_hex(uploadActive ? CLR_GREEN : CLR_WHITE), 0);
+
+    if (tagSet && tag[0]) {
+        lv_label_set_text(_missionSummaryTagValue, tag);
+        lv_obj_set_style_text_color(_missionSummaryTagValue, lv_color_hex(CLR_GREEN), 0);
+    } else if (companionPending > 0) {
+        snprintf(buf, sizeof(buf), "PHONE %lu",
+                 static_cast<unsigned long>(companionPending));
+        lv_label_set_text(_missionSummaryTagValue, buf);
+        lv_obj_set_style_text_color(_missionSummaryTagValue, lv_color_hex(CLR_CYAN), 0);
+    } else {
+        snprintf(buf, sizeof(buf), "PKT%d PMK%d", probePackets, pmkidCaptured);
+        lv_label_set_text(_missionSummaryTagValue, buf);
+        lv_obj_set_style_text_color(_missionSummaryTagValue,
+                                    lv_color_hex((probePackets + pmkidCaptured) > 0 ? CLR_DIMCYAN : CLR_GREY),
+                                    0);
+    }
+
+    const uint32_t totalPending = pendingUploadMission + pendingUploadNoise;
+    const char* header = uploadActive ? "UPLINK" : (totalPending > 0 ? "PENDING" : "ACTIVE");
+    lv_label_set_text(_missionSummaryHeaderStatus, header);
+    lv_obj_set_style_text_color(_missionSummaryHeaderStatus,
+                                lv_color_hex(uploadActive ? CLR_GREEN :
+                                             (totalPending > 0 ? CLR_YELLOW : CLR_CYAN)),
+                                0);
 }
 
 // ─── Helpers ──────────────────────────────────────────────────
@@ -4119,5 +3389,3 @@ lv_obj_t* DisplayManager::_makePanel(lv_obj_t* parent,
     lv_obj_clear_flag(panel, LV_OBJ_FLAG_SCROLLABLE);
     return panel;
 }
-
-

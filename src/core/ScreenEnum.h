@@ -1,4 +1,6 @@
 
+
+
 #pragma once
 
 typedef enum {
@@ -9,7 +11,10 @@ typedef enum {
     SCREEN_MISSION,
     SCREEN_RECON,
     SCREEN_SYSTEM,
+    SCREEN_MISSION_SUMMARY,
     SCREEN_COUNT
 } Screen;
+
+
 
 

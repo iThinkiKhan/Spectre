@@ -1,4 +1,6 @@
 
+
+
 #pragma once
 
 #include "SubGhzTypes.h"
@@ -31,5 +33,7 @@ public:
     virtual String firmwareVersion() const = 0;
     virtual SubGhzStats stats() const = 0;
 };
+
+
 
 

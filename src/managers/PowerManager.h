@@ -1,4 +1,6 @@
 
+
+
 #pragma once
 
 #include <Arduino.h>
@@ -92,6 +94,12 @@ private:
     uint32_t _lastSampleMs = 0;
     PowerSource _candidateSource = POWER_SOURCE_UNKNOWN;
     uint32_t _candidateSinceMs = 0;
+    // Wall-clock timestamp of the last accepted source transition (USB<->BATTERY,
+    // or initial source detection). Trend gating for runtime/critical decisions
+    // is anchored to this rather than to absolute history age — history that
+    // crosses a source boundary mixes USB-rail voltages with battery-resting
+    // voltages and produces a false catastrophic discharge trend.
+    uint32_t _sourceChangedAtMs = 0;
     HistoryPoint _history[HISTORY_SIZE] = {};
     uint16_t _historyHead = 0;
     uint16_t _historyCount = 0;
@@ -99,5 +107,7 @@ private:
 };
 
 #define POWER_MGR PowerManager::getInstance()
+
+
 
 

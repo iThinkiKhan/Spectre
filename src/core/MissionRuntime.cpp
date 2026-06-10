@@ -69,6 +69,7 @@ MascotState _generalMascot(Screen screen) {
         case SCREEN_BADUSB:     return MASCOT_BAD_USB;
         case SCREEN_RECON:      return MASCOT_PREFLIGHT;
         case SCREEN_MISSION:    return MASCOT_PREFLIGHT;
+        case SCREEN_MISSION_SUMMARY: return MASCOT_HOMELAB_SYNC;
         case SCREEN_MESHTASTIC:
         case SCREEN_SYSTEM:
         default:                return MASCOT_STANDBY;
@@ -145,12 +146,22 @@ bool enterMission(MissionProfile profile) {
         static_cast<uint8_t>(profile));
     const SubGhzMode generalSubGhzMode = SUBGHZ.mode();
 
+    // Only snapshot the "general" SubGhz mode and screen on the first
+    // transition out of RUN_CONTEXT_GENERAL. Re-snapshotting on a
+    // mission-to-mission switch would overwrite the original general-mode
+    // state with the just-applied mission state (e.g. RECON forces SubGhz
+    // MONITOR, then switching to PWNY would record MONITOR as "general"
+    // and exitMission would never restore the user's real choice).
     STATE_WRITE_BEGIN();
-    g_state.generalSubGhzMode = static_cast<uint8_t>(generalSubGhzMode);
+    const bool enteringFromGeneral =
+        sanitizeRunContext(g_state.runContext) != RUN_CONTEXT_MISSION;
+    if (enteringFromGeneral) {
+        g_state.generalSubGhzMode = static_cast<uint8_t>(generalSubGhzMode);
+        g_state.generalScreen = static_cast<uint8_t>(g_state.currentScreen);
+    }
     g_state.runContext = RUN_CONTEXT_MISSION;
     g_state.activeMissionProfile = static_cast<uint8_t>(sanitized);
     g_state.missionSelection = static_cast<uint8_t>(sanitized);
-    g_state.generalScreen = static_cast<uint8_t>(g_state.currentScreen);
     g_state.currentScreen = SCREEN_MISSION;
     g_state.wifiListActive = false;
     g_state.missionListActive = false;
@@ -203,5 +214,4 @@ void exitMission() {
     DLOG_INFO("MISSION", "Exited %s",
               missionProfileName(mission));
 }
-
 

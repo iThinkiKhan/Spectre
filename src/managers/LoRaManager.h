@@ -1,4 +1,6 @@
 
+
+
 #pragma once
 #include <Arduino.h>
 #include "config.h"
@@ -41,7 +43,7 @@ public:
     String getFirmwareVersion();
 
 private:
-    HardwareSerial* _serial = &Serial1;
+    HardwareSerial* _serial = nullptr;
     LoRaPacket _lastPacket;
     int _packetCount = 0;
     bool _ready = false;
@@ -50,5 +52,7 @@ private:
     bool _sendATOK(String cmd, int timeoutMs = 500);
     bool _parseRCV(const String& line, LoRaPacket& outPacket);
 };
+
+
 
 

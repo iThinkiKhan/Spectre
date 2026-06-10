@@ -1,4 +1,5 @@
 
+
 #pragma once
 
 #include <Arduino.h>
@@ -21,6 +22,7 @@ public:
     void tick();
 
     bool isTimeValid() const { return _valid; }
+    bool hasAccurateUtc() const { return _utcAccurate; }
     TimeSource source() const { return _source; }
     const char* sourceName() const;
 
@@ -30,9 +32,11 @@ public:
 
     bool formatNowIso(char* out, size_t len) const;
     bool formatNowLocal(char* out, size_t len) const;
+    bool epochForMillis(uint32_t monotonicMs, uint32_t& epochUtc) const;
     bool formatIsoForMillis(uint32_t monotonicMs, char* out, size_t len) const;
     bool formatLocalForMillis(uint32_t monotonicMs, char* out, size_t len) const;
     String dayStampForMillis(uint32_t monotonicMs) const;
+    bool acquireUtcFromSavedWiFi(uint32_t totalTimeoutMs);
 
 private:
     TimeService() = default;
@@ -40,6 +44,9 @@ private:
     static constexpr uint32_t MIN_VALID_EPOCH = 1704067200UL;
     static constexpr uint32_t TICK_INTERVAL_MS = 1000UL;
     static constexpr uint32_t NTP_RESTART_MS = 300000UL;
+    static constexpr uint32_t GPS_BACKWARD_GUARD_S = 2UL;
+    static constexpr uint32_t QUICK_WIFI_CONNECT_SLICE_MS = 4500UL;
+    static constexpr uint32_t QUICK_NTP_WAIT_MS = 3500UL;
 
     void _syncFromGps(uint32_t nowMs);
     void _syncFromNtp(uint32_t nowMs);
@@ -49,6 +56,7 @@ private:
     static void _formatLocalClock(time_t epochUtc, char* out, size_t len);
 
     bool _valid = false;
+    bool _utcAccurate = false;
     TimeSource _source = TIME_SOURCE_NONE;
     uint32_t _epochAtSync = 0;
     uint32_t _millisAtSync = 0;
@@ -58,5 +66,4 @@ private:
 };
 
 #define TIME_SVC TimeService::getInstance()
-
 

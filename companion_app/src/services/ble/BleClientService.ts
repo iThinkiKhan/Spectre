@@ -40,7 +40,10 @@ import type {
 } from './bleTypes';
 
 const SCAN_TIMEOUT_MS = 12000;
-const RECONNECT_DELAY_MS = 2200;
+// Exponential backoff for reconnect: first try fast, then settle into a slow
+// scan cadence so a phone left in a pocket (Spectre out of range / off) doesn't
+// scan every ~8s forever and burn battery.
+const RECONNECT_DELAYS_MS = [2200, 5000, 15_000, 60_000, 300_000];
 const BADUSB_READY_TIMEOUT_MS = 5000;
 const BADUSB_COMMIT_TIMEOUT_MS = 12000;
 const PREFERRED_MTU = 185;
@@ -141,6 +144,7 @@ export class BleClientService {
   private localPromptError: string | null = null;
   private nextUploadToken = 1;
   private negotiatedMtu = DEFAULT_MTU;
+  private reconnectAttempt = 0;
 
   constructor(listener?: BleClientListener) {
     this.listener = listener ?? null;
@@ -250,6 +254,7 @@ export class BleClientService {
 
   async connectToDevice(deviceId: string) {
     this.manualDisconnect = false;
+    this.reconnectAttempt = 0;
     this.clearReconnectTimer();
     this.cancelScan();
 
@@ -368,6 +373,7 @@ export class BleClientService {
 
       this.attachCharacteristicMonitors(connected, generation);
 
+      this.reconnectAttempt = 0;
       this.emitConnection(
         'connected',
         `Connected to ${coerceName(connected)}`,
@@ -390,6 +396,7 @@ export class BleClientService {
 
   async disconnect() {
     this.manualDisconnect = true;
+    this.reconnectAttempt = 0;
     this.clearReconnectTimer();
     this.cancelScan();
     this.connectGeneration += 1;
@@ -833,10 +840,13 @@ export class BleClientService {
       return;
     }
 
+    const idx = Math.min(this.reconnectAttempt, RECONNECT_DELAYS_MS.length - 1);
+    const delay = RECONNECT_DELAYS_MS[idx];
+    this.reconnectAttempt += 1;
     this.clearReconnectTimer();
     this.reconnectTimer = setTimeout(() => {
       this.retryLastTarget().catch(() => {});
-    }, RECONNECT_DELAY_MS);
+    }, delay);
   }
 
   private async retryLastTarget() {

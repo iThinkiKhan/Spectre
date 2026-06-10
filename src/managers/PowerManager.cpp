@@ -1,4 +1,6 @@
 
+
+
 #include "PowerManager.h"
 
 #include <math.h>
@@ -16,11 +18,20 @@ constexpr uint32_t USB_EXIT_DWELL_MS = 75000UL;
 constexpr uint32_t USB_EXIT_FAST_DWELL_MS = 15000UL;
 constexpr uint32_t TREND_WINDOW_MS = 30000UL;
 constexpr uint32_t CURRENT_WINDOW_MS = 90000UL;
+// Trend must span at least this long before it is trusted to cap runtime
+// estimates or contribute to critical-reserve decisions. This prevents the
+// steep voltage sag at boot-up (battery suddenly loaded) from producing a
+// spuriously short runtime estimate and triggering a premature critical state.
+constexpr uint32_t TREND_STABLE_MIN_MS = 120000UL;
 constexpr float MIN_SOC_DELTA_FOR_CURRENT = 0.45f;
-constexpr float NOMINAL_ACTIVE_CURRENT_MA = 135.0f;
-constexpr float NOMINAL_ECONOMY_CURRENT_MA = 95.0f;
-constexpr float MIN_RUNTIME_CURRENT_MA = 20.0f;
-constexpr float MAX_RUNTIME_CURRENT_MA = 400.0f;
+// Calibrated against an observed ~2 h runtime on the stock 1100 mAh cell —
+// the device draws far more in promiscuous-heavy use than the original 135 mA
+// guess implied. POWER_AGGRESSIVE_SAVING (CPU scaling, backlight floor) is
+// expected to bring this down; revisit after a discharge run with the flag on.
+constexpr float NOMINAL_ACTIVE_CURRENT_MA = 320.0f;
+constexpr float NOMINAL_ECONOMY_CURRENT_MA = 220.0f;
+constexpr float MIN_RUNTIME_CURRENT_MA = 40.0f;
+constexpr float MAX_RUNTIME_CURRENT_MA = 800.0f;
 
 struct SocPoint {
     uint16_t mv;
@@ -157,12 +168,34 @@ void PowerManager::tick(uint32_t nowMs) {
     const PowerSource previousSource = _snapshot.source;
     const PowerState previousState = _snapshot.state;
 
+    // _resolveSource uses the raw 30-second trend (intentional — that is what
+    // detects USB rail voltage vs. a discharging battery).
     const PowerSource source = _resolveSource(nowMs,
                                               voltageMv,
                                               trendMvPerMin,
                                               socPct,
                                               hardwareUsb,
                                               hardwareCharging);
+
+    // Stamp the source-change time as soon as the transition is accepted so
+    // the trend gate below uses the correct anchor on the same tick. Also
+    // stamp on the very first run, so initial boot starts a stable window.
+    const bool sourceChangedNow =
+        (previousSource != source) || (_sourceChangedAtMs == 0);
+    if (sourceChangedNow) {
+        _sourceChangedAtMs = nowMs;
+    }
+
+    // Gate the trend that feeds runtime/critical decisions: a USB->BATTERY
+    // transition (or vice versa) leaves the 30s baseline anchored at the old
+    // rail voltage, producing a spurious -400 mV/min slope. Suppress trend
+    // pressure until we've been on the new source for TREND_STABLE_MIN_MS.
+    // Note: this replaces the previous gate that only looked at absolute
+    // history age — old history is exactly the problem here.
+    const bool trendStable =
+        ((nowMs - _sourceChangedAtMs) >= TREND_STABLE_MIN_MS);
+    const int16_t trendForCritical = trendStable ? trendMvPerMin : 0;
+
     const bool charging = _resolveCharging(source,
                                            voltageMv,
                                            trendMvPerMin,
@@ -177,7 +210,7 @@ void PowerManager::tick(uint32_t nowMs) {
     const uint16_t runtimeMin = _estimateRuntimeMinutes(socPct,
                                                         batteryCapacityMah,
                                                         voltageMv,
-                                                        trendMvPerMin,
+                                                        trendForCritical,
                                                         source,
                                                         charging);
 
@@ -186,7 +219,7 @@ void PowerManager::tick(uint32_t nowMs) {
                                            runtimeMin,
                                            socPct,
                                            voltageMv,
-                                           trendMvPerMin,
+                                           trendForCritical,
                                            nowMs,
                                            criticalJustEntered);
 
@@ -210,6 +243,20 @@ void PowerManager::tick(uint32_t nowMs) {
                   powerSourceName(source),
                   static_cast<unsigned>(voltageMv),
                   static_cast<int>(trendMvPerMin));
+
+        // Drop the rolling history and the voltage filter on any real source
+        // transition. Without this, the next ~3 minutes of trend computations
+        // will mix pre-transition voltages (USB rail at 4.20 V or empty-load
+        // battery resting voltage) with post-transition voltages, producing a
+        // false -400 mV/min slope that makes _estimateRuntimeMinutes cap
+        // runtime to ~2 minutes and falsely latch BATTERY_CRITICAL.
+        // The trend gate (_sourceChangedAtMs / TREND_STABLE_MIN_MS) is the
+        // primary defense; this reset is belt-and-suspenders so that even if
+        // the gate were ever bypassed, the data fed to it is sane.
+        _historyCount = 0;
+        _historyHead = 0;
+        _filteredVoltageMv = 0.0f;
+        _estimatedCurrentMa = 0.0f;
     }
 
     if (_snapshot.stateChanged || criticalJustEntered) {
@@ -491,7 +538,15 @@ PowerState PowerManager::_resolveState(PowerSource source,
         return POWER_STATE_USB;
     }
 
-    const bool hardRuntimeCritical = (runtimeMin > 0 && runtimeMin <= 5);
+    // Voltage safety floor: never treat a "runtime <= 5 min" signal as
+    // hard-critical while the cell is still measurably above warning. A
+    // genuinely-empty battery is below ~3.7 V long before runtime would
+    // estimate this low; a reading of "2 minutes left at 3.9 V" is the
+    // signature of a stale-baseline trend, not real depletion.
+    const bool voltageBelowSafeFloor =
+        (voltageMv <= static_cast<uint16_t>(BAT_WARN_MV + 200));
+    const bool hardRuntimeCritical =
+        (runtimeMin > 0 && runtimeMin <= 5 && voltageBelowSafeFloor);
     const bool criticalReserveLow =
         socPct <= 18.0f ||
         voltageMv <= (BAT_WARN_MV + 120) ||
@@ -501,6 +556,26 @@ PowerState PowerManager::_resolveState(PowerSource source,
         (runtimeMin > 0 &&
          runtimeMin <= POWER_CRITICAL_RUNTIME_MIN &&
          criticalReserveLow);
+
+    // Unlatch path: previously _criticalLatched only cleared on entering USB,
+    // so a single transient false-critical (e.g. caused by the USB->BATTERY
+    // history mixing) would persist until the user replugged. Clear the latch
+    // when we've been on stable battery for >=60s AND the steady-state
+    // signals all look healthy AND we wouldn't re-enter critical right now.
+    if (_criticalLatched) {
+        const bool sourceStableLong =
+            (_sourceChangedAtMs != 0) &&
+            ((nowMs - _sourceChangedAtMs) >= 60000UL);
+        const bool voltageHealthy =
+            voltageMv >= static_cast<uint16_t>(BAT_WARN_MV + 300);
+        const bool trendHealthy = (trendMvPerMin >= -8);
+        if (sourceStableLong && voltageHealthy && trendHealthy &&
+            !shouldEnterCritical) {
+            _criticalLatched = false;
+            _snapshot.criticalSinceMs = 0;
+            _snapshot.criticalSleepAtMs = 0;
+        }
+    }
 
     if (!_criticalLatched && shouldEnterCritical) {
         _criticalLatched = true;
@@ -525,5 +600,7 @@ PowerState PowerManager::_resolveState(PowerSource source,
 
     return POWER_STATE_BATTERY_NORMAL;
 }
+
+
 
 

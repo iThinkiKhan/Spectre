@@ -16,6 +16,7 @@ class SpectreCompanionPackage : ReactPackage {
       SpectrePeripheralModule(reactContext),
       SpectreFileImportModule(reactContext),
       SpectreKeyValueStoreModule(reactContext),
+      SpectreLocationRecorderModule(reactContext),
   )
 
   override fun createViewManagers(

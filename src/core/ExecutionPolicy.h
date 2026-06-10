@@ -8,9 +8,6 @@
 
 namespace ExecutionPolicy {
 
-// Shared execution rules for mode/radio/UI orchestration. Keep these helpers
-// pure so the task-level code can share one source of truth.
-
 struct StatusBarStateView {
     int     battPercent = 0;
     uint16_t runtimeMinutes = 0;
@@ -94,6 +91,7 @@ constexpr UiRefreshReason dueUiRefresh(Screen currentScreen,
     }
 
     if ((currentScreen == SCREEN_SYSTEM ||
+         currentScreen == SCREEN_MISSION_SUMMARY ||
          (currentScreen == SCREEN_MISSION &&
           missionProfile == MISSION_UPLINK) ||
          debriefActive) &&
@@ -124,5 +122,7 @@ inline void markUiRefresh(UiRefreshReason reason,
 }
 
 }  // namespace ExecutionPolicy
+
+
 
 

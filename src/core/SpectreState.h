@@ -44,8 +44,27 @@ enum PowerState : uint8_t {
     POWER_STATE_BATTERY_CRITICAL
 };
 
+enum StorageSummaryStatus : uint8_t {
+    STORAGE_SUMMARY_UNKNOWN = 0,         // never refreshed since boot
+    STORAGE_SUMMARY_FRESH,               // valid and within freshness window
+    STORAGE_SUMMARY_STALE,               // valid but past freshness window
+    STORAGE_SUMMARY_MAINTENANCE_NEEDED   // last refresh deferred to maintenance
+};
+
+enum StorageMaintenanceUiStatus : uint8_t {
+    STORAGE_MAINT_UI_UNKNOWN = 0,
+    STORAGE_MAINT_UI_COMPLETE,
+    STORAGE_MAINT_UI_PENDING,
+    STORAGE_MAINT_UI_RUNNING,
+    STORAGE_MAINT_UI_INCOMPLETE,
+    STORAGE_MAINT_UI_OFFLINE
+};
+
+// Display freshness window: data older than this is presented as "stale".
+// Picked to comfortably cover the 30s base mirror refresh interval.
+static constexpr uint32_t STORAGE_SUMMARY_FRESH_WINDOW_MS = 90UL * 1000UL;
+
 struct SpectreState {
-    // LoRa
     int     loraRSSI        = 0;
     int     loraSNR         = 0;
     int     loraPacketCount = 0;
@@ -58,7 +77,6 @@ struct SpectreState {
     char    subGhzModule[24] = "";
     uint32_t subGhzFrequencyHz = 0;
 
-    // WiFi
     bool     wifiConnected     = false;
     char     wifiSSID[32]      = "";
     int      wifiNetworkCount  = 0;
@@ -74,7 +92,7 @@ struct SpectreState {
     int      wifiListScroll    = 0;
     bool     missionListActive = false;
     int      missionListScroll = 0;
-    // BadUSB
+
     bool     badUsbListActive      = false;
     int      badUsbListSelected    = 0;
     int      badUsbListScroll      = 0;
@@ -108,28 +126,28 @@ struct SpectreState {
     WiFiNetworkSnapshot wifiSnap[WIFI_SNAP_COUNT];
     int wifiSnapCount = 0;
 
-    // MQTT / sync
     bool    kaliSyncAvailable   = false;
     bool    kaliSyncPending     = false;
     int     sessionFilesPending = 0;
 
-    // Session stats
     int     sessionNetworks     = 0;
     int     sessionDevices      = 0;
     int     sessionProbes       = 0;
     int     sessionPMKIDs       = 0;
     int     sessionDrones       = 0;
 
-    // Drone
     int     droneCount          = 0;
     char    lastDroneID[32]     = "";
     bool    droneAlert          = false;
 
-    // BLE
     bool     bleConnected      = false;
     char     bleDeviceName[32] = "";
+    uint8_t  companionEnabled  = 0;   // 0/1
+    uint8_t  companionPhone    = 0;   // 0 unknown, 1 available, 2 unavailable
+    uint8_t  companionWork     = 0;   // 0 idle, 1 probing, 2 enriching
+    uint32_t companionPending  = 0;
+    uint32_t companionLastSeenMs = 0;
 
-    // GPS
     bool     gpsAvailable      = false;
     float    gpsLat            = 0.0f;
     float    gpsLon            = 0.0f;
@@ -139,17 +157,14 @@ struct SpectreState {
     char     gpsTimeISO[24]    = "";
     bool     gpsValid          = false;
 
-    // Text input
     bool     textInputPending   = false;
     char     textInputPrompt[24] = "";
     char     textInputResult[64] = "";
     bool     textInputReady     = false;
     char     wifiConnectPass[64] = "";
 
-    // WireGuard
     bool     wgDumpTriggered   = false;
 
-    // System
     int      battPercent       = 0;
     float    battVoltage       = 0.0f;
     uint16_t battVoltageMv     = 0;
@@ -174,11 +189,19 @@ struct SpectreState {
     uint32_t storageDeduped   = 0;
     uint32_t storageOldestPendingMs = 0;
     bool     storageDumpAdvised = false;
+    bool     storageRepairRequired = false;  // CounterTrust::RepairRequired/EmergencyOnly
+    uint8_t  storageCounterTrust = 0;         // CounterTrust value
     char     storagePolicyText[20] = "NORMAL";
-    char    sessionId[20]   = "";
+    uint8_t  storageMaintenanceStatus = STORAGE_MAINT_UI_UNKNOWN;
+    uint32_t storageMaintenanceFlags = 0;
+    uint32_t storageMaintenanceLastRunMs = 0;
+    uint32_t storageMaintenanceLastDurationMs = 0;
+    char     storageMaintenanceText[32] = "none";
+    char    sessionId[40]   = "";
     unsigned long uptimeMs  = 0;
     char    storageStr[32]  = "0KB";
     bool    timeValid       = false;
+    bool    utcAccurate     = false;
     char    timeSource[12]  = "none";
     char    timeISO[24]     = "";
     char    timeLocal[24]   = "";
@@ -193,7 +216,44 @@ struct SpectreState {
     uint32_t exportLastBytes = 0;
     uint32_t exportLastPending = 0;
     char    exportLastISO[24] = "";
-    char    exportLastSessionId[20] = "";
+    char    exportLastSessionId[40] = "";
+
+    // Storage read-model mirror — refreshed periodically, never scanned directly.
+    //
+    // CONTRACT: UI/dashboard code reads g_state.storageSummary* fields and
+    // MUST NOT call STORAGE.getSessionStorageSummary(),
+    // STORAGE.getPendingEnrichmentCounts(), STORAGE.recountPendingFromSpool(),
+    // or any other spool-scanning method directly. The mirror is refreshed by
+    // _refreshStorageSummaryMirror() and the storage worker UI snapshot path;
+    // both honor radio-owner gating to avoid scan/capture collisions.
+    // STORAGE.getPendingEventCount() is a cheap live-counter read and is
+    // exempt from this contract.
+    bool     storageSummaryValid        = false;
+    uint32_t storageSummaryUpdatedMs    = 0;
+    bool     storageSummaryNeedsMaint   = false;  // last refresh deferred to maintenance
+    uint8_t  storageSummaryStatus       = 0;      // StorageSummaryStatus, stamped at refresh
+
+    uint32_t storageMissionTotal        = 0;
+    uint32_t storageNoiseTotal          = 0;
+    uint32_t storageEventTotal          = 0;
+    uint32_t storageRecordTotal         = 0;
+
+    uint32_t storageP0Total             = 0;
+    uint32_t storageP1Total             = 0;
+    uint32_t storageP2Total             = 0;
+    uint32_t storageP3Total             = 0;
+
+    uint32_t storagePendingUploadMission  = 0;
+    uint32_t storagePendingUploadNoise    = 0;
+
+    uint32_t storagePendingEnrichMission  = 0;
+    uint32_t storagePendingEnrichNoise    = 0;
+
+    uint32_t storageEnrichmentDeltas    = 0;
+
+    uint32_t storageFirstEventId        = 0;
+    uint32_t storageLastEventId         = 0;
+
     bool     uploadActive      = false;
     bool     radioBusy         = false;
     uint16_t uploadPercent     = 0;
@@ -205,18 +265,21 @@ struct SpectreState {
     Screen      currentScreen   = SCREEN_LORA;
     MascotState mascotState     = MASCOT_STANDBY;
     bool        requestSleep    = false;
+    uint32_t    sleepRequestSeq = 0;
+    bool        sleepPresentationAcked = false;
+    uint32_t    sleepRequestAtMs = 0;
+    uint32_t    sleepPresentationAckMs = 0;
+    uint32_t    sleepCommitAtMs = 0;
+    uint32_t    sleepForceAtMs = 0;
     bool        screenChanged   = true;  // force initial draw
     bool        dataRefresh     = false;  // refresh data only, no transition
     bool        hwInitDone      = false;
     bool        debriefActive   = false;
 
-    // Antenna
     bool    antennaExternal = true;
 
-    // Radio
     uint8_t radioOwner = 0;  // matches RadioOwner enum
 
-    // Pwny mode display state
     struct PwnyTargetDisplay {
         char    ssid[24]       = "";
         int16_t score          = 0;
@@ -231,7 +294,7 @@ struct SpectreState {
         uint8_t attackCount    = 0;
         uint8_t phase          = 0;     // 0=passive 1=deauth 2=cooldown 3=done
     };
-    PwnyTargetDisplay pwnyTargets[8];   // expanded from 4
+    PwnyTargetDisplay pwnyTargets[8];
     uint8_t           pwnyTargetCount  = 0;
     char              pwnyStatus[48]   = "IDLE";
     uint8_t           pwnyCurrentIdx   = 0;
@@ -239,11 +302,9 @@ struct SpectreState {
     uint16_t          pwnyTotalAttempts = 0;
     uint32_t          pwnySessionMs    = 0; // millis when pwny started
 
-    // Session tagging
     char    sessionTag[32]       = "";
     bool    sessionTagSet        = false;
 
-    // Known locations (loaded from config)
     struct KnownLocation {
         char  tag[24];
         float lat;
@@ -255,14 +316,40 @@ struct SpectreState {
     int           knownLocCount = 0;
 };
 
-// Global state + spinlock
 extern SpectreState g_state;
 extern portMUX_TYPE g_stateMux;
 
-// Convenience macros for safe state access
 #define STATE_READ_BEGIN()  portENTER_CRITICAL(&g_stateMux)
 #define STATE_READ_END()    portEXIT_CRITICAL(&g_stateMux)
 #define STATE_WRITE_BEGIN() portENTER_CRITICAL(&g_stateMux)
 #define STATE_WRITE_END()   portEXIT_CRITICAL(&g_stateMux)
 
+// Storage summary mirror helpers — compute display-honest staleness without
+// requiring a tick. Callers may invoke from any task; they only read fields
+// already protected by the state mux at the call site.
+inline uint32_t spectreStorageSummaryAgeMs(uint32_t nowMs) {
+    if (g_state.storageSummaryUpdatedMs == 0) return UINT32_MAX;
+    return nowMs - g_state.storageSummaryUpdatedMs;
+}
+
+inline StorageSummaryStatus spectreStorageSummaryComputeStatus(uint32_t nowMs) {
+    if (!g_state.storageSummaryValid) {
+        return g_state.storageSummaryNeedsMaint
+                   ? STORAGE_SUMMARY_MAINTENANCE_NEEDED
+                   : STORAGE_SUMMARY_UNKNOWN;
+    }
+    return spectreStorageSummaryAgeMs(nowMs) > STORAGE_SUMMARY_FRESH_WINDOW_MS
+               ? STORAGE_SUMMARY_STALE
+               : STORAGE_SUMMARY_FRESH;
+}
+
+inline const char* spectreStorageSummaryStatusName(StorageSummaryStatus s) {
+    switch (s) {
+        case STORAGE_SUMMARY_FRESH:               return "fresh";
+        case STORAGE_SUMMARY_STALE:               return "stale";
+        case STORAGE_SUMMARY_MAINTENANCE_NEEDED:  return "maintenance_needed";
+        case STORAGE_SUMMARY_UNKNOWN:
+        default:                                  return "unknown";
+    }
+}
 

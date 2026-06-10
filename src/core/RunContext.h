@@ -63,4 +63,3 @@ inline const char* sessionContextLabel(RunContext context,
     }
 }
 
-

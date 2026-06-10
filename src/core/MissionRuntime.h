@@ -12,4 +12,3 @@ MissionProfile activeMissionProfile();
 void syncRuntimePresentation();
 const char* currentSessionContextLabel();
 
-

@@ -54,4 +54,3 @@ private:
 
 #define SESS Session::getInstance()
 
-

@@ -1,4 +1,6 @@
 
+
+
 #include "lvgl.h"
 
 /*******************************************************************************
@@ -741,5 +743,7 @@ lv_font_t sharetech_uncompressed_14 = {
 
 
 #endif /*#if SHARETECH_UNCOMPRESSED_14*/
+
+
 
 

@@ -1,4 +1,6 @@
 
+
+
 #if 1 /*Set it to "1" to enable content*/
 
 #ifndef LV_CONF_H
@@ -17,7 +19,16 @@
  *====================*/
 #define LV_USE_STDLIB_MALLOC LV_STDLIB_BUILTIN
 #define LV_MEM_CUSTOM 0
-#define LV_MEM_SIZE (64 * 1024U)
+// Keep just enough static pool for lv_init() overhead (~1-2 KB in practice).
+// The real working pool (64 KB) is added from PSRAM by LVGLDriver::begin()
+// immediately after lv_init() via lv_mem_add_pool().  Shrinking this from 64 KB
+// recovers ~56 KB of internal BSS for BLE and other DMA-capable allocations.
+#define LV_MEM_SIZE (8 * 1024U)
+// CRITICAL: TLSF computes FL_INDEX_MAX (its internal bitmask ceiling) at
+// compile time as TLSF_LOG2_CEIL(LV_MEM_SIZE + LV_MEM_POOL_EXPAND_SIZE).
+// Without this, TLSF is physically capped at 8 KB and lv_mem_add_pool()
+// silently returns NULL for any block larger than LV_MEM_SIZE.
+#define LV_MEM_POOL_EXPAND_SIZE (64 * 1024U)
 
 /*====================
    HAL SETTINGS
@@ -111,5 +122,7 @@
 
 #endif /*LV_CONF_H*/
 #endif /*End of "Content enable"*/
+
+
 
 

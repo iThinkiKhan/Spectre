@@ -24,10 +24,15 @@ void Session::endSession() {
 }
 
 String Session::_generateId() {
-    // Simple ID from millis + random
-    randomSeed(esp_random());
-    return String(millis()) + "-" + String(random(0xFFFF), HEX);
+    const uint32_t deviceShortId =
+        static_cast<uint32_t>(ESP.getEfuseMac() & 0x00FFFFFFULL);
+    const uint32_t randomPart = esp_random();
+
+    char id[40];
+    snprintf(id, sizeof(id), "%06lx-%lu-%08lx",
+             static_cast<unsigned long>(deviceShortId),
+             static_cast<unsigned long>(millis()),
+             static_cast<unsigned long>(randomPart));
+    return String(id);
 }
-
-
 

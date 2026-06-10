@@ -18,6 +18,7 @@ type NativePeripheralModule = {
     useDeviceLocation?: boolean;
   }): Promise<PeripheralState>;
   stopServer(): Promise<PeripheralState>;
+  kickAdvertising(reason?: string): Promise<PeripheralState>;
   updateMetadata(metadata: string): Promise<void>;
   updateGpsValue(gpsBase64: string): Promise<void>;
   updateControlValue(controlBase64: string): Promise<void>;
@@ -192,6 +193,18 @@ export class SpectrePeripheralBridge {
       ...state,
       moduleAvailable: true,
     };
+  }
+
+  async kickAdvertising(reason = 'js') {
+    if (!nativeModule) {
+      return;
+    }
+
+    const state = await nativeModule.kickAdvertising(reason);
+    this.listener?.onStateChange?.({
+      ...state,
+      moduleAvailable: true,
+    });
   }
 
   async updateMetadata(metadata: string) {

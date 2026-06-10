@@ -1,0 +1,90 @@
+C:\PlatformIO\Projects\Spectre\companion_app\src\components\DeviceCommandsPanel.tsx:149:      `lora ${d.loraReady ? 'on' : 'off'} · nodes ${d.subGhzNodeCount} · rssi ${d.loraRssi}/snr ${d.loraSnr} · pkts ${d.loraPacketCount}`,
+C:\PlatformIO\Projects\Spectre\companion_app\src\components\DeviceCommandsPanel.tsx:356:              (!service || streamBusy) ? styles.runButtonDisabled : null,
+C:\PlatformIO\Projects\Spectre\companion_app\src\components\DeviceCommandsPanel.tsx:359:            disabled={!service || streamBusy}
+C:\PlatformIO\Projects\Spectre\companion_app\src\components\DeviceCommandsPanel.tsx:395:              (!service || dashBusy) ? styles.runButtonDisabled : null,
+C:\PlatformIO\Projects\Spectre\companion_app\src\components\DeviceCommandsPanel.tsx:398:            disabled={!service || dashBusy}
+C:\PlatformIO\Projects\Spectre\companion_app\src\components\DeviceCommandsPanel.tsx:417:            {`uptime ${formatMs(dashSnapshot.uptimeMs)} · ble ${dashSnapshot.bleConnected ? 'on' : 'off'} · wifi ${dashSnapshot.wifiConnected ? 'on' : 'off'} · lora ${dashSnapshot.loraReady ? 'on' : 'off'} (${dashSnapshot.subGhzNodeCount} nodes)\n`}
+C:\PlatformIO\Projects\Spectre\companion_app\src\components\DeviceCommandsPanel.tsx:436:                  (!service || isLoading) ? styles.runButtonDisabled : null,
+C:\PlatformIO\Projects\Spectre\companion_app\src\components\DeviceCommandsPanel.tsx:438:                disabled={!service || isLoading}
+C:\PlatformIO\Projects\Spectre\companion_app\src\components\DeviceCommandsPanel.tsx:510:  runButtonDisabled: {
+C:\PlatformIO\Projects\Spectre\companion_app\src\protocol\badusb.ts:39:  | 'ready'
+C:\PlatformIO\Projects\Spectre\companion_app\src\protocol\badusb.ts:332:    case 'READY':
+C:\PlatformIO\Projects\Spectre\companion_app\src\protocol\badusb.ts:333:      phase = 'ready';
+C:\PlatformIO\Projects\Spectre\companion_app\src\protocol\binary.ts:380:  //  24  loraReady, reserved2, subGhzNodeCount(u16), loraRssi(i16), loraSnr(i16), loraPacketCount(u32)
+C:\PlatformIO\Projects\Spectre\companion_app\src\protocol\binary.ts:403:    loraReady: view.getUint8(24) !== 0,
+C:\PlatformIO\Projects\Spectre\companion_app\src\protocol\contracts.ts:43:export const CMD_STATUS_NOT_READY = 0x04;
+C:\PlatformIO\Projects\Spectre\companion_app\src\protocol\types.ts:184:  loraReady: boolean;
+C:\PlatformIO\Projects\Spectre\companion_app\src\protocol\types.ts:220:  lines: string[]; // null-terminated boundaries already split for callers
+C:\PlatformIO\Projects\Spectre\companion_app\src\screens\EnrichScreen.tsx:169:                      : batch.status === 'ready'
+C:\PlatformIO\Projects\Spectre\companion_app\src\screens\EnrichScreen.tsx:170:                        ? styles.batchStatusReady
+C:\PlatformIO\Projects\Spectre\companion_app\src\screens\EnrichScreen.tsx:359:  batchStatusReady: {
+C:\PlatformIO\Projects\Spectre\companion_app\src\screens\LinkScreen.tsx:98:  const pocketReady =
+C:\PlatformIO\Projects\Spectre\companion_app\src\screens\LinkScreen.tsx:125:  if (!spectre.permissions.allGranted) {
+C:\PlatformIO\Projects\Spectre\companion_app\src\screens\LinkScreen.tsx:126:    troubleshooting.push('Grant Bluetooth, advertise, and precise location permissions.');
+C:\PlatformIO\Projects\Spectre\companion_app\src\screens\LinkScreen.tsx:129:    troubleshooting.push('Turn Bluetooth on before scanning or advertising.');
+C:\PlatformIO\Projects\Spectre\companion_app\src\screens\LinkScreen.tsx:146:      {!spectre.permissions.allGranted && (
+C:\PlatformIO\Projects\Spectre\companion_app\src\screens\LinkScreen.tsx:147:        <FieldPanel title="Permissions" eyebrow="Required" tone="warn">
+C:\PlatformIO\Projects\Spectre\companion_app\src\screens\LinkScreen.tsx:151:          {spectre.missingPermissionLabels.map(label => (
+C:\PlatformIO\Projects\Spectre\companion_app\src\screens\LinkScreen.tsx:158:            onPress={spectre.requestPermissions}>
+C:\PlatformIO\Projects\Spectre\companion_app\src\screens\LinkScreen.tsx:159:            <Text style={styles.primaryText}>Grant Permissions</Text>
+C:\PlatformIO\Projects\Spectre\companion_app\src\screens\LinkScreen.tsx:167:        tone={pocketReady ? 'success' : spectre.peripheralState.error ? 'danger' : 'warn'}
+C:\PlatformIO\Projects\Spectre\companion_app\src\screens\LinkScreen.tsx:172:              pocketReady ? styles.signalGood : styles.signalIdle,
+C:\PlatformIO\Projects\Spectre\companion_app\src\screens\LinkScreen.tsx:175:              {pocketReady ? 'ready' : spectre.peripheralState.running ? 'warming' : 'offline'}
+C:\PlatformIO\Projects\Spectre\companion_app\src\screens\LinkScreen.tsx:180:          {pocketReady
+C:\PlatformIO\Projects\Spectre\companion_app\src\screens\LinkScreen.tsx:246:              !spectre.permissions.allGranted ? styles.buttonDisabled : null,
+C:\PlatformIO\Projects\Spectre\companion_app\src\screens\LinkScreen.tsx:248:            disabled={!spectre.permissions.allGranted}
+C:\PlatformIO\Projects\Spectre\companion_app\src\screens\LinkScreen.tsx:257:              !spectre.peripheralState.running ? styles.buttonDisabled : null,
+C:\PlatformIO\Projects\Spectre\companion_app\src\screens\LinkScreen.tsx:259:            disabled={!spectre.peripheralState.running}
+C:\PlatformIO\Projects\Spectre\companion_app\src\screens\LinkScreen.tsx:333:            No Spectre text service results yet. Run a scan with Bluetooth on and the device awake.
+C:\PlatformIO\Projects\Spectre\companion_app\src\screens\LinkScreen.tsx:529:  buttonDisabled: {
+C:\PlatformIO\Projects\Spectre\companion_app\src\screens\OpsScreen.tsx:45:    case 'ready':
+C:\PlatformIO\Projects\Spectre\companion_app\src\screens\OpsScreen.tsx:62:    case 'ready':
+C:\PlatformIO\Projects\Spectre\companion_app\src\screens\OpsScreen.tsx:81:    case 'ready':
+C:\PlatformIO\Projects\Spectre\companion_app\src\screens\OpsScreen.tsx:463:              importBusy || uploadActive ? styles.buttonDisabled : null,
+C:\PlatformIO\Projects\Spectre\companion_app\src\screens\OpsScreen.tsx:465:            disabled={importBusy || uploadActive}
+C:\PlatformIO\Projects\Spectre\companion_app\src\screens\OpsScreen.tsx:478:                ? styles.buttonDisabled
+C:\PlatformIO\Projects\Spectre\companion_app\src\screens\OpsScreen.tsx:481:            disabled={!uploadSupported || !!validationError || uploadActive}
+C:\PlatformIO\Projects\Spectre\companion_app\src\screens\OpsScreen.tsx:494:              !uploadActive ? styles.buttonDisabled : null,
+C:\PlatformIO\Projects\Spectre\companion_app\src\screens\OpsScreen.tsx:496:            disabled={!uploadActive}
+C:\PlatformIO\Projects\Spectre\companion_app\src\screens\OpsScreen.tsx:670:                peripheral.secureSessionReady ? 'ready' : 'waiting'
+C:\PlatformIO\Projects\Spectre\companion_app\src\screens\OpsScreen.tsx:679:              !spectre.permissions.allGranted ? styles.buttonDisabled : null,
+C:\PlatformIO\Projects\Spectre\companion_app\src\screens\OpsScreen.tsx:681:            disabled={!spectre.permissions.allGranted}
+C:\PlatformIO\Projects\Spectre\companion_app\src\screens\OpsScreen.tsx:690:              !peripheral.running ? styles.buttonDisabled : null,
+C:\PlatformIO\Projects\Spectre\companion_app\src\screens\OpsScreen.tsx:692:            disabled={!peripheral.running}
+C:\PlatformIO\Projects\Spectre\companion_app\src\screens\OpsScreen.tsx:1082:  buttonDisabled: {
+C:\PlatformIO\Projects\Spectre\companion_app\src\state\SpectreContext.tsx:34:  friendlyPermissionName,
+C:\PlatformIO\Projects\Spectre\companion_app\src\state\SpectreContext.tsx:35:  readAndroidBlePermissions,
+C:\PlatformIO\Projects\Spectre\companion_app\src\state\SpectreContext.tsx:36:  requestAndroidBlePermissions,
+C:\PlatformIO\Projects\Spectre\companion_app\src\state\SpectreContext.tsx:37:  type AndroidBlePermissionState,
+C:\PlatformIO\Projects\Spectre\companion_app\src\state\SpectreContext.tsx:38:} from '../services/permissions/androidBlePermissions';
+C:\PlatformIO\Projects\Spectre\companion_app\src\state\SpectreContext.tsx:40:  SpectrePeripheralBridge,
+C:\PlatformIO\Projects\Spectre\companion_app\src\state\SpectreContext.tsx:44:} from '../services/peripheral/SpectrePeripheralBridge';
+C:\PlatformIO\Projects\Spectre\companion_app\src\state\SpectreContext.tsx:62:type BatchStatus = 'waiting' | 'ready' | 'sent';
+C:\PlatformIO\Projects\Spectre\companion_app\src\state\SpectreContext.tsx:120:  permissions: AndroidBlePermissionState;
+C:\PlatformIO\Projects\Spectre\companion_app\src\state\SpectreContext.tsx:121:  missingPermissionLabels: string[];
+C:\PlatformIO\Projects\Spectre\companion_app\src\state\SpectreContext.tsx:143:  requestPermissions: () => Promise<void>;
+C:\PlatformIO\Projects\Spectre\companion_app\src\state\SpectreContext.tsx:170:const EMPTY_PERMISSIONS: AndroidBlePermissionState = {
+C:\PlatformIO\Projects\Spectre\companion_app\src\state\SpectreContext.tsx:181:  secureSessionReady: false,
+C:\PlatformIO\Projects\Spectre\companion_app\src\state\SpectreContext.tsx:438:  const peripheralRef = useRef<SpectrePeripheralBridge | null>(null);
+C:\PlatformIO\Projects\Spectre\companion_app\src\state\SpectreContext.tsx:460:  const [permissions, setPermissions] =
+C:\PlatformIO\Projects\Spectre\companion_app\src\state\SpectreContext.tsx:461:    useState<AndroidBlePermissionState>(EMPTY_PERMISSIONS);
+C:\PlatformIO\Projects\Spectre\companion_app\src\state\SpectreContext.tsx:525:  const missingPermissionLabels = permissions.missing.map(friendlyPermissionName);
+C:\PlatformIO\Projects\Spectre\companion_app\src\state\SpectreContext.tsx:531:  const refreshPermissions = async () => {
+C:\PlatformIO\Projects\Spectre\companion_app\src\state\SpectreContext.tsx:532:    const next = await readAndroidBlePermissions();
+C:\PlatformIO\Projects\Spectre\companion_app\src\state\SpectreContext.tsx:533:    setPermissions(next);
+C:\PlatformIO\Projects\Spectre\companion_app\src\state\SpectreContext.tsx:631:                status: 'ready',
+C:\PlatformIO\Projects\Spectre\companion_app\src\state\SpectreContext.tsx:645:    const nextStatus: BatchStatus = autoApplyRef.current ? 'ready' : 'waiting';
+C:\PlatformIO\Projects\Spectre\companion_app\src\state\SpectreContext.tsx:708:    if (!permissions.allGranted) {
+C:\PlatformIO\Projects\Spectre\companion_app\src\state\SpectreContext.tsx:709:      appendLog('Grant Android Bluetooth permissions before Field Mode', 'warn');
+C:\PlatformIO\Projects\Spectre\companion_app\src\state\SpectreContext.tsx:846:      onBatchReady: batch => {
+C:\PlatformIO\Projects\Spectre\companion_app\src\state\SpectreContext.tsx:854:    peripheralRef.current = new SpectrePeripheralBridge();
+C:\PlatformIO\Projects\Spectre\companion_app\src\state\SpectreContext.tsx:882:    swallowPromise(refreshPermissions());
+C:\PlatformIO\Projects\Spectre\companion_app\src\state\SpectreContext.tsx:904:    if (!permissions.allGranted || locationMode !== 'device') {
+C:\PlatformIO\Projects\Spectre\companion_app\src\state\SpectreContext.tsx:916:  }, [permissions.allGranted, locationMode]);
+C:\PlatformIO\Projects\Spectre\companion_app\src\state\SpectreContext.tsx:940:    permissions,
+C:\PlatformIO\Projects\Spectre\companion_app\src\state\SpectreContext.tsx:941:    missingPermissionLabels,
+C:\PlatformIO\Projects\Spectre\companion_app\src\state\SpectreContext.tsx:963:    requestPermissions: async () => {
+C:\PlatformIO\Projects\Spectre\companion_app\src\state\SpectreContext.tsx:964:      const next = await requestAndroidBlePermissions();
+C:\PlatformIO\Projects\Spectre\companion_app\src\state\SpectreContext.tsx:965:      setPermissions(next);
+C:\PlatformIO\Projects\Spectre\companion_app\src\state\SpectreContext.tsx:967:        appendLog('Some Android Bluetooth permissions are still missing', 'warn');
+C:\PlatformIO\Projects\Spectre\companion_app\src\state\SpectreContext.tsx:969:        appendLog('Bluetooth, advertise, and location permissions granted');
