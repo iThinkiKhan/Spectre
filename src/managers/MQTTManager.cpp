@@ -1260,6 +1260,19 @@ bool MQTTManager::_runDumpSlice() {
                                      record.payload,
                                      record.payloadLen,
                                      false)) {
+                    if (!_mqtt.connected()) {
+                        // Link failure, not a poison record: don't burn a
+                        // poison strike on a record that is likely fine.
+                        // Fail the slice and let the reconnect path retry it.
+                        DLOG_WARN("MQTT",
+                                  "Publish failed (link down) session=%s event=%lu — will retry",
+                                  record.sessionId,
+                                  static_cast<unsigned long>(record.eventId));
+                        _lastFailed++;
+                        _dumpCtx.phase = DUMP_PHASE_FAILED;
+                        return true;
+                    }
+
                     const bool samePoisonRecord =
                         (_lastPoisonEventId == record.eventId &&
                          _lastPoisonSessionId == record.sessionId);
@@ -1321,6 +1334,20 @@ bool MQTTManager::_runDumpSlice() {
                     _mqtt.loop();
                 }
                 _dumpSlicePause();
+
+                if (!_mqtt.connected()) {
+                    // A QoS-0 publish only confirms a local socket write. If
+                    // the link dropped right after it, the broker may never
+                    // have received the record — leave it unmarked so it is
+                    // re-sent next lease (at-least-once) instead of lost.
+                    DLOG_WARN("MQTT",
+                              "Link dropped after publish event=%lu session=%s — not marking uploaded",
+                              static_cast<unsigned long>(record.eventId),
+                              record.sessionId);
+                    _lastFailed++;
+                    _dumpCtx.phase = DUMP_PHASE_FAILED;
+                    return true;
+                }
 
                 if (!STORAGE.markEventUploaded(record.eventId,
                                                record.sessionId,

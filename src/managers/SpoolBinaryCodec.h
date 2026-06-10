@@ -25,9 +25,17 @@ struct SegmentHeaderV2 {
     uint32_t recordCount = 0;
     uint32_t bodyBytes = 0;
     uint32_t dictOffset = 0;
-    uint32_t reserved0 = 0;
+    // Physical offset of the end of the last committed record (including
+    // checkpoint sidecars). 0 = unknown (segment written before this field
+    // existed); readers/writers must then fall back to the physical file size.
+    // Updated in the same header write that commits record counters, so a
+    // record interrupted before the header rewrite is simply not committed
+    // and the next append overwrites the torn bytes.
+    uint32_t tailOffset = 0;
     uint32_t reserved1 = 0;
 };
+
+static_assert(sizeof(SegmentHeaderV2) == 44, "on-disk layout must not change");
 
 enum RecordType : uint8_t {
     REC_EVENT = 1,
@@ -42,11 +50,16 @@ struct RecordPrefix {
     uint16_t length = 0;
 };
 
+static_assert(sizeof(RecordPrefix) == 4, "on-disk layout must not change");
+
 // Compact segment-local summary checkpoint appended into binary segments.
 // This is written as a regular record body behind REC_CHECKPOINT.
 struct SpoolSegmentCheckpointV1 {
     uint32_t magic = CHECKPOINT_MAGIC;
     uint16_t version = 1;
+    // Explicit padding: this struct is memcpy'd to/from disk and CRC'd as raw
+    // bytes, so the 2 alignment bytes after `version` must be deterministic.
+    uint16_t pad0 = 0;
     uint32_t segmentId = 0;
     uint32_t lastEventId = 0;
     uint32_t recordCount = 0;
@@ -73,6 +86,8 @@ struct SpoolSegmentCheckpointV1 {
     uint32_t crc32 = 0;
 };
 
+static_assert(sizeof(SpoolSegmentCheckpointV1) == 80, "on-disk layout must not change");
+
 bool writeBytes(fs::File& f, const void* data, size_t len);
 bool readBytes(fs::File& f, void* data, size_t len);
 
@@ -82,8 +97,16 @@ bool readUVarint(fs::File& f, uint32_t& out);
 bool writeVarintZigZag(fs::File& f, int32_t value);
 bool readVarintZigZag(fs::File& f, int32_t& out);
 
+// Reads and validates the segment header (magic, version, headerSize).
+// Returns false on short reads or a corrupted/foreign header.
 bool readSegmentHeaderV2(fs::File& f, SegmentHeaderV2& hdr);
 bool writeSegmentHeaderV2(fs::File& f, const SegmentHeaderV2& hdr);
+
+// Physical extent of committed data in the segment. Returns hdr.tailOffset
+// when it is sane, otherwise falls back to the physical file size (legacy
+// segments written before tailOffset existed). Bytes past this offset are a
+// torn tail from an interrupted append and must be ignored/overwritten.
+uint32_t committedSegmentEnd(fs::File& f, const SegmentHeaderV2& hdr);
 
 struct AppendRecordLocation {
     uint32_t offset = 0;

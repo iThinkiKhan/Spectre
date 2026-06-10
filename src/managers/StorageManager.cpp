@@ -901,12 +901,13 @@ static bool _scanBinarySegmentMetaRecords(const String& path,
         return false;
     }
 
+    const uint32_t segEnd = SpoolBin::committedSegmentEnd(f, hdr);
     uint32_t workCounter = 0;
     String lastSession;
     bool ok = true;
 
-    while (f.position() < f.size()) {
-        const size_t remainingBeforePrefix = static_cast<size_t>(f.size() - f.position());
+    while (f.position() < segEnd) {
+        const size_t remainingBeforePrefix = static_cast<size_t>(segEnd - f.position());
         if (remainingBeforePrefix < sizeof(SpoolBin::RecordPrefix)) {
             DLOG_WARN("STORAGE",
                       "Binary meta truncated tail path=%s remaining=%u",
@@ -923,7 +924,7 @@ static bool _scanBinarySegmentMetaRecords(const String& path,
             break;
         }
 
-        const size_t remainingAfterPrefix = static_cast<size_t>(f.size() - f.position());
+        const size_t remainingAfterPrefix = static_cast<size_t>(segEnd - f.position());
         if (prefix.length > remainingAfterPrefix) {
             DLOG_WARN("STORAGE",
                       "Binary meta truncated body path=%s len=%u remaining=%u",
@@ -1002,9 +1003,10 @@ static bool _findLatestBinaryCheckpoint(const String& path,
         return false;
     }
 
-    while (f.position() < f.size()) {
+    const uint32_t segEnd = SpoolBin::committedSegmentEnd(f, hdr);
+    while (f.position() < segEnd) {
         const size_t remainingBeforePrefix =
-            static_cast<size_t>(f.size() - f.position());
+            static_cast<size_t>(segEnd - f.position());
         if (remainingBeforePrefix < sizeof(SpoolBin::RecordPrefix)) {
             f.close();
             return false;
@@ -1017,7 +1019,7 @@ static bool _findLatestBinaryCheckpoint(const String& path,
         }
 
         const size_t remainingAfterPrefix =
-            static_cast<size_t>(f.size() - f.position());
+            static_cast<size_t>(segEnd - f.position());
         if (prefix.length > remainingAfterPrefix) {
             f.close();
             return false;
@@ -1099,14 +1101,15 @@ static SpoolScanStatus _scanBinarySegmentMetaRecordsAudit(
         return SpoolScanStatus::FATAL;
     }
 
+    const uint32_t segEnd = SpoolBin::committedSegmentEnd(f, hdr);
     uint32_t workCounter = 0;
     uint32_t skipWarnCount = 0;
     String lastSession;
     bool hadSkips = false;
 
-    while (f.position() < f.size()) {
+    while (f.position() < segEnd) {
         const size_t remainingBeforePrefix =
-            static_cast<size_t>(f.size() - f.position());
+            static_cast<size_t>(segEnd - f.position());
         if (remainingBeforePrefix < sizeof(SpoolBin::RecordPrefix)) {
             DLOG_WARN("STORAGE",
                       "Audit truncated tail path=%s remaining=%u",
@@ -1124,7 +1127,7 @@ static SpoolScanStatus _scanBinarySegmentMetaRecordsAudit(
         }
 
         const size_t remainingAfterPrefix =
-            static_cast<size_t>(f.size() - f.position());
+            static_cast<size_t>(segEnd - f.position());
         if (prefix.length > remainingAfterPrefix) {
             DLOG_WARN("STORAGE",
                       "Audit truncated body path=%s len=%u remaining=%u",
@@ -3616,13 +3619,23 @@ bool StorageManager::_scanBinarySegmentRecords(
     }
 
     const uint32_t tsBase = hdr.createdMs;
+    const uint32_t segEnd = SpoolBin::committedSegmentEnd(f, hdr);
     String lastSession;
 
-    while (f.position() < f.size()) {
+    while (f.position() < segEnd) {
         SpoolBin::RecordPrefix prefix;
         if (!SpoolBin::readBytes(f, &prefix, sizeof(prefix))) {
             DLOG_WARN("STORAGE", "Binary spool prefix read failed seg=%lu",
                       static_cast<unsigned long>(segmentId));
+            f.close();
+            return false;
+        }
+
+        const uint32_t bodyPos = static_cast<uint32_t>(f.position());
+        if (bodyPos > segEnd || prefix.length > segEnd - bodyPos) {
+            DLOG_WARN("STORAGE", "Binary spool truncated body seg=%lu len=%u",
+                      static_cast<unsigned long>(segmentId),
+                      static_cast<unsigned>(prefix.length));
             f.close();
             return false;
         }
@@ -4422,7 +4435,8 @@ bool StorageManager::_appendSegmentRecord(SpoolSegmentInfo& seg,
             SpoolBin::SegmentHeaderV2 hdr;
             SpoolBin::AppendRecordLocation loc{};
             SpoolBin::AppendRecordLocation* locOut = outLoc ? &loc : nullptr;
-            const uint32_t writeOffset = static_cast<uint32_t>(segFile.size());
+            const uint32_t writeOffset =
+                SpoolBin::committedSegmentEnd(segFile, segHdr);
             if (!segFile.seek(writeOffset)) {
                 segFile.close();
                 return false;
@@ -6040,15 +6054,16 @@ bool StorageManager::_repairBinaryMetaSlice(uint32_t startMs,
         return false;
     }
 
+    const uint32_t segEnd = SpoolBin::committedSegmentEnd(f, hdr);
     uint32_t skipWarnCount = 0;
-    while (f.position() < f.size() && recordsScanned < maxRecords) {
+    while (f.position() < segEnd && recordsScanned < maxRecords) {
         // Check budget AFTER the first record so file-open + seek overhead
         // can't exhaust a 2ms budget before a single record is processed.
         if (recordsScanned > 0 && (millis() - startMs) >= budgetMs) {
             break;
         }
         const size_t remainingBeforePrefix =
-            static_cast<size_t>(f.size() - f.position());
+            static_cast<size_t>(segEnd - f.position());
         if (remainingBeforePrefix < sizeof(SpoolBin::RecordPrefix)) {
             DLOG_WARN("STORAGE",
                       "Repair truncated tail path=%s remaining=%u",
@@ -6066,7 +6081,7 @@ bool StorageManager::_repairBinaryMetaSlice(uint32_t startMs,
         }
 
         const size_t remainingAfterPrefix =
-            static_cast<size_t>(f.size() - f.position());
+            static_cast<size_t>(segEnd - f.position());
         if (prefix.length > remainingAfterPrefix) {
             DLOG_WARN("STORAGE",
                       "Repair truncated body path=%s len=%u remaining=%u",
@@ -6160,7 +6175,7 @@ bool StorageManager::_repairBinaryMetaSlice(uint32_t startMs,
         }
     }
 
-    const bool done = f.position() >= f.size();
+    const bool done = f.position() >= segEnd;
     f.close();
     if (done) {
         _repairJob.scanningSegment = false;
@@ -8958,21 +8973,21 @@ bool StorageManager::_auditSpoolBinaryCheckpointTail(
         return false;
     }
 
-    const uint32_t fileSize = static_cast<uint32_t>(f.size());
+    const uint32_t segEnd = SpoolBin::committedSegmentEnd(f, hdr);
     const uint32_t tailSize =
         static_cast<uint32_t>(sizeof(SpoolBin::RecordPrefix)) +
         static_cast<uint32_t>(sizeof(SpoolBin::SpoolSegmentCheckpointV1));
-    if (fileSize < sizeof(SpoolBin::SegmentHeaderV2) + tailSize) {
+    if (segEnd < sizeof(SpoolBin::SegmentHeaderV2) + tailSize) {
         DLOG_WARN("STORAGE",
                   "Boot audit checkpoint missing seg=%lu size=%lu tail=%lu",
                   static_cast<unsigned long>(seg.segmentId),
-                  static_cast<unsigned long>(fileSize),
+                  static_cast<unsigned long>(segEnd),
                   static_cast<unsigned long>(tailSize));
         f.close();
         return false;
     }
 
-    const uint32_t tailOffset = fileSize - tailSize;
+    const uint32_t tailOffset = segEnd - tailSize;
     if (!f.seek(tailOffset)) {
         DLOG_WARN("STORAGE",
                   "Boot audit checkpoint seek failed seg=%lu path=%s",
@@ -9997,8 +10012,9 @@ bool StorageManager::_rebuildUploadIndexSegment(const SpoolSegmentInfo& seg) {
             return true;
         }
 
+        const uint32_t segEnd = SpoolBin::committedSegmentEnd(spool, hdr);
         String lastSession;
-        while (spool.position() < spool.size()) {
+        while (spool.position() < segEnd) {
             if (uploadWindowFull()) {
                 _uploadIndexWindowTruncated = true;
                 segmentWindowTruncated = true;
@@ -10012,8 +10028,8 @@ bool StorageManager::_rebuildUploadIndexSegment(const SpoolSegmentInfo& seg) {
                 break;
             }
 
-            const size_t remaining = static_cast<size_t>(spool.size() - spool.position());
-            if (prefix.length > remaining) {
+            const uint32_t bodyPos = static_cast<uint32_t>(spool.position());
+            if (bodyPos > segEnd || prefix.length > segEnd - bodyPos) {
                 flagSegmentIssue("upload_index_truncated_body", true);
                 break;
             }
@@ -10802,7 +10818,7 @@ bool StorageManager::appendEnrichDeltasBatch(const SpoolEnrichBatchEntry* entrie
         return false;
     }
 
-    if (!f.seek(f.size())) {
+    if (!f.seek(SpoolBin::committedSegmentEnd(f, hdr))) {
         f.close();
         return false;
     }

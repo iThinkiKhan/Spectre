@@ -26,6 +26,12 @@ static QueueHandle_t s_laneQ[4]     = {nullptr, nullptr, nullptr, nullptr};
 static SemaphoreHandle_t s_enqueueMux = nullptr;
 static TaskHandle_t s_workerTask    = nullptr;
 static volatile bool s_workerPaused = false;
+// True while the worker is inside an append batch (including the trailing
+// endWorkerAppendBatch flush). Slots are returned to s_freeQ before the
+// flush runs, so drainAndPauseWorker must wait on this flag too — otherwise
+// the upload owner can start reading LittleFS while the worker is still
+// writing it.
+static volatile bool s_workerBusy = false;
 
 static volatile uint32_t s_seq                = 0;
 static volatile uint32_t s_enqueued           = 0;
@@ -353,6 +359,7 @@ static void _workerTask(void*) {
             continue;
         }
 
+        s_workerBusy = true;
         STORAGE.beginWorkerAppendBatch("ramspool_batch");
         const uint32_t batchStartMs = millis();
         uint32_t processed = 0;
@@ -457,6 +464,7 @@ static void _workerTask(void*) {
 
         const uint32_t closeStartMs = millis();
         const bool closeOk = STORAGE.endWorkerAppendBatch("ramspool_batch", false);
+        s_workerBusy = false;
         const uint32_t closeMs = millis() - closeStartMs;
 
         batchTiming.totalMs = millis() - batchStartMs;
@@ -782,7 +790,7 @@ bool drainAndPauseWorker(uint32_t timeoutMs) {
     uint16_t lastInflight = 0xFFFF;
     while (static_cast<int32_t>(deadline - millis()) > 0) {
         Stats s = snapshot();
-        if (s.inflight == 0) {
+        if (s.inflight == 0 && !s_workerBusy) {
             DLOG_INFO("STORAGE",
                       "RAMSpool worker paused inflight=0 lastInflight=%u",
                       static_cast<unsigned>(lastInflight == 0xFFFF
@@ -795,8 +803,9 @@ bool drainAndPauseWorker(uint32_t timeoutMs) {
     }
     const Stats finalStats = snapshot();
     DLOG_WARN("STORAGE",
-              "RAMSpool drain timed out inflight=%u — worker paused anyway",
-              static_cast<unsigned>(finalStats.inflight));
+              "RAMSpool drain timed out inflight=%u busy=%d — worker paused anyway",
+              static_cast<unsigned>(finalStats.inflight),
+              s_workerBusy ? 1 : 0);
     return false;
 }
 

@@ -184,7 +184,18 @@ static uint32_t crc32Bytes(const uint8_t* data, size_t len) {
 
 bool readSegmentHeaderV2(fs::File& f, SegmentHeaderV2& hdr) {
     if (!f.seek(0)) return false;
-    return readBytes(f, &hdr, sizeof(hdr));
+    if (!readBytes(f, &hdr, sizeof(hdr))) return false;
+    return hdr.magic == SEGMENT_MAGIC &&
+           hdr.version == 2 &&
+           hdr.headerSize == sizeof(SegmentHeaderV2);
+}
+
+uint32_t committedSegmentEnd(fs::File& f, const SegmentHeaderV2& hdr) {
+    const uint32_t fileSize = static_cast<uint32_t>(f.size());
+    if (hdr.tailOffset >= sizeof(SegmentHeaderV2) && hdr.tailOffset <= fileSize) {
+        return hdr.tailOffset;
+    }
+    return fileSize;
 }
 
 bool writeSegmentHeaderV2(fs::File& f, const SegmentHeaderV2& hdr) {
@@ -213,7 +224,9 @@ bool appendRecordV2(const String& path,
         return false;
     }
 
-    const uint32_t writeOffset = static_cast<uint32_t>(f.size());
+    // Append at the committed tail, not the physical end: this overwrites any
+    // torn bytes left by a previously interrupted append.
+    const uint32_t writeOffset = committedSegmentEnd(f, hdr);
     if (!f.seek(writeOffset)) {
         f.close();
         return false;
@@ -238,6 +251,7 @@ bool appendRecordV2(const String& path,
 
     hdr.recordCount++;
     hdr.bodyBytes += encodedLen;
+    hdr.tailOffset = writeOffset + encodedLen;
 
     if (eventId != 0) {
         if (hdr.firstEventId == 0 || eventId < hdr.firstEventId) {
@@ -282,6 +296,7 @@ bool appendRecordToOpen(fs::File& f,
 
     hdr.recordCount++;
     hdr.bodyBytes += static_cast<uint32_t>(sizeof(prefix)) + static_cast<uint32_t>(length);
+    hdr.tailOffset = static_cast<uint32_t>(f.position());
 
     if (eventId != 0) {
         if (hdr.firstEventId == 0 || eventId < hdr.firstEventId) {
@@ -312,7 +327,7 @@ bool appendCheckpointRecordV1(const String& path,
         return false;
     }
 
-    const uint32_t writeOffset = static_cast<uint32_t>(f.size());
+    const uint32_t writeOffset = committedSegmentEnd(f, hdr);
     if (!f.seek(writeOffset)) {
         f.close();
         return false;
@@ -320,6 +335,7 @@ bool appendCheckpointRecordV1(const String& path,
 
     checkpoint.magic = CHECKPOINT_MAGIC;
     checkpoint.version = 1;
+    checkpoint.pad0 = 0;
     checkpoint.bodyOffset = static_cast<uint32_t>(f.position() + sizeof(RecordPrefix));
     checkpoint.crc32 = 0;
     checkpoint.crc32 = crc32Bytes(reinterpret_cast<const uint8_t*>(&checkpoint),
@@ -336,6 +352,16 @@ bool appendCheckpointRecordV1(const String& path,
     }
 
     if (!writeBytes(f, &checkpoint, sizeof(checkpoint))) {
+        f.close();
+        return false;
+    }
+
+    // Commit the checkpoint by advancing the tail; counters are unchanged
+    // because checkpoints are sidecar records.
+    hdr.tailOffset = writeOffset +
+                     static_cast<uint32_t>(sizeof(prefix)) +
+                     static_cast<uint32_t>(sizeof(checkpoint));
+    if (!writeSegmentHeaderV2(f, hdr)) {
         f.close();
         return false;
     }
@@ -550,6 +576,7 @@ bool createEmptySegmentV2(const String& path, uint32_t segmentId, uint32_t creat
     SegmentHeaderV2 hdr;
     hdr.segmentId = segmentId;
     hdr.createdMs = createdMs;
+    hdr.tailOffset = sizeof(SegmentHeaderV2);
 
     const bool ok = writeBytes(f, &hdr, sizeof(hdr));
     f.close();
