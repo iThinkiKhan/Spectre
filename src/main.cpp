@@ -2348,6 +2348,14 @@ inline void spectreAcknowledgeSleepPresentationLocked(uint32_t nowMs,
 [[noreturn]] void _enterDeepSleepNow(const char* reason) {
     DLOG_INFO("POWER", "Entering deep sleep reason=%s",
               reason ? reason : "unknown");
+    // Quiesce flash before powering down: stop the storage worker between
+    // batches and force-persist dirty counters/index. Sleeping mid-write
+    // costs the in-flight records' commit and forces a repair pass on the
+    // next boot.
+    RAMSpool::drainAndPauseWorker(2000UL);
+    if (STORAGE.isReady()) {
+        STORAGE.endWorkerAppendBatch("deep_sleep", true);
+    }
     esp_deep_sleep_start();
     for (;;) {
         vTaskDelay(portMAX_DELAY);
@@ -2371,12 +2379,13 @@ void _serviceSleepTransition(uint32_t nowMs) {
         return;
     }
 
-    if (forceAtMs != 0 && nowMs >= forceAtMs) {
+    if (forceAtMs != 0 && static_cast<int32_t>(nowMs - forceAtMs) >= 0) {
         _enterDeepSleepNow(presentationAcked ? "display_timeout_cap"
                                              : "display_timeout");
     }
 
-    if (presentationAcked && commitAtMs != 0 && nowMs >= commitAtMs) {
+    if (presentationAcked && commitAtMs != 0 &&
+        static_cast<int32_t>(nowMs - commitAtMs) >= 0) {
         _enterDeepSleepNow("display_presented");
     }
 }
@@ -4058,7 +4067,7 @@ void TaskHardware(void* pvParameters) {
         lastLoopStartMs = loopNow;
 
         if (g_deferredBootOptionalInitPending &&
-            loopNow >= g_deferredBootOptionalInitAtMs) {
+            static_cast<int32_t>(loopNow - g_deferredBootOptionalInitAtMs) >= 0) {
             g_deferredBootOptionalInitPending = false;
             if (STORAGE.isReady()) {
                 _runOptionalBootInitialization();
@@ -4085,7 +4094,7 @@ void TaskHardware(void* pvParameters) {
             !sleepAlreadyRequested &&
             power.state == POWER_STATE_BATTERY_CRITICAL &&
             power.criticalSleepAtMs != 0 &&
-            loopNow >= power.criticalSleepAtMs) {
+            static_cast<int32_t>(loopNow - power.criticalSleepAtMs) >= 0) {
             _requestSleepTransition(storageOk, false, false, "critical_timeout");
         }
 
@@ -4891,15 +4900,25 @@ void setup() {
 
     DLOG_INFO("SYS", "Starting tasks");
 
-    xTaskCreatePinnedToCore(
+    const BaseType_t displayCreated = xTaskCreatePinnedToCore(
         TaskDisplay, "TaskDisplay",
         TASK_DISPLAY_STACK_BYTES, nullptr, 2,
         &taskDisplayHandle, 1);
 
-    xTaskCreatePinnedToCore(
+    const BaseType_t hardwareCreated = xTaskCreatePinnedToCore(
         TaskHardware, "TaskHardware",
         TASK_HARDWARE_STACK_BYTES, nullptr, 2,
         &taskHardwareHandle, 0);
+
+    if (displayCreated != pdPASS || hardwareCreated != pdPASS) {
+        // Without both tasks the device is a brick with a backlight; surface
+        // the failure instead of silently idling in loop().
+        Serial.printf("[BOOT] *** TASK CREATE FAILED display=%d hardware=%d ***\n",
+                      (int)displayCreated, (int)hardwareCreated);
+        DLOG_ERROR("SYS", "Task create failed display=%d hardware=%d",
+                   (int)displayCreated, (int)hardwareCreated);
+        PrebootFallback::showFatal(tft, "BOOT FAILED", "TASK CREATE ERROR");
+    }
 
     DLOG_INFO("SYS", "Tasks launched");
 }
