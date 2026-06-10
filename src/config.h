@@ -1,7 +1,30 @@
-
 #pragma once
+
+// =============================================================================
+// Spectre compile-time configuration
+// =============================================================================
+// All tunable knobs live here. Heavier helper code (button bindings) is split
+// into separate headers, included below, so this file stays scannable.
+//
+// CONTENTS (search the banner text to jump):
+//   Main switches              — companion enable + enrichment trigger
+//   Enrichment drain policy     — in-flight ring drain watermarks
+//   Boot options                — boot sequence / recovery
+//   Timing                      — buttons, MQTT, sleep, BLE lease holds
+//   MQTT upload                 — upload triggers, leases, FieldVault startup
+//   Duplicate suppression       — dedup profiles + windows
+//   Debug logging               — profiles + per-area toggles
+//   Display and UI geometry     — screen layout constants
+//   Board pins                  — display / buttons / UART / battery
+//   Radio and antenna control   — antenna switch modes
+//   Power subsystem             — battery thresholds + capacity
+//   MQTT                        — broker host/port/sensor id
+//   UI labels and helpers       — see core/ButtonBindings.h
+// =============================================================================
+
 #include "SecretsConfig.h"
 #include "core/ScreenEnum.h"
+#include "core/ButtonBindings.h"
 
 #define ON  1
 static constexpr uint8_t OFF = 0;
@@ -13,8 +36,17 @@ static constexpr uint8_t OFF = 0;
 // -----------------------------------------------------------------------------
 
 #define PHONE_COMPANION_ENABLED     ON
-#define PHONE_COMPANION_ENRICH_THRESHOLD 270UL
-#define PHONE_COMPANION_ENRICH_BATCH_MAX 18
+
+// Automatic enrichment trigger. When pending (un-enriched) events reach this
+// count, the companion scheduler starts an enrichment session on the next
+// idle window (subject to a 60s min-gap; see ENRICH_MIN_GAP_MS in main.cpp).
+// Manual ENRICH (BLE_TEST button) bypasses the threshold entirely.
+//   _THRESHOLD      — phone-over-ESP32-BLE path
+//   _THRESHOLD_WIO  — phone-over-WIO-nRF accessory path (lower: WIO is cheaper)
+// These feed ENRICH_PENDING_THRESHOLD_INTERNAL / _WIO in main.cpp.
+#define PHONE_COMPANION_ENRICH_THRESHOLD     270UL
+#define PHONE_COMPANION_ENRICH_THRESHOLD_WIO 25UL
+#define PHONE_COMPANION_ENRICH_BATCH_MAX     18
 
 // -----------------------------------------------------------------------------
 // Enrichment drain policy
@@ -69,8 +101,6 @@ static constexpr uint8_t OFF = 0;
 #define BUTTON_LONG_PRESS_MS          800UL   // ms
 #define BUTTON_DEBOUNCE_MS            50UL    // ms
 
-#define MQTT_DUMP_INTERVAL_SEC        7200UL  // seconds
-#define MQTT_DUMP_INTERVAL_MS         SPECTRE_SECONDS_TO_MS(MQTT_DUMP_INTERVAL_SEC)
 #define MQTT_WIFI_CONNECT_TIMEOUT_SEC 30UL    // seconds
 #define MQTT_WIFI_CONNECT_TIMEOUT_MS  SPECTRE_SECONDS_TO_MS(MQTT_WIFI_CONNECT_TIMEOUT_SEC)
 #define MQTT_BROKER_CONNECT_TIMEOUT_SEC 15UL  // seconds
@@ -101,7 +131,13 @@ static constexpr uint8_t OFF = 0;
 // -----------------------------------------------------------------------------
 // MQTT upload
 // -----------------------------------------------------------------------------
-
+// Automatic upload is triggered three ways (there is no fixed time interval):
+//   1. Threshold     — main loop polls every 60s; when pending records reach
+//                      MQTT_UPLOAD_READY_THRESHOLD it requests a dump.
+//   2. Backlog drain  — once a dump starts, _continuousDrainActive keeps
+//                      draining to zero on each 60s poll (ignores threshold).
+//   3. FieldVault startup — one short field-only dump per boot after grace.
+// Manual SYNC (UPLINK_TRIGGER button) forces a dump regardless of threshold.
 #define MQTT_UPLOAD_READY_THRESHOLD   40000
 #define MQTT_BACKLOG_LARGE_WARN_THRESHOLD 10000   // boot diagnostic only
 #define MQTT_DUMP_FETCH_BATCH_SIZE     4   // records loaded per storage scan
@@ -399,145 +435,6 @@ static constexpr uint8_t OFF = 0;
 // -----------------------------------------------------------------------------
 // UI labels and helpers
 // -----------------------------------------------------------------------------
-
-enum SpectreButtonAction : uint8_t {
-    BUTTON_ACTION_NONE = 0,
-    BUTTON_ACTION_SCREEN_NEXT,
-    BUTTON_ACTION_SUBGHZ_MODE_CYCLE,
-    BUTTON_ACTION_LORA_PING,
-    BUTTON_ACTION_SLEEP,
-    BUTTON_ACTION_WIFI_REFRESH,
-    BUTTON_ACTION_WIFI_SCAN_LIST,
-    BUTTON_ACTION_WIFI_ALLSCAN,
-    BUTTON_ACTION_WIFI_LIST_SELECT,
-    BUTTON_ACTION_WIFI_LIST_DOWN,
-    BUTTON_ACTION_WIFI_LIST_CLOSE,
-    BUTTON_ACTION_WIFI_LIST_HUNT,
-    BUTTON_ACTION_ANTENNA_TOGGLE,
-    BUTTON_ACTION_SYSTEM_DEBRIEF,
-    BUTTON_ACTION_SESSION_TAG,
-    BUTTON_ACTION_SAVE_LOCATION,
-    BUTTON_ACTION_MISSION_NEXT,
-    BUTTON_ACTION_MISSION_ENTER,
-    BUTTON_ACTION_MISSION_EXIT,
-    BUTTON_ACTION_MISSION_LIST_OPEN,
-    BUTTON_ACTION_MISSION_LIST_SELECT,
-    BUTTON_ACTION_MISSION_LIST_DOWN,
-    BUTTON_ACTION_MISSION_LIST_CLOSE,
-    BUTTON_ACTION_UPLINK_TRIGGER,
-    BUTTON_ACTION_BADUSB_LIST_OPEN,
-    BUTTON_ACTION_BADUSB_LIST_SELECT,
-    BUTTON_ACTION_BADUSB_LIST_DOWN,
-    BUTTON_ACTION_BADUSB_LIST_CLOSE,
-    BUTTON_ACTION_BADUSB_ARM,
-    BUTTON_ACTION_BADUSB_RUN,
-    BUTTON_ACTION_BADUSB_CANCEL,
-    BUTTON_ACTION_PWNY_FORCE_DEAUTH,
-    BUTTON_ACTION_DEBRIEF_EXPORT,
-    BUTTON_ACTION_DEBRIEF_CLEAR,
-    BUTTON_ACTION_DEBRIEF_BACK,
-    BUTTON_ACTION_BLE_TEST
-};
-
-struct ButtonBindingSet {
-    SpectreButtonAction aShort;
-    SpectreButtonAction aLong;
-    SpectreButtonAction bLong;
-    SpectreButtonAction bShort;
-};
-
-static inline const char* spectreButtonActionLabel(SpectreButtonAction action,
-                                                   bool busy = false) {
-    switch (action) {
-        case BUTTON_ACTION_SUBGHZ_MODE_CYCLE: return "MODE";
-        case BUTTON_ACTION_LORA_PING:         return "PING";
-        case BUTTON_ACTION_SLEEP:             return "SLEEP";
-        case BUTTON_ACTION_SCREEN_NEXT:       return "NEXT";
-        case BUTTON_ACTION_WIFI_REFRESH:      return busy ? "BUSY" : "REFRESH";
-        case BUTTON_ACTION_WIFI_SCAN_LIST:    return "LIST";
-        case BUTTON_ACTION_WIFI_ALLSCAN:      return "ALLSCAN";
-        case BUTTON_ACTION_WIFI_LIST_SELECT:  return "SELECT";
-        case BUTTON_ACTION_WIFI_LIST_DOWN:    return "DOWN";
-        case BUTTON_ACTION_WIFI_LIST_CLOSE:   return "EXIT";
-        case BUTTON_ACTION_WIFI_LIST_HUNT:    return "HUNT";
-        case BUTTON_ACTION_ANTENNA_TOGGLE:    return "ANT";
-        case BUTTON_ACTION_SYSTEM_DEBRIEF:    return "DEBRIEF";
-        case BUTTON_ACTION_SESSION_TAG:       return "TAG";
-        case BUTTON_ACTION_SAVE_LOCATION:     return "SAVE";
-        case BUTTON_ACTION_MISSION_NEXT:      return "NEXT";
-        case BUTTON_ACTION_MISSION_ENTER:     return "LAUNCH";
-        case BUTTON_ACTION_MISSION_EXIT:      return "EXIT";
-        case BUTTON_ACTION_MISSION_LIST_OPEN: return "MISSIONS";
-        case BUTTON_ACTION_MISSION_LIST_SELECT:return "SELECT";
-        case BUTTON_ACTION_MISSION_LIST_DOWN: return "DOWN";
-        case BUTTON_ACTION_MISSION_LIST_CLOSE:return "CLOSE";
-        case BUTTON_ACTION_UPLINK_TRIGGER:    return "SYNC";
-        case BUTTON_ACTION_DEBRIEF_EXPORT:    return "EXPORT";
-        case BUTTON_ACTION_DEBRIEF_CLEAR:     return "CLEAR";
-        case BUTTON_ACTION_DEBRIEF_BACK:      return "BACK";
-        case BUTTON_ACTION_BADUSB_LIST_OPEN:  return "LIST";
-        case BUTTON_ACTION_BADUSB_LIST_SELECT:return "SELECT";
-        case BUTTON_ACTION_BADUSB_LIST_DOWN:  return "DOWN";
-        case BUTTON_ACTION_BADUSB_LIST_CLOSE: return "CLOSE";
-        case BUTTON_ACTION_BADUSB_ARM:        return "ARM";
-        case BUTTON_ACTION_BADUSB_RUN:        return "RUN";
-        case BUTTON_ACTION_BADUSB_CANCEL:     return "STOP";
-        case BUTTON_ACTION_PWNY_FORCE_DEAUTH: return "DEAUTH";
-        case BUTTON_ACTION_BLE_TEST:          return "ENRICH";
-        default:                              return nullptr;
-    }
-}
-
-static inline ButtonBindingSet spectreScreenBindings(Screen screen) {
-    switch (screen) {
-        case SCREEN_LORA:
-            return {BUTTON_ACTION_SUBGHZ_MODE_CYCLE, BUTTON_ACTION_SLEEP,
-                    BUTTON_ACTION_LORA_PING, BUTTON_ACTION_SCREEN_NEXT};
-        case SCREEN_WIFI:
-            return {BUTTON_ACTION_WIFI_REFRESH, BUTTON_ACTION_WIFI_ALLSCAN,
-                    BUTTON_ACTION_WIFI_SCAN_LIST, BUTTON_ACTION_SCREEN_NEXT};
-        case SCREEN_BADUSB:
-            return {BUTTON_ACTION_BADUSB_ARM, BUTTON_ACTION_BADUSB_RUN,
-                    BUTTON_ACTION_BADUSB_LIST_OPEN, BUTTON_ACTION_SCREEN_NEXT};
-        case SCREEN_SYSTEM:
-            return {BUTTON_ACTION_SYSTEM_DEBRIEF, BUTTON_ACTION_SESSION_TAG,
-                    BUTTON_ACTION_UPLINK_TRIGGER, BUTTON_ACTION_SCREEN_NEXT};
-        case SCREEN_MISSION_SUMMARY:
-            return {BUTTON_ACTION_SESSION_TAG, BUTTON_ACTION_SLEEP,
-                    BUTTON_ACTION_UPLINK_TRIGGER, BUTTON_ACTION_SCREEN_NEXT};
-        case SCREEN_MESHTASTIC:
-            return {BUTTON_ACTION_NONE, BUTTON_ACTION_SLEEP,
-                    BUTTON_ACTION_BLE_TEST, BUTTON_ACTION_SCREEN_NEXT};
-        case SCREEN_RECON:
-            return {BUTTON_ACTION_MISSION_ENTER, BUTTON_ACTION_MISSION_ENTER,
-                    BUTTON_ACTION_MISSION_LIST_OPEN, BUTTON_ACTION_SCREEN_NEXT};
-        case SCREEN_MISSION:
-            return {BUTTON_ACTION_NONE, BUTTON_ACTION_MISSION_EXIT,
-                    BUTTON_ACTION_NONE, BUTTON_ACTION_NONE};
-        default:
-            return {BUTTON_ACTION_NONE, BUTTON_ACTION_SLEEP,
-                    BUTTON_ACTION_NONE, BUTTON_ACTION_SCREEN_NEXT};
-    }
-}
-
-static inline ButtonBindingSet spectreBadUsbListBindings() {
-    return {BUTTON_ACTION_BADUSB_LIST_SELECT, BUTTON_ACTION_BADUSB_ARM,
-            BUTTON_ACTION_BADUSB_LIST_CLOSE, BUTTON_ACTION_BADUSB_LIST_DOWN};
-}
-
-static inline ButtonBindingSet spectreWifiListBindings() {
-    return {BUTTON_ACTION_WIFI_LIST_SELECT, BUTTON_ACTION_WIFI_LIST_HUNT,
-            BUTTON_ACTION_WIFI_LIST_CLOSE, BUTTON_ACTION_WIFI_LIST_DOWN};
-}
-
-static inline ButtonBindingSet spectreMissionListBindings() {
-    return {BUTTON_ACTION_MISSION_LIST_SELECT, BUTTON_ACTION_MISSION_ENTER,
-            BUTTON_ACTION_MISSION_LIST_CLOSE, BUTTON_ACTION_MISSION_LIST_DOWN};
-}
-
-static inline ButtonBindingSet spectreDebriefBindings() {
-    return {BUTTON_ACTION_DEBRIEF_EXPORT, BUTTON_ACTION_DEBRIEF_CLEAR,
-            BUTTON_ACTION_NONE, BUTTON_ACTION_DEBRIEF_BACK};
-}
-
+// Button action vocabulary and per-screen binding tables now live in
+// core/ButtonBindings.h (included at the top of this file). Edit bindings there.
 

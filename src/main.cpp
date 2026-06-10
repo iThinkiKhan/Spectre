@@ -629,8 +629,11 @@ static constexpr uint32_t WIFI_LULL_MIN_MS = 10000UL;
 static constexpr uint32_t PHONE_PROBE_MIN_GAP_MS = 30000UL;
 static constexpr uint32_t PHONE_AVAILABILITY_TTL_MS = 300000UL;
 static constexpr uint32_t PHONE_STORAGE_PUBLISH_MIN_MS = 15000UL;
-static constexpr uint32_t ENRICH_PENDING_THRESHOLD_INTERNAL = 270UL;
-static constexpr uint32_t ENRICH_PENDING_THRESHOLD_WIO = 25UL;
+// Pending-event counts that trip automatic enrichment (see shouldRunEnrichment /
+// shouldRunExternalEnrichment). Tune from config.h — these mirror the knobs so
+// the header stays the single source of truth.
+static constexpr uint32_t ENRICH_PENDING_THRESHOLD_INTERNAL = PHONE_COMPANION_ENRICH_THRESHOLD;
+static constexpr uint32_t ENRICH_PENDING_THRESHOLD_WIO = PHONE_COMPANION_ENRICH_THRESHOLD_WIO;
 
 // Probe absence backoff ladder. Keep this fairly aggressive in field mode:
 // the phone is expected to advertise continuously, so missed links should
@@ -2199,15 +2202,10 @@ static void serviceEnrichmentPipeline(CompanionScheduler& cs) {
                               static_cast<unsigned>(enrichQueueSize));
                     if (hasDeferred) {
                         runEnrichDrain(cs, "BLE");
-                        if (cs.manualEnrichRequested) {
-                            DLOG_INFO("BLE",
-                                      "Enrichment deferred by phone count=%u; continuing manual torrent",
-                                      static_cast<unsigned>(outCount));
-                            return;
-                        }
                         DLOG_INFO("BLE",
-                                  "Enrichment deferred by phone count=%u; ending session for later retry",
-                                  static_cast<unsigned>(outCount));
+                                  "Enrichment deferred by phone count=%u manual=%u; ending session for later retry",
+                                  static_cast<unsigned>(outCount),
+                                  cs.manualEnrichRequested ? 1U : 0U);
                         enrichClearAllClaims();
                         _finishPhoneEnrichment(cs, true);
                         return;
@@ -2324,16 +2322,11 @@ static void serviceExternalEnrichmentPipeline(CompanionScheduler& cs) {
                            static_cast<unsigned>(enrichQueueSize));
                 if (hasDeferred) {
                     runEnrichDrain(cs, "WIO");
-                    if (cs.manualEnrichRequested) {
-                        DLOG_INFO("WIO",
-                                  "External enrichment deferred by phone count=%u; continuing manual torrent",
-                                  static_cast<unsigned>(outCount));
-                        return;
-                    }
                     // Deferred placeholders do not need another phone roundtrip.
                     DLOG_INFO("WIO",
-                              "External enrichment deferred by phone count=%u; ending session for later retry",
-                              static_cast<unsigned>(outCount));
+                              "External enrichment deferred by phone count=%u manual=%u; ending session for later retry",
+                              static_cast<unsigned>(outCount),
+                              cs.manualEnrichRequested ? 1U : 0U);
                     enrichClearAllClaims();
                     _finishPhoneEnrichment(cs, true);
                     return;
@@ -2478,11 +2471,24 @@ void _printUsbConsoleHelp() {
     Serial.println("[USB]   spool quarantine clear (delete all quarantine files)");
     Serial.println("[USB]   fieldvault dump    (print and clear FieldVault records)");
     Serial.println("[USB]   fieldvault upload  (upload pending FieldVault records only)");
+    Serial.println("[USB]   upload now         (manual MQTT upload of pending records)");
     Serial.println("[USB]   upload stop        (safely stop the active MQTT upload)");
     Serial.println("[USB]   upload resume      (allow MQTT uploads again)");
 #if BLE_SMOKE_ENABLED
     Serial.println("[USB]   ble smoke         (suspend WiFi, init/deinit NimBLE, resume promisc)");
 #endif
+}
+
+const char* _mqttStateName(MQTTState state) {
+    switch (state) {
+        case MQTT_IDLE:              return "idle";
+        case MQTT_CONNECTING_WIFI:   return "wifi";
+        case MQTT_CONNECTING_BROKER: return "broker";
+        case MQTT_DUMPING:           return "dumping";
+        case MQTT_DONE:              return "done";
+        case MQTT_FAILED:            return "failed";
+        default:                     return "unknown";
+    }
 }
 
 void _printUsbDebugFocusList(uint32_t mask) {
@@ -3149,6 +3155,48 @@ void _handleUsbConsoleLine(const char* rawLine) {
             Serial.println("[FIELD] upload queued");
         } else {
             Serial.println("[FIELD] upload unavailable");
+        }
+        return;
+    }
+
+    if (lower == "upload now" ||
+        lower == "upload start" ||
+        lower == "upload force" ||
+        lower == "mqtt upload" ||
+        lower == "mqtt dump" ||
+        lower == "dump now") {
+        const MQTTState state = MQTT_MGR.getState();
+        const int pending = MQTT_MGR.uploadReadyCount();
+
+        if (MQTT_MGR.uploadStoppedBySerial()) {
+            Serial.println("[UPLOAD] paused; run upload resume first");
+            return;
+        }
+
+        if (state != MQTT_IDLE) {
+            Serial.printf("[UPLOAD] busy state=%s pending=%d\r\n",
+                          _mqttStateName(state),
+                          pending);
+            return;
+        }
+
+        if (STORAGE.isReady() && !STORAGE.isPendingEventCountAuthoritative()) {
+            Serial.println("[UPLOAD] pending count not authoritative yet");
+            return;
+        }
+
+        if (pending <= 0) {
+            Serial.println("[UPLOAD] no pending records");
+            return;
+        }
+
+        if (MQTT_MGR.requestDump(true)) {
+            Serial.printf("[UPLOAD] manual upload queued pending=%d\r\n", pending);
+        } else {
+            Serial.printf("[UPLOAD] request unavailable state=%s owner=%s pending=%d\r\n",
+                          _mqttStateName(MQTT_MGR.getState()),
+                          RadioArbiter::ownerName(RADIO_ARB.currentOwner()),
+                          pending);
         }
         return;
     }
