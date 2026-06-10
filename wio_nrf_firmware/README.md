@@ -68,5 +68,5 @@ Commands:
 - `ble start` - initialize Bluefruit BLE stack manually if auto-start has been disabled for a debug build.
 - `echo <text>` - loop typed text back over USB.
 - `uart <line>` - send a raw line to the ESP32-S3 UART.
-- `led auto|red|blue|off|white` - control the status LED; auto is red while waiting and blue when connected/services-ready.
+- `led auto|red|green|blue|white|off` - control the status LED; auto is red while waiting and blue when connected/services-ready.
 - `reboot` - software reset the nRF.

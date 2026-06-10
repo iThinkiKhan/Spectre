@@ -21,6 +21,11 @@ constexpr size_t UART_LINE_MAX = 640;
 constexpr size_t USB_LINE_MAX = 160;
 constexpr size_t UART_PAYLOAD_MAX = 256;
 constexpr uint32_t DEFAULT_PROBE_TIMEOUT_MS = 12000;
+constexpr uint32_t PROBE_TIMEOUT_MIN_MS = 1000;
+constexpr uint32_t PROBE_TIMEOUT_MAX_MS = 120000;
+// Mirrors RX_BIN_TIMEOUT_MS on the ESP32 side: if the host dies mid payload
+// we must resync instead of eating every future command byte as binary.
+constexpr uint32_t PENDING_BIN_TIMEOUT_MS = 1500;
 constexpr uint32_t STATUS_INTERVAL_MS = 5000;
 constexpr uint32_t USB_BANNER_INTERVAL_MS = 1500;
 constexpr uint32_t HEARTBEAT_INTERVAL_MS = 500;
@@ -133,10 +138,31 @@ char pendingBinChr[18] = {};
 uint32_t pendingBinId = 0;
 size_t pendingBinExpected = 0;
 size_t pendingBinLen = 0;
+uint32_t pendingBinStartedMs = 0;
 uint8_t pendingBinBuf[UART_PAYLOAD_MAX] = {};
+
+// Bluefruit runs notify/connect/disconnect callbacks on its own FreeRTOS
+// task, not on the loop() task.  Both sides write Serial1; without a lock a
+// loop()-side STATUS line can interleave into the middle of a BLE_RX_BIN
+// binary payload and corrupt the host's framing.  Recursive so sendBleRxBin
+// can hold it across its own sendLine() call.
+SemaphoreHandle_t uartTxMutex = nullptr;
+
+void uartTxLock() {
+    if (uartTxMutex) {
+        xSemaphoreTakeRecursive(uartTxMutex, portMAX_DELAY);
+    }
+}
+
+void uartTxUnlock() {
+    if (uartTxMutex) {
+        xSemaphoreGiveRecursive(uartTxMutex);
+    }
+}
 
 void initBle();
 void sendProbeResult(bool found);
+void beginServiceDiscovery(uint16_t handle);
 
 void logUsb(const char* msg) {
     if (Serial) {
@@ -178,7 +204,7 @@ void printUsbHelp() {
     Serial.println("  ble start         initialize Bluefruit BLE stack");
     Serial.println("  echo <text>       loop typed text back over USB");
     Serial.println("  uart <line>       send raw line to S3 UART");
-    Serial.println("  led auto|red|blue|off set status LED mode");
+    Serial.println("  led auto|red|green|blue|white|off set status LED mode");
     Serial.println("  reboot            software reset the nRF");
 }
 
@@ -284,9 +310,11 @@ bool startsWith(const char* text, const char* prefix) {
 }
 
 void sendLine(const char* line) {
+    uartTxLock();
     Serial1.print(line);
     Serial1.print("\r\n");
     ++uartTxLineCount;
+    uartTxUnlock();
     if (Serial) {
         Serial.print("[tx] ");
         Serial.println(line);
@@ -423,12 +451,14 @@ void sendBleRxBin(const char* name, const uint8_t* data, uint16_t len) {
              "WIO/1 BLE_RX_BIN char=%s len=%u",
              name,
              static_cast<unsigned>(len));
+    uartTxLock();
     sendLine(header);
-    ++bleRxCount;
     if (len > 0) {
         Serial1.write(data, len);
     }
     Serial1.print("\r\n");
+    uartTxUnlock();
+    ++bleRxCount;
 }
 
 const char* notifyNameFor(BLEClientCharacteristic* chr) {
@@ -689,9 +719,36 @@ void startProbe(uint32_t id, uint32_t timeoutMs) {
         return;
     }
 
+    uint32_t clampedTimeoutMs = timeoutMs == 0 ? DEFAULT_PROBE_TIMEOUT_MS : timeoutMs;
+    if (clampedTimeoutMs < PROBE_TIMEOUT_MIN_MS) {
+        clampedTimeoutMs = PROBE_TIMEOUT_MIN_MS;
+    } else if (clampedTimeoutMs > PROBE_TIMEOUT_MAX_MS) {
+        clampedTimeoutMs = PROBE_TIMEOUT_MAX_MS;
+    }
+
+    if (connected) {
+        // The link is up but service discovery hasn't completed.  A connected
+        // phone stops advertising, so scanning can never find it — retry
+        // discovery on the live connection instead.  finishServiceDiscovery
+        // (or its 3.5s timeout) delivers the probe result.
+        probe = ProbeStats{};
+        probe.id = id;
+        probe.timeoutMs = clampedTimeoutMs;
+        probe.startedMs = millis();
+        probe.active = true;
+        strlcpy(probe.source, "rediscover", sizeof(probe.source));
+        if (connHandle == BLE_CONN_HANDLE_INVALID) {
+            strlcpy(probe.err, "conn_handle_invalid", sizeof(probe.err));
+            sendProbeResult(false);
+            return;
+        }
+        beginServiceDiscovery(connHandle);
+        return;
+    }
+
     probe = ProbeStats{};
     probe.id = id;
-    probe.timeoutMs = timeoutMs == 0 ? DEFAULT_PROBE_TIMEOUT_MS : timeoutMs;
+    probe.timeoutMs = clampedTimeoutMs;
     probe.startedMs = millis();
     probe.active = true;
 
@@ -783,6 +840,12 @@ void handleUsbCommand(const char* rawLine) {
             statusLedAuto = false;
             setLedColor(LedColor::Red);
             Serial.println("USB/1 OK led red");
+            return;
+        }
+        if (strcmp(arg, "green") == 0) {
+            statusLedAuto = false;
+            setLedColor(LedColor::Green);
+            Serial.println("USB/1 OK led green");
             return;
         }
         if (strcmp(arg, "blue") == 0) {
@@ -910,11 +973,21 @@ void beginBleWriteBin(const char* args) {
     pendingBinId = id;
     pendingBinExpected = len;
     pendingBinLen = 0;
+    pendingBinStartedMs = millis();
     strlcpy(pendingBinChr, chr, sizeof(pendingBinChr));
     if (pendingBinExpected == 0) {
         pendingBin = false;
         sendWriteAck(pendingBinId, writeBleValue(pendingBinChr, nullptr, 0));
     }
+}
+
+void resetPendingBin() {
+    pendingBin = false;
+    pendingBinChr[0] = '\0';
+    pendingBinId = 0;
+    pendingBinExpected = 0;
+    pendingBinLen = 0;
+    pendingBinStartedMs = 0;
 }
 
 void handleLine(const char* line) {
@@ -961,6 +1034,16 @@ void handleLine(const char* line) {
 }
 
 void pollUart() {
+    if (pendingBin &&
+        millis() - pendingBinStartedMs > PENDING_BIN_TIMEOUT_MS) {
+        // Host stalled mid payload.  Fail the write and fall back to line
+        // parsing so the relay doesn't consume future commands as binary.
+        sendWriteAck(pendingBinId, false);
+        resetPendingBin();
+        lineLen = 0;
+        lineOverflow = false;
+    }
+
     while (Serial1.available()) {
         if (pendingBin) {
             while (Serial1.available() && pendingBinLen < pendingBinExpected) {
@@ -975,11 +1058,7 @@ void pollUart() {
             }
             const bool ok = writeBleValue(pendingBinChr, pendingBinBuf, pendingBinLen);
             sendWriteAck(pendingBinId, ok);
-            pendingBin = false;
-            pendingBinChr[0] = '\0';
-            pendingBinId = 0;
-            pendingBinExpected = 0;
-            pendingBinLen = 0;
+            resetPendingBin();
             continue;
         }
 
@@ -1089,6 +1168,7 @@ void pollBleInit() {
 
 void setup() {
     bootMs = millis();
+    uartTxMutex = xSemaphoreCreateRecursiveMutex();
     initDebugLed();
     Serial.begin(115200);
     Serial1.begin(UART_BAUD);
