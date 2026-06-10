@@ -39,7 +39,7 @@
         <service
             android:name=".SpectreFieldService"
             android:exported="false"
-            android:foregroundServiceType="connectedDevice" />
+            android:foregroundServiceType="connectedDevice|location" />
         <service
             android:name=".SpectreLocationService"
             android:exported="false"

@@ -89,6 +89,7 @@ public:
 
     bool sendLine(const char* line);
     bool readLine(char* out, size_t outLen);
+    void requestBleStart();
     void requestBleStatus();
     void disconnectPhone(const char* reason = nullptr);
 

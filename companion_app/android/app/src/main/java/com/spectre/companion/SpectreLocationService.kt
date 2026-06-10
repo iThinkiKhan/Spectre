@@ -6,6 +6,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
 import android.content.pm.PackageManager
+import android.content.pm.ServiceInfo
 import android.location.Location
 import android.location.LocationListener
 import android.location.LocationManager
@@ -62,10 +63,7 @@ class SpectreLocationService : Service(), LocationListener {
       return START_NOT_STICKY
     }
 
-    startForeground(
-        SpectreFieldService.NOTIFICATION_ID,
-        SpectreFieldService.buildNotification(this),
-    )
+    startForegroundCompat(SpectreFieldService.buildNotification(this, true))
     active = true
     if (!hasLocationPermission()) {
       Log.w(LOG_TAG, "event=start_blocked reason=missing_location_permission")
@@ -365,6 +363,18 @@ class SpectreLocationService : Service(), LocationListener {
     } else {
       @Suppress("DEPRECATION")
       stopForeground(false)
+    }
+  }
+
+  private fun startForegroundCompat(notification: android.app.Notification) {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+      startForeground(
+          SpectreFieldService.NOTIFICATION_ID,
+          notification,
+          ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION,
+      )
+    } else {
+      startForeground(SpectreFieldService.NOTIFICATION_ID, notification)
     }
   }
 

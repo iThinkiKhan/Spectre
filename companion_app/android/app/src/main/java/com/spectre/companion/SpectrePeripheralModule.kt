@@ -111,6 +111,7 @@ class SpectrePeripheralModule(
   private var bluetoothAdvertiser: BluetoothLeAdvertiser? = null
   private var advertiseCallback: AdvertiseCallback? = null
   private var service: BluetoothGattService? = null
+  private var pendingAdvertiseModeAfterService: String? = null
   private var notificationInFlight = false
   private var notificationFlightToken = 0L
   private var enrichmentReplyToken = 0L
@@ -201,8 +202,8 @@ class SpectrePeripheralModule(
               "connected" to connectedDevices.size,
               "advertising" to state.advertising,
           )
-          startFieldService()
           useDeviceLocation = parsed.useDeviceLocation
+          startFieldService()
           syncLocationRecorder()
           state.advertiseMode = parsed.advertiseMode
           state.error = null
@@ -234,8 +235,8 @@ class SpectrePeripheralModule(
           stopInternal()
         }
 
-        startFieldService()
         useDeviceLocation = parsed.useDeviceLocation
+        startFieldService()
         state.advertiseMode = parsed.advertiseMode
         state.error = null
         state.running = false
@@ -274,16 +275,6 @@ class SpectrePeripheralModule(
           return@runOnMain
         }
 
-        bluetoothGattServer = server
-        val builtService = buildGattService()
-        service = builtService
-        if (!server.addService(builtService)) {
-          traceWarn("start_blocked", "reason" to "add_service_returned_false")
-          failStartup("Unable to add Spectre GATT service.", null)
-          promise.resolve(currentStateMap())
-          return@runOnMain
-        }
-
         bluetoothAdvertiser = adapter.bluetoothLeAdvertiser
         if (bluetoothAdvertiser == null) {
           traceWarn("start_blocked", "reason" to "advertiser_unavailable")
@@ -292,9 +283,20 @@ class SpectrePeripheralModule(
           return@runOnMain
         }
 
-        startAdvertising(parsed.advertiseMode)
+        bluetoothGattServer = server
+        val builtService = buildGattService()
+        service = builtService
+        pendingAdvertiseModeAfterService = parsed.advertiseMode
+        if (!server.addService(builtService)) {
+          pendingAdvertiseModeAfterService = null
+          traceWarn("start_blocked", "reason" to "add_service_returned_false")
+          failStartup("Unable to add Spectre GATT service.", null)
+          promise.resolve(currentStateMap())
+          return@runOnMain
+        }
+
         state.running = true
-        state.advertising = advertiseCallback != null
+        state.advertising = false
         state.watchdogActive = state.advertising
         syncLocationRecorder()
         registerAdapterStateReceiver()
@@ -545,16 +547,29 @@ class SpectrePeripheralModule(
 
         override fun onServiceAdded(status: Int, service: BluetoothGattService) {
           runOnMain {
+            val pendingMode =
+                if (service.uuid == PHONE_SERVICE_UUID) pendingAdvertiseModeAfterService else null
+            if (pendingMode != null) {
+              pendingAdvertiseModeAfterService = null
+            }
             traceInfo(
                 "service_added",
                 "status" to gattStatusName(status),
                 "uuid" to uuidLabel(service.uuid),
                 "characteristics" to service.characteristics.size,
+                "pendingAdvertise" to (pendingMode != null),
             )
             if (status == BluetoothGatt.GATT_SUCCESS) {
               state.advertiseStartConfirmed = true
               emitLog("Spectre GATT service ready")
+              if (pendingMode != null) {
+                startAdvertising(pendingMode)
+                return@runOnMain
+              }
             } else {
+              if (pendingMode != null) {
+                pendingAdvertiseModeAfterService = null
+              }
               state.lastAdvertiseFailureCode = status
               state.error = "Failed to add GATT service (status=$status)"
               emitLog(state.error ?: "Failed to add GATT service")
@@ -926,6 +941,14 @@ class SpectrePeripheralModule(
       )
       return
     }
+    if (pendingAdvertiseModeAfterService != null) {
+      traceInfo(
+          "advertise_restart_ignored",
+          "reason" to reason,
+          "pendingServiceAdvertise" to true,
+      )
+      return
+    }
     val mode = state.advertiseMode ?: "uuidOnly"
     state.totalAdvertiseRestarts += 1
     traceInfo("advertise_restart", "reason" to reason, "mode" to mode, "count" to state.totalAdvertiseRestarts)
@@ -972,6 +995,7 @@ class SpectrePeripheralModule(
     bluetoothGattServer?.close()
     bluetoothGattServer = null
     service = null
+    pendingAdvertiseModeAfterService = null
     commandChannel.clear()
     secureSession.reset()
     connectedDevices.clear()
@@ -1027,6 +1051,7 @@ class SpectrePeripheralModule(
     bluetoothGattServer?.close()
     bluetoothGattServer = null
     service = null
+    pendingAdvertiseModeAfterService = null
     secureSession.reset()
     connectedDevices.clear()
     authWriteBuffers.clear()
@@ -1051,7 +1076,10 @@ class SpectrePeripheralModule(
   }
 
   private fun startFieldService() {
-    val intent = Intent(reactContext, SpectreFieldService::class.java)
+    val intent =
+        Intent(reactContext, SpectreFieldService::class.java).apply {
+          putExtra(SpectreFieldService.EXTRA_GPS_LOGGING, useDeviceLocation)
+        }
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
       reactContext.startForegroundService(intent)
     } else {

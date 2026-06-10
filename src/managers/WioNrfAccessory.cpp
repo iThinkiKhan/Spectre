@@ -450,6 +450,13 @@ void WioNrfAccessory::requestBleStatus() {
     }
 }
 
+void WioNrfAccessory::requestBleStart() {
+    if (sendLine("SPECTRE/1 BLE_START")) {
+        _lastStatusRequestMs = millis();
+        DLOG_INFO(TAG, "External BLE start requested");
+    }
+}
+
 void WioNrfAccessory::disconnectPhone(const char* reason) {
     (void)reason;
     if (sendLine("SPECTRE/1 BLE_DROP")) {

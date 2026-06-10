@@ -97,6 +97,8 @@ export function LinkScreen() {
   const spectre = useSpectre();
   const pocketReady =
     spectre.peripheralState.running && spectre.peripheralState.advertising;
+  const gpsLoggingActive = spectre.nativeRecorderActive;
+  const fieldModeReady = pocketReady && gpsLoggingActive;
   const lastBackhaulAt =
     spectre.peripheralState.lastConnectedAt ??
     spectre.peripheralState.lastDisconnectedAt;
@@ -162,26 +164,38 @@ export function LinkScreen() {
       )}
 
       <FieldPanel
-        title="Pocket Beacon"
-        eyebrow="Foreground BLE"
-        tone={pocketReady ? 'success' : spectre.peripheralState.error ? 'danger' : 'warn'}
+        title="Field Mode"
+        eyebrow="BLE + GPS"
+        tone={
+          fieldModeReady
+            ? 'success'
+            : spectre.peripheralState.error
+              ? 'danger'
+              : 'warn'
+        }
         action={
           <View
             style={[
               styles.signalPill,
-              pocketReady ? styles.signalGood : styles.signalIdle,
+              fieldModeReady ? styles.signalGood : styles.signalIdle,
             ]}>
             <Text style={styles.signalText}>
-              {pocketReady ? 'ready' : spectre.peripheralState.running ? 'warming' : 'offline'}
+              {fieldModeReady
+                ? 'ready'
+                : spectre.peripheralState.running
+                  ? 'warming'
+                  : 'offline'}
             </Text>
           </View>
         }>
         <Text style={styles.beaconHeadline}>
-          {pocketReady
-            ? 'Lock-screen advertising is active'
-            : spectre.peripheralState.running
-              ? 'Foreground service is running'
-              : 'Phone peripheral is not running'}
+          {fieldModeReady
+            ? 'BLE advertising and GPS logging are active'
+            : pocketReady
+              ? 'BLE advertising active; GPS logging is starting'
+              : spectre.peripheralState.running
+                ? 'Foreground service is running'
+                : 'Phone peripheral is not running'}
         </Text>
         <Text style={styles.metricDetail}>
           {spectre.peripheralState.error ||
@@ -207,6 +221,21 @@ export function LinkScreen() {
               spectre.peripheralState.lastAdvertiseFailureCode
                 ? `fault ${spectre.peripheralState.lastAdvertiseFailureCode}`
                 : `${spectre.peripheralState.totalAdvertiseRestarts ?? 0} restarts`
+            }
+          />
+          <TelemetryTile
+            label="GPS logging"
+            value={
+              gpsLoggingActive
+                ? 'active'
+                : spectre.peripheralState.running
+                  ? 'starting'
+                  : 'off'
+            }
+            detail={
+              spectre.activeLocation
+                ? `${spectre.activeLocation.lat.toFixed(5)}, ${spectre.activeLocation.lon.toFixed(5)}`
+                : 'waiting for phone fix'
             }
           />
           <TelemetryTile

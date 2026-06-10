@@ -103,6 +103,8 @@ function AppShell() {
     spectre.promptState.token !== dismissedPromptToken;
   const pocketReady =
     spectre.peripheralState.running && spectre.peripheralState.advertising;
+  const gpsLoggingActive = spectre.nativeRecorderActive;
+  const fieldModeReady = pocketReady && gpsLoggingActive;
   const lastBatchRecords =
     spectre.lastPublishedBatch?.records ??
     spectre.peripheralState.lastBatchRecords ??
@@ -135,7 +137,7 @@ function AppShell() {
               style={[
                 styles.livePill,
                 promptVisible ? styles.livePillWarn : null,
-                !promptVisible && (spectre.connectedDevice || pocketReady)
+                !promptVisible && (spectre.connectedDevice || fieldModeReady)
                   ? styles.livePillSuccess
                   : null,
               ]}>
@@ -150,15 +152,17 @@ function AppShell() {
                   ? 'Prompt waiting'
                   : spectre.connectedDevice
                     ? 'Mission link live'
-                    : pocketReady
-                      ? 'Pocket mode ready'
-                      : 'Standby'}
+                    : fieldModeReady
+                      ? 'Field mode live'
+                      : pocketReady
+                        ? 'BLE live, GPS starting'
+                        : 'Standby'}
               </Text>
             </View>
           </View>
 
           <Text style={styles.chromeNote}>
-            Text first. Foreground BLE alive. Control stays slim.
+            Text first. BLE advertises continuously. GPS logging stays armed.
           </Text>
 
           <View style={styles.railRow}>
@@ -173,16 +177,20 @@ function AppShell() {
               value={
                 spectre.peripheralState.connectedDevices > 0
                   ? 'linked'
-                  : spectre.peripheralState.advertising
-                    ? 'advertising'
-                    : spectre.peripheralState.running
-                      ? 'starting'
-                      : 'offline'
+                  : fieldModeReady
+                    ? 'ble + gps'
+                    : spectre.peripheralState.advertising
+                      ? 'ble only'
+                      : spectre.peripheralState.running
+                        ? 'starting'
+                        : 'offline'
               }
               detail={
                 spectre.peripheralState.connectedDevices > 0
                   ? `${spectre.peripheralState.connectedDevices} attached`
-                  : `mode ${spectre.peripheralState.advertiseMode || '--'}`
+                  : gpsLoggingActive
+                    ? 'GPS history logging'
+                    : `mode ${spectre.peripheralState.advertiseMode || '--'}`
               }
               tone={railToneForBackhaul(spectre.peripheralState.connectedDevices)}
             />

@@ -1502,69 +1502,66 @@ static bool _buildManualEnrichmentWindowBatch(CompanionScheduler& cs,
         return false;
     }
 
-    if (!cs.enrichmentWindowActive) {
-        const char* safeReason = (reason && reason[0])
-                                     ? reason
-                                     : "manual_enrich_window";
-        const RadioOwner owner = RADIO_ARB.currentOwner();
-        bool stoppedCapture = false;
-        bool tookMaintenanceLease = false;
+    const char* safeReason = (reason && reason[0])
+                                 ? reason
+                                 : "manual_enrich_window";
+    const RadioOwner owner = RADIO_ARB.currentOwner();
+    bool stoppedCapture = false;
+    bool tookMaintenanceLease = false;
 
-        if (owner == RADIO_WIFI_CAPTURE) {
-            RADIO_ARB.release(RADIO_WIFI_CAPTURE, safeReason, false);
-            stoppedCapture = true;
-        }
+    if (owner == RADIO_WIFI_CAPTURE) {
+        RADIO_ARB.release(RADIO_WIFI_CAPTURE, safeReason, false);
+        stoppedCapture = true;
+    }
 
-        if (!RADIO_ARB.isOwner(RADIO_STORAGE_MAINTENANCE)) {
-            if (!RADIO_ARB.requestStorageMaintenanceLease(5000UL,
-                                                         safeReason,
-                                                         true)) {
-                DLOG_WARN(logTag,
-                          "Manual enrichment window unavailable owner=%s",
-                          RadioArbiter::ownerName(RADIO_ARB.currentOwner()));
-                if (stoppedCapture) {
-                    RADIO_ARB.ensureDefaultCapture(safeReason);
-                }
-                return false;
-            }
-            tookMaintenanceLease = true;
-        }
-
-        StorageExclusiveWindow window;
-        if (!window.begin(STORAGE_WINDOW_MAINTENANCE, safeReason)) {
+    if (!RADIO_ARB.isOwner(RADIO_STORAGE_MAINTENANCE)) {
+        if (!RADIO_ARB.requestStorageMaintenanceLease(5000UL,
+                                                     safeReason,
+                                                     true)) {
             DLOG_WARN(logTag,
-                      "Manual enrichment window begin failed owner=%s",
+                      "Manual enrichment window unavailable owner=%s",
                       RadioArbiter::ownerName(RADIO_ARB.currentOwner()));
-            if (tookMaintenanceLease && RADIO_ARB.isOwner(RADIO_STORAGE_MAINTENANCE)) {
-                RADIO_ARB.release(RADIO_STORAGE_MAINTENANCE,
-                                  "manual_enrich_window_begin_failed",
-                                  false);
-            }
             if (stoppedCapture) {
-                RADIO_ARB.ensureDefaultCapture("manual_enrich_window_begin_failed");
+                RADIO_ARB.ensureDefaultCapture(safeReason);
             }
             return false;
         }
+        tookMaintenanceLease = true;
+    }
 
+    StorageExclusiveWindow window;
+    if (!window.begin(STORAGE_WINDOW_MAINTENANCE, safeReason)) {
+        DLOG_WARN(logTag,
+                  "Manual enrichment window begin failed owner=%s",
+                  RadioArbiter::ownerName(RADIO_ARB.currentOwner()));
+        if (tookMaintenanceLease && RADIO_ARB.isOwner(RADIO_STORAGE_MAINTENANCE)) {
+            RADIO_ARB.release(RADIO_STORAGE_MAINTENANCE,
+                              "manual_enrich_window_begin_failed",
+                              false);
+        }
+        if (stoppedCapture) {
+            RADIO_ARB.ensureDefaultCapture("manual_enrich_window_begin_failed");
+        }
+        return false;
+    }
+
+    if (!cs.enrichmentWindowActive) {
         const size_t requestedWindow =
             static_cast<size_t>(std::min<uint32_t>(
                 std::max<uint32_t>(cs.pendingItems, PHONE_ENRICH_BATCH_MAX),
                 static_cast<uint32_t>(ENRICH_MANUAL_WINDOW_MAX)));
         const bool ok =
             STORAGE.prepareEnrichmentIndexForWindow(requestedWindow, 5000);
-        window.end(ok ? "manual_enrich_window_ready"
-                      : "manual_enrich_window_failed");
-        if (tookMaintenanceLease && RADIO_ARB.isOwner(RADIO_STORAGE_MAINTENANCE)) {
-            RADIO_ARB.release(RADIO_STORAGE_MAINTENANCE,
-                              ok ? "manual_enrich_window_ready"
-                                 : "manual_enrich_window_failed",
-                              false);
-        }
-        if (stoppedCapture || RADIO_ARB.currentOwner() == RADIO_NONE) {
-            RADIO_ARB.ensureDefaultCapture(ok ? "manual_enrich_window_ready"
-                                              : "manual_enrich_window_failed");
-        }
         if (!ok) {
+            window.end("manual_enrich_window_failed");
+            if (tookMaintenanceLease && RADIO_ARB.isOwner(RADIO_STORAGE_MAINTENANCE)) {
+                RADIO_ARB.release(RADIO_STORAGE_MAINTENANCE,
+                                  "manual_enrich_window_failed",
+                                  false);
+            }
+            if (stoppedCapture || RADIO_ARB.currentOwner() == RADIO_NONE) {
+                RADIO_ARB.ensureDefaultCapture("manual_enrich_window_failed");
+            }
             return false;
         }
         cs.enrichmentWindowActive = true;
@@ -1574,12 +1571,9 @@ static bool _buildManualEnrichmentWindowBatch(CompanionScheduler& cs,
     // so the log line at the bottom reflects the actual disposition.
     uint32_t noDataRetired = 0;
 
-    // Each NO_DATA retirement appends an enrichment-delta record to LittleFS
-    // (segment file write + index update). Retiring thousands back-to-back
-    // would blow the task watchdog and starve capture. Cap per-walk
-    // retirements so the work amortizes across multiple companion ticks —
-    // the backlog still drains, just over several "wio enrich" cycles.
-    constexpr uint32_t kMaxNoDataPerWalk = 64U;
+    // Each NO_DATA retirement appends an enrichment-delta record to LittleFS.
+    // Keep this tiny so a stale manual backlog cannot monopolize hardware.
+    constexpr uint32_t kMaxNoDataPerWalk = 4U;
     bool noDataBudgetExhausted = false;
 
     while (outCount < maxCount) {
@@ -1589,6 +1583,15 @@ static bool _buildManualEnrichmentWindowBatch(CompanionScheduler& cs,
             DLOG_WARN(logTag, "Manual enrichment window cursor failed");
             STORAGE.releaseEnrichmentIndexMemory("manual_cursor_failed");
             cs.enrichmentWindowActive = false;
+            window.end("manual_cursor_failed");
+            if (tookMaintenanceLease && RADIO_ARB.isOwner(RADIO_STORAGE_MAINTENANCE)) {
+                RADIO_ARB.release(RADIO_STORAGE_MAINTENANCE,
+                                  "manual_cursor_failed",
+                                  false);
+            }
+            if (stoppedCapture || RADIO_ARB.currentOwner() == RADIO_NONE) {
+                RADIO_ARB.ensureDefaultCapture("manual_cursor_failed");
+            }
             return false;
         }
         if (!found) {
@@ -1629,12 +1632,33 @@ static bool _buildManualEnrichmentWindowBatch(CompanionScheduler& cs,
         outCount++;
     }
 
+    if (noDataBudgetExhausted && outCount == 0) {
+        STORAGE.releaseEnrichmentIndexMemory("manual_no_data_budget");
+        cs.enrichmentWindowActive = false;
+        DLOG_WARN(logTag,
+                  "Manual enrichment stopped after retiring %lu no-data records; pending records need valid GPS/UTC before phone lookup",
+                  static_cast<unsigned long>(noDataRetired));
+    }
+
     DLOG_INFO(logTag,
               "Manual enrichment window batch count=%u active=%u noData=%lu budgetExhausted=%u",
               static_cast<unsigned>(outCount),
               cs.enrichmentWindowActive ? 1U : 0U,
               static_cast<unsigned long>(noDataRetired),
               noDataBudgetExhausted ? 1U : 0U);
+    window.end(noDataBudgetExhausted ? "manual_no_data_budget"
+                                     : "manual_batch_built");
+    if (tookMaintenanceLease && RADIO_ARB.isOwner(RADIO_STORAGE_MAINTENANCE)) {
+        RADIO_ARB.release(RADIO_STORAGE_MAINTENANCE,
+                          noDataBudgetExhausted ? "manual_no_data_budget"
+                                                : "manual_batch_built",
+                          false);
+    }
+    if (stoppedCapture || RADIO_ARB.currentOwner() == RADIO_NONE) {
+        RADIO_ARB.ensureDefaultCapture(noDataBudgetExhausted
+                                           ? "manual_no_data_budget"
+                                           : "manual_batch_built");
+    }
     return true;
 }
 
@@ -2371,12 +2395,10 @@ static void serviceExternalEnrichmentPipeline(CompanionScheduler& cs) {
         } else if (batchCount == 0) {
             if (enrichQueueSize == 0) {
                 // Distinguish two zero-batch cases:
-                //  - cursor exhausted (enrichmentWindowActive==false) → real
-                //    end of session, tear down the phone link.
-                //  - cursor still resident (active==true) → we paused mid-walk
-                //    (typically the NO_DATA retirement budget filled). Keep
-                //    the session alive so the next companion tick resumes
-                //    retirement without re-scanning the entire spool.
+                //  - cursor exhausted or stale/no-time budget reached
+                //    (enrichmentWindowActive==false): end the manual session.
+                //  - cursor still resident (active==true): continue later
+                //    without re-scanning the entire spool.
                 if (!cs.enrichmentWindowActive) {
                     enrichClearAllClaims();
                     _finishPhoneEnrichment(cs, true);
@@ -2438,7 +2460,7 @@ void _printUsbConsoleHelp() {
     Serial.println("[USB]   debug focus +wifi -ble (mixed +/-)");
     Serial.println("[USB]   debug focus list");
     Serial.println("[USB]   wio status");
-    Serial.println("[USB]   wio hello | wio ble status | wio drop");
+    Serial.println("[USB]   wio hello | wio ble start | wio ble status | wio drop");
     Serial.println("[USB]   wio probe | wio enrich");
     Serial.println("[USB]   wio text <prompt> | wio text cancel");
     Serial.println("[USB]   wio raw <line>  (send exact UART line to WIO)");
@@ -2839,6 +2861,12 @@ void _handleUsbConsoleLine(const char* rawLine) {
     if (lower == "wio ble status" || lower == "wio status req") {
         WIO_NRF.requestBleStatus();
         Serial.println("[WIO] BLE_STATUS requested");
+        return;
+    }
+
+    if (lower == "wio ble start") {
+        WIO_NRF.requestBleStart();
+        Serial.println("[WIO] BLE_START requested");
         return;
     }
 

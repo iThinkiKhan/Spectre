@@ -25,6 +25,8 @@ constexpr uint32_t STATUS_INTERVAL_MS = 5000;
 constexpr uint32_t USB_BANNER_INTERVAL_MS = 1500;
 constexpr uint32_t HEARTBEAT_INTERVAL_MS = 500;
 constexpr uint32_t BLE_INIT_DELAY_MS = 3000;
+constexpr uint32_t SERVICE_DISCOVERY_RETRY_MS = 250;
+constexpr uint32_t SERVICE_DISCOVERY_TIMEOUT_MS = 3500;
 constexpr uint32_t XIAO_LED_RED = NRF_GPIO_PIN_MAP(0, 26);
 constexpr uint32_t XIAO_LED_GREEN = NRF_GPIO_PIN_MAP(0, 30);
 constexpr uint32_t XIAO_LED_BLUE = NRF_GPIO_PIN_MAP(0, 6);
@@ -95,10 +97,13 @@ bool connected = false;
 bool servicesReady = false;
 bool textReady = false;
 bool suppressNextDrop = false;
+bool serviceDiscoveryPending = false;
 int lastRssi = 0;
 uint32_t lastStatusMs = 0;
 uint32_t lastUsbBannerMs = 0;
 uint32_t lastHeartbeatMs = 0;
+uint32_t serviceDiscoveryStartedMs = 0;
+uint32_t serviceDiscoveryLastAttemptMs = 0;
 uint32_t bootMs = 0;
 uint32_t usbCommandCount = 0;
 uint32_t uartLineCount = 0;
@@ -107,6 +112,7 @@ uint32_t bleRxCount = 0;
 uint32_t bleWriteCount = 0;
 uint32_t ledStatusTicks = 0;
 uint32_t usbProbeId = 900000;
+uint8_t serviceDiscoveryAttempts = 0;
 LedColor ledColor = LedColor::Off;
 bool statusLedAuto = true;
 bool usbBannerPrinted = false;
@@ -130,6 +136,7 @@ size_t pendingBinLen = 0;
 uint8_t pendingBinBuf[UART_PAYLOAD_MAX] = {};
 
 void initBle();
+void sendProbeResult(bool found);
 
 void logUsb(const char* msg) {
     if (Serial) {
@@ -295,12 +302,14 @@ void sendCaps() {
 }
 
 void sendStatus() {
-    char line[96] = {};
+    char line[128] = {};
     snprintf(line, sizeof(line),
-             "WIO/1 STATUS phone=%s connected=%u rssi=%d",
+             "WIO/1 STATUS phone=%s connected=%u rssi=%d ble_ready=%u ble_init_started=%u",
              connected ? (servicesReady ? "ready" : "connected") : "idle",
              connected ? 1u : 0u,
-             lastRssi);
+             lastRssi,
+             bleReady ? 1u : 0u,
+             bleInitStarted ? 1u : 0u);
     sendLine(line);
 }
 
@@ -503,6 +512,66 @@ bool discoverPhoneService(uint16_t handle) {
     return true;
 }
 
+void finishServiceDiscovery(bool found) {
+    serviceDiscoveryPending = false;
+    if (found) {
+        strlcpy(probe.err, "none", sizeof(probe.err));
+        if (probe.active) {
+            sendProbeResult(true);
+        } else {
+            sendStatus();
+        }
+        return;
+    }
+
+    ++probe.connectFailures;
+    suppressNextDrop = true;
+    Bluefruit.disconnect(connHandle);
+    connected = false;
+    servicesReady = false;
+    textReady = false;
+    connHandle = BLE_CONN_HANDLE_INVALID;
+    if (probe.active) {
+        sendProbeResult(false);
+    }
+}
+
+void beginServiceDiscovery(uint16_t handle) {
+    serviceDiscoveryPending = true;
+    serviceDiscoveryStartedMs = millis();
+    serviceDiscoveryLastAttemptMs = serviceDiscoveryStartedMs;
+    serviceDiscoveryAttempts = 1;
+
+    if (discoverPhoneService(handle)) {
+        finishServiceDiscovery(true);
+    }
+}
+
+void pollServiceDiscovery() {
+    if (!serviceDiscoveryPending ||
+        connHandle == BLE_CONN_HANDLE_INVALID ||
+        servicesReady) {
+        return;
+    }
+
+    const uint32_t now = millis();
+    if (now - serviceDiscoveryLastAttemptMs < SERVICE_DISCOVERY_RETRY_MS) {
+        return;
+    }
+
+    serviceDiscoveryLastAttemptMs = now;
+    ++serviceDiscoveryAttempts;
+
+    if (discoverPhoneService(connHandle)) {
+        finishServiceDiscovery(true);
+        return;
+    }
+
+    if (now - serviceDiscoveryStartedMs >= SERVICE_DISCOVERY_TIMEOUT_MS) {
+        finishServiceDiscovery(false);
+    }
+}
+
 void sendProbeResult(bool found) {
     char line[192] = {};
     snprintf(line, sizeof(line),
@@ -532,6 +601,7 @@ void disconnectPhone(const char* reason) {
     connected = false;
     servicesReady = false;
     textReady = false;
+    serviceDiscoveryPending = false;
     connHandle = BLE_CONN_HANDLE_INVALID;
     char line[64] = {};
     snprintf(line, sizeof(line), "WIO/1 BLE_DROP reason=%s", reason ? reason : "local");
@@ -545,38 +615,30 @@ void connectCallback(uint16_t handle) {
     strlcpy(probe.source, "scan", sizeof(probe.source));
 
     Bluefruit.Connection(handle)->requestMtuExchange(247);
-
-    if (!discoverPhoneService(handle)) {
-        ++probe.connectFailures;
-        suppressNextDrop = true;
-        Bluefruit.disconnect(handle);
-        connected = false;
-        servicesReady = false;
-        textReady = false;
-        connHandle = BLE_CONN_HANDLE_INVALID;
-        if (probe.active) {
-            sendProbeResult(false);
-        }
-        return;
-    }
-
-    strlcpy(probe.err, "none", sizeof(probe.err));
-    if (probe.active) {
-        sendProbeResult(true);
-    } else {
-        sendStatus();
-    }
+    beginServiceDiscovery(handle);
 }
 
 void disconnectCallback(uint16_t handle, uint8_t reason) {
     (void)handle;
     snprintf(probe.disc, sizeof(probe.disc), "0x%02X", reason);
+    const bool wasServiceDiscoveryPending = serviceDiscoveryPending;
     connected = false;
     servicesReady = false;
     textReady = false;
+    serviceDiscoveryPending = false;
     connHandle = BLE_CONN_HANDLE_INVALID;
     if (suppressNextDrop) {
         suppressNextDrop = false;
+        return;
+    }
+    if (probe.active) {
+        if (strcmp(probe.err, "none") == 0) {
+            strlcpy(probe.err,
+                    wasServiceDiscoveryPending ? "service_missing" : "connect_dropped",
+                    sizeof(probe.err));
+        }
+        ++probe.connectFailures;
+        sendProbeResult(false);
         return;
     }
     char line[64] = {};
@@ -870,6 +932,11 @@ void handleLine(const char* line) {
         sendStatus();
         return;
     }
+    if (strcmp(line, "SPECTRE/1 BLE_START") == 0) {
+        initBle();
+        sendStatus();
+        return;
+    }
     if (strcmp(line, "SPECTRE/1 BLE_DROP") == 0) {
         disconnectPhone("host_drop");
         return;
@@ -971,11 +1038,11 @@ void pollProbeTimeout() {
 }
 
 void initBle() {
-    if (bleInitStarted) {
+    if (bleReady) {
         return;
     }
+    logUsb(bleInitStarted ? "USB/1 BLE_INIT retry" : "USB/1 BLE_INIT begin");
     bleInitStarted = true;
-    logUsb("USB/1 BLE_INIT begin");
     Bluefruit.configCentralBandwidth(BANDWIDTH_MAX);
     Bluefruit.begin(0, 1);
     Bluefruit.setTxPower(4);
@@ -1035,6 +1102,7 @@ void loop() {
     pollStatusLed();
     pollBleInit();
     pollUart();
+    pollServiceDiscovery();
     pollProbeTimeout();
 
     const uint32_t now = millis();

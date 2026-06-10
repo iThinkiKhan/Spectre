@@ -146,6 +146,7 @@ type SpectreContextValue = {
   notifications: PhoneNotificationV1[];
   clearNotifications: () => void;
   locationMode: LocationMode;
+  nativeRecorderActive: boolean;
   activeLocation: ActiveLocationFix | null;
   deviceLocation: ActiveLocationFix | null;
   manualLocationDraft: ManualLocationDraft;
@@ -787,16 +788,21 @@ export function SpectreProvider({children}: {children: React.ReactNode}) {
     }
 
     try {
+      const shouldLogDeviceLocation = true;
+      if (locationMode !== 'device') {
+        setLocationMode('device');
+      }
+
       const state = await bridge.start({
         metadata: startupConfigRef.current.metadata,
         gpsBase64: startupConfigRef.current.gpsBase64,
         controlBase64: startupConfigRef.current.controlBase64,
         enrichmentBase64: '',
         advertiseMode: 'uuidOnly',
-        useDeviceLocation: locationMode === 'device',
+        useDeviceLocation: shouldLogDeviceLocation,
       });
       setPeripheralState(state);
-      appendLog('Field Mode foreground service started');
+      appendLog('Field Mode started: BLE advertising and GPS logging active');
     } catch (error: any) {
       appendLog(error?.message || 'Failed to start Field Mode', 'error');
       throw error;
@@ -1175,6 +1181,7 @@ export function SpectreProvider({children}: {children: React.ReactNode}) {
     notifications,
     clearNotifications: () => setNotifications([]),
     locationMode,
+    nativeRecorderActive,
     activeLocation,
     deviceLocation,
     manualLocationDraft,

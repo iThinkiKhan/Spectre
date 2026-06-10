@@ -3,13 +3,6 @@
 #include "SecretsConfig.h"
 #include "core/ScreenEnum.h"
 
-// Spectre config
-//
-// Flip switches with ON/OFF (or 1/0). Time values are seconds unless the name
-// ends in _MS.
-
-// Shared switch values. ON is a macro for build-flag use; OFF is a typed
-// constant so it does not collide with enum values like SubGhzMode::OFF.
 #define ON  1
 static constexpr uint8_t OFF = 0;
 
@@ -64,7 +57,7 @@ static constexpr uint8_t OFF = 0;
 #define BOOT_RECOVERY_BUTTON_PIN    BTN_B
 #define BOOT_RECOVERY_HOLD_MS       1500UL
 
-#define BLE_SMOKE_ENABLED           OFF
+#define BLE_SMOKE_ENABLED           ON
 
 #define PWNY_ACTIVE_ATTACKS_ENABLED OFF
 

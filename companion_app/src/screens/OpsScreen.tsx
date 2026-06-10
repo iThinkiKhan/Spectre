@@ -208,7 +208,7 @@ export function OpsScreen() {
   const peripheral = spectre.peripheralState;
   const companionTone = peripheral.error
     ? 'danger'
-    : peripheral.advertising
+    : peripheral.advertising && spectre.nativeRecorderActive
       ? 'success'
       : peripheral.running
         ? 'warn'
@@ -639,30 +639,34 @@ export function OpsScreen() {
               styles.phasePill,
               peripheral.error
                 ? styles.phaseDanger
-                : peripheral.advertising
+                : peripheral.advertising && spectre.nativeRecorderActive
                   ? styles.phaseSuccess
-                  : peripheral.running
+                  : peripheral.running || peripheral.advertising
                     ? styles.phaseWarn
                     : styles.phaseIdle,
             ]}>
             <Text style={styles.phasePillText}>
               {peripheral.error
                 ? 'fault'
-                : peripheral.advertising
-                  ? 'advertising'
-                  : peripheral.running
-                    ? 'warming'
-                    : 'offline'}
+                : peripheral.advertising && spectre.nativeRecorderActive
+                  ? 'ble + gps'
+                  : peripheral.advertising
+                    ? 'ble only'
+                    : peripheral.running
+                      ? 'warming'
+                      : 'offline'}
             </Text>
           </View>
         }>
         <View style={styles.peripheralHero}>
           <Text style={styles.peripheralHeadline}>
-            {peripheral.advertising
-              ? 'Foreground advertising active'
-              : peripheral.running
-                ? 'Foreground service active'
-                : 'Peripheral bridge offline'}
+            {peripheral.advertising && spectre.nativeRecorderActive
+              ? 'BLE advertising and GPS logging active'
+              : peripheral.advertising
+                ? 'Foreground advertising active; GPS logging is starting'
+                : peripheral.running
+                  ? 'Foreground service active'
+                  : 'Peripheral bridge offline'}
           </Text>
           <Text style={styles.bodyText}>
             {peripheral.error ||
@@ -728,6 +732,21 @@ export function OpsScreen() {
             label="Watchdog"
             value={peripheral.watchdogActive ? 'armed' : 'idle'}
             detail={`${peripheral.totalAdvertiseRestarts ?? 0} restarts`}
+          />
+          <PeripheralMetric
+            label="GPS logger"
+            value={
+              spectre.nativeRecorderActive
+                ? 'active'
+                : peripheral.running
+                  ? 'starting'
+                  : 'off'
+            }
+            detail={
+              spectre.activeLocation
+                ? `${spectre.activeLocation.lat.toFixed(5)}, ${spectre.activeLocation.lon.toFixed(5)}`
+                : 'waiting for phone fix'
+            }
           />
           <PeripheralMetric
             label="Totals"
