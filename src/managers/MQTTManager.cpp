@@ -326,12 +326,15 @@ bool MQTTManager::uploadLeaseReady(bool force) const {
     }
     const uint32_t pendingRecords =
         STORAGE.isReady() ? STORAGE.getAuthoritativePendingEventCount() : 0U;
+    // Signed diff so the backoff deadline survives millis() wraparound.
+    const bool backoffElapsed =
+        static_cast<int32_t>(millis() - _uploadBackoffUntilMs) >= 0;
     return force ||
            (_continuousDrainActive &&
             pendingRecords > 0 &&
-            millis() >= _uploadBackoffUntilMs) ||
+            backoffElapsed) ||
            (pendingRecords >= MQTT_UPLOAD_READY_THRESHOLD &&
-            millis() >= _uploadBackoffUntilMs);
+            backoffElapsed);
 }
 // ── Dump request ──────────────────────────────────────────────
 
@@ -477,7 +480,7 @@ bool MQTTManager::_maybeStartStartupFieldDump() {
 #if (MQTT_FIELDVAULT_STARTUP_UPLOAD_ENABLED == ON)
     if (_startupFieldDumpDone) return false;
     if (_state != MQTT_IDLE)   return false;
-    if (millis() < _bootGraceUntilMs) return false;
+    if (static_cast<int32_t>(millis() - _bootGraceUntilMs) < 0) return false;
 
     // No pending records: latch the one-shot so we don't re-check on every
     // tick. The next normal/manual/threshold dump will drain anything that
