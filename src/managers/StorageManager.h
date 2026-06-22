@@ -5,6 +5,7 @@
 #include <ArduinoJson.h>
 #include <vector>
 #include <map>
+#include <set>
 #include <memory>
 #include <functional>
 #include <new>
@@ -202,6 +203,12 @@ enum SpoolDecodedRecordType : uint8_t {
 struct DecodedSpoolRecord {
     SpoolDecodedRecordType recordType = SPOOL_REC_UNKNOWN;
     uint32_t eventId = 0;
+    // Absolute capture UTC (seconds), derived from the segment's createdEpochUtc
+    // base plus this record's millis delta. 0 when the segment has no trusted
+    // epoch base (record is unenrichable / undatable). Mirrors the field on
+    // DecodedSpoolRecordHeader so full-decode callers can reason about record
+    // age (e.g. the upload enrichment holdback) without re-deriving it.
+    uint32_t epochUtc = 0;
     String sessionId;
     JsonDocument doc;
 };
@@ -219,6 +226,10 @@ struct DecodedSpoolRecordHeader {
     SpoolDecodedRecordType recordType = SPOOL_REC_UNKNOWN;
     uint32_t eventId = 0;
     uint32_t timestampMs = 0;
+    // Absolute capture UTC (seconds), derived from the segment's createdEpochUtc
+    // base plus this record's millis delta. 0 when the segment has no trusted
+    // epoch base (record is unenrichable). See SegmentHeaderV2::createdEpochUtc.
+    uint32_t epochUtc = 0;
     String sessionId;
     String typeString;  // event type ("probe", "device", "pmkid", "drone", etc.)
     uint8_t eventFlags = 0;
@@ -317,6 +328,12 @@ public:
     StorageLaneCounts getPendingEnrichmentCounts();
     StorageLaneCounts getPendingEnrichmentCountsForSession(const char* sessionId = nullptr);
     uint32_t getPendingEnrichmentCountForSession(const char* sessionId = nullptr);
+    // Cheap (O(num_segments), no record scan) live sum of every segment's
+    // pendingEnrichmentCount — decremented synchronously as records are
+    // enriched or retired. Used as a per-window-pass progress signal so a
+    // manual enrich can drain the whole backlog in one session and stop only
+    // when a full window pass drains nothing (only phone-deferred records left).
+    uint32_t livePendingEnrichmentTotal() const;
     bool     getSessionStorageSummary(const char* sessionIdOverride,
                                       StorageSessionSummary& out);
     bool     getUploadEventBatchForSession(const char* sessionId,
@@ -381,7 +398,15 @@ public:
     bool     flushUploadCheckpoint();
     bool     isUploadBatchActive() const { return _uploadBatchActive; }
     bool     isUploadBatchDirty() const { return _uploadBatchDirty; }
+    void     releaseUploadIndexMemory(const char* reason = nullptr);
     bool     isUploadIndexResident() const { return _backlog.uploadIndexResident; }
+    uint32_t getUploadIndexWindowLimit() const { return _backlog.uploadIndexWindowLimit; }
+    uint32_t getUploadIndexResidentEventCount() const {
+        return _backlog.uploadIndexStats.indexedEvents;
+    }
+    bool     isUploadIndexWindowTruncated() const {
+        return _backlog.uploadIndexWindowTruncated;
+    }
     bool     compactUploadedEventFiles(const char* sessionId = nullptr);
     int      compactAllUploadedEventFiles();
 
@@ -635,6 +660,22 @@ private:
     SpoolBin::SegmentHeaderV2 _workerAppendHeader{};
     bool        _workerAppendHeaderOk = false;
     bool        _workerAppendHeaderDirty = false;
+    // Boot-local segment epoch tracking. millis() resets every boot, so a
+    // segment created in a prior boot has a createdMs that cannot be mapped to
+    // UTC this boot. We snapshot the first segment id assignable this boot:
+    // any segment with id >= _thisBootSegmentBaseId was created this boot and
+    // is therefore safe to stamp/backfill with a UTC epoch base. Cross-boot
+    // segments are never stamped (would corrupt their wall-clock mapping).
+    uint32_t    _thisBootSegmentBaseId = 0;
+    bool        _bootSegmentBaselineSet = false;
+    // First event append after boot rotates off any cross-boot active segment
+    // so captured events never share a segment across a millis() reset.
+    bool        _pendingBootEventRotate = false;
+    // This-boot segments created before a trusted clock was available, hence
+    // lacking a UTC base. Backfilled (header-only) once the clock is valid;
+    // entries are removed as they are stamped. Cross-boot segments never enter
+    // this set, so they are never (mis)stamped from this boot's millis base.
+    std::set<uint32_t> _unstampedThisBootSegments;
     CounterTrust _counterTrustState = CounterTrust::Trusted;
     String      _counterTrustReason;
     uint32_t    _counterTrustSinceMs = 0;
@@ -649,12 +690,21 @@ private:
     // defer rebuilding until a quiet maintenance pass can service it.
     bool        _spoolSummaryRebuildPending = false;
     bool        _spoolAuditRepairRequired = false;
+    // Segment most recently rotated off the active slot (by ANY caller:
+    // compact OR the upload-completion path). compactSpool() grants it one
+    // grace cycle before attempting unlink so a lingering upload/enrich reader
+    // FD has time to close, avoiding the LittleFS "Has open FD" remove failure
+    // that otherwise trips counter=repair_required. Consumed (cleared) by the
+    // next compact pass.
+    uint32_t    _lastRotatedOffSegmentId = 0;
     bool        _repairRequested = false;
     bool        _binaryCheckpointDeferred = false;
     uint32_t    _maintenanceRequestedFlags = STORAGE_MAINT_NONE;
     bool        _maintenanceCaptureGate = false;
     bool        _maintenanceFullRebuildAttempted = false;
     uint32_t    _maintenanceRetryAfterMs = 0;
+    uint32_t    _routineMaintenanceLogWindowMs = 0;
+    uint32_t    _routineMaintenanceRequestCount = 0;
     uint32_t    _lastFsAuditCompletedMs = 0;  // millis() of last completed FS audit
     MaintenanceContinuityRecord _maintenanceContinuity = {};
     bool        _maintenanceContinuityValid = false;
@@ -749,6 +799,24 @@ private:
     // mode — it throttles to ~5s and defers while an upload batch is active.
     bool _persistSpoolIndex(bool force = false, const char* reason = nullptr);
     bool _openNewSpoolSegment();
+    // Snapshot the boot-local segment-id baseline (idempotent) and arm the
+    // one-shot boot rotation for the first event append.
+    void _ensureBootSegmentBaseline();
+    bool _segmentCreatedThisBoot(uint32_t segmentId) const;
+    // Write createdEpochUtc into one segment's header from the now-trusted
+    // clock (header-only; retroactively dates every record in it). Returns true
+    // if the segment is stamped (or already has a base). Caller ensures the
+    // segment was created this boot.
+    bool _stampSegmentEpoch(uint32_t segmentId);
+    // Backfill the UTC base of every this-boot segment that still lacks one,
+    // once the clock is trusted. Bounded by the small set of unstamped
+    // this-boot segments; touches headers only, never record bodies.
+    void _backfillThisBootSegmentEpochs();
+public:
+    // Public entry for the enrich flow to backfill epochs right after the phone
+    // delivers UTC and before the record walk, so a single session can enrich.
+    void backfillSegmentEpochsForEnrich() { _backfillThisBootSegmentEpochs(); }
+private:
     bool _ensureWorkerAppendFileOpen(SpoolSegmentInfo& seg);
     bool _flushWorkerAppendFile(const char* reason, bool closeFile);
     void _closeWorkerAppendFile(const char* reason);

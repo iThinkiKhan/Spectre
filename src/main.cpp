@@ -555,6 +555,7 @@ static bool _applyPhoneEnrichmentBatch(const PendingEnrichment* records,
                                        size_t count,
                                        uint32_t& outApplied,
                                        uint32_t& outFailed,
+                                       uint32_t& outDeferred,
                                        uint32_t& outStorageMs,
                                        const char* logTag = "BLE");
 PhoneStorageFrameV1 _buildPhoneStorageFrame();
@@ -607,10 +608,33 @@ struct CompanionScheduler {
     uint32_t enrichmentSessionRequested = 0;
     uint32_t enrichmentSessionApplied = 0;
     uint32_t enrichmentSessionFailed = 0;
+    uint32_t enrichmentSessionDeferred = 0;
     uint32_t enrichmentSessionBatches = 0;
     uint32_t enrichmentSessionXferMs = 0;
     uint32_t enrichmentSessionStorageMs = 0;
     bool externalTransportActive = false;
+    bool manualEnrichExclusiveActive = false;
+    bool manualEnrichWorkerPaused = false;
+    bool manualEnrichStoppedCapture = false;
+
+    // "Drain in one go" progress tracking for a manual session, measured at
+    // WINDOW-PASS granularity via STORAGE.livePendingEnrichmentTotal():
+    //   - enrichWindowStartPending: live pending-enrich total snapshotted when
+    //     the current 1024-window was built.
+    //   - lastWindowProgressed: did the previous fully-walked window drain
+    //     anything (enrich or no-data retire)? When a whole window pass drains
+    //     nothing, only phone-deferred (retry-later) records remain, so we stop
+    //     instead of re-scanning and looping on them.
+    //   - enrichWindowSnapshotValid: guards the first window of a session.
+    // lastWalkNoDataRetired is retained for diagnostics.
+    uint32_t lastWalkNoDataRetired = 0;
+    uint32_t enrichWindowStartPending = 0;
+    bool enrichWindowSnapshotValid = false;
+    bool lastWindowProgressed = true;
+    // Set by the build's drain-complete gate so the pipeline distinguishes
+    // "rebuild next tick" (progress) from "session done" (a full window pass
+    // drained nothing) — both surface as batchCount==0 with no resident window.
+    bool manualDrainComplete = false;
 
     // Probe backoff state.
     // Stage 0 — normal cadence (PHONE_PROBE_MIN_GAP_MS).
@@ -735,9 +759,71 @@ static void resetEnrichmentSessionStats(CompanionScheduler& cs) {
     cs.enrichmentSessionRequested = 0;
     cs.enrichmentSessionApplied = 0;
     cs.enrichmentSessionFailed = 0;
+    cs.enrichmentSessionDeferred = 0;
     cs.enrichmentSessionBatches = 0;
     cs.enrichmentSessionXferMs = 0;
     cs.enrichmentSessionStorageMs = 0;
+}
+
+static void beginManualEnrichmentExclusive(CompanionScheduler& cs,
+                                           const char* reason) {
+    if (!cs.manualEnrichRequested || cs.manualEnrichExclusiveActive) {
+        return;
+    }
+
+    const char* safeReason = (reason && reason[0])
+                                 ? reason
+                                 : "manual_enrich_exclusive";
+    STORAGE.releaseUploadIndexMemory("manual_enrich_exclusive_start");
+    STORAGE.releaseEnrichmentIndexMemory("manual_enrich_exclusive_start");
+
+    if (RADIO_ARB.currentOwner() == RADIO_WIFI_CAPTURE) {
+        RADIO_ARB.release(RADIO_WIFI_CAPTURE, safeReason, false);
+        cs.manualEnrichStoppedCapture = true;
+    }
+
+    const bool workerDrainOk = RAMSpool::drainAndPauseWorker(1500UL);
+    cs.manualEnrichWorkerPaused = RAMSpool::isWorkerPaused();
+    cs.manualEnrichExclusiveActive = true;
+    DLOG_INFO("COMP",
+              "Manual enrich exclusive start reason=%s workerPaused=%u drained=%u owner=%s",
+              safeReason,
+              cs.manualEnrichWorkerPaused ? 1U : 0U,
+              workerDrainOk ? 1U : 0U,
+              RadioArbiter::ownerName(RADIO_ARB.currentOwner()));
+}
+
+static void endManualEnrichmentExclusive(CompanionScheduler& cs,
+                                         const char* reason) {
+    if (!cs.manualEnrichExclusiveActive &&
+        !cs.manualEnrichWorkerPaused &&
+        !cs.manualEnrichStoppedCapture) {
+        return;
+    }
+
+    const char* safeReason = (reason && reason[0])
+                                 ? reason
+                                 : "manual_enrich_exclusive_done";
+    if (cs.manualEnrichWorkerPaused) {
+        RAMSpool::resumeWorker(true);
+        cs.manualEnrichWorkerPaused = false;
+    }
+
+    const bool shouldResumeCapture =
+        cs.manualEnrichStoppedCapture &&
+        RADIO_ARB.currentOwner() == RADIO_NONE;
+    cs.manualEnrichStoppedCapture = false;
+    cs.manualEnrichExclusiveActive = false;
+
+    if (shouldResumeCapture) {
+        RADIO_ARB.ensureDefaultCapture(safeReason);
+    }
+
+    DLOG_INFO("COMP",
+              "Manual enrich exclusive end reason=%s resumedCapture=%u owner=%s",
+              safeReason,
+              shouldResumeCapture ? 1U : 0U,
+              RadioArbiter::ownerName(RADIO_ARB.currentOwner()));
 }
 
 static bool companionPhoneAvailabilityStale(const CompanionScheduler& cs) {
@@ -1304,7 +1390,10 @@ static bool requestExternalPhoneProbe(CompanionScheduler& cs, PhoneProbeReason r
 }
 
 static bool requestExternalPhoneEnrichment(CompanionScheduler& cs, const char* reason) {
+    beginManualEnrichmentExclusive(cs, reason);
+
     if (!WIO_NRF.requestCompanionLink(reason ? reason : "external_enrich", true)) {
+        endManualEnrichmentExclusive(cs, "external_enrich_link_request_failed");
         return false;
     }
 
@@ -1414,15 +1503,19 @@ static bool requestPhoneEnrichmentLease(CompanionScheduler& cs,
         return false;
     }
 
+    beginManualEnrichmentExclusive(cs, reason);
+
     if (!RADIO_ARB.requestLease(
             RADIO_BLE_GPS,
             RadioArbiter::BLE_PHONE_ENRICH_HOLD_MS,
             reason)) {
+        endManualEnrichmentExclusive(cs, "enrich_lease_request_failed");
         return false;
     }
 
     if (!BLE_MGR.requestCompanionLink(reason ? reason : "enrich", true)) {
         RADIO_ARB.release(RADIO_BLE_GPS, "enrich_link_request_failed");
+        endManualEnrichmentExclusive(cs, "enrich_link_request_failed");
         return false;
     }
 
@@ -1468,15 +1561,30 @@ static bool _buildPendingEnrichmentBatch(EventBatchRecord* out,
     DLOG_INFO(logTag, "Enrichment pending scan done count=%u",
               static_cast<unsigned>(outCount));
 
+    // Forward only records that carry a reboot-safe absolute capture UTC
+    // (persisted with the record). Records with epochUtc==0 have no timestamp
+    // the phone could match against; skip them here and let the manual enrich
+    // path retire them as NO_DATA under its bounded budget.
+    size_t kept = 0;
+    size_t skippedNoEpoch = 0;
     for (size_t i = 0; i < outCount; ++i) {
-        uint32_t eventEpochUtc = 0;
-        out[i].eventId     = pendingBatch[i].eventId;
-        out[i].timestampMs =
-            TIME_SVC.epochForMillis(pendingBatch[i].timestampMs, eventEpochUtc)
-                ? eventEpochUtc
-                : pendingBatch[i].timestampMs;
-        out[i].type        = pendingBatch[i].type;
-        out[i].status      = pendingBatch[i].status;
+        if (pendingBatch[i].epochUtc == 0) {
+            skippedNoEpoch++;
+            continue;
+        }
+        out[kept].eventId     = pendingBatch[i].eventId;
+        out[kept].timestampMs = pendingBatch[i].epochUtc;
+        out[kept].type        = pendingBatch[i].type;
+        out[kept].status      = pendingBatch[i].status;
+        kept++;
+    }
+    outCount = kept;
+
+    if (skippedNoEpoch > 0) {
+        DLOG_INFO(logTag,
+                  "Enrichment pending scan skipped no-epoch=%u kept=%u",
+                  static_cast<unsigned>(skippedNoEpoch),
+                  static_cast<unsigned>(kept));
     }
 
     return true;
@@ -1484,12 +1592,12 @@ static bool _buildPendingEnrichmentBatch(EventBatchRecord* out,
 
 static void _fillEventBatchRecordFromPending(EventBatchRecord& out,
                                              const PendingEventDescriptor& pending) {
-    uint32_t eventEpochUtc = 0;
     out.eventId = pending.eventId;
-    out.timestampMs =
-        TIME_SVC.epochForMillis(pending.timestampMs, eventEpochUtc)
-            ? eventEpochUtc
-            : pending.timestampMs;
+    // pending.epochUtc is the absolute capture UTC persisted with the record
+    // (segment epoch base + millis delta). It is reboot-safe; the live-clock
+    // epochForMillis() conversion is not. Callers only forward records whose
+    // epochUtc is valid, so no live fallback is needed here.
+    out.timestampMs = pending.epochUtc;
     out.type = pending.type;
     out.status = pending.status;
 }
@@ -1503,6 +1611,19 @@ static bool _buildManualEnrichmentWindowBatch(CompanionScheduler& cs,
     outCount = 0;
     if (!out || maxCount == 0 || maxCount > PHONE_ENRICH_BATCH_MAX) {
         return false;
+    }
+
+    // Drain-complete gate: we are about to (re)build a window because none is
+    // resident. If the PREVIOUS fully-walked window drained nothing, the only
+    // records left are ones the phone deferred (no GPS for those timestamps) —
+    // re-scanning would just loop on them. Signal "done" (batchCount 0) without
+    // acquiring the radio/storage window so the caller finishes the session.
+    if (!cs.enrichmentWindowActive && cs.enrichWindowSnapshotValid &&
+        !cs.lastWindowProgressed) {
+        cs.manualDrainComplete = true;
+        DLOG_INFO(logTag,
+                  "Manual enrich complete: last window drained nothing; only retry-later records remain");
+        return true;
     }
 
     const char* safeReason = (reason && reason[0])
@@ -1524,7 +1645,7 @@ static bool _buildManualEnrichmentWindowBatch(CompanionScheduler& cs,
             DLOG_WARN(logTag,
                       "Manual enrichment window unavailable owner=%s",
                       RadioArbiter::ownerName(RADIO_ARB.currentOwner()));
-            if (stoppedCapture) {
+            if (stoppedCapture && !cs.manualEnrichExclusiveActive) {
                 RADIO_ARB.ensureDefaultCapture(safeReason);
             }
             return false;
@@ -1542,13 +1663,19 @@ static bool _buildManualEnrichmentWindowBatch(CompanionScheduler& cs,
                               "manual_enrich_window_begin_failed",
                               false);
         }
-        if (stoppedCapture) {
+        if (stoppedCapture && !cs.manualEnrichExclusiveActive) {
             RADIO_ARB.ensureDefaultCapture("manual_enrich_window_begin_failed");
         }
         return false;
     }
 
     if (!cs.enrichmentWindowActive) {
+        // The phone delivers UTC over the GPS/time channel as soon as the
+        // secure session is ready (just before this point). Stamp any this-boot
+        // segments that were captured before the clock arrived so their records
+        // resolve to a real epoch in the window we are about to build.
+        STORAGE.backfillSegmentEpochsForEnrich();
+
         const size_t requestedWindow =
             static_cast<size_t>(std::min<uint32_t>(
                 std::max<uint32_t>(cs.pendingItems, PHONE_ENRICH_BATCH_MAX),
@@ -1562,27 +1689,85 @@ static bool _buildManualEnrichmentWindowBatch(CompanionScheduler& cs,
                                   "manual_enrich_window_failed",
                                   false);
             }
-            if (stoppedCapture || RADIO_ARB.currentOwner() == RADIO_NONE) {
+            if (!cs.manualEnrichExclusiveActive &&
+                (stoppedCapture || RADIO_ARB.currentOwner() == RADIO_NONE)) {
                 RADIO_ARB.ensureDefaultCapture("manual_enrich_window_failed");
             }
             return false;
         }
         cs.enrichmentWindowActive = true;
+        // Snapshot the live pending-enrich total for this window pass so we can
+        // tell, when the window is fully walked, whether it drained anything.
+        cs.enrichWindowStartPending = STORAGE.livePendingEnrichmentTotal();
+        cs.enrichWindowSnapshotValid = true;
     }
 
-    // Track how many records we retired as NO_DATA during this cursor walk
-    // so the log line at the bottom reflects the actual disposition.
+    // NO_DATA disposition. Records with no trusted capture UTC can never be
+    // enriched, so we retire them (append a NO_DATA enrich delta that excludes
+    // them from future scans). Two scaling rules vs the old 4-per-walk cap:
+    //   1) Retiring no-data NEVER stops enrichable collection — we keep filling
+    //      the batch up to maxCount even when no-epoch records are interleaved
+    //      (priority order mixes them). Previously the 4th no-epoch record broke
+    //      the whole walk, starving enrichable throughput.
+    //   2) Retire in small chunks up to a larger per-walk budget, and cap the
+    //      walk by wall-time, so a 20k unenrichable backlog drains in a few
+    //      passes without holding the radio-suspended window too long.
     uint32_t noDataRetired = 0;
-
-    // Each NO_DATA retirement appends an enrichment-delta record to LittleFS.
-    // Keep this tiny so a stale manual backlog cannot monopolize hardware.
-    constexpr uint32_t kMaxNoDataPerWalk = 4U;
     bool noDataBudgetExhausted = false;
+    bool walkTimeBudgetHit = false;
+    const uint32_t walkStartMs = millis();
+
+    uint32_t noDataChunkIds[ENRICH_NODATA_CHUNK] = {};
+    size_t noDataChunkCount = 0;
+
+    auto flushNoData = [&]() {
+        if (noDataChunkCount == 0) return;
+        String sessionIds[ENRICH_NODATA_CHUNK];
+        if (!STORAGE.findEventSessions(noDataChunkIds, noDataChunkCount,
+                                       sessionIds)) {
+            DLOG_WARN(logTag, "Failed to resolve NO_DATA sessions count=%u",
+                      static_cast<unsigned>(noDataChunkCount));
+            noDataChunkCount = 0;
+            return;
+        }
+        SpoolEnrichBatchEntry entries[ENRICH_NODATA_CHUNK];
+        size_t n = 0;
+        for (size_t i = 0; i < noDataChunkCount; ++i) {
+            if (noDataChunkIds[i] == 0 || !sessionIds[i].length()) {
+                continue;
+            }
+            entries[n++] = {noDataChunkIds[i], sessionIds[i].c_str(),
+                            0.0f, 0.0f, 0.0f, 0.0f, nullptr, 0, true};
+        }
+        if (n > 0) {
+            uint32_t applied = 0;
+            uint32_t failed = 0;
+            STORAGE.beginHotPathDiagnosticsSuppressed();
+            const bool ok =
+                STORAGE.appendEnrichDeltasBatch(entries, n, &applied, &failed);
+            STORAGE.endHotPathDiagnosticsSuppressed();
+            noDataRetired += applied;
+            if (!ok || failed > 0 || applied != n) {
+                DLOG_WARN(logTag,
+                          "NO_DATA retire partial applied=%lu failed=%lu requested=%u",
+                          static_cast<unsigned long>(applied),
+                          static_cast<unsigned long>(failed),
+                          static_cast<unsigned>(n));
+            }
+        }
+        noDataChunkCount = 0;
+    };
 
     while (outCount < maxCount) {
+        if (millis() - walkStartMs > ENRICH_WALK_BUDGET_MS) {
+            walkTimeBudgetHit = true;
+            break;
+        }
+
         PendingEventDescriptor pending;
         bool found = false;
         if (!STORAGE.getNextPendingEnrichmentRecord(pending, found)) {
+            flushNoData();
             DLOG_WARN(logTag, "Manual enrichment window cursor failed");
             STORAGE.releaseEnrichmentIndexMemory("manual_cursor_failed");
             cs.enrichmentWindowActive = false;
@@ -1592,75 +1777,98 @@ static bool _buildManualEnrichmentWindowBatch(CompanionScheduler& cs,
                                   "manual_cursor_failed",
                                   false);
             }
-            if (stoppedCapture || RADIO_ARB.currentOwner() == RADIO_NONE) {
+            if (!cs.manualEnrichExclusiveActive &&
+                (stoppedCapture || RADIO_ARB.currentOwner() == RADIO_NONE)) {
                 RADIO_ARB.ensureDefaultCapture("manual_cursor_failed");
             }
             return false;
         }
         if (!found) {
+            flushNoData();
             STORAGE.releaseEnrichmentIndexMemory("manual_cursor_done");
             cs.enrichmentWindowActive = false;
             break;
         }
 
-        // Before handing this record to the phone, check whether its
-        // captured timestamp resolves to a usable UTC epoch. If not, the
-        // phone has nothing to look up — retire the record permanently as
-        // STORAGE_ENRICH_NO_DATA instead of looping on it.
-        uint32_t resolvedEpoch = 0;
-        const bool epochOk =
-            TIME_SVC.epochForMillis(pending.timestampMs, resolvedEpoch);
-        if (!epochOk) {
-            if (noDataRetired >= kMaxNoDataPerWalk) {
-                // Out of NO_DATA budget for this walk. Stop the cursor here;
-                // leave window active so the next companion tick resumes
-                // from this position rather than re-scanning from scratch.
+        // epochUtc is the reboot-safe absolute capture UTC persisted with the
+        // record (NOT a live-clock conversion), so a record is retired as
+        // NO_DATA only when it genuinely never had a trusted timestamp — never
+        // merely because the device clock is unsynced right now.
+        if (pending.epochUtc == 0) {
+            if (noDataRetired + noDataChunkCount >= ENRICH_NODATA_BUDGET_PER_WALK) {
                 noDataBudgetExhausted = true;
                 break;
             }
-            if (STORAGE.markEnrichmentNoData(pending.eventId)) {
-                noDataRetired++;
-            } else {
-                DLOG_WARN(logTag,
-                          "Failed to mark NO_DATA for event=%lu — leaving pending",
-                          static_cast<unsigned long>(pending.eventId));
+            noDataChunkIds[noDataChunkCount++] = pending.eventId;
+            if (noDataChunkCount >= ENRICH_NODATA_CHUNK) {
+                flushNoData();
             }
-            // Skip this record. The cursor has already advanced. The
-            // NO_DATA delta we just wrote will exclude this event from
-            // future _loadSpoolEnrichmentIds scans automatically.
-            continue;
+            continue;  // does not consume the enrichable batch budget
         }
 
         _fillEventBatchRecordFromPending(out[outCount], pending);
         outCount++;
     }
 
-    if (noDataBudgetExhausted && outCount == 0) {
+    flushNoData();
+
+    // Surface this walk's no-data progress so the session loop knows it is
+    // still draining even on a pass that yielded zero enrichable records.
+    cs.lastWalkNoDataRetired = noDataRetired;
+
+    // If this call fully walked the window (cursor exhausted or released),
+    // record whether the whole window pass drained anything. The drain-complete
+    // gate at the top of the next call uses this to stop once a full window
+    // yields no progress (only phone-deferred records remain).
+    if (!cs.enrichmentWindowActive && cs.enrichWindowSnapshotValid) {
+        // Progress means either the phone enriched records (live pending-enrich
+        // total dropped) OR we retired no-data records this pass. The pending
+        // total is a LAGGED snapshot: _decrementPendingEnrichmentForEvent skips
+        // the decrement and only flags a summary rebuild whenever a segment
+        // summary is stale (see StorageManager pending_enrich_summary_stale), so
+        // a pass that retired a full window of no-data records can still read an
+        // unchanged total. Relying on the counter alone made the drain-complete
+        // gate fire after ~1 window and abandon thousands of still-pending
+        // records. Counting noDataRetired makes progress detection authoritative
+        // and lag-proof: we only declare the backlog drained when a full window
+        // yields NEITHER an enrichable batch NOR a no-data retirement — i.e. the
+        // only records left are ones the phone deferred (retry-later).
+        cs.lastWindowProgressed =
+            (noDataRetired > 0) ||
+            (STORAGE.livePendingEnrichmentTotal() < cs.enrichWindowStartPending);
+    }
+
+    // Only tear the window down when this walk produced no enrichable records
+    // to send the phone AND we stopped on a budget/time cap. With enrichable
+    // output, or a still-live cursor, keep the window resident so the next tick
+    // continues from here instead of re-running the O(N) scan.
+    if (outCount == 0 && (noDataBudgetExhausted || walkTimeBudgetHit)) {
         STORAGE.releaseEnrichmentIndexMemory("manual_no_data_budget");
         cs.enrichmentWindowActive = false;
         DLOG_WARN(logTag,
-                  "Manual enrichment stopped after retiring %lu no-data records; pending records need valid GPS/UTC before phone lookup",
-                  static_cast<unsigned long>(noDataRetired));
+                  "Manual enrichment retired %lu no-data records this pass; more remain (budget=%u timeHit=%u)",
+                  static_cast<unsigned long>(noDataRetired),
+                  noDataBudgetExhausted ? 1U : 0U,
+                  walkTimeBudgetHit ? 1U : 0U);
     }
 
+    const bool stoppedOnCap = noDataBudgetExhausted || walkTimeBudgetHit;
+    const char* endReason = stoppedOnCap ? "manual_no_data_budget"
+                                         : "manual_batch_built";
     DLOG_INFO(logTag,
-              "Manual enrichment window batch count=%u active=%u noData=%lu budgetExhausted=%u",
+              "Manual enrichment window batch count=%u active=%u noData=%lu budgetExhausted=%u timeHit=%u",
               static_cast<unsigned>(outCount),
               cs.enrichmentWindowActive ? 1U : 0U,
               static_cast<unsigned long>(noDataRetired),
-              noDataBudgetExhausted ? 1U : 0U);
-    window.end(noDataBudgetExhausted ? "manual_no_data_budget"
-                                     : "manual_batch_built");
+              noDataBudgetExhausted ? 1U : 0U,
+              walkTimeBudgetHit ? 1U : 0U);
+    window.end(endReason);
     if (tookMaintenanceLease && RADIO_ARB.isOwner(RADIO_STORAGE_MAINTENANCE)) {
-        RADIO_ARB.release(RADIO_STORAGE_MAINTENANCE,
-                          noDataBudgetExhausted ? "manual_no_data_budget"
-                                                : "manual_batch_built",
-                          false);
+        RADIO_ARB.release(RADIO_STORAGE_MAINTENANCE, endReason, false);
     }
-    if (stoppedCapture || RADIO_ARB.currentOwner() == RADIO_NONE) {
-        RADIO_ARB.ensureDefaultCapture(noDataBudgetExhausted
-                                           ? "manual_no_data_budget"
-                                           : "manual_batch_built");
+    if (!cs.manualEnrichExclusiveActive &&
+        (stoppedCapture || RADIO_ARB.currentOwner() == RADIO_NONE)) {
+        RADIO_ARB.ensureDefaultCapture(endReason);
     }
     return true;
 }
@@ -1739,10 +1947,12 @@ static bool _applyPhoneEnrichmentBatch(const PendingEnrichment* records,
                                        size_t count,
                                        uint32_t& outApplied,
                                        uint32_t& outFailed,
+                                       uint32_t& outDeferred,
                                        uint32_t& outStorageMs,
                                        const char* logTag) {
     outApplied = 0;
     outFailed = 0;
+    outDeferred = 0;
     outStorageMs = 0;
 
     if (!records || count == 0) {
@@ -1758,6 +1968,7 @@ static bool _applyPhoneEnrichmentBatch(const PendingEnrichment* records,
     bool anySuccess = false;
     uint32_t applied = 0;
     uint32_t failed = 0;
+    uint32_t deferred = 0;
     uint32_t eventIds[PHONE_ENRICH_BATCH_MAX] = {};
     String sessionIds[PHONE_ENRICH_BATCH_MAX];
 
@@ -1777,7 +1988,10 @@ static bool _applyPhoneEnrichmentBatch(const PendingEnrichment* records,
     size_t batchSize = 0;
     for (size_t i = 0; i < count; ++i) {
         const PendingEnrichment& r = records[i];
-        if (r.eventId == 0) continue;
+        if (r.eventId == 0) {
+            deferred++;
+            continue;
+        }
         if (i >= lookupCount || !sessionIds[i].length()) {
             failed++;
             DLOG_WARN(logTag, "Enrichment no session event=%lu",
@@ -1806,15 +2020,17 @@ static bool _applyPhoneEnrichmentBatch(const PendingEnrichment* records,
     STORAGE.endHotPathDiagnosticsSuppressed();
     const uint32_t pending = STORAGE.getPendingEventCount();
     DLOG_INFO(logTag,
-              "enrich_perf count=%u applied=%u failed=%u storageMs=%lu pendingUpload=%lu",
+              "enrich_perf count=%u applied=%u failed=%u deferred=%u storageMs=%lu pendingUpload=%lu",
               static_cast<unsigned>(count),
               static_cast<unsigned>(applied),
               static_cast<unsigned>(failed),
+              static_cast<unsigned>(deferred),
               static_cast<unsigned long>(tApplyMs),
               static_cast<unsigned long>(pending));
 
     outApplied = applied;
     outFailed = failed;
+    outDeferred = deferred;
     outStorageMs = tApplyMs;
     return anySuccess;
 }
@@ -1824,6 +2040,7 @@ static void _finishPhoneEnrichment(CompanionScheduler& cs, bool success) {
     const uint32_t requested = cs.enrichmentSessionRequested;
     const uint32_t applied = cs.enrichmentSessionApplied;
     const uint32_t failed = cs.enrichmentSessionFailed;
+    const uint32_t deferred = cs.enrichmentSessionDeferred;
     const uint32_t batches = cs.enrichmentSessionBatches;
     const uint32_t xferMs = cs.enrichmentSessionXferMs;
     const uint32_t storageMs = cs.enrichmentSessionStorageMs;
@@ -1832,10 +2049,11 @@ static void _finishPhoneEnrichment(CompanionScheduler& cs, bool success) {
     if (sessionStartMs != 0 && (requested > 0 || batches > 0)) {
         const char* logTag = companionTransportTag(cs);
         DLOG_INFO(logTag,
-                  "enrich_session_summary requested=%lu applied=%lu failed=%lu batches=%lu xferMs=%lu storageMs=%lu totalMs=%lu",
+                  "enrich_session_summary requested=%lu applied=%lu failed=%lu deferred=%lu batches=%lu xferMs=%lu storageMs=%lu totalMs=%lu",
                   static_cast<unsigned long>(requested),
                   static_cast<unsigned long>(applied),
                   static_cast<unsigned long>(failed),
+                  static_cast<unsigned long>(deferred),
                   static_cast<unsigned long>(batches),
                   static_cast<unsigned long>(xferMs),
                   static_cast<unsigned long>(storageMs),
@@ -1855,6 +2073,12 @@ static void _finishPhoneEnrichment(CompanionScheduler& cs, bool success) {
     cs.enrichmentSessionRequested = 0;
     cs.enrichmentSessionApplied = 0;
     cs.enrichmentSessionFailed = 0;
+    cs.enrichmentSessionDeferred = 0;
+    cs.lastWalkNoDataRetired = 0;
+    cs.enrichWindowStartPending = 0;
+    cs.enrichWindowSnapshotValid = false;
+    cs.lastWindowProgressed = true;
+    cs.manualDrainComplete = false;
     cs.enrichmentSessionBatches = 0;
     cs.enrichmentSessionXferMs = 0;
     cs.enrichmentSessionStorageMs = 0;
@@ -1871,7 +2095,15 @@ static void _finishPhoneEnrichment(CompanionScheduler& cs, bool success) {
         cs.manualEnrichProbeBypass = false;
         cs.offloadPrepRequested  = false;
         cs.timeSyncRequested     = false;
-        DLOG_INFO(companionTransportTag(cs), "Phone enrichment finished successfully");
+        if (deferred > 0 || failed > 0) {
+            DLOG_WARN(companionTransportTag(cs),
+                      "Phone enrichment finished with pending retries applied=%lu failed=%lu deferred=%lu",
+                      static_cast<unsigned long>(applied),
+                      static_cast<unsigned long>(failed),
+                      static_cast<unsigned long>(deferred));
+        } else {
+            DLOG_INFO(companionTransportTag(cs), "Phone enrichment finished successfully");
+        }
     } else {
         // Pending counts are unchanged on failure; the next probe will refresh.
         cs.phoneState = COMPANION_PHONE_UNAVAILABLE;
@@ -1882,6 +2114,9 @@ static void _finishPhoneEnrichment(CompanionScheduler& cs, bool success) {
         RADIO_ARB.release(RADIO_BLE_GPS,
                           success ? "enrich_done" : "enrich_fail");
     }
+
+    endManualEnrichmentExclusive(cs, success ? "enrich_done"
+                                             : "enrich_fail");
 
     if (success) {
         crashBreadcrumbClear(CrashPhase::BACKLOG_ENRICH);
@@ -1912,15 +2147,16 @@ static void enrichClaimReceived(const PendingEnrichment* recs, size_t count) {
     }
 }
 
-static bool enrichmentBatchHasDeferredRecords(const PendingEnrichment* recs,
-                                              size_t count) {
-    if (!recs || count == 0) return false;
+static uint32_t enrichmentBatchDeferredCount(const PendingEnrichment* recs,
+                                             size_t count) {
+    if (!recs || count == 0) return 0;
+    uint32_t deferred = 0;
     for (size_t i = 0; i < count; ++i) {
         if (recs[i].eventId == 0) {
-            return true;
+            deferred++;
         }
     }
-    return false;
+    return deferred;
 }
 
 static void enrichClearAllClaims() {
@@ -2121,7 +2357,7 @@ static void drainOneEnrichBatch(CompanionScheduler& cs) {
     if (enrichQueueSize == 0) return;
     const char* logTag = companionTransportTag(cs);
     QueuedEnrichBatch& oldest = enrichQueue[enrichQueueHead];
-    uint32_t batchApplied = 0, batchFailed = 0, batchStorageMs = 0;
+    uint32_t batchApplied = 0, batchFailed = 0, batchDeferred = 0, batchStorageMs = 0;
     DLOG_INFO(logTag, "Enrich drain begin count=%u queueSize=%u ageMs=%lu",
               static_cast<unsigned>(oldest.count),
               static_cast<unsigned>(enrichQueueSize),
@@ -2130,21 +2366,23 @@ static void drainOneEnrichBatch(CompanionScheduler& cs) {
                             static_cast<uint8_t>(RADIO_ARB.currentOwner()),
                             STORAGE.isReady() ? STORAGE.getPendingEventCount() : 0U);
     _applyPhoneEnrichmentBatch(oldest.records, oldest.count,
-                               batchApplied, batchFailed, batchStorageMs,
+                               batchApplied, batchFailed, batchDeferred, batchStorageMs,
                                logTag);
     crashBreadcrumbClearVolatile(CrashPhase::STORAGE_APPEND);
     enrichRemoveClaims(oldest.records, oldest.count);
     cs.enrichmentSessionApplied   += batchApplied;
     cs.enrichmentSessionFailed    += batchFailed;
+    cs.enrichmentSessionDeferred  += batchDeferred;
     cs.enrichmentSessionStorageMs += batchStorageMs;
     applyEnrichmentProgressToScheduler(cs, batchApplied);
     oldest.count    = 0;
     oldest.queuedMs = 0;
     enrichQueueHead = (enrichQueueHead + 1) % ENRICH_QUEUE_DEPTH;
     enrichQueueSize--;
-    DLOG_INFO(logTag, "Enrich drain done applied=%lu failed=%lu queueSize=%u",
+    DLOG_INFO(logTag, "Enrich drain done applied=%lu failed=%lu deferred=%lu queueSize=%u",
               static_cast<unsigned long>(batchApplied),
               static_cast<unsigned long>(batchFailed),
+              static_cast<unsigned long>(batchDeferred),
               static_cast<unsigned>(enrichQueueSize));
 }
 
@@ -2184,8 +2422,9 @@ static void serviceEnrichmentPipeline(CompanionScheduler& cs) {
             if (BLE_MGR.consumeEnrichmentBatch(enrichments,
                                                PHONE_ENRICH_BATCH_MAX,
                                                outCount)) {
-                const bool hasDeferred = enrichmentBatchHasDeferredRecords(enrichments,
-                                                                            outCount);
+                const uint32_t deferredCount =
+                    enrichmentBatchDeferredCount(enrichments, outCount);
+                const bool hasDeferred = deferredCount > 0;
                 // Valid response received — enqueue and claim BEFORE clearing
                 // requestIssued so that the next _buildPendingEnrichmentBatch
                 // call excludes these IDs while they sit in the queue.
@@ -2202,10 +2441,23 @@ static void serviceEnrichmentPipeline(CompanionScheduler& cs) {
                               static_cast<unsigned>(enrichQueueSize));
                     if (hasDeferred) {
                         runEnrichDrain(cs, "BLE");
+                        if (cs.manualEnrichRequested) {
+                            // Cursor-based manual walk: deferred records are
+                            // behind the cursor and won't be re-requested within
+                            // a window. Keep the connection and drain the rest in
+                            // one go; the per-window-pass progress gate ends the
+                            // session once a full window drains nothing.
+                            cs.enrichmentRequestIssued = false;
+                            DLOG_DEBUG("BLE",
+                                       "Enrich deferred count=%u; continuing manual session",
+                                       static_cast<unsigned>(deferredCount));
+                            return;
+                        }
+                        // Auto path excludes claimed IDs; unclaimed deferred
+                        // placeholders would re-request in a loop. End for retry.
                         DLOG_INFO("BLE",
-                                  "Enrichment deferred by phone count=%u manual=%u; ending session for later retry",
-                                  static_cast<unsigned>(outCount),
-                                  cs.manualEnrichRequested ? 1U : 0U);
+                                  "Enrichment deferred by phone count=%u; ending session for later retry",
+                                  static_cast<unsigned>(deferredCount));
                         enrichClearAllClaims();
                         _finishPhoneEnrichment(cs, true);
                         return;
@@ -2261,10 +2513,17 @@ static void serviceEnrichmentPipeline(CompanionScheduler& cs) {
                     _finishPhoneEnrichment(cs, false);
                 }
             } else if (batchCount == 0) {
-                // No unclaimed pending events; finish when queue fully drained.
                 if (enrichQueueSize == 0) {
-                    enrichClearAllClaims();
-                    _finishPhoneEnrichment(cs, true);
+                    if (cs.manualEnrichRequested && !cs.manualDrainComplete) {
+                        // Manual bulk drain still in progress; the drain-complete
+                        // gate ends it once a full window pass drains nothing.
+                        DLOG_DEBUG("BLE",
+                                   "Manual enrich continuing active=%u",
+                                   cs.enrichmentWindowActive ? 1U : 0U);
+                    } else {
+                        enrichClearAllClaims();
+                        _finishPhoneEnrichment(cs, true);
+                    }
                 }
             } else if (BLE_MGR.requestEnrichmentBatch(batch, batchCount)) {
                 cs.enrichmentRequestIssued = true;
@@ -2302,14 +2561,38 @@ static void serviceExternalEnrichmentPipeline(CompanionScheduler& cs) {
         return;
     }
 
+    // A single batch was dropped to UART corruption but the link is still up.
+    // Clear the in-flight request so the next tick re-requests instead of
+    // ending the whole bulk session. The dropped records stay pending and are
+    // retried on a later window pass.
+    if (WIO_NRF.consumeEnrichmentBatchDropped()) {
+        DLOG_DEBUG("WIO", "Enrichment batch dropped (UART); re-requesting");
+        cs.enrichmentRequestIssued = false;
+        cs.lastRequestedEnrichmentCount = 0;
+    }
+
+    if (cs.enrichmentRequestIssued &&
+        !WIO_NRF.isEnrichmentExchangeActive() &&
+        !WIO_NRF.isCompanionLinkBusy() &&
+        !WIO_NRF.isPhoneCompanionReady()) {
+        DLOG_WARN("WIO",
+                  "External enrichment request stale; resetting issued state requested=%u link=%s phone=%s",
+                  static_cast<unsigned>(cs.lastRequestedEnrichmentCount),
+                  WIO_NRF.linkStateName(),
+                  WIO_NRF.phoneState());
+        cs.enrichmentRequestIssued = false;
+        cs.lastRequestedEnrichmentCount = 0;
+    }
+
     if (cs.enrichmentRequestIssued) {
         PendingEnrichment enrichments[PHONE_ENRICH_BATCH_MAX] = {};
         size_t outCount = 0;
         if (WIO_NRF.consumeEnrichmentBatch(enrichments,
                                            PHONE_ENRICH_BATCH_MAX,
                                            outCount)) {
-            const bool hasDeferred = enrichmentBatchHasDeferredRecords(enrichments,
-                                                                        outCount);
+            const uint32_t deferredCount =
+                enrichmentBatchDeferredCount(enrichments, outCount);
+            const bool hasDeferred = deferredCount > 0;
             if (enqueueEnrichBatch(enrichments, outCount, companionTransportTag(cs))) {
                 enrichClaimReceived(enrichments, outCount);
                 cs.enrichmentSessionBatches++;
@@ -2322,11 +2605,26 @@ static void serviceExternalEnrichmentPipeline(CompanionScheduler& cs) {
                            static_cast<unsigned>(enrichQueueSize));
                 if (hasDeferred) {
                     runEnrichDrain(cs, "WIO");
-                    // Deferred placeholders do not need another phone roundtrip.
+                    if (cs.manualEnrichRequested) {
+                        // Manual enrich walks a resident window cursor, so the
+                        // deferred records are already behind the cursor and
+                        // cannot be re-requested within a window. Keep the phone
+                        // connected and drain the rest on the next tick instead
+                        // of reconnecting per deferral. The session terminates
+                        // via the per-window-pass progress gate (a full window
+                        // that drains nothing => only retry-later records left).
+                        cs.enrichmentRequestIssued = false;
+                        DLOG_DEBUG("WIO",
+                                   "External enrich deferred count=%u; continuing manual session",
+                                   static_cast<unsigned>(deferredCount));
+                        return;
+                    }
+                    // Auto path selects by excluding claimed IDs; deferred
+                    // placeholders (eventId=0) are never claimed, so continuing
+                    // would re-request them in a loop. End for later retry.
                     DLOG_INFO("WIO",
-                              "External enrichment deferred by phone count=%u manual=%u; ending session for later retry",
-                              static_cast<unsigned>(outCount),
-                              cs.manualEnrichRequested ? 1U : 0U);
+                              "External enrichment deferred by phone count=%u; ending session for later retry",
+                              static_cast<unsigned>(deferredCount));
                     enrichClearAllClaims();
                     _finishPhoneEnrichment(cs, true);
                     return;
@@ -2387,18 +2685,19 @@ static void serviceExternalEnrichmentPipeline(CompanionScheduler& cs) {
             }
         } else if (batchCount == 0) {
             if (enrichQueueSize == 0) {
-                // Distinguish two zero-batch cases:
-                //  - cursor exhausted or stale/no-time budget reached
-                //    (enrichmentWindowActive==false): end the manual session.
-                //  - cursor still resident (active==true): continue later
-                //    without re-scanning the entire spool.
-                if (!cs.enrichmentWindowActive) {
+                if (cs.manualEnrichRequested && !cs.manualDrainComplete) {
+                    // Manual bulk drain still in progress: the last window pass
+                    // made progress (or is mid-window), so keep the connection
+                    // and let the next tick rebuild. The drain-complete gate
+                    // ends the session once a full window pass drains nothing.
+                    DLOG_DEBUG("WIO",
+                               "Manual enrich continuing active=%u",
+                               cs.enrichmentWindowActive ? 1U : 0U);
+                } else {
+                    // Auto session, or manual drain fully complete: finish.
                     enrichClearAllClaims();
                     _finishPhoneEnrichment(cs, true);
                     WIO_NRF.disconnectPhone("external_enrich_empty");
-                } else {
-                    DLOG_DEBUG("WIO",
-                               "Manual enrich tick produced no batch (window still resident); continuing next tick");
                 }
             }
         } else if (WIO_NRF.requestEnrichmentBatch(batch, batchCount)) {
@@ -2461,6 +2760,7 @@ void _printUsbConsoleHelp() {
     Serial.println("[USB]   companion probe   (one-shot manual BLE probe)");
     Serial.println("[USB]   companion enrich  (manual enrichment; probes first if needed)");
     Serial.println("[USB]   companion cancel  (clear all pending companion requests)");
+    Serial.println("[USB]   heap status      (internal/PSRAM heap snapshot)");
     Serial.println("[USB]   spool audit       (read-only spool scan, prints mismatches)");
     Serial.println("[USB]   spool count       (exact total record count + spool stats)");
     Serial.println("[USB]   spool enrich      (pending vs already enriched counts)");
@@ -2904,6 +3204,7 @@ void _handleUsbConsoleLine(const char* rawLine) {
             Serial.println("[WIO] BLE proxy unavailable");
             return;
         }
+        STORAGE.releaseUploadIndexMemory("manual_wio_enrich_start");
         g_companionCmd.enrich = true;
         Serial.println("[WIO] manual enrich queued");
         return;
@@ -3029,6 +3330,42 @@ void _handleUsbConsoleLine(const char* rawLine) {
     if (lower == "companion cancel") {
         g_companionCmd.cancel = true;
         Serial.println("[COMP] cancel queued");
+        return;
+    }
+
+    if (lower == "heap status" || lower == "mem status") {
+        const auto kb = [](uint32_t bytes) -> uint32_t {
+            return (bytes + 512UL) / 1024UL;
+        };
+        const uint32_t totalHeap = heap_caps_get_total_size(MALLOC_CAP_8BIT);
+        const uint32_t freeHeap = heap_caps_get_free_size(MALLOC_CAP_8BIT);
+        const uint32_t largestHeap = heap_caps_get_largest_free_block(MALLOC_CAP_8BIT);
+        const uint32_t totalInternal =
+            heap_caps_get_total_size(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
+        const uint32_t freeInternal =
+            heap_caps_get_free_size(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
+        const uint32_t largestInternal =
+            heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
+        const uint32_t totalPsram = heap_caps_get_total_size(MALLOC_CAP_SPIRAM);
+        const uint32_t freePsram = heap_caps_get_free_size(MALLOC_CAP_SPIRAM);
+        const uint32_t largestPsram = heap_caps_get_largest_free_block(MALLOC_CAP_SPIRAM);
+        Serial.printf("[HEAP] 8bit total=%luKB free=%luKB largest=%luKB\r\n",
+                      static_cast<unsigned long>(kb(totalHeap)),
+                      static_cast<unsigned long>(kb(freeHeap)),
+                      static_cast<unsigned long>(kb(largestHeap)));
+        Serial.printf("[HEAP] internal total=%luKB free=%luKB largest=%luKB\r\n",
+                      static_cast<unsigned long>(kb(totalInternal)),
+                      static_cast<unsigned long>(kb(freeInternal)),
+                      static_cast<unsigned long>(kb(largestInternal)));
+        Serial.printf("[HEAP] psram total=%luKB free=%luKB largest=%luKB\r\n",
+                      static_cast<unsigned long>(kb(totalPsram)),
+                      static_cast<unsigned long>(kb(freePsram)),
+                      static_cast<unsigned long>(kb(largestPsram)));
+        Serial.printf("[HEAP] uploadIndex=%d enrichWindow=%d maint=%s owner=%s\r\n",
+                      STORAGE.isUploadIndexResident() ? 1 : 0,
+                      STORAGE.isEnrichmentWindowResident() ? 1 : 0,
+                      STORAGE.maintenanceFlagsText(),
+                      RadioArbiter::ownerName(RADIO_ARB.currentOwner()));
         return;
     }
 
@@ -3166,7 +3503,12 @@ void _handleUsbConsoleLine(const char* rawLine) {
         lower == "mqtt dump" ||
         lower == "dump now") {
         const MQTTState state = MQTT_MGR.getState();
-        const int pending = MQTT_MGR.uploadReadyCount();
+        const bool backlogTrusted =
+            !STORAGE.isReady() || STORAGE.isPendingEventCountAuthoritative();
+        const int pending =
+            backlogTrusted
+                ? MQTT_MGR.uploadReadyCount()
+                : static_cast<int>(STORAGE.getPendingEventCount());
 
         if (MQTT_MGR.uploadStoppedBySerial()) {
             Serial.println("[UPLOAD] paused; run upload resume first");
@@ -3180,9 +3522,9 @@ void _handleUsbConsoleLine(const char* rawLine) {
             return;
         }
 
-        if (STORAGE.isReady() && !STORAGE.isPendingEventCountAuthoritative()) {
-            Serial.println("[UPLOAD] pending count not authoritative yet");
-            return;
+        if (!backlogTrusted) {
+            Serial.printf("[UPLOAD] pending count not authoritative; forcing indexed recovery drain pending=%d\r\n",
+                          pending);
         }
 
         if (pending <= 0) {
@@ -3190,6 +3532,12 @@ void _handleUsbConsoleLine(const char* rawLine) {
             return;
         }
 
+        g_companionCmd.cancel = true;
+        WIO_NRF.disconnectPhone("manual_upload_start");
+        initEnrichQueue();
+        enrichClearAllClaims();
+        STORAGE.releaseEnrichmentIndexMemory("manual_upload_start");
+        STORAGE.releaseUploadIndexMemory("manual_upload_start");
         if (MQTT_MGR.requestDump(true)) {
             Serial.printf("[UPLOAD] manual upload queued pending=%d\r\n", pending);
         } else {
@@ -4372,10 +4720,20 @@ void _logRuntimeHealth(uint32_t nowMs) {
         const uint32_t freeHeap = heap_caps_get_free_size(MALLOC_CAP_8BIT);
         const uint32_t minHeap = heap_caps_get_minimum_free_size(MALLOC_CAP_8BIT);
         const uint32_t largestHeap = heap_caps_get_largest_free_block(MALLOC_CAP_8BIT);
+        const uint32_t totalInternal =
+            heap_caps_get_total_size(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
+        const uint32_t freeInternal =
+            heap_caps_get_free_size(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
+        const uint32_t minInternal =
+            heap_caps_get_minimum_free_size(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
+        const uint32_t largestInternal =
+            heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
         const uint32_t totalPsram = heap_caps_get_total_size(MALLOC_CAP_SPIRAM);
         const uint32_t freePsram = heap_caps_get_free_size(MALLOC_CAP_SPIRAM);
         const uint32_t largestPsram = heap_caps_get_largest_free_block(MALLOC_CAP_SPIRAM);
         const uint32_t usedHeap = (totalHeap >= freeHeap) ? (totalHeap - freeHeap) : 0;
+        const uint32_t usedInternal =
+            (totalInternal >= freeInternal) ? (totalInternal - freeInternal) : 0;
         const uint32_t usedPsram = (totalPsram >= freePsram) ? (totalPsram - freePsram) : 0;
         const uint32_t heapFragPct = (freeHeap > 0 && largestHeap <= freeHeap)
             ? static_cast<uint32_t>(((freeHeap - largestHeap) * 100UL) / freeHeap)
@@ -4394,11 +4752,13 @@ void _logRuntimeHealth(uint32_t nowMs) {
         _updateCoreLoad(nowMs);
 
         DLOG_INFO("HEAP",
-          "heap free=%luKB min=%luKB largest=%luKB frag=%lu%% psramFree=%luKB core=%u/%u%% owner=%s nets=%d pendingUpload=%s pendingEnrich=%lu",
+          "heap free=%luKB min=%luKB largest=%luKB frag=%lu%% internalFree=%luKB internalLargest=%luKB psramFree=%luKB core=%u/%u%% owner=%s nets=%d pendingUpload=%s pendingEnrich=%lu",
           static_cast<unsigned long>(kb(freeHeap)),
           static_cast<unsigned long>(kb(minHeap)),
           static_cast<unsigned long>(kb(largestHeap)),
           static_cast<unsigned long>(heapFragPct),
+          static_cast<unsigned long>(kb(freeInternal)),
+          static_cast<unsigned long>(kb(largestInternal)),
           static_cast<unsigned long>(kb(freePsram)),
           static_cast<unsigned>(g_coreLoad.busyPct[0]),
           static_cast<unsigned>(g_coreLoad.busyPct[1]),
@@ -4422,6 +4782,12 @@ void _logRuntimeHealth(uint32_t nowMs) {
                       static_cast<unsigned long>(kb(minHeap)),
                       static_cast<unsigned long>(kb(largestHeap)),
                       static_cast<unsigned long>(heapFragPct));
+        Serial.printf("[HEALTH] internal used=%lu/%luKB free=%luKB min=%luKB largest=%luKB\r\n",
+                      static_cast<unsigned long>(kb(usedInternal)),
+                      static_cast<unsigned long>(kb(totalInternal)),
+                      static_cast<unsigned long>(kb(freeInternal)),
+                      static_cast<unsigned long>(kb(minInternal)),
+                      static_cast<unsigned long>(kb(largestInternal)));
         Serial.printf("[HEALTH] psram used=%lu/%luKB free=%luKB largest=%luKB\r\n",
                       static_cast<unsigned long>(kb(usedPsram)),
                       static_cast<unsigned long>(kb(totalPsram)),
@@ -5434,7 +5800,8 @@ void TaskHardware(void* pvParameters) {
                   heap_caps_get_free_size(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT)),
               static_cast<unsigned long>(
                   heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT)));
-    if (storageOk && STORAGE.hasMaintenanceWork()) {
+    if (storageOk && STORAGE.hasMaintenanceWork() &&
+        STORAGE.isCaptureSafeToResume()) {
         crashCheckpoint(CrashPhase::STORAGE_BOOT,
                         static_cast<uint8_t>(RADIO_ARB.currentOwner()),
                         STORAGE.getPendingEventCount());
@@ -5444,6 +5811,11 @@ void TaskHardware(void* pvParameters) {
         _publishStorageMaintenanceMirror(true, false, true,
                                          millis() - maintStartMs);
         crashBreadcrumbClear(CrashPhase::STORAGE_BOOT);
+    } else if (storageOk && STORAGE.hasMaintenanceWork()) {
+        DLOG_WARN("CORE",
+                  "Boot maintenance deferred until runtime pending=%lu flags=%s",
+                  static_cast<unsigned long>(STORAGE.getPendingEventCount()),
+                  STORAGE.maintenanceFlagsText());
     }
     String storageUsed = storageOk ? STORAGE.getCachedUsedString() : String();
     _publishStorageState(storageOk, storageUsed);
@@ -5737,14 +6109,22 @@ void TaskHardware(void* pvParameters) {
         // This fires whenever the radio arbiter happens to be on STORAGE_MAINT
         // — including transitions where a non-maintenance caller (most
         // notably runEnrichDrain) took the lease purely to apply enrichment
-        // batches. If that caller has a resident enrichment window OR a
-        // manual enrich session is in flight, opening a fresh maintenance
+        // batches. If that caller has a resident enrichment window OR an
+        // enrichment session is actively in flight, opening a fresh maintenance
         // window here would release the cursor and force a costly re-scan.
         // Skip in those cases; the lease holder will release when done and
         // the maintenance flags persist for the next genuinely-idle window.
+        //
+        // Gate on workState (the actual in-flight session), NOT on
+        // manualEnrichRequested. That request flag is a sticky user *intent*:
+        // it is deliberately retained across probe-backoff cycles while the
+        // phone is absent, and (on the enrich-failure path) is not cleared at
+        // all. Gating maintenance on it let a single failed-or-pending manual
+        // enrich starve storage maintenance indefinitely — the capture gate
+        // never cleared and the arbiter re-suspended WiFi every ~5s forever.
         if (storageOk && RADIO_ARB.isOwner(RADIO_STORAGE_MAINTENANCE) &&
             !STORAGE.isEnrichmentWindowResident() &&
-            !companion.manualEnrichRequested) {
+            companion.workState != COMPANION_WORK_ENRICHING) {
             const bool rebuildCaptureIndex =
                 (STORAGE.maintenanceFlags() &
                  STORAGE_MAINT_CAPTURE_INDEX_DIRTY) != 0U;
@@ -5806,6 +6186,29 @@ void TaskHardware(void* pvParameters) {
                 (MQTT_MGR.backlogDrainActive() ||
                  uploadReady >= MQTT_UPLOAD_READY_THRESHOLD)) {
                 MQTT_MGR.requestDump(false);
+            }
+        }
+
+        // Prioritize acquiring a trusted clock. The post-maintenance hook above
+        // only fires when a maintenance window happens to run; a quiet boot can
+        // otherwise capture for minutes (or until reboot) with no clock, making
+        // every record from this boot permanently unenrichable. Retry quick-NTP
+        // proactively — early (first qualifying tick) and then every
+        // UTC_ACQUIRE_RETRY_MS — but only while capture owns the radio and no
+        // enrich session is in flight, so we never disturb another lease holder.
+        static uint32_t lastUtcAcquireMs = 0;
+        if (storageOk && !TIME_SVC.hasAccurateUtc() &&
+            RADIO_ARB.isOwner(RADIO_WIFI_CAPTURE) &&
+            companion.workState != COMPANION_WORK_ENRICHING &&
+            (lastUtcAcquireMs == 0 ||
+             millis() - lastUtcAcquireMs > UTC_ACQUIRE_RETRY_MS)) {
+            lastUtcAcquireMs = millis();
+            const bool utcOk = _runPostMaintenanceUtcAcquisition();
+            RADIO_ARB.ensureDefaultCapture(utcOk ? "utc_acquire_done"
+                                                 : "utc_acquire_retry");
+            if (utcOk) {
+                DLOG_INFO("TIME",
+                          "Trusted clock acquired via proactive quick-NTP retry");
             }
         }
 
@@ -5895,6 +6298,7 @@ void TaskHardware(void* pvParameters) {
             g_companionCmd.probe  = false;
             g_companionCmd.enrich = false;
             g_companionCmd.cancel = false;
+            endManualEnrichmentExclusive(companion, "companion_disabled");
             companion.workState = COMPANION_WORK_IDLE;
             companion.enrichmentRequestIssued = false;
             companion.manualProbeRequested = false;
@@ -5928,6 +6332,16 @@ void TaskHardware(void* pvParameters) {
                 companion.manualEnrichProbeBypass = false;
                 companion.offloadPrepRequested  = false;
                 companion.timeSyncRequested     = false;
+                companion.workState = COMPANION_WORK_IDLE;
+                companion.enrichmentRequestIssued = false;
+                companion.lastRequestedEnrichmentCount = 0;
+                endManualEnrichmentExclusive(companion, "companion_cancel");
+                if (companion.enrichmentWindowActive) {
+                    STORAGE.releaseEnrichmentIndexMemory("companion_cancel");
+                    companion.enrichmentWindowActive = false;
+                }
+                initEnrichQueue();
+                enrichClearAllClaims();
                 companion.externalTransportActive = false;
             }
             if (g_companionCmd.probe) {

@@ -48,6 +48,30 @@ static constexpr uint8_t OFF = 0;
 #define PHONE_COMPANION_ENRICH_THRESHOLD_WIO 25UL
 #define PHONE_COMPANION_ENRICH_BATCH_MAX     18
 
+// Bulk NO_DATA retirement (records with no trusted capture UTC can never be
+// enriched). Per manual-enrich walk we retire up to _BUDGET such records, in
+// chunks of _CHUNK (keeps stack/flash bursts small), and cap the walk at
+// _WALK_MS so a huge unenrichable backlog never holds the radio-suspended
+// exclusive window too long. Raising _BUDGET drains a legacy backlog in fewer
+// passes; _WALK_MS bounds the per-pass cost at scale.
+#define ENRICH_NODATA_BUDGET_PER_WALK        256U
+#define ENRICH_NODATA_CHUNK                  16U
+#define ENRICH_WALK_BUDGET_MS                1500U
+
+// Wall-time cap (ms) for building the enrichment window — the per-pass scan of
+// pending record headers across all segments, run inside the radio-suspended
+// exclusive window. Once a full window is collected and this budget is spent,
+// the scan stops early (keeps what it has) so a 20k+ backlog can't pin the
+// radio for many seconds. Must stay below the maintenance lease (5000 ms).
+#define ENRICH_SCAN_BUDGET_MS                2500U
+
+// A manual `wio enrich` drains the WHOLE backlog in one connection. It keeps
+// rebuilding/walking enrichment windows as long as each full window pass drains
+// something (enriches records or retires no-data), and finishes only when a
+// complete window pass drains nothing — meaning only phone-deferred records (no
+// GPS for those timestamps) remain, to be retried in a later session. Progress
+// is measured by StorageManager::livePendingEnrichmentTotal() per window pass.
+
 // -----------------------------------------------------------------------------
 // Enrichment drain policy
 // -----------------------------------------------------------------------------
@@ -109,6 +133,23 @@ static constexpr uint8_t OFF = 0;
 #define MQTT_FAILED_BACKOFF_MS        SPECTRE_SECONDS_TO_MS(MQTT_FAILED_BACKOFF_SEC)
 #define MQTT_POISON_FAIL_LIMIT        3
 
+// Trusted-clock acquisition cadence. Records captured before time is valid this
+// boot are only enrichable if a trusted clock (NTP/GPS/phone) arrives before
+// the next reboot — same-boot backfill then stamps their segment epoch base.
+// A boot that never acquires time loses that whole boot's captures, so we
+// proactively retry quick-NTP on this interval until the clock is trusted,
+// rather than only opportunistically after a maintenance window.
+#define UTC_ACQUIRE_RETRY_SEC         60UL    // seconds
+#define UTC_ACQUIRE_RETRY_MS          SPECTRE_SECONDS_TO_MS(UTC_ACQUIRE_RETRY_SEC)
+
+// Upload enrichment holdback. A record that is still pending enrichment is held
+// back from MQTT upload until it is enriched, no-data-retired, OR it has been
+// pending longer than this grace window — after which it uploads un-enriched so
+// a missing phone/GPS can never wedge the upload backlog. Measured from the
+// record's capture UTC (epochUtc).
+#define UPLOAD_ENRICH_GRACE_SEC       900UL   // seconds (15 min)
+#define UPLOAD_ENRICH_GRACE_MS        SPECTRE_SECONDS_TO_MS(UPLOAD_ENRICH_GRACE_SEC)
+
 #define SLEEP_TIMEOUT_SEC             300UL   // seconds
 #define SLEEP_TIMEOUT_MS              SPECTRE_SECONDS_TO_MS(SLEEP_TIMEOUT_SEC)
 #define BACKLIGHT_TIMEOUT_SEC         30UL    // seconds
@@ -128,6 +169,29 @@ static constexpr uint8_t OFF = 0;
 #define BLE_PHONE_ENRICH_HOLD_SEC     40UL    // seconds
 #define BLE_PHONE_ENRICH_HOLD_MS_VAL  SPECTRE_SECONDS_TO_MS(BLE_PHONE_ENRICH_HOLD_SEC)
 
+// Radio death-loop watchdog. The arbiter counts consecutive re-grants of the
+// SAME owner that land back-to-back — i.e. owner X is granted, released, and
+// re-granted with no other owner taking the radio in between, each cycle
+// spaced no wider than RADIO_CHURN_MAX_GAP. A healthy device interleaves
+// owners, so a long same-owner streak means the radio is wedged. The classic
+// case: STORAGE_MAINT re-suspends WiFi every ~5s because a maintenance gate
+// can never clear (capture/upload can't run to drain it because WiFi is off).
+//
+// Recovery is graduated:
+//   1. At RADIO_CHURN_KICK_THRESHOLD: bypass the soft maintenance gate for
+//      RADIO_CHURN_BYPASS and force the fallback owner (WIFI_CAPTURE) — but
+//      only when storage is genuinely capture-safe. This brings WiFi back so
+//      the backlog can drain and the gate clears on its own.
+//   2. At RADIO_CHURN_REBOOT_THRESHOLD: the kick did not break the loop (e.g.
+//      storage is unsafe so capture can't be forced) — esp_restart() for a
+//      clean slate. A RADIO_RESUME crash breadcrumb is left for the boot log.
+#define RADIO_CHURN_MAX_GAP_SEC       8UL    // streak resets if re-grants spaced wider
+#define RADIO_CHURN_MAX_GAP_MS        SPECTRE_SECONDS_TO_MS(RADIO_CHURN_MAX_GAP_SEC)
+#define RADIO_CHURN_KICK_THRESHOLD    6U     // same-owner streak that arms a fallback kick
+#define RADIO_CHURN_REBOOT_THRESHOLD  14U    // same-owner streak that forces a reboot
+#define RADIO_CHURN_BYPASS_SEC        30UL   // gate-bypass window after a kick
+#define RADIO_CHURN_BYPASS_MS         SPECTRE_SECONDS_TO_MS(RADIO_CHURN_BYPASS_SEC)
+
 // -----------------------------------------------------------------------------
 // MQTT upload
 // -----------------------------------------------------------------------------
@@ -140,9 +204,18 @@ static constexpr uint8_t OFF = 0;
 // Manual SYNC (UPLINK_TRIGGER button) forces a dump regardless of threshold.
 #define MQTT_UPLOAD_READY_THRESHOLD   40000
 #define MQTT_BACKLOG_LARGE_WARN_THRESHOLD 10000   // boot diagnostic only
-#define MQTT_DUMP_FETCH_BATCH_SIZE     4   // records loaded per storage scan
-#define MQTT_DUMP_RECORDS_PER_SLICE    4   // max publish calls per yield
-#define MQTT_DUMP_SLICE_BUDGET_MS     25   // ms
+#define MQTT_DUMP_FETCH_BATCH_SIZE     32  // records loaded per storage scan (<= UPLOAD_FETCH_STACK_CAPACITY)
+// Upload drain rate. The dump publishes at most RECORDS_PER_SLICE records (or
+// until SLICE_BUDGET_MS elapses) per MQTT_MGR.tick(), then returns to the
+// TaskHardware loop. tick() runs once per loop iteration, and the loop spends
+// hundreds of ms on UI refresh / presentation between iterations — so a small
+// slice cap throttled upload to ~4 records per iteration (~150ms/record) even
+// though each publish on a LAN takes only ~6ms. During upload the radio is held
+// on the WIFI_UPLOAD lease and capture is suspended, so draining many records
+// per tick is safe: the per-publish vTaskDelay(1) in _dumpSlicePause keeps the
+// task watchdog fed, and SLICE_BUDGET_MS still bounds how long the loop is held.
+#define MQTT_DUMP_RECORDS_PER_SLICE   48   // max publish calls per yield
+#define MQTT_DUMP_SLICE_BUDGET_MS    300   // ms
 #define MQTT_DUMP_PROGRESS_EVERY_N     64  // events per progress log
 #define MQTT_DUMP_CHECKPOINT_EVERY_N  250  // events per flash checkpoint
 
@@ -189,9 +262,9 @@ static constexpr uint8_t OFF = 0;
 
 // One-shot maintenance wipes. Change the tag before turning a reset ON again.
 #define STORAGE_ONE_SHOT_VAULT_RESET_ENABLED     OFF
-#define STORAGE_ONE_SHOT_VAULT_RESET_TAG         "6-8-26-reset-vault"
+#define STORAGE_ONE_SHOT_VAULT_RESET_TAG         "6-15-26-reset-vault"
 #define STORAGE_ONE_SHOT_NON_VAULT_RESET_ENABLED OFF
-#define STORAGE_ONE_SHOT_NON_VAULT_RESET_TAG     "6-8-26-reset-new-pc"
+#define STORAGE_ONE_SHOT_NON_VAULT_RESET_TAG     "6-15-26-reset-new-pc"
 #define STORAGE_FAST_BOOT_DEFER_SPOOL_REPAIR     ON
 
 // -----------------------------------------------------------------------------
