@@ -2443,12 +2443,19 @@ void MQTTManager::queuePMKID(const char* ssid,
     const float gpsLon = g_state.gpsLon;
     const float gpsAlt = g_state.gpsAlt;
     const float gpsAcc = g_state.gpsAccuracy;
+    const uint32_t gpsFixMs = g_state.gpsLastFix;
     const bool tagSet = g_state.sessionTagSet;
     char tagBuf[32] = {};
     strlcpy(tagBuf, g_state.sessionTag, sizeof(tagBuf));
     STATE_READ_END();
 
-    if (gpsValid) {
+    // Only stamp the fix inline when it is fresh; a stale fix would mislocate
+    // the capture. Otherwise the event stays enrich-pending and the companion
+    // backfills the correct location by this event's capture timestamp.
+    static constexpr uint32_t PMKID_GPS_FRESH_MS = 20000UL;
+    const bool gpsFresh =
+        gpsValid && (millis() - gpsFixMs) <= PMKID_GPS_FRESH_MS;
+    if (gpsFresh) {
         STORAGE.enrichEvent(eventId,
                             gpsLat, gpsLon, gpsAlt, gpsAcc,
                             tagSet ? tagBuf : "");

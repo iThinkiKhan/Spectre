@@ -11,6 +11,10 @@
 #include "MQTTManager.h"
 #include "StorageManager.h"
 
+// A phone GPS fix older than this is not trusted to locate a SubGHz packet
+// inline; the record stays enrich-pending for companion timestamp backfill.
+static constexpr uint32_t SUBGHZ_GPS_FRESH_MS = 20000UL;
+
 bool SubGhzRecordWriter::logPacketRx(StorageManager& storage, const SubGhzPacket& pkt) {
     // The structured spool event below is the authoritative record. Avoid
     // duplicating every LoRa packet into legacy JSON log files, which can
@@ -72,12 +76,22 @@ bool SubGhzRecordWriter::logPacketRx(StorageManager& storage, const SubGhzPacket
     const bool eventOk = result.ok();
 
     if (eventOk) {
+        // Only stamp the live fix inline when it is fresh. A stale fix would
+        // mislocate this packet on the map; leaving the event enrich-pending
+        // lets the companion backfill the correct location by matching this
+        // record's capture timestamp against the phone's GPS track. Every
+        // SubGHz packet is its own dedup-exempt observation, so the source
+        // address, RSSI/SNR, frequency and per-observation location together
+        // give the home database what it needs to trilaterate the node.
         const GPSFix gps = SESS.getGPS();
-        if (gps.valid) {
+        const uint32_t nowMs = millis();
+        const bool gpsFresh =
+            gps.valid && (nowMs - gps.timestamp) <= SUBGHZ_GPS_FRESH_MS;
+        if (gpsFresh) {
             storage.enrichEvent(result.eventId,
                                 gps.lat, gps.lon,
                                 0.0f, gps.accuracy,
-                                "");
+                                tagSet ? tagBuf : "");
         }
         MQTT_MGR.noteExternalQueuedRecord();
     }

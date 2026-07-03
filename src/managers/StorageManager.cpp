@@ -7,6 +7,8 @@
 #include "../core/CrashBreadcrumb.h"
 #include "../core/MissionRuntime.h"
 #include "../core/RuntimeContracts.h"
+#include "../core/Session.h"
+#include <math.h>
 #include "RadioArbiter.h"
 #include "SettingsManager.h"
 #include "RAMSpool.h"
@@ -26,6 +28,20 @@
     do { if (false) DLOG_DEBUG(tag, fmt, ##__VA_ARGS__); } while (0)
 
 namespace {
+
+// Great-circle distance in meters between two WGS84 points. Uses the
+// equirectangular approximation, which is accurate to well under a meter at
+// the tens-of-meters scale we care about for walking-pace triangulation
+// sampling and is far cheaper than full haversine on the ESP32.
+float _metersBetween(float lat1, float lon1, float lat2, float lon2) {
+    constexpr float kDegToRad = 0.017453292519943295f; // pi / 180
+    constexpr float kEarthRadiusM = 6371000.0f;
+    const float latMid = (lat1 + lat2) * 0.5f * kDegToRad;
+    const float dLat = (lat2 - lat1) * kDegToRad;
+    const float dLon = (lon2 - lon1) * kDegToRad;
+    const float x = dLon * cosf(latMid);
+    return sqrtf(dLat * dLat + x * x) * kEarthRadiusM;
+}
 
 bool _isReservedEventKey(const char* key) {
     return strcmp(key, "id") == 0 ||
@@ -1827,9 +1843,33 @@ bool StorageManager::_shouldSuppressDuplicate(const char* type,
     const String key = _makeDedupKey(type, payload);
     const uint32_t now = millis();
 
+    // Snapshot the latest phone GPS fix. Only a fix that is both valid and
+    // recent can be used to decide that we have physically moved far enough to
+    // justify a fresh triangulation sample of an otherwise-duplicate device.
+    const GPSFix fix = SESS.getGPS();
+    const bool fixFresh = fix.valid &&
+                          (now - fix.timestamp) <= TRIANGULATION_GPS_FRESH_MS;
+
     for (auto& entry : _dedupWindow) {
         if (entry.key == key) {
             if ((now - entry.lastSeenMs) <= DEDUP_WINDOW_MS) {
+                // Living-RF-map exception: if we have a fresh fix and have
+                // moved past the sampling threshold since the last emitted
+                // sample for this key, let one more located observation
+                // through so the home database gets varied-GPS samples to
+                // trilaterate from. Standing still keeps suppressing spam.
+                if (fixFresh && entry.hasEmitLoc &&
+                    (now - entry.lastEmitMs) >= TRIANGULATION_MIN_RESAMPLE_MS &&
+                    _metersBetween(entry.lastEmitLat, entry.lastEmitLon,
+                                   fix.lat, fix.lon) >= TRIANGULATION_MIN_MOVE_M) {
+                    entry.lastSeenMs = now;
+                    entry.lastEmitMs = now;
+                    entry.lastEmitLat = fix.lat;
+                    entry.lastEmitLon = fix.lon;
+                    entry.count = 1;
+                    return false;
+                }
+
                 entry.lastSeenMs = now;
                 entry.count++;
                 _applyCounterDelta("duplicate_suppressed",
@@ -1850,6 +1890,10 @@ bool StorageManager::_shouldSuppressDuplicate(const char* type,
             entry.firstSeenMs = now;
             entry.lastSeenMs = now;
             entry.count = 1;
+            entry.hasEmitLoc = fixFresh;
+            entry.lastEmitLat = fixFresh ? fix.lat : 0.0f;
+            entry.lastEmitLon = fixFresh ? fix.lon : 0.0f;
+            entry.lastEmitMs = now;
             return false;
         }
     }
@@ -1859,6 +1903,10 @@ bool StorageManager::_shouldSuppressDuplicate(const char* type,
     e.firstSeenMs = now;
     e.lastSeenMs = now;
     e.count = 1;
+    e.hasEmitLoc = fixFresh;
+    e.lastEmitLat = fixFresh ? fix.lat : 0.0f;
+    e.lastEmitLon = fixFresh ? fix.lon : 0.0f;
+    e.lastEmitMs = now;
     _dedupWindow.push_back(e);
     return false;
 }

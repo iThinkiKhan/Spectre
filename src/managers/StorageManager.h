@@ -148,6 +148,14 @@ struct DedupWindowEntry {
     uint32_t firstSeenMs = 0;
     uint32_t lastSeenMs  = 0;
     uint32_t count       = 0;
+    // Location + time of the last observation we actually emitted for this key
+    // (not the last suppressed hit). Movement for triangulation re-sampling is
+    // always measured from the last emitted sample so samples stay evenly
+    // spaced as the operator walks.
+    float    lastEmitLat = 0.0f;
+    float    lastEmitLon = 0.0f;
+    uint32_t lastEmitMs  = 0;
+    bool     hasEmitLoc  = false;
 };
 
 struct HandshakeProgress {
@@ -873,6 +881,19 @@ private:
     static constexpr uint32_t DEDUP_WINDOW_MS = 5UL * 60UL * 1000UL;
     static constexpr uint32_t HANDSHAKE_WINDOW_MS = 15UL * 60UL * 1000UL;
     static constexpr size_t   DEDUP_WINDOW_MAX = 128;
+
+    // Triangulation sampling: within the dedup window we normally suppress
+    // repeat sightings of the same device to protect the 8MB spool. But a
+    // living RF map needs the SAME device observed from several GPS positions
+    // so the home database can trilaterate it. When a fresh phone GPS fix
+    // shows we have physically moved past TRIANGULATION_MIN_MOVE_M since the
+    // last emitted sample for a key, we let one more located observation
+    // through instead of suppressing it. TRIANGULATION_MIN_RESAMPLE_MS guards
+    // against GPS jitter emitting a burst of samples while standing still.
+    static constexpr float    TRIANGULATION_MIN_MOVE_M      = 20.0f;
+    static constexpr uint32_t TRIANGULATION_MIN_RESAMPLE_MS = 5000UL;
+    // A phone GPS fix older than this is not trusted to judge movement.
+    static constexpr uint32_t TRIANGULATION_GPS_FRESH_MS    = 20000UL;
     static constexpr uint32_t STORAGE_UI_REFRESH_COALESCE_MS = 250UL;
     static constexpr uint8_t  STORAGE_WATCH_PCT = 80;
     static constexpr uint8_t  STORAGE_FULL_PCT = 92;
