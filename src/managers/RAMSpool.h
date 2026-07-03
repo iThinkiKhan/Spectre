@@ -123,6 +123,13 @@ void   resumeWorker();
 bool   isWorkerPaused();
 CaptureClassification classify(const char* type, const char* eventType);
 CaptureClassification classify(const char* type, JsonObjectConst payload);
+
+// Recon-walk mission context. While active, mapping captures (device/probe)
+// classify as P1/mission so a walk's dense triangulation samples survive
+// storage pressure and are synced first. Set by MissionRuntime on mission
+// enter/exit; read cheaply (lock-free) from the capture and worker paths.
+void setReconWalkContext(bool active);
+bool isReconWalkContext();
 bool   enqueue(const char* type,
                JsonObjectConst payload,
                SlotKind slotKind,

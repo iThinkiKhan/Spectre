@@ -1827,7 +1827,13 @@ bool StorageManager::_shouldSuppressDuplicate(const char* type,
         return false;
     }
 
-    if (priority <= STORAGE_PRIO_P1) {
+    const bool triangulate = _isTriangulationType(type);
+
+    // Non-mapping high-priority captures (pmkid, drone, handshake) are never
+    // deduped. Mapping types are exempted from the blanket P1 pass-through even
+    // when promoted to P1 on a Recon Walk, so their re-sampling cadence still
+    // applies instead of storing every single frame.
+    if (priority <= STORAGE_PRIO_P1 && !triangulate) {
         return false;
     }
 
@@ -1835,7 +1841,12 @@ bool StorageManager::_shouldSuppressDuplicate(const char* type,
 
     const String key = _makeDedupKey(type, payload);
     const uint32_t now = millis();
-    const bool triangulate = _isTriangulationType(type);
+
+    const bool reconWalk = RAMSpool::isReconWalkContext();
+    const uint32_t resampleMs = reconWalk ? TRIANGULATION_RESAMPLE_WALK_MS
+                                          : TRIANGULATION_RESAMPLE_DEFAULT_MS;
+    const uint16_t maxPerWindow = reconWalk ? TRIANGULATION_MAX_WALK
+                                            : TRIANGULATION_MAX_DEFAULT;
 
     for (auto& entry : _dedupWindow) {
         if (entry.key == key) {
@@ -1852,8 +1863,8 @@ bool StorageManager::_shouldSuppressDuplicate(const char* type,
                         entry.emitWindowStartMs = now;
                         entry.emitCount = 0;
                     }
-                    if ((now - entry.lastEmitMs) >= TRIANGULATION_RESAMPLE_MS &&
-                        entry.emitCount < TRIANGULATION_MAX_PER_WINDOW) {
+                    if ((now - entry.lastEmitMs) >= resampleMs &&
+                        entry.emitCount < maxPerWindow) {
                         entry.lastSeenMs = now;
                         entry.lastEmitMs = now;
                         entry.emitCount++;

@@ -883,17 +883,22 @@ private:
 
     // Triangulation sampling. In the field the device is usually NOT connected
     // to the phone, so it can't know its own position at capture time. Instead
-    // of suppressing every repeat sighting of a device for the whole dedup
-    // window, we let a fresh sample of a mapping-relevant type (device/probe)
-    // through once per TRIANGULATION_RESAMPLE_MS. Each sample carries its own
-    // capture timestamp, so the companion later backfills location by matching
-    // timestamps against the phone's GPS track — yielding the several
-    // varied-position samples the home database needs to trilaterate. To keep
-    // the 8MB spool safe from a device we sit next to for a long time, no more
-    // than TRIANGULATION_MAX_PER_WINDOW samples of one key are emitted per
-    // DEDUP_WINDOW_MS; beyond that it falls back to plain suppression.
-    static constexpr uint32_t TRIANGULATION_RESAMPLE_MS     = 30UL * 1000UL;
-    static constexpr uint16_t TRIANGULATION_MAX_PER_WINDOW  = 8;
+    // of suppressing every repeat sighting of a mapping-relevant device
+    // (device/probe) for the whole dedup window, we let a fresh timestamped
+    // sample through on a cadence. Each sample's capture timestamp lets the
+    // companion backfill location from the phone's GPS track later, giving the
+    // home database the several varied-position samples it needs to
+    // trilaterate. Cadence is mission-aware:
+    //   * Recon Walk  — tight, push GPS to its limit for maximum resolution.
+    //   * Default     — relaxed; still tracks, but stays storage-frugal for
+    //                   long idle-runtime data collection.
+    // MAX_PER_WINDOW caps how many samples of one key land per DEDUP_WINDOW_MS
+    // so a device we sit next to can't flood the 8MB spool; past the cap it
+    // falls back to plain suppression.
+    static constexpr uint32_t TRIANGULATION_RESAMPLE_WALK_MS    = 3UL * 1000UL;
+    static constexpr uint16_t TRIANGULATION_MAX_WALK           = 60;
+    static constexpr uint32_t TRIANGULATION_RESAMPLE_DEFAULT_MS = 120UL * 1000UL;
+    static constexpr uint16_t TRIANGULATION_MAX_DEFAULT        = 4;
     static constexpr uint32_t STORAGE_UI_REFRESH_COALESCE_MS = 250UL;
     static constexpr uint8_t  STORAGE_WATCH_PCT = 80;
     static constexpr uint8_t  STORAGE_FULL_PCT = 92;

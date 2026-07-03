@@ -6,6 +6,7 @@
 #include "SpectreState.h"
 #include "../managers/MQTTManager.h"
 #include "../managers/RadioArbiter.h"
+#include "../managers/RAMSpool.h"
 #include "../managers/SubGhzManager.h"
 #include "../managers/SubGhzTypes.h"
 #include "../managers/WiFiManager.h"
@@ -27,6 +28,9 @@ SubGhzMode _sanitizeSubGhzMode(uint8_t raw) {
 }
 
 void _applyMissionConfiguration(MissionProfile profile) {
+    // Only the Recon Walk drives dense, storage-heavy triangulation sampling.
+    RAMSpool::setReconWalkContext(profile == MISSION_RECON);
+
     switch (profile) {
         case MISSION_RECON:
             RADIO_ARB.ensureDefaultCapture("mission_recon");
@@ -184,6 +188,7 @@ void exitMission() {
     if (mission == MISSION_PWNY && WIFI_MGR.isPwnyActive()) {
         WIFI_MGR.stopPwnyMode();
     }
+    RAMSpool::setReconWalkContext(false);
     RADIO_ARB.ensureDefaultCapture("mission_exit");
 
     STATE_WRITE_BEGIN();

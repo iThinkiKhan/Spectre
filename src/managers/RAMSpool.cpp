@@ -186,6 +186,16 @@ static uint8_t _captureValueScore(JsonObjectConst payload) {
     return score;
 }
 
+static volatile uint8_t s_reconWalkContext = 0;
+
+void setReconWalkContext(bool active) {
+    __atomic_store_n(&s_reconWalkContext, active ? 1 : 0, __ATOMIC_RELAXED);
+}
+
+bool isReconWalkContext() {
+    return __atomic_load_n(&s_reconWalkContext, __ATOMIC_RELAXED) != 0;
+}
+
 CaptureClassification classify(const char* type, const char* eventType) {
     const char* t = type ? type : "event";
     const char* et = eventType ? eventType : "";
@@ -199,10 +209,14 @@ CaptureClassification classify(const char* type, const char* eventType) {
     if (strcmp(t, "subghz") == 0) {
         return {PRIO_P1, LANE_NOISE, true};
     }
-    if (strcmp(t, "probe") == 0) {
-        return {PRIO_P2, LANE_NOISE, true};
-    }
-    if (strcmp(t, "device") == 0) {
+    // On a Recon Walk, device/probe sightings are the raw material for
+    // triangulation, so promote them to P1/mission: they survive storage
+    // pressure and sync first. In default mode they stay P2/noise so idle
+    // runtime data collection stays storage-frugal.
+    if (strcmp(t, "probe") == 0 || strcmp(t, "device") == 0) {
+        if (isReconWalkContext()) {
+            return {PRIO_P1, LANE_MISSION, true};
+        }
         return {PRIO_P2, LANE_NOISE, true};
     }
     if (strcmp(t, "event") == 0 && strcmp(et, "handshake") == 0) {
