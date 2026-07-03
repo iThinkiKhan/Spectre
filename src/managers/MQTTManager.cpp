@@ -475,9 +475,13 @@ bool MQTTManager::requestFieldVaultDump() {
 
 bool MQTTManager::requestTimeSyncConnect() {
     if (_state != MQTT_IDLE) return false;
-    // Honour the same mission pause as other uploads; a non-uplink mission owns
-    // the radio. Time will be grabbed on the next uplink/dump association.
-    if (_uploadPausedByMission()) {
+    // Uploads normally pause during a non-uplink mission, but a Recon Walk is
+    // exactly when we most need trusted time for backfill. If we still lack it,
+    // allow a one-off NTP grab mid-walk — capture is active in Recon so we can
+    // passively spot the trusted network, and the connect is brief and field-
+    // only (it never drains the main spool). Other missions (e.g. PWNY) own the
+    // radio and pause capture, so we defer to them.
+    if (_uploadPausedByMission() && !RAMSpool::isReconWalkContext()) {
         return false;
     }
     DLOG_INFO("MQTT", "Opportunistic time-sync connect requested");
