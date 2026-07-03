@@ -788,6 +788,9 @@ void WiFiManager::_processBeacon(const uint8_t* p,
 
     const bool whitelisted = _isTrustedSSID(ssid);
     if (whitelisted) {
+        // Home/trusted network beacon — mark it in range so the runtime can
+        // opportunistically grab NTP and offload while we are near home.
+        _lastTrustedSeenMs = millis();
         _findOrCreateNetwork(ssid, bssid, rssi, ch);
         return;
     }
@@ -2734,6 +2737,11 @@ bool WiFiManager::_isTrustedSSID(const char* ssid) const {
         }
     }
     return false;
+}
+
+bool WiFiManager::trustedNetworkInRange() const {
+    const uint32_t seen = _lastTrustedSeenMs;
+    return seen != 0 && (millis() - seen) <= TRUSTED_IN_RANGE_MS;
 }
 
 

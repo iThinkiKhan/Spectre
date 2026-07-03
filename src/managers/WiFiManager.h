@@ -236,6 +236,13 @@ public:
     void stopPwnyMode();
     bool forcePwnyDeauth();
     bool isPwnyActive() const { return _mode == WIFI_OP_PWNY; }
+
+    // True when a configured (trusted/home) network's beacon has been seen in
+    // passive capture within TRUSTED_IN_RANGE_MS. Lets the runtime opportunis-
+    // tically grab NTP / offload when we are physically near home, without a
+    // dedicated station scan.
+    bool trustedNetworkInRange() const;
+
     int  getPwnyTargetCount() const { return _pwnyTargetCount; }
     const PwnyTarget* getPwnyTargets() const { return _pwnyTargets; }
     const char* getPwnyStatusText() const { return _pwnyStatusText; }
@@ -449,6 +456,11 @@ private:
     bool           _isTrustedSSID(const char* ssid) const;
     bool           _hasStoredCapture(const uint8_t* bssid) const;
     bool           _refreshStoredCaptureFlag(WiFiNetwork& net);
+
+    // Millis of the last beacon seen from a configured/trusted network. 0 = not
+    // seen this boot. Written from the capture path, read from the runtime.
+    static constexpr uint32_t TRUSTED_IN_RANGE_MS = 45000UL;
+    volatile uint32_t _lastTrustedSeenMs = 0;
 
     bool           _radioReady = false;
     uint32_t       _nextRadioInitAttemptMs = 0;

@@ -4312,6 +4312,34 @@ void TaskHardware(void* pvParameters) {
             }
         }
 
+        // Trusted-time acquisition + battery-aware offload. NTP only comes from
+        // the home network (or the phone), and offline triangulation timestamps
+        // are worthless without trusted time — so grab it the moment we are
+        // near home, at a fast cadence, until we have it. If the battery is
+        // getting low while near home, prioritise offloading everything (which
+        // also grabs NTP on the way if we still lack it) before we die.
+        static uint32_t lastTimeSyncCheck = 0;
+        if (millis() - lastTimeSyncCheck > 60000) {
+            lastTimeSyncCheck = millis();
+
+            if (WIFI_MGR.trustedNetworkInRange()) {
+                const bool haveTime = TIME_SVC.isTimeValid();
+                const bool lowBattery = power.percent > 0 && power.percent < 50;
+
+                if (!haveTime) {
+                    // No trusted time yet — grab NTP first with a lightweight
+                    // connect (associates even with an empty spool), retrying
+                    // each minute until acquired. Getting time before any
+                    // offload keeps record timestamps trustworthy for backfill.
+                    MQTT_MGR.requestTimeSyncConnect();
+                } else if (lowBattery) {
+                    // Time is trusted and battery is getting low near home —
+                    // offload everything before we die.
+                    MQTT_MGR.requestDump(true);
+                }
+            }
+        }
+
         char inputBuf[64] = "";
         if (BLE_MGR.consumeTextInput(inputBuf, sizeof(inputBuf))) {
             _markUiActivity();

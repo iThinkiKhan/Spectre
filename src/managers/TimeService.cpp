@@ -40,9 +40,15 @@ void TimeService::tick() {
 
     _syncFromGps(nowMs);
 
+    // Normally NTP work is skipped during an active dump to keep the upload
+    // path uncontended. But home-WiFi association only happens during a dump,
+    // and grabbing trusted time is higher priority than a cheap SNTP poll — so
+    // while we still lack valid time, keep syncing NTP even mid-dump. This is
+    // what lets the device grab time the moment it associates with home,
+    // instead of only catching it in the brief pre-dump connect window.
     const bool dumpActive = MQTT_MGR.isDumping();
     if (_source != TIME_SOURCE_GPS) {
-        if (!dumpActive) {
+        if (!dumpActive || !_valid) {
             _syncFromNtp(nowMs);
         }
     }

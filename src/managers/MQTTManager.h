@@ -57,6 +57,12 @@ public:
     bool requestDump(bool force = false);
     bool requestFieldVaultDump();
 
+    // Opportunistic lightweight home-WiFi association, primarily to grab NTP
+    // when time is not yet trusted. Reuses the short-lease startup field path,
+    // so it connects even with an empty main spool and flows through the normal
+    // upload cleanup. Returns true if the connect was started.
+    bool requestTimeSyncConnect();
+
     // BLE WireGuard trigger — always allowed, confirms intent
     bool bleTriggeredDump();
 

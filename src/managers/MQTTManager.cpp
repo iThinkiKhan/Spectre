@@ -473,6 +473,17 @@ bool MQTTManager::requestFieldVaultDump() {
     return _startStartupFieldDump();
 }
 
+bool MQTTManager::requestTimeSyncConnect() {
+    if (_state != MQTT_IDLE) return false;
+    // Honour the same mission pause as other uploads; a non-uplink mission owns
+    // the radio. Time will be grabbed on the next uplink/dump association.
+    if (_uploadPausedByMission()) {
+        return false;
+    }
+    DLOG_INFO("MQTT", "Opportunistic time-sync connect requested");
+    return _startStartupFieldDump();
+}
+
 bool MQTTManager::_maybeStartStartupFieldDump() {
 #if (MQTT_FIELDVAULT_STARTUP_UPLOAD_ENABLED == ON)
     if (_startupFieldDumpDone) return false;
