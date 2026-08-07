@@ -118,6 +118,10 @@ private:
     uint32_t   _lastSwitchMs    = 0;
     uint32_t   _nextIdleRetryMs = 0;
     bool       _fallbackSuppressed = false;
+    // Consecutive failed default-capture starts, for retry backoff only.
+    // Capture is the default state and is always retried; this never latches
+    // the fallback off (see ensureDefaultCapture).
+    uint8_t    _captureStartFailures = 0;
     char       _reason[40] = "";
 
     RadioOwner _pendingOwner  = RADIO_NONE;

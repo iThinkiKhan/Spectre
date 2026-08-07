@@ -108,6 +108,12 @@ static constexpr uint8_t OFF = 0;
 #define RADIO_CHURN_BYPASS_SEC        30UL   // gate-bypass window after a kick
 #define RADIO_CHURN_BYPASS_MS         SPECTRE_SECONDS_TO_MS(RADIO_CHURN_BYPASS_SEC)
 
+// Capture is the default radio state. When a default-capture start fails it is
+// retried with a linear backoff (base * attempt, capped) — never abandoned.
+#define CAPTURE_RETRY_BACKOFF_BASE_MS 1000UL
+#define CAPTURE_RETRY_BACKOFF_STEPS   10U
+#define CAPTURE_RETRY_BACKOFF_MAX_MS  10000UL
+
 // MQTT upload
 // Upload is threshold-triggered, low-water drained, plus one FieldVault boot
 // attempt. Manual SYNC forces a dump.

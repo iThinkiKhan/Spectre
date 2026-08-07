@@ -244,10 +244,30 @@ bool RadioArbiter::ensureDefaultCapture(const char* reason) {
     }
     const bool granted = _switchTo(RADIO_WIFI_CAPTURE, LEASE_INFINITE, reason);
     if (!granted) {
-        _fallbackSuppressed = true;
-        _nextIdleRetryMs = 0;
-        DLOG_WARN(TAG, "fallback suppressed after capture start failed reason=%s",
-                  (reason && reason[0] != '\0') ? reason : "-");
+        // Capture is the default state — a failed start is transient (heap
+        // still fragmented right after a BLE session, a storage window that
+        // just closed, WiFi mid-teardown), not a reason to stop trying.
+        // Latching _fallbackSuppressed here parked the radio at owner=NONE
+        // indefinitely: the idle-fallback tick is gated on !_fallbackSuppressed
+        // and only a successful grant for some *other* owner ever cleared it,
+        // so if nothing else asked for the radio the device silently stopped
+        // capturing until reboot. Back off and retry instead; a genuine
+        // death loop is still caught by _serviceChurnWatchdog().
+        if (_captureStartFailures < 255U) {
+            _captureStartFailures++;
+        }
+        const uint32_t backoffMs =
+            (_captureStartFailures < CAPTURE_RETRY_BACKOFF_STEPS)
+                ? (CAPTURE_RETRY_BACKOFF_BASE_MS * _captureStartFailures)
+                : CAPTURE_RETRY_BACKOFF_MAX_MS;
+        _nextIdleRetryMs = millis() + backoffMs;
+        DLOG_WARN(TAG,
+                  "capture start failed reason=%s attempt=%u retry_in=%lums",
+                  (reason && reason[0] != '\0') ? reason : "-",
+                  static_cast<unsigned>(_captureStartFailures),
+                  static_cast<unsigned long>(backoffMs));
+    } else {
+        _captureStartFailures = 0;
     }
     return granted;
 }
