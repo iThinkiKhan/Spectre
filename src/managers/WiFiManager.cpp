@@ -815,14 +815,24 @@ void WiFiManager::_processBeacon(const uint8_t* p,
     WiFiNetwork* net = _findOrCreateNetwork(ssid, bssid,
                                              rssi, ch);
     if (net) {
+        const bool isNewNetwork = (net->firstSeen == millis());
+
         net->isHidden = isHidden;
         net->hasWPS   = hasWPS;
         strlcpy(net->security, security,
                 sizeof(net->security));
         net->lastSeen = millis();
 
-        _checkKarma(ssid, bssid, rssi,
-                    net->firstSeen == millis());
+        // Publish the AP once, after security/hidden/WPS are populated —
+        // _findOrCreateNetwork() only carries ssid/bssid/rssi/channel.
+        if (isNewNetwork && SPECTRE_PUBLISH_NETWORKS) {
+            char bssidStr[18];
+            _macToStr(bssid, bssidStr);
+            MQTT_MGR.queueNetwork(bssidStr, ssid, rssi, ch,
+                                  security, isHidden, hasWPS);
+        }
+
+        _checkKarma(ssid, bssid, rssi, isNewNetwork);
     }
 }
 

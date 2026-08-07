@@ -129,6 +129,7 @@ String _mqttTopicForEventType(const char* type) {
     if (strcmp(type, "subghz") == 0) return _mqttTopicFor("subghz");
     if (strcmp(type, "probe") == 0)  return _mqttTopicFor("probe");
     if (strcmp(type, "device") == 0) return _mqttTopicFor("device");
+    if (strcmp(type, "network") == 0) return _mqttTopicFor("network");
     if (strcmp(type, "drone") == 0)  return _mqttTopicFor("drone");
     if (strcmp(type, "pmkid") == 0)  return _mqttTopicFor("pmkid");
     return _mqttTopicFor("event");
@@ -138,6 +139,7 @@ const char* _legacyEventTypeFromQueueName(const String& name) {
     if (name.startsWith("subghz_")) return "subghz";
     if (name.startsWith("probe_"))  return "probe";
     if (name.startsWith("device_")) return "device";
+    if (name.startsWith("network_")) return "network";
     if (name.startsWith("drone_"))  return "drone";
     if (name.startsWith("pmkid_"))  return "pmkid";
     if (name.startsWith("event_"))  return "event";
@@ -199,6 +201,11 @@ bool _copyEventRecordForPublish(JsonObjectConst record, JsonDocument& out) {
     const char* isoTs = record[F_TIMESTAMP_ISO] | "";
     if (isoTs[0]) {
         publishDoc[F_TIMESTAMP] = isoTs;
+    } else {
+        // No trusted UTC at capture (clock not yet synced). Say so explicitly:
+        // an absent ts leaves the receiver free to stamp its own arrival time,
+        // which silently rewrites capture time to hours or weeks later.
+        publishDoc["ts_unknown"] = 1;
     }
     return !out.overflowed();
 }
@@ -2721,6 +2728,34 @@ bool MQTTManager::queueProbe(const char* mac, const char* ssid,
         return false;
     }
     return true;
+}
+
+void MQTTManager::queueNetwork(const char* bssid, const char* ssid,
+                               int8_t rssi, uint8_t channel,
+                               const char* security, bool isHidden,
+                               bool hasWPS) {
+    if (!bssid || !bssid[0]) return;
+
+    JsonDocument doc;
+    _prepareQueuedEvent(doc);
+    doc["bssid"]     = bssid;
+    doc["ssid"]      = ssid ? ssid : "";
+    doc["rssi"]      = rssi;
+    doc["channel"]   = channel;
+    doc["security"]  = security ? security : "";
+    doc["is_hidden"] = isHidden ? 1 : 0;
+    doc["has_wps"]   = hasWPS ? 1 : 0;
+    doc["source"]    = "spectre_field";
+    const RAMSpool::CaptureClassification networkCls =
+        RAMSpool::classify("network", doc.as<JsonObjectConst>());
+    if (!RAMSpool::enqueue("network",
+                           doc.as<JsonObjectConst>(),
+                           RAMSpool::SLOT_DEVICE,
+                           networkCls)) {
+        DLOG_WARN("MQTT", "network enqueue drop bssid=%s ssid=%s",
+                  bssid,
+                  ssid ? ssid : "");
+    }
 }
 
 void MQTTManager::queueDevice(const char* mac,

@@ -2,6 +2,7 @@
 #include "RadioArbiter.h"
 
 #include <esp_system.h>
+#include <esp_heap_caps.h>
 
 #include "../core/CrashBreadcrumb.h"
 #include "../core/DebugLog.h"
@@ -494,6 +495,30 @@ bool RadioArbiter::_switchTo(RadioOwner owner, uint32_t holdMs, const char* reas
     if (previous != RADIO_NONE) {
         _stopOwner(previous, transitionReason);
         _clearActiveOwnerState();
+    }
+
+    // WiFi STA needs a contiguous internal-RAM block that a resident NimBLE
+    // host does not leave behind: after a BLE enrichment session the internal
+    // heap sits around 19KB free / 7KB largest and _startOwner() fails with
+    // "Failed to ready STA mode for upload", stranding the backlog until a
+    // reboot. _stopOwner(RADIO_BLE_GPS) deliberately keeps NimBLE initialized
+    // because deinit(true) panics on the probe-timeout handoff, so reclaim it
+    // here instead — an upload transition is a deliberate, quiescent handoff
+    // (link already dropped, radio already disabled), not that timeout path.
+    if (owner == RADIO_WIFI_UPLOAD && BLE_MGR.isBegun()) {
+        DLOG_INFO(TAG,
+                  "BLE deinit before upload internalFree=%luB largest=%luB",
+                  static_cast<unsigned long>(
+                      heap_caps_get_free_size(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT)),
+                  static_cast<unsigned long>(
+                      heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT)));
+        BLE_MGR.shutdown();
+        DLOG_INFO(TAG,
+                  "BLE deinit done internalFree=%luB largest=%luB",
+                  static_cast<unsigned long>(
+                      heap_caps_get_free_size(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT)),
+                  static_cast<unsigned long>(
+                      heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT)));
     }
 
     // PMKID modes (pwny / hunt) call back into RADIO_ARB.isOwner() during

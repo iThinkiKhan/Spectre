@@ -109,6 +109,12 @@ public:
     void queueDevice(const char* mac, const char* ieFingerprint,
                      const char* probeSetHash, int8_t rssi,
                      bool isRandomMAC);
+    // AP inventory. Queued once per newly-observed BSSID — beacons arrive
+    // continuously, and spectre_networks is keyed by bssid, so re-publishing
+    // every beacon would be pure duplicate traffic.
+    void queueNetwork(const char* bssid, const char* ssid,
+                      int8_t rssi, uint8_t channel,
+                      const char* security, bool isHidden, bool hasWPS);
     void queueDrone(const char* droneID, float lat, float lon,
                     float alt, const char* mac, int8_t rssi,
                     uint8_t channel, const char* protocol);

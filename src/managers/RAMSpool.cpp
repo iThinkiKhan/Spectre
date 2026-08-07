@@ -205,6 +205,9 @@ CaptureClassification classify(const char* type, const char* eventType) {
     if (strcmp(t, "device") == 0) {
         return {PRIO_P2, LANE_NOISE, true};
     }
+    if (strcmp(t, "network") == 0) {
+        return {PRIO_P2, LANE_NOISE, true};
+    }
     if (strcmp(t, "event") == 0 && strcmp(et, "handshake") == 0) {
         return {PRIO_P1, LANE_MISSION, true};
     }

@@ -111,6 +111,12 @@ static constexpr uint8_t OFF = 0;
 // MQTT upload
 // Upload is threshold-triggered, low-water drained, plus one FieldVault boot
 // attempt. Manual SYNC forces a dump.
+// AP-inventory publishing to the `network` topic. OFF until the spool append
+// path is confirmed to handle the generic (non-structured) binary payload for
+// this type — enabling it coincided with events getting IDs but never reaching
+// a segment, so it stays gated until that is understood.
+#define SPECTRE_PUBLISH_NETWORKS      0
+
 #define MQTT_UPLOAD_READY_THRESHOLD   40000
 // Low-water mark: drain mode exits once pending drops below this, so the next
 // upload only fires after pending climbs back to MQTT_UPLOAD_READY_THRESHOLD.
