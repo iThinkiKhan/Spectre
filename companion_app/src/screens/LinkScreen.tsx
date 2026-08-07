@@ -268,28 +268,50 @@ export function LinkScreen() {
           />
         </View>
 
+        <Text style={styles.controlHint}>
+          GPS recording and the BLE link are independent — run GPS alone for a
+          low-power track, and bring the link up only when you need to talk to
+          Spectre, upload, or open the console.
+        </Text>
         <View style={styles.buttonRow}>
           <Pressable
             style={[
-              styles.primaryButton,
+              spectre.gpsRecording ? styles.secondaryButton : styles.primaryButton,
               !spectre.permissions.checked ? styles.buttonDisabled : null,
             ]}
             disabled={!spectre.permissions.checked}
             onPress={() => {
-              spectre.startFieldMode().catch(() => {});
+              (spectre.gpsRecording
+                ? spectre.stopGpsRecording()
+                : spectre.startGpsRecording()
+              ).catch(() => {});
             }}>
-            <Text style={styles.primaryText}>Start Field Mode</Text>
+            <Text style={spectre.gpsRecording ? styles.secondaryText : styles.primaryText}>
+              {spectre.gpsRecording ? 'Stop GPS' : 'Start GPS'}
+            </Text>
           </Pressable>
           <Pressable
             style={[
-              styles.secondaryButton,
-              !spectre.peripheralState.running ? styles.buttonDisabled : null,
+              spectre.peripheralState.running
+                ? styles.secondaryButton
+                : styles.primaryButton,
+              !spectre.permissions.checked ? styles.buttonDisabled : null,
             ]}
-            disabled={!spectre.peripheralState.running}
+            disabled={!spectre.permissions.checked}
             onPress={() => {
-              spectre.stopFieldMode().catch(() => {});
+              (spectre.peripheralState.running
+                ? spectre.stopBleLink()
+                : spectre.startBleLink()
+              ).catch(() => {});
             }}>
-            <Text style={styles.secondaryText}>Stop Field Mode</Text>
+            <Text
+              style={
+                spectre.peripheralState.running
+                  ? styles.secondaryText
+                  : styles.primaryText
+              }>
+              {spectre.peripheralState.running ? 'Stop BLE Link' : 'Start BLE Link'}
+            </Text>
           </Pressable>
         </View>
       </FieldPanel>
@@ -431,6 +453,11 @@ const styles = StyleSheet.create({
     color: theme.colors.textSoft,
     fontSize: 13,
     lineHeight: 18,
+  },
+  controlHint: {
+    color: theme.colors.textDim,
+    fontSize: 12,
+    lineHeight: 17,
   },
   telemetryGrid: {
     flexDirection: 'row',

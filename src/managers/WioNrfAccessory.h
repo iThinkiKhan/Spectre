@@ -47,11 +47,11 @@ public:
     bool requestEnrichmentBatch(const EventBatchRecord* records, size_t count);
     bool consumeEnrichmentBatch(PendingEnrichment* out, size_t maxCount, size_t& outCount);
     bool consumeEnrichmentFailure();
+    // Non-fatal batch drop: host should re-request, not end the session.
+    bool consumeEnrichmentBatchDropped();
     uint32_t getLastEnrichmentTransferMs() const { return _enrichmentXferMs; }
 
-    // Live phone GPS — mirrors BLEManager.  Set by encrypted PhoneGpsFrameV1
-    // frames the phone publishes; WIO forwards the raw envelope and we decrypt
-    // here so the secret never leaves the ESP.
+    // Live phone GPS via encrypted WIO-forwarded frames.
     bool hasFreshGpsFix() const;
     bool getBestTimeEpoch(uint32_t& epochUtc) const;
     bool isTimeTrusted() const { return _timeTrusted; }
@@ -60,24 +60,15 @@ public:
     float gpsAlt() const { return _gpsAlt; }
     float gpsAccuracy() const { return _gpsAccuracy; }
 
-    // Encrypts the storage frame and asks the WIO to write it to the phone's
-    // storage characteristic.  Mirrors BLEManager::publishStorageSnapshot.
     bool publishStorageSnapshot(const PhoneStorageFrameV1& frame);
 
-    // Encrypts a log-stream chunk plaintext and writes it to the phone's
-    // log-stream characteristic over the WIO proxy (slice #3).
     bool publishLogStreamChunk(const uint8_t* plain, size_t plainLen);
 
-    // Same shape for dashboard-stream chunks (slice #4).
     bool publishDashboardStreamChunk(const uint8_t* plain, size_t plainLen);
 
-    // Pushes a throttled phone notification frame over the WIO proxy.
     bool publishNotification(const uint8_t* plain, size_t plainLen);
 
-    // Text input over WIO.  The WIO firmware exposes the existing text
-    // service to the phone; ESP drives the lifecycle.  Text bytes are not
-    // encrypted with the companion secure session — they live on a separate
-    // GATT service exactly like the internal BLE path.
+    // Text input lives on the same unencrypted service as the internal BLE path.
     bool requestTextInput(const char* prompt, uint32_t timeoutMs = 120000UL);
     bool consumeTextInput(char* out, size_t outLen);
     void cancelTextInput(const char* reason = nullptr);
@@ -93,13 +84,49 @@ public:
     void requestBleStatus();
     void disconnectPhone(const char* reason = nullptr);
 
+    // Raw SX1262 modem bridge: nRF owns silicon, ESP owns protocol logic.
+    enum SubGhzModemMode : uint8_t {
+        SUBGHZ_MODEM_OFF     = 0,
+        SUBGHZ_MODEM_STANDBY = 1,
+        SUBGHZ_MODEM_RX      = 2,
+    };
+    // SX1262 has one active PHY profile; native and mesh consumers gate on this.
+    enum SubGhzAppOwner : uint8_t {
+        SUBGHZ_OWNER_NONE   = 0,
+        SUBGHZ_OWNER_NATIVE = 1,
+        SUBGHZ_OWNER_MESH   = 2,
+    };
+    static constexpr size_t SUBGHZ_FRAME_MAX = 256;
+
+    struct SubGhzRxFrame {
+        uint16_t len = 0;
+        int16_t  rssi = 0;
+        int16_t  snr = 0;
+        uint8_t  data[SUBGHZ_FRAME_MAX] = {};
+    };
+
+    bool subghzAvailable() const { return _present && _sx1262Present; }
+    bool subghzConfigure(uint32_t freqHz, uint32_t bwHz, uint8_t sf, uint8_t cr,
+                         uint16_t preamble, uint8_t syncWord, int8_t powerDbm);
+    bool subghzSetMode(SubGhzModemMode mode);
+    bool subghzSendRaw(const uint8_t* data, size_t len);
+    bool subghzConsumeRx(SubGhzRxFrame& out);
+    void subghzRequestStatus();
+    SubGhzModemMode subghzMode() const { return _subghzMode; }
+    SubGhzAppOwner subghzAppOwner() const { return _subghzAppOwner; }
+    void subghzSetAppOwner(SubGhzAppOwner owner) { _subghzAppOwner = owner; }
+    uint32_t subghzTxOkCount() const { return _subghzTxOk; }
+    uint32_t subghzTxFailCount() const { return _subghzTxFail; }
+    int subghzLastRssi() const { return _subghzLastRssi; }
+    int subghzLastSnr() const { return _subghzLastSnr; }
+
 private:
     static constexpr size_t UART_LINE_MAX = 640;
-    // Mirrors wio_nrf_firmware's UART_PAYLOAD_MAX. Every S3->nRF->phone
-    // encrypted write must fit this single relay payload.
+    // Mirrors wio_nrf_firmware UART_PAYLOAD_MAX.
     static constexpr size_t WIO_RELAY_PAYLOAD_MAX = 256;
     static constexpr size_t BLE_WRITE_VALUE_MAX = WIO_RELAY_PAYLOAD_MAX;
     static constexpr size_t EVENT_BATCH_SECURE_FRAME_MAX =
+        PHONE_EVENT_BATCH_HEADER_V2_SIZE +
         PHONE_COMPANION_ENRICH_BATCH_MAX * EVENT_BATCH_RECORD_SIZE +
         PHONE_SECURE_ENVELOPE_OVERHEAD;
     static_assert(PHONE_AUTH_FRAME_SIZE <= BLE_WRITE_VALUE_MAX,
@@ -120,6 +147,10 @@ private:
     static constexpr uint32_t RECOVERY_STATUS_INTERVAL_MS = 5000UL;
     static constexpr uint32_t RX_BIN_TIMEOUT_MS = 1500UL;
     static constexpr uint32_t FAILED_IDLE_RECOVERY_MS = 15000UL;
+    static constexpr uint8_t AUTH_WRITE_MAX_RETRIES = 2;
+    // Bounded challenge reissues recover lost response notifications.
+    static constexpr uint32_t AUTH_REISSUE_INTERVAL_MS = 2000UL;
+    static constexpr uint8_t AUTH_MAX_REISSUES = 3;
 
     HardwareSerial* _selectSerial();
     void _handleLine(const char* line);
@@ -129,6 +160,9 @@ private:
     void _handleWriteLine(const char* status);
     void _handleRxLine(const char* status);
     void _handleRxBytes(const char* chr, const uint8_t* data, size_t len);
+    void _handleSubghzRxBytes(const uint8_t* data, size_t len, int rssi, int snr);
+    void _handleSubghzTxAck(const char* status);
+    void _handleSubghzStatusLine(const char* status);
     void _markSeen();
     bool _tokenPresent(const char* text, const char* token) const;
     bool _readKeyValue(const char* text, const char* key, char* out, size_t outLen) const;
@@ -152,6 +186,17 @@ private:
     void _handleGpsBytes(const uint8_t* data, size_t len);
     void _handleTextInputBytes(const uint8_t* data, size_t len);
     void _handleCommandRequestBytes(const uint8_t* data, size_t len);
+    void _clearEnrichmentExchangeState(bool preserveFailure);
+    // Drop one corrupted batch; escalate only after repeated drops.
+    void _dropEnrichmentBatch(const char* reason);
+    bool _secureEnvelopeHeaderLooksValid(uint8_t channel,
+                                         const uint8_t* data,
+                                         size_t len,
+                                         uint32_t& counter) const;
+    bool _extractEnrichmentRecords(const uint8_t* plain,
+                                   size_t plainLen,
+                                   const uint8_t*& recordBytes,
+                                   size_t& recordLen);
     void _touchReadyActivity();
     bool _validateGpsFix(float lat, float lon, float alt, float accuracy,
                          uint32_t epochUtc) const;
@@ -169,10 +214,14 @@ private:
     bool _uartCap = false;
     bool _bleWriteBin = false;
     bool _sx1262Present = false;
+    // Optional UART flow control advertised by newer nRF firmware.
+    bool _flowCtrl = false;
     bool _phoneConnected = false;
     bool _lineOverflow = false;
     bool _rxBinActive = false;
     bool _enrichmentFailed = false;
+    bool _enrichmentBatchDropped = false;
+    uint8_t _enrichmentConsecutiveDrops = 0;
     bool _enrichmentReady = false;
     bool _dropAfterReady = false;
     uint32_t _lastSeenMs = 0;
@@ -180,6 +229,9 @@ private:
     uint32_t _lastStatusRequestMs = 0;
     uint32_t _lastRecoveryStatusMs = 0;
     uint32_t _lastOverflowLogMs = 0;
+    // Cumulative drained frames and last acked total.
+    uint32_t _rxFrameTotal = 0;
+    uint32_t _rxCreditAckedTotal = 0;
     uint32_t _seq = 0;
     uint32_t _activeSeq = 0;
     uint32_t _pendingBatchWriteSeq = 0;
@@ -189,6 +241,10 @@ private:
     uint32_t _enrichmentSendMs = 0;
     uint32_t _enrichmentWaitStartMs = 0;
     uint32_t _enrichmentXferMs = 0;
+    uint32_t _enrichmentSessionId = 0;
+    uint32_t _enrichmentBatchSeq = 0;
+    uint32_t _activeEnrichmentSessionId = 0;
+    uint32_t _activeEnrichmentBatchId = 0;
     size_t _enrichmentExpectedCount = 0;
     size_t _enrichmentRxLen = 0;
     size_t _enrichmentAvailableCount = 0;
@@ -199,18 +255,30 @@ private:
     char _rxBinChr[16] = {};
     size_t _rxBinExpected = 0;
     size_t _rxBinLen = 0;
+    // Optional raw-binary UART CRC; absent on older nRF firmware.
+    uint32_t _rxBinCrc = 0;
+    bool _rxBinCrcPresent = false;
+    // Shared binary RX path also carries SUBGHZ_RX.
+    bool _rxBinIsSubghz = false;
+    int16_t _rxBinRssi = 0;
+    int16_t _rxBinSnr = 0;
     LinkState _linkState = LINK_IDLE;
     BleSecureSession _secureSession;
     uint8_t _authChallengeBuf[PHONE_AUTH_FRAME_SIZE] = {};
+    size_t _authChallengeLen = 0;
+    uint8_t _authWriteRetries = 0;
+    uint32_t _authLastTxMs = 0;
+    uint8_t _authReissues = 0;
     uint8_t _uartRxBuf[256] = {};
-    uint8_t _eventBatchTxBuf[PHONE_COMPANION_ENRICH_BATCH_MAX * EVENT_BATCH_RECORD_SIZE] = {};
-    uint8_t _eventBatchSecureTxBuf[PHONE_COMPANION_ENRICH_BATCH_MAX * EVENT_BATCH_RECORD_SIZE +
+    uint8_t _eventBatchTxBuf[PHONE_EVENT_BATCH_HEADER_V2_SIZE +
+                             PHONE_COMPANION_ENRICH_BATCH_MAX * EVENT_BATCH_RECORD_SIZE] = {};
+    uint8_t _eventBatchSecureTxBuf[PHONE_EVENT_BATCH_HEADER_V2_SIZE +
+                                   PHONE_COMPANION_ENRICH_BATCH_MAX * EVENT_BATCH_RECORD_SIZE +
                                    PHONE_SECURE_ENVELOPE_OVERHEAD] = {};
     uint8_t _enrichmentRxBuf[PHONE_COMPANION_ENRICH_BATCH_MAX * ENRICHMENT_RECORD_SIZE] = {};
     PendingEnrichment _enrichmentBatch[PHONE_COMPANION_ENRICH_BATCH_MAX] = {};
 
-    // GPS state — mirrors BLEManager.  Updated when the phone publishes a
-    // PhoneGpsFrameV1 over the (encrypted) GPS channel.
+    // GPS state mirrors BLEManager.
     bool      _gpsAvailable = false;
     bool      _timeTrusted = false;
     uint32_t  _lastGpsFixMs = 0;
@@ -220,7 +288,7 @@ private:
     float     _gpsAlt = 0.0f;
     float     _gpsAccuracy = 0.0f;
 
-    // Text input state — mirrors BLEManager, unencrypted text service.
+    // Text input state mirrors BLEManager.
     bool      _textInputPending = false;
     bool      _textInputReady = false;
     uint32_t  _textInputDeadlineMs = 0;
@@ -230,8 +298,7 @@ private:
 
     uint8_t   _storageSecureTxBuf[PHONE_STORAGE_FRAME_SIZE + PHONE_SECURE_ENVELOPE_OVERHEAD] = {};
 
-    // Phone command/control buffers — mirror BLEManager's command-channel
-    // storage so a WIO-routed request follows the same lifecycle.
+    // Command/control buffers mirror BLEManager.
     uint8_t   _commandRespPlainBuf[PHONE_COMMAND_RESP_FRAME_MAX] = {};
     uint8_t   _commandRespSecureBuf[PHONE_COMMAND_RESP_FRAME_MAX +
                                     PHONE_SECURE_ENVELOPE_OVERHEAD] = {};
@@ -241,6 +308,18 @@ private:
                                         PHONE_SECURE_ENVELOPE_OVERHEAD] = {};
     uint8_t   _notificationSecureBuf[PHONE_NOTIFICATION_FRAME_MAX +
                                      PHONE_SECURE_ENVELOPE_OVERHEAD] = {};
+
+    static constexpr size_t SUBGHZ_RX_RING = 4;
+    SubGhzModemMode _subghzMode = SUBGHZ_MODEM_OFF;
+    SubGhzAppOwner  _subghzAppOwner = SUBGHZ_OWNER_NONE;
+    SubGhzRxFrame   _subghzRx[SUBGHZ_RX_RING] = {};
+    size_t          _subghzRxHead = 0;   // next slot to write
+    size_t          _subghzRxTail = 0;   // next slot to read
+    size_t          _subghzRxCount = 0;  // queued frames
+    uint32_t        _subghzTxOk = 0;
+    uint32_t        _subghzTxFail = 0;
+    int             _subghzLastRssi = 0;
+    int             _subghzLastSnr = 0;
 };
 
 extern WioNrfAccessory WIO_NRF;

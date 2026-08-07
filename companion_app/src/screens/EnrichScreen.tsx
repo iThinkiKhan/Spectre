@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 
 import {FieldPanel} from '../components/FieldPanel';
+import {LocationSourcePanel} from '../components/LocationSourcePanel';
 import {eventTimestampToUnixMs} from '../protocol/binary';
 import {useSpectre} from '../state/SpectreContext';
 import {theme} from '../theme/theme';
@@ -46,6 +47,7 @@ function eventTimeLabel(timestamp: number) {
 
 export function EnrichScreen() {
   const spectre = useSpectre();
+  const showMockControls = typeof __DEV__ !== 'undefined' && __DEV__;
 
   return (
     <ScrollView
@@ -144,6 +146,8 @@ export function EnrichScreen() {
         </View>
       </FieldPanel>
 
+      <LocationSourcePanel />
+
       <FieldPanel title="Batch Queue" eyebrow="Event enrichment">
         {spectre.eventBatches.length === 0 ? (
           <Text style={styles.bodyText}>
@@ -202,6 +206,12 @@ export function EnrichScreen() {
             </View>
           ))
         )}
+
+        {showMockControls ? (
+          <Pressable style={styles.mockButton} onPress={spectre.injectMockBatch}>
+            <Text style={styles.mockButtonText}>Inject Mock Batch</Text>
+          </Pressable>
+        ) : null}
       </FieldPanel>
     </ScrollView>
   );
@@ -407,6 +417,24 @@ const styles = StyleSheet.create({
   },
   primaryText: {
     color: theme.colors.textOnAccent,
+    fontSize: 13,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 0.8,
+    fontFamily: theme.fonts.label,
+  },
+  mockButton: {
+    alignSelf: 'flex-start',
+    borderColor: theme.colors.panelEdge,
+    borderWidth: 1,
+    borderRadius: theme.radius.md,
+    backgroundColor: theme.colors.bg,
+    paddingHorizontal: theme.spacing.md,
+    paddingVertical: 10,
+    marginTop: theme.spacing.xs,
+  },
+  mockButtonText: {
+    color: theme.colors.textSoft,
     fontSize: 13,
     fontWeight: '700',
     textTransform: 'uppercase',

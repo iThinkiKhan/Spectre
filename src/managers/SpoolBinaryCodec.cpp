@@ -435,14 +435,13 @@ bool encodeFieldMapV1(JsonObjectConst doc,
             continue;
         }
 
-        if (value.is<float>() || value.is<double>()) {
-            const float v = value.as<float>();
-            if (!w.write(FIELD_FLOAT) || !w.writeBytes(&v, sizeof(v))) {
-                return false;
-            }
-            continue;
-        }
-
+        // Integers MUST be tested before float/double: ArduinoJson's is<float>()
+        // reports true for integer values (they convert losslessly), so testing
+        // float first silently re-types every integer as FIELD_FLOAT. Readers
+        // that use `doc[key] | 0` then get the default back, because operator|
+        // checks is<int>() and a float fails it — which is how rssi and channel
+        // became 0 on every stored record. is<int>() is false for genuine
+        // floats, so this ordering keeps real floats on the float path.
         if (value.is<long long>() || value.is<long>() || value.is<int>()) {
             const long long v = value.as<long long>();
             if (v < 0) {
@@ -455,6 +454,14 @@ bool encodeFieldMapV1(JsonObjectConst doc,
                     !writeUVarintTo(w, static_cast<uint32_t>(v))) {
                     return false;
                 }
+            }
+            continue;
+        }
+
+        if (value.is<float>() || value.is<double>()) {
+            const float v = value.as<float>();
+            if (!w.write(FIELD_FLOAT) || !w.writeBytes(&v, sizeof(v))) {
+                return false;
             }
             continue;
         }
@@ -721,13 +728,15 @@ bool getFieldStringV1(const uint8_t* data,
     return true;
 }
 
-bool createEmptySegmentV2(const String& path, uint32_t segmentId, uint32_t createdMs) {
+bool createEmptySegmentV2(const String& path, uint32_t segmentId, uint32_t createdMs,
+                          uint32_t createdEpochUtc) {
     File f = LittleFS.open(path, "w");
     if (!f) return false;
 
     SegmentHeaderV2 hdr;
     hdr.segmentId = segmentId;
     hdr.createdMs = createdMs;
+    hdr.createdEpochUtc = createdEpochUtc;
 
     const bool ok = writeBytes(f, &hdr, sizeof(hdr));
     f.close();

@@ -10,18 +10,7 @@ import com.facebook.react.modules.core.DeviceEventManagerModule
 import java.lang.ref.WeakReference
 import org.json.JSONObject
 
-/**
- * JS-facing bridge for [SpectreLocationService].
- *
- * The service itself owns the GPS loop and writes fixes directly to the same
- * SharedPreferences buckets that LocationHistoryStore.ts reads on startup, so
- * the recorder keeps working when JS is dead.  This module exists so JS can:
- *   - kick the service after permissions are granted ([start]),
- *   - stop it on opt-out ([stop]),
- *   - receive fixes in real-time while alive (via the `SpectreLocationFix`
- *     RN event, used to update the BLE GPS characteristic and the live
- *     in-memory enrichment buffer).
- */
+/** JS bridge for the native GPS recorder and its live-fix events. */
 class SpectreLocationRecorderModule(
     private val reactContext: ReactApplicationContext,
 ) : ReactContextBaseJavaModule(reactContext) {
@@ -48,7 +37,9 @@ class SpectreLocationRecorderModule(
   @ReactMethod
   fun start(promise: Promise) {
     try {
-      SpectreLocationService.start(reactContext.applicationContext)
+      val context = reactContext.applicationContext
+      SpectreFieldService.setGpsActive(context, true)
+      SpectreLocationService.start(context)
       promise.resolve(true)
     } catch (error: Exception) {
       promise.reject("E_LOCATION_START_FAILED", error.message, error)
@@ -58,7 +49,9 @@ class SpectreLocationRecorderModule(
   @ReactMethod
   fun stop(promise: Promise) {
     try {
-      SpectreLocationService.stop(reactContext.applicationContext)
+      val context = reactContext.applicationContext
+      SpectreLocationService.stop(context)
+      SpectreFieldService.setGpsActive(context, false)
       promise.resolve(true)
     } catch (error: Exception) {
       promise.reject("E_LOCATION_STOP_FAILED", error.message, error)

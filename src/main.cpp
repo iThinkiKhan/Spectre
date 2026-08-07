@@ -19,6 +19,7 @@
 #include <esp_freertos_hooks.h>
 
 #include "config.h"
+#include "core/BootInfo.h"
 #include "core/CrashBreadcrumb.h"
 #include "core/EventBus.h"
 #include "core/MissionRuntime.h"
@@ -32,12 +33,14 @@
 #include "core/StorageUiMirror.h"
 #include "managers/ButtonHandler.h"
 #include "managers/DisplayManager.h"
+#include "managers/EntityManager.h"
 #include "managers/ExportManager.h"
 #include "managers/LoRaManager.h"
 #include "managers/BadUsbManager.h"
 #include "managers/SubGhzManager.h"
 #include "managers/ReyaxBackend.h"
 #include "managers/WioSx1262Backend.h"
+#include "managers/MeshtasticManager.h"
 #include "managers/SubGhzRecordWriter.h"
 #include "managers/StorageManager.h"
 #include "managers/RAMSpool.h"
@@ -148,6 +151,14 @@ namespace {
     uint8_t     subGhzMode = static_cast<uint8_t>(SubGhzMode::OFF);
     uint32_t    subGhzFrequencyHz = 0;
     int         subGhzNodeCount = 0;
+    bool        meshAvailable = false;
+    bool        meshEnabled = false;
+    int         meshNodeCount = 0;
+    uint32_t    meshRxText = 0;
+    uint32_t    meshTxText = 0;
+    uint32_t    meshNodeNum = 0;
+    uint32_t    meshLastFrom = 0;
+    char        meshLastText[64] = "";
     char        wifiSSID[32] = "";
     int         wifiNetworkCount = 0;
     int         probePacketCount = 0;
@@ -290,6 +301,10 @@ static constexpr uint32_t TASK_HARDWARE_STACK_BYTES = 22528;
 static constexpr uint32_t STACK_LOG_INTERVAL_MS     = 30000UL;
 static constexpr uint32_t HEALTH_LOG_INTERVAL_MS    = 30000UL;
 static constexpr uint32_t HEAP_CHECK_INTERVAL_MS    = 120000UL;
+static constexpr uint32_t FIELDVAULT_POWER_SAMPLE_INTERVAL_MS = 15UL * 60UL * 1000UL;
+static constexpr uint32_t FIELDVAULT_RUN_SAMPLE_INTERVAL_MS = 5UL * 60UL * 1000UL;
+static constexpr uint32_t FIELDVAULT_RUN_TRANSITION_MIN_MS = 60UL * 1000UL;
+static constexpr uint32_t FIELDVAULT_RUN_PENDING_DELTA_MIN = 25UL;
 static constexpr uint32_t SLEEP_PRESENTATION_HOLD_MS = 1200UL;
 static constexpr uint32_t SLEEP_PRESENTATION_TIMEOUT_MS = 3000UL;
 static constexpr uint32_t DISPLAY_ASLEEP_POLL_MS    = 50UL;
@@ -520,10 +535,17 @@ void _loadKnownLocationsIntoState();
 static void _clearStorageSummaryMirror();
 static bool _refreshStorageSummaryMirror(bool force);
 static bool _runPostMaintenanceUtcAcquisition();
+static bool _forceQuickNtp(const char* reason);
 static const char* _resetReasonName(esp_reset_reason_t r);
 static const char* _fieldVaultPowerSourceName(PowerSource source);
+static const char* _fieldVaultPowerStateName(PowerState state);
 static bool _detectBootRecoveryRequest();
 void _applySubGhzStatusToState(const SubGhzStatus& status);
+void _appendFieldVaultPowerSample(const PowerSnapshot& power,
+                                  uint8_t radioOwner,
+                                  const char* reason);
+void _appendFieldVaultRunSample(uint8_t radioOwner,
+                                const char* reason);
 void _applyPowerSnapshotToState(const PowerSnapshot& power);
 void _initializeHardwareManagers(uint32_t& lastWifiTick);
 static void _logHardwareSectionIfSlow(const char* section,
@@ -617,30 +639,19 @@ struct CompanionScheduler {
     bool manualEnrichWorkerPaused = false;
     bool manualEnrichStoppedCapture = false;
 
-    // "Drain in one go" progress tracking for a manual session, measured at
-    // WINDOW-PASS granularity via STORAGE.livePendingEnrichmentTotal():
-    //   - enrichWindowStartPending: live pending-enrich total snapshotted when
-    //     the current 1024-window was built.
-    //   - lastWindowProgressed: did the previous fully-walked window drain
-    //     anything (enrich or no-data retire)? When a whole window pass drains
-    //     nothing, only phone-deferred (retry-later) records remain, so we stop
-    //     instead of re-scanning and looping on them.
-    //   - enrichWindowSnapshotValid: guards the first window of a session.
-    // lastWalkNoDataRetired is retained for diagnostics.
+    // Manual drain progress is tracked per full enrichment-index window.
     uint32_t lastWalkNoDataRetired = 0;
     uint32_t enrichWindowStartPending = 0;
     bool enrichWindowSnapshotValid = false;
     bool lastWindowProgressed = true;
-    // Set by the build's drain-complete gate so the pipeline distinguishes
-    // "rebuild next tick" (progress) from "session done" (a full window pass
-    // drained nothing) — both surface as batchCount==0 with no resident window.
+    // Distinguishes "build next window" from "session fully drained".
     bool manualDrainComplete = false;
 
-    // Probe backoff state.
-    // Stage 0 — normal cadence (PHONE_PROBE_MIN_GAP_MS).
-    // Stage 1/2/3 — still frequent enough to catch Android Field Mode
-    // advertising during a carry instead of waiting out long backoff gaps.
-    // Resets to stage 0 on any successful probe.
+    // Phone-deferred records get bounded re-offers before NO_DATA retirement.
+    uint8_t manualDeferredPasses = 0;
+    bool manualRetireDeferred = false;
+
+    // Probe backoff stays short enough to catch Android Field Mode while carried.
     uint8_t probeBackoffStage    = 0;
     uint8_t probeBackoffMissCount = 0;
 };
@@ -653,9 +664,7 @@ static constexpr uint32_t WIFI_LULL_MIN_MS = 10000UL;
 static constexpr uint32_t PHONE_PROBE_MIN_GAP_MS = 30000UL;
 static constexpr uint32_t PHONE_AVAILABILITY_TTL_MS = 300000UL;
 static constexpr uint32_t PHONE_STORAGE_PUBLISH_MIN_MS = 15000UL;
-// Pending-event counts that trip automatic enrichment (see shouldRunEnrichment /
-// shouldRunExternalEnrichment). Tune from config.h — these mirror the knobs so
-// the header stays the single source of truth.
+// Pending-event counts that trip automatic enrichment.
 static constexpr uint32_t ENRICH_PENDING_THRESHOLD_INTERNAL = PHONE_COMPANION_ENRICH_THRESHOLD;
 static constexpr uint32_t ENRICH_PENDING_THRESHOLD_WIO = PHONE_COMPANION_ENRICH_THRESHOLD_WIO;
 
@@ -679,13 +688,10 @@ static constexpr uint32_t ENRICH_MIN_GAP_MS = 60000UL;
 static constexpr size_t PHONE_ENRICH_BATCH_MAX   = PHONE_COMPANION_ENRICH_BATCH_MAX;
 static constexpr size_t ENRICH_QUEUE_DEPTH       = 2;
 static constexpr size_t ENRICH_CLAIM_MAX         = ENRICH_QUEUE_DEPTH * PHONE_ENRICH_BATCH_MAX;
-// Per-prepare cap on the resident enrichment window. With ~22k pending the
-// previous 32768 ceiling forced two ~340KB std::vector allocations on the
-// internal heap, which fragmented enough to crash mid-LittleFS write under
-// active capture. Batches only consume PHONE_ENRICH_BATCH_MAX per round, so
-// 1024 covers ~57 batches before we re-prepare — still a single segment scan,
-// far less heap pressure.
-static constexpr size_t ENRICH_MANUAL_WINDOW_MAX = 1024;
+// Cap resident enrichment windows to keep internal heap stable under capture.
+// 8,192 compact descriptors consume about 128 KiB of PSRAM. This bounds each
+// flash scan while keeping a 25k-50k backlog to a small number of windows.
+static constexpr size_t ENRICH_MANUAL_WINDOW_MAX = 8192;
 static constexpr uint32_t REPAIR_BUDGET_MS       = 2;
 static constexpr uint16_t REPAIR_MAX_RECORDS     = 8;
 static constexpr uint32_t REPAIR_UI_QUIET_MS     = 500;
@@ -885,17 +891,7 @@ static const char* radioOwnerName(RadioOwner owner) {
     }
 }
 
-// ---------------------------------------------------------------------------
-// Companion inter-task command queue and status snapshot.
-//
-// g_companionCmd  — written by the USB console task (display loop),
-//                   drained by TaskHardware. Volatile bools are sufficient
-//                   for single-bit signals on this MCU.
-// g_companionStatus — written by TaskHardware each companion tick,
-//                   read by the USB console for "companion status".
-//                   No lock: a slightly stale read is acceptable for a
-//                   debug diagnostic.
-// ---------------------------------------------------------------------------
+// USB console writes commands; TaskHardware drains them and publishes status.
 struct CompanionCmd {
     volatile bool probe  = false;
     volatile bool enrich = false;
@@ -1561,10 +1557,7 @@ static bool _buildPendingEnrichmentBatch(EventBatchRecord* out,
     DLOG_INFO(logTag, "Enrichment pending scan done count=%u",
               static_cast<unsigned>(outCount));
 
-    // Forward only records that carry a reboot-safe absolute capture UTC
-    // (persisted with the record). Records with epochUtc==0 have no timestamp
-    // the phone could match against; skip them here and let the manual enrich
-    // path retire them as NO_DATA under its bounded budget.
+    // Only absolute capture UTC can be matched against phone GPS history.
     size_t kept = 0;
     size_t skippedNoEpoch = 0;
     for (size_t i = 0; i < outCount; ++i) {
@@ -1613,23 +1606,38 @@ static bool _buildManualEnrichmentWindowBatch(CompanionScheduler& cs,
         return false;
     }
 
-    // Drain-complete gate: we are about to (re)build a window because none is
-    // resident. If the PREVIOUS fully-walked window drained nothing, the only
-    // records left are ones the phone deferred (no GPS for those timestamps) —
-    // re-scanning would just loop on them. Signal "done" (batchCount 0) without
-    // acquiring the radio/storage window so the caller finishes the session.
+    // A no-progress full window means only phone-deferred records remain.
     if (!cs.enrichmentWindowActive && cs.enrichWindowSnapshotValid &&
         !cs.lastWindowProgressed) {
-        cs.manualDrainComplete = true;
-        DLOG_INFO(logTag,
-                  "Manual enrich complete: last window drained nothing; only retry-later records remain");
-        return true;
+        if (cs.manualRetireDeferred) {
+            cs.manualDrainComplete = true;
+            DLOG_INFO(logTag,
+                      "Manual enrich complete: backlog resolved (enriched or no-data retired)");
+            return true;
+        }
+        ++cs.manualDeferredPasses;
+        if (cs.manualDeferredPasses >= ENRICH_DEFERRED_RETIRE_PASSES) {
+            cs.manualRetireDeferred = true;
+            DLOG_INFO(logTag,
+                      "Manual enrich: phone declined %u passes; retiring remaining records as NO_DATA",
+                      static_cast<unsigned>(cs.manualDeferredPasses));
+        } else {
+            DLOG_INFO(logTag,
+                      "Manual enrich: window drained nothing (deferred pass %u/%u); re-offering to phone",
+                      static_cast<unsigned>(cs.manualDeferredPasses),
+                      static_cast<unsigned>(ENRICH_DEFERRED_RETIRE_PASSES));
+        }
+        // Re-arm for a re-offer or retirement pass.
+        cs.enrichWindowSnapshotValid = false;
+        cs.lastWindowProgressed = true;
+        // fall through to (re)build a window
     }
 
     const char* safeReason = (reason && reason[0])
                                  ? reason
                                  : "manual_enrich_window";
     const RadioOwner owner = RADIO_ARB.currentOwner();
+    const bool bleOwnsWindow = owner == RADIO_BLE_GPS;
     bool stoppedCapture = false;
     bool tookMaintenanceLease = false;
 
@@ -1638,7 +1646,7 @@ static bool _buildManualEnrichmentWindowBatch(CompanionScheduler& cs,
         stoppedCapture = true;
     }
 
-    if (!RADIO_ARB.isOwner(RADIO_STORAGE_MAINTENANCE)) {
+    if (!bleOwnsWindow && !RADIO_ARB.isOwner(RADIO_STORAGE_MAINTENANCE)) {
         if (!RADIO_ARB.requestStorageMaintenanceLease(5000UL,
                                                      safeReason,
                                                      true)) {
@@ -1654,7 +1662,10 @@ static bool _buildManualEnrichmentWindowBatch(CompanionScheduler& cs,
     }
 
     StorageExclusiveWindow window;
-    if (!window.begin(STORAGE_WINDOW_MAINTENANCE, safeReason)) {
+    const StorageWindowKind windowKind = bleOwnsWindow
+                                             ? STORAGE_WINDOW_ENRICHMENT
+                                             : STORAGE_WINDOW_MAINTENANCE;
+    if (!window.begin(windowKind, safeReason)) {
         DLOG_WARN(logTag,
                   "Manual enrichment window begin failed owner=%s",
                   RadioArbiter::ownerName(RADIO_ARB.currentOwner()));
@@ -1680,8 +1691,9 @@ static bool _buildManualEnrichmentWindowBatch(CompanionScheduler& cs,
             static_cast<size_t>(std::min<uint32_t>(
                 std::max<uint32_t>(cs.pendingItems, PHONE_ENRICH_BATCH_MAX),
                 static_cast<uint32_t>(ENRICH_MANUAL_WINDOW_MAX)));
-        const bool ok =
-            STORAGE.prepareEnrichmentIndexForWindow(requestedWindow, 5000);
+        bool windowReady = false;
+        const bool ok = STORAGE.prepareEnrichmentIndexForWindow(
+            requestedWindow, ENRICH_SCAN_BUDGET_MS, windowReady);
         if (!ok) {
             window.end("manual_enrich_window_failed");
             if (tookMaintenanceLease && RADIO_ARB.isOwner(RADIO_STORAGE_MAINTENANCE)) {
@@ -1695,23 +1707,46 @@ static bool _buildManualEnrichmentWindowBatch(CompanionScheduler& cs,
             }
             return false;
         }
+        if (!windowReady) {
+            window.end("manual_index_slice");
+            if (tookMaintenanceLease && RADIO_ARB.isOwner(RADIO_STORAGE_MAINTENANCE)) {
+                RADIO_ARB.release(RADIO_STORAGE_MAINTENANCE,
+                                  "manual_index_slice",
+                                  false);
+            }
+            if (!cs.manualEnrichExclusiveActive &&
+                (stoppedCapture || RADIO_ARB.currentOwner() == RADIO_NONE)) {
+                RADIO_ARB.ensureDefaultCapture("manual_index_slice");
+            }
+            return true;
+        }
         cs.enrichmentWindowActive = true;
+        if (STORAGE.enrichmentWindowSize() == 0) {
+            STORAGE.releaseEnrichmentIndexMemory("manual_scan_empty");
+            cs.enrichmentWindowActive = false;
+            cs.manualDrainComplete = true;
+            cs.enrichWindowSnapshotValid = false;
+            DLOG_INFO(logTag,
+                      "Manual enrich complete: authoritative scan found no pending records");
+            window.end("manual_scan_empty");
+            if (tookMaintenanceLease && RADIO_ARB.isOwner(RADIO_STORAGE_MAINTENANCE)) {
+                RADIO_ARB.release(RADIO_STORAGE_MAINTENANCE,
+                                  "manual_scan_empty",
+                                  false);
+            }
+            if (!cs.manualEnrichExclusiveActive &&
+                (stoppedCapture || RADIO_ARB.currentOwner() == RADIO_NONE)) {
+                RADIO_ARB.ensureDefaultCapture("manual_scan_empty");
+            }
+            return true;
+        }
         // Snapshot the live pending-enrich total for this window pass so we can
         // tell, when the window is fully walked, whether it drained anything.
         cs.enrichWindowStartPending = STORAGE.livePendingEnrichmentTotal();
         cs.enrichWindowSnapshotValid = true;
     }
 
-    // NO_DATA disposition. Records with no trusted capture UTC can never be
-    // enriched, so we retire them (append a NO_DATA enrich delta that excludes
-    // them from future scans). Two scaling rules vs the old 4-per-walk cap:
-    //   1) Retiring no-data NEVER stops enrichable collection — we keep filling
-    //      the batch up to maxCount even when no-epoch records are interleaved
-    //      (priority order mixes them). Previously the 4th no-epoch record broke
-    //      the whole walk, starving enrichable throughput.
-    //   2) Retire in small chunks up to a larger per-walk budget, and cap the
-    //      walk by wall-time, so a 20k unenrichable backlog drains in a few
-    //      passes without holding the radio-suspended window too long.
+    // Retire unenrichable records in chunks without starving enrichable output.
     uint32_t noDataRetired = 0;
     bool noDataBudgetExhausted = false;
     bool walkTimeBudgetHit = false;
@@ -1790,11 +1825,8 @@ static bool _buildManualEnrichmentWindowBatch(CompanionScheduler& cs,
             break;
         }
 
-        // epochUtc is the reboot-safe absolute capture UTC persisted with the
-        // record (NOT a live-clock conversion), so a record is retired as
-        // NO_DATA only when it genuinely never had a trusted timestamp — never
-        // merely because the device clock is unsynced right now.
-        if (pending.epochUtc == 0) {
+        // NO_DATA means either no absolute timestamp, or bounded phone declines.
+        if (pending.epochUtc == 0 || cs.manualRetireDeferred) {
             if (noDataRetired + noDataChunkCount >= ENRICH_NODATA_BUDGET_PER_WALK) {
                 noDataBudgetExhausted = true;
                 break;
@@ -1812,41 +1844,25 @@ static bool _buildManualEnrichmentWindowBatch(CompanionScheduler& cs,
 
     flushNoData();
 
-    // Surface this walk's no-data progress so the session loop knows it is
-    // still draining even on a pass that yielded zero enrichable records.
+    // Progress can be no-data retirement even when no phone batch is produced.
     cs.lastWalkNoDataRetired = noDataRetired;
 
-    // If this call fully walked the window (cursor exhausted or released),
-    // record whether the whole window pass drained anything. The drain-complete
-    // gate at the top of the next call uses this to stop once a full window
-    // yields no progress (only phone-deferred records remain).
     if (!cs.enrichmentWindowActive && cs.enrichWindowSnapshotValid) {
-        // Progress means either the phone enriched records (live pending-enrich
-        // total dropped) OR we retired no-data records this pass. The pending
-        // total is a LAGGED snapshot: _decrementPendingEnrichmentForEvent skips
-        // the decrement and only flags a summary rebuild whenever a segment
-        // summary is stale (see StorageManager pending_enrich_summary_stale), so
-        // a pass that retired a full window of no-data records can still read an
-        // unchanged total. Relying on the counter alone made the drain-complete
-        // gate fire after ~1 window and abandon thousands of still-pending
-        // records. Counting noDataRetired makes progress detection authoritative
-        // and lag-proof: we only declare the backlog drained when a full window
-        // yields NEITHER an enrichable batch NOR a no-data retirement — i.e. the
-        // only records left are ones the phone deferred (retry-later).
+        // The pending total can lag stale summaries, so count retirements too.
         cs.lastWindowProgressed =
             (noDataRetired > 0) ||
             (STORAGE.livePendingEnrichmentTotal() < cs.enrichWindowStartPending);
+        if (cs.lastWindowProgressed) {
+            cs.manualDeferredPasses = 0;
+            cs.manualRetireDeferred = false;
+        }
     }
 
-    // Only tear the window down when this walk produced no enrichable records
-    // to send the phone AND we stopped on a budget/time cap. With enrichable
-    // output, or a still-live cursor, keep the window resident so the next tick
-    // continues from here instead of re-running the O(N) scan.
+    // A capped NO_DATA pass can resume the resident PSRAM cursor. Rebuilding
+    // here would rescan every accumulated delta after each small flash batch.
     if (outCount == 0 && (noDataBudgetExhausted || walkTimeBudgetHit)) {
-        STORAGE.releaseEnrichmentIndexMemory("manual_no_data_budget");
-        cs.enrichmentWindowActive = false;
         DLOG_WARN(logTag,
-                  "Manual enrichment retired %lu no-data records this pass; more remain (budget=%u timeHit=%u)",
+                  "Manual enrichment retired %lu no-data records this pass; cursor retained (budget=%u timeHit=%u)",
                   static_cast<unsigned long>(noDataRetired),
                   noDataBudgetExhausted ? 1U : 0U,
                   walkTimeBudgetHit ? 1U : 0U);
@@ -1884,6 +1900,7 @@ static bool _buildPendingEnrichmentBatchInSafeWindow(EventBatchRecord* out,
                                  ? reason
                                  : "external_enrich_scan";
     const RadioOwner owner = RADIO_ARB.currentOwner();
+    const bool bleOwnsWindow = owner == RADIO_BLE_GPS;
     bool stoppedCapture = false;
     bool tookMaintenanceLease = false;
 
@@ -1892,7 +1909,7 @@ static bool _buildPendingEnrichmentBatchInSafeWindow(EventBatchRecord* out,
         stoppedCapture = true;
     }
 
-    if (!RADIO_ARB.isOwner(RADIO_STORAGE_MAINTENANCE)) {
+    if (!bleOwnsWindow && !RADIO_ARB.isOwner(RADIO_STORAGE_MAINTENANCE)) {
         if (!RADIO_ARB.requestStorageMaintenanceLease(5000UL,
                                                      safeReason,
                                                      true)) {
@@ -1908,7 +1925,10 @@ static bool _buildPendingEnrichmentBatchInSafeWindow(EventBatchRecord* out,
     }
 
     StorageExclusiveWindow window;
-    if (!window.begin(STORAGE_WINDOW_MAINTENANCE, safeReason)) {
+    const StorageWindowKind windowKind = bleOwnsWindow
+                                             ? STORAGE_WINDOW_ENRICHMENT
+                                             : STORAGE_WINDOW_MAINTENANCE;
+    if (!window.begin(windowKind, safeReason)) {
         DLOG_WARN(logTag,
                   "Enrichment pending scan window begin failed owner=%s",
                   RadioArbiter::ownerName(RADIO_ARB.currentOwner()));
@@ -2000,7 +2020,7 @@ static bool _applyPhoneEnrichmentBatch(const PendingEnrichment* records,
         }
         batchEntries[batchSize++] = {
             r.eventId, sessionIds[i].c_str(),
-            r.lat, r.lon, r.alt, r.accuracy, r.tag, r.gpsEpochUtc
+            r.lat, r.lon, r.alt, r.accuracy, r.tag, r.gpsEpochUtc, r.noData
         };
     }
 
@@ -2058,6 +2078,30 @@ static void _finishPhoneEnrichment(CompanionScheduler& cs, bool success) {
                   static_cast<unsigned long>(xferMs),
                   static_cast<unsigned long>(storageMs),
                   static_cast<unsigned long>(totalMs));
+        if (FieldVault::isReady()) {
+            uint32_t pendingUpload = 0;
+            uint32_t pendingEnrich = 0;
+            STATE_READ_BEGIN();
+            pendingUpload =
+                g_state.storagePendingUploadMission + g_state.storagePendingUploadNoise;
+            pendingEnrich =
+                g_state.storagePendingEnrichMission + g_state.storagePendingEnrichNoise;
+            STATE_READ_END();
+            if (!FieldVault::appendEnrichSummary(logTag,
+                                                 success,
+                                                 requested,
+                                                 applied,
+                                                 failed,
+                                                 deferred,
+                                                 batches,
+                                                 xferMs,
+                                                 storageMs,
+                                                 totalMs,
+                                                 pendingUpload,
+                                                 pendingEnrich)) {
+                DLOG_WARN("FIELDVAULT", "enrich summary append failed");
+            }
+        }
     }
 
     cs.workState = COMPANION_WORK_IDLE;
@@ -2079,6 +2123,8 @@ static void _finishPhoneEnrichment(CompanionScheduler& cs, bool success) {
     cs.enrichWindowSnapshotValid = false;
     cs.lastWindowProgressed = true;
     cs.manualDrainComplete = false;
+    cs.manualDeferredPasses = 0;
+    cs.manualRetireDeferred = false;
     cs.enrichmentSessionBatches = 0;
     cs.enrichmentSessionXferMs = 0;
     cs.enrichmentSessionStorageMs = 0;
@@ -2123,7 +2169,7 @@ static void _finishPhoneEnrichment(CompanionScheduler& cs, bool success) {
     }
 }
 
-// ── Enrichment pipeline queue helpers ────────────────────────────────────────
+// Enrichment pipeline queue helpers.
 
 static void initEnrichQueue() {
     enrichQueueHead  = 0;
@@ -2137,8 +2183,7 @@ static void initEnrichQueue() {
     }
 }
 
-// Claims are added AFTER a valid BLE response is received and enqueued,
-// not at request-send time.  This ensures a timeout leaves zero stuck state.
+// Claim only after a valid BLE response; timeouts leave no stuck state.
 static void enrichClaimReceived(const PendingEnrichment* recs, size_t count) {
     for (size_t i = 0; i < count && enrichClaimedCount < ENRICH_CLAIM_MAX; ++i) {
         if (recs[i].eventId != 0) {
@@ -2210,20 +2255,7 @@ static bool enqueueEnrichBatch(const PendingEnrichment* records, size_t count, c
     return true;
 }
 
-// ── Enrichment drain policy ──────────────────────────────────────────────────
-// The drain (enrich queue → LittleFS sidecar) contends with capture appends
-// for _appendMutex.  Rather than draining unconditionally on every service
-// tick, we classify the queue:
-//
-//   IDLE     — nothing to do.
-//   TRICKLE  — drain one batch under the existing mutex; capture is treated
-//              as higher priority and we just trust mutex serialization.
-//   TORRENT  — request a RADIO_STORAGE_MAINTENANCE lease so capture yields,
-//              then drain in a budgeted loop.  Soft preempt by default; if
-//              the oldest queued batch has aged past PREEMPT_AGE_MS we
-//              escalate to force=true so capture gets bumped.
-//
-// Watermarks/timing live in config.h (ENRICH_DRAIN_*).
+// Enrichment drain modes balance sidecar writes against capture appends.
 enum class EnrichDrainMode : uint8_t {
     DRAIN_IDLE,
     DRAIN_TRICKLE,
@@ -2760,7 +2792,9 @@ void _printUsbConsoleHelp() {
     Serial.println("[USB]   companion probe   (one-shot manual BLE probe)");
     Serial.println("[USB]   companion enrich  (manual enrichment; probes first if needed)");
     Serial.println("[USB]   companion cancel  (clear all pending companion requests)");
+    Serial.println("[USB]   time | time sync   (clock status; 'sync' forces NTP now)");
     Serial.println("[USB]   heap status      (internal/PSRAM heap snapshot)");
+    Serial.println("[USB]   entity status    (PSRAM Entity working-set summary)");
     Serial.println("[USB]   spool audit       (read-only spool scan, prints mismatches)");
     Serial.println("[USB]   spool count       (exact total record count + spool stats)");
     Serial.println("[USB]   spool enrich      (pending vs already enriched counts)");
@@ -2769,11 +2803,19 @@ void _printUsbConsoleHelp() {
     Serial.println("[USB]   spool quarantine list  (list /spool_bad files)");
     Serial.println("[USB]   spool quarantine meta  (print quarantine JSON records)");
     Serial.println("[USB]   spool quarantine clear (delete all quarantine files)");
-    Serial.println("[USB]   fieldvault dump    (print and clear FieldVault records)");
+    Serial.println("[USB]   fieldvault dump    (print FieldVault records, keep them)");
+    Serial.println("[USB]   fieldvault clear   (delete retained FieldVault records)");
     Serial.println("[USB]   fieldvault upload  (upload pending FieldVault records only)");
     Serial.println("[USB]   upload now         (manual MQTT upload of pending records)");
     Serial.println("[USB]   upload stop        (safely stop the active MQTT upload)");
     Serial.println("[USB]   upload resume      (allow MQTT uploads again)");
+    Serial.println("[USB]   upload rewind [id] (re-offer uploaded records; 0/blank = all)");
+#if MESHTASTIC_ENABLED && WIO_NRF_ACCESSORY_ENABLED
+    Serial.println("[USB]   mesh status        (Meshtastic client state + counters)");
+    Serial.println("[USB]   mesh on | mesh off (take/release SX1262 for Meshtastic)");
+    Serial.println("[USB]   mesh nodes         (list heard mesh nodes)");
+    Serial.println("[USB]   mesh send <text>   (broadcast a text message)");
+#endif
 #if BLE_SMOKE_ENABLED
     Serial.println("[USB]   ble smoke         (suspend WiFi, init/deinit NimBLE, resume promisc)");
 #endif
@@ -2890,12 +2932,18 @@ void _printUsbWioStatus() {
                   static_cast<unsigned long>(xport.transitions));
 }
 
+// Target watermark for USB_SPOOL_UPLOAD_REWIND — the command runs inside the
+// storage maintenance window, which the dispatch helper enters on its own, so
+// the argument rides here rather than through the shared signature.
+uint32_t g_usbRewindToEventId = 0;
+
 enum UsbSpoolCommandKind : uint8_t {
     USB_SPOOL_AUDIT = 0,
     USB_SPOOL_COUNT,
     USB_SPOOL_ENRICH,
     USB_SPOOL_REPAIR,
-    USB_SPOOL_DIAG
+    USB_SPOOL_DIAG,
+    USB_SPOOL_UPLOAD_REWIND
 };
 
 void _runUsbSpoolCommandInStorageWindow(UsbSpoolCommandKind command,
@@ -2961,6 +3009,21 @@ void _runUsbSpoolCommandInStorageWindow(UsbSpoolCommandKind command,
         case USB_SPOOL_DIAG:
             STORAGE.spoolDiagToSerial();
             break;
+        case USB_SPOOL_UPLOAD_REWIND: {
+            const uint32_t rewound =
+                STORAGE.rewindUploadWatermarks(nullptr, g_usbRewindToEventId);
+            if (rewound == 0) {
+                Serial.println("[UPLOAD] nothing to rewind");
+            } else {
+                Serial.printf("[UPLOAD] rewound %lu session(s) to event=%lu;"
+                              " run upload now to re-send pending=%lu\r\n",
+                              static_cast<unsigned long>(rewound),
+                              static_cast<unsigned long>(g_usbRewindToEventId),
+                              static_cast<unsigned long>(
+                                  STORAGE.getPendingEventCount()));
+            }
+            break;
+        }
     }
 
     window.end("done");
@@ -2996,6 +3059,65 @@ void _handleUsbConsoleLine(const char* rawLine) {
         DebugLog::dumpToSerial();
         return;
     }
+
+#if MESHTASTIC_ENABLED && WIO_NRF_ACCESSORY_ENABLED
+    if (lower == "mesh" || lower == "mesh status") {
+        Serial.printf("[mesh] available=%d enabled=%d node=0x%08lX nodes=%u "
+                      "rxText=%lu rxFrames=%lu decryptFail=%lu txText=%lu\r\n",
+                      MESHTASTIC.isAvailable() ? 1 : 0,
+                      MESHTASTIC.isEnabled() ? 1 : 0,
+                      static_cast<unsigned long>(MESHTASTIC.nodeNum()),
+                      static_cast<unsigned>(MESHTASTIC.nodeCount()),
+                      static_cast<unsigned long>(MESHTASTIC.rxText()),
+                      static_cast<unsigned long>(MESHTASTIC.rxFrames()),
+                      static_cast<unsigned long>(MESHTASTIC.rxDecryptFail()),
+                      static_cast<unsigned long>(MESHTASTIC.txText()));
+        if (MESHTASTIC.lastText()[0]) {
+            Serial.printf("[mesh] last text from 0x%08lX: %s\r\n",
+                          static_cast<unsigned long>(MESHTASTIC.lastTextFrom()),
+                          MESHTASTIC.lastText());
+        }
+        return;
+    }
+    if (lower == "mesh on") {
+        Serial.printf("[mesh] enable %s\r\n", MESHTASTIC.enable() ? "ok" : "failed");
+        return;
+    }
+    if (lower == "mesh off") {
+        MESHTASTIC.disable();
+        Serial.println("[mesh] disabled");
+        return;
+    }
+    if (lower == "mesh nodes") {
+        const size_t n = MESHTASTIC.nodeCount();
+        Serial.printf("[mesh] %u node(s):\r\n", static_cast<unsigned>(n));
+        for (size_t i = 0; i < n; ++i) {
+            MeshtasticNode node;
+            if (!MESHTASTIC.getNode(i, node)) {
+                continue;
+            }
+            Serial.printf("  0x%08lX %-4s %-16s rssi=%d snr=%d hops=%u",
+                          static_cast<unsigned long>(node.num),
+                          node.shortName, node.longName,
+                          node.rssi, node.snr, static_cast<unsigned>(node.hopsAway));
+            if (node.hasPosition) {
+                Serial.printf(" pos=%.5f,%.5f", node.lat, node.lon);
+            }
+            if (node.hasTelemetry) {
+                Serial.printf(" batt=%u%% %.2fV", static_cast<unsigned>(node.batteryLevel),
+                              node.voltage);
+            }
+            Serial.println();
+        }
+        return;
+    }
+    if (line.length() > 10 && lower.startsWith("mesh send ")) {
+        const String msg = line.substring(10);  // preserve original case
+        Serial.printf("[mesh] send %s\r\n",
+                      MESHTASTIC.sendText(msg.c_str()) ? "ok" : "failed");
+        return;
+    }
+#endif
 
     if (lower == "debug on" || lower == "debug off") {
         if (!SETTINGS.isReady()) {
@@ -3333,6 +3455,33 @@ void _handleUsbConsoleLine(const char* rawLine) {
         return;
     }
 
+    if (lower == "time" || lower == "time status" || lower == "time sync") {
+        char iso[24] = {};
+        const bool haveIso = TIME_SVC.formatNowIso(iso, sizeof(iso));
+        Serial.printf("[TIME] valid=%d accurate=%d source=%s utc=%s\r\n",
+                      TIME_SVC.isTimeValid() ? 1 : 0,
+                      TIME_SVC.hasAccurateUtc() ? 1 : 0,
+                      TIME_SVC.sourceName(),
+                      haveIso ? iso : "--");
+        Serial.printf("[TIME] lastNtpAttempt=%s age=%lus\r\n",
+                      TIME_SVC.lastAttemptReason(),
+                      TIME_SVC.everAttempted()
+                          ? TIME_SVC.lastAttemptAgeMs() / 1000UL
+                          : 0UL);
+        if (lower == "time sync") {
+            if (TIME_SVC.hasAccurateUtc()) {
+                Serial.println("[TIME] already accurate; skipping forced NTP");
+            } else {
+                Serial.println("[TIME] forcing NTP acquisition (preempts capture ~5-12s)...");
+                const bool ok = _forceQuickNtp("serial_time_sync");
+                Serial.printf("[TIME] forced NTP %s reason=%s\r\n",
+                              ok ? "ok" : "failed",
+                              TIME_SVC.lastAttemptReason());
+            }
+        }
+        return;
+    }
+
     if (lower == "heap status" || lower == "mem status") {
         const auto kb = [](uint32_t bytes) -> uint32_t {
             return (bytes + 512UL) / 1024UL;
@@ -3366,6 +3515,28 @@ void _handleUsbConsoleLine(const char* rawLine) {
                       STORAGE.isEnrichmentWindowResident() ? 1 : 0,
                       STORAGE.maintenanceFlagsText(),
                       RadioArbiter::ownerName(RADIO_ARB.currentOwner()));
+        return;
+    }
+
+    if (lower == "entity status" || lower == "entities") {
+        const EntitySummary entities = ENTITY_MGR.snapshot();
+        Serial.printf("[ENTITY] total=%lu nearby=%lu observations=%lu dropped=%lu capacity=%u psram=%luKB\r\n",
+                      static_cast<unsigned long>(entities.total),
+                      static_cast<unsigned long>(entities.nearby),
+                      static_cast<unsigned long>(entities.observations),
+                      static_cast<unsigned long>(entities.dropped),
+                      static_cast<unsigned>(EntityManager::MAX_ENTITIES),
+                      static_cast<unsigned long>(ENTITY_MGR.psramBytes() / 1024UL));
+        Serial.printf("[ENTITY] ap=%u clients=%u drones=%u subghz=%u closest=%s name=%s rssi=%d channel=%u located=%d\r\n",
+                      static_cast<unsigned>(entities.byKind[ENTITY_WIFI_AP]),
+                      static_cast<unsigned>(entities.byKind[ENTITY_WIFI_CLIENT]),
+                      static_cast<unsigned>(entities.byKind[ENTITY_DRONE]),
+                      static_cast<unsigned>(entities.byKind[ENTITY_SUBGHZ]),
+                      entities.closestIdentity[0] ? entities.closestIdentity : "-",
+                      entities.closestName[0] ? entities.closestName : "-",
+                      static_cast<int>(entities.closestRssi),
+                      static_cast<unsigned>(entities.closestChannel),
+                      entities.closestLocated ? 1 : 0);
         return;
     }
 
@@ -3469,12 +3640,21 @@ void _handleUsbConsoleLine(const char* rawLine) {
         return;
     }
 
-    if (lower == "fieldvault dump") {
+    if (lower == "fieldvault dump" ||
+        lower == "fieldvault peek" ||
+        lower == "fieldvault dump keep" ||
+        lower == "fieldvault show") {
         FieldVault::dumpToSerial();
+        Serial.println("[FIELD] retained after dump");
+        return;
+    }
+
+    if (lower == "fieldvault clear" ||
+        lower == "fieldvault dump clear") {
         if (FieldVault::clearRetained()) {
-            Serial.println("[FIELD] cleared after dump");
+            Serial.println("[FIELD] cleared");
         } else {
-            Serial.println("[FIELD] clear after dump failed");
+            Serial.println("[FIELD] clear failed");
         }
         return;
     }
@@ -3546,6 +3726,31 @@ void _handleUsbConsoleLine(const char* rawLine) {
                           RadioArbiter::ownerName(RADIO_ARB.currentOwner()),
                           pending);
         }
+        return;
+    }
+
+    if (lower == "upload rewind" || lower.startsWith("upload rewind ")) {
+        if (!STORAGE.isReady()) {
+            Serial.println("[UPLOAD] storage not ready");
+            return;
+        }
+        if (MQTT_MGR.getState() != MQTT_IDLE || STORAGE.isUploadBatchActive()) {
+            Serial.println("[UPLOAD] busy; stop the upload first");
+            return;
+        }
+
+        g_usbRewindToEventId = 0;
+        if (lower.length() > 14) {
+            g_usbRewindToEventId = static_cast<uint32_t>(
+                strtoul(lower.substring(14).c_str(), nullptr, 10));
+        }
+
+        // The rewind recounts pending from the spool, which is a maintenance
+        // operation — run it under the same storage window the spool commands
+        // use so the recount doesn't fire a contract violation against the
+        // live capture owner.
+        _runUsbSpoolCommandInStorageWindow(USB_SPOOL_UPLOAD_REWIND,
+                                           "manual_upload_rewind");
         return;
     }
 
@@ -3730,6 +3935,14 @@ void _captureDisplayFrameState(DisplayFrameState& snapshot) {
     snapshot.subGhzMode = g_state.subGhzMode;
     snapshot.subGhzFrequencyHz = g_state.subGhzFrequencyHz;
     snapshot.subGhzNodeCount = g_state.subGhzNodeCount;
+    snapshot.meshAvailable = g_state.meshAvailable;
+    snapshot.meshEnabled = g_state.meshEnabled;
+    snapshot.meshNodeCount = g_state.meshNodeCount;
+    snapshot.meshRxText = g_state.meshRxText;
+    snapshot.meshTxText = g_state.meshTxText;
+    snapshot.meshNodeNum = g_state.meshNodeNum;
+    snapshot.meshLastFrom = g_state.meshLastFrom;
+    strlcpy(snapshot.meshLastText, g_state.meshLastText, sizeof(snapshot.meshLastText));
     strlcpy(snapshot.wifiSSID, g_state.wifiSSID, sizeof(snapshot.wifiSSID));
     snapshot.wifiNetworkCount = g_state.wifiNetworkCount;
     snapshot.probePacketCount = g_state.probePacketCount;
@@ -3857,9 +4070,16 @@ static bool _runPostMaintenanceUtcAcquisition() {
         return true;
     }
     if (!STORAGE.isCaptureSafeToResume()) {
+        // Silent before: the retry would just skip and the health block still
+        // said UNSYNCED with a stale reason. Record it so the operator can see
+        // storage safety — not a network fault — is what's blocking the clock.
+        TIME_SVC.recordAttempt("capture_unsafe_skip");
+        DLOG_WARN("TIME", "Quick NTP skipped: storage not capture-safe flags=%s",
+                  STORAGE.maintenanceFlagsText());
         return false;
     }
     if (!RADIO_ARB.requestUploadLease(12000UL, "quick_ntp_after_maintenance", true)) {
+        TIME_SVC.recordAttempt("lease_denied");
         DLOG_WARN("TIME", "Quick NTP lease denied owner=%s",
                   RadioArbiter::ownerName(RADIO_ARB.currentOwner()));
         return false;
@@ -3869,6 +4089,28 @@ static bool _runPostMaintenanceUtcAcquisition() {
     RADIO_ARB.release(RADIO_WIFI_UPLOAD,
                       ok ? "quick_ntp_done" : "quick_ntp_failed",
                       false);
+    return ok;
+}
+
+// Forced NTP grab that bypasses the capture-safety gate. Used at boot (where we
+// want a trusted clock before steady-state capture can strand records) and from
+// the `time sync` serial command. force=true on the lease so it preempts
+// capture; the caller restores default capture afterward.
+static bool _forceQuickNtp(const char* reason) {
+    if (TIME_SVC.hasAccurateUtc()) {
+        return true;
+    }
+    if (!RADIO_ARB.requestUploadLease(12000UL,
+                                      reason ? reason : "force_ntp", true)) {
+        TIME_SVC.recordAttempt("lease_denied");
+        DLOG_WARN("TIME", "Force NTP lease denied owner=%s",
+                  RadioArbiter::ownerName(RADIO_ARB.currentOwner()));
+        return false;
+    }
+    const bool ok = TIME_SVC.acquireUtcFromSavedWiFi(12000UL);
+    RADIO_ARB.release(RADIO_WIFI_UPLOAD,
+                      ok ? "force_ntp_done" : "force_ntp_failed", false);
+    RADIO_ARB.ensureDefaultCapture(ok ? "force_ntp_done" : "force_ntp_retry");
     return ok;
 }
 
@@ -4070,6 +4312,21 @@ void _applySubGhzStatusToState(const SubGhzStatus& sg) {
     STATE_WRITE_END();
 }
 
+#if MESHTASTIC_ENABLED && WIO_NRF_ACCESSORY_ENABLED
+void _applyMeshStatusToState() {
+    STATE_WRITE_BEGIN();
+    g_state.meshAvailable = MESHTASTIC.isAvailable();
+    g_state.meshEnabled = MESHTASTIC.isEnabled();
+    g_state.meshNodeCount = static_cast<int>(MESHTASTIC.nodeCount());
+    g_state.meshRxText = MESHTASTIC.rxText();
+    g_state.meshTxText = MESHTASTIC.txText();
+    g_state.meshNodeNum = MESHTASTIC.nodeNum();
+    g_state.meshLastFrom = MESHTASTIC.lastTextFrom();
+    strlcpy(g_state.meshLastText, MESHTASTIC.lastText(), sizeof(g_state.meshLastText));
+    STATE_WRITE_END();
+}
+#endif
+
 void _applyPowerSnapshotToState(const PowerSnapshot& power) {
     STATE_WRITE_BEGIN();
     g_state.battPercent = power.percent;
@@ -4171,6 +4428,19 @@ void _requestSleepTransition(bool storageOk,
         }
     }
 
+    // Best-effort: quiet the WIO nRF/SX1262 accessory before we sleep. The
+    // module has no power-enable pin and the bridge protocol has no nRF
+    // system-off verb, so firmware can't cut its rail — but we can stop the
+    // SX1262 from burning RX current indefinitely with nobody servicing it,
+    // and drop any BLE link. Both are fire-and-forget UART lines; the sleep-
+    // presentation hold (>=SLEEP_PRESENTATION_HOLD_MS) lets them flush before
+    // esp_deep_sleep_start(). (True near-zero "off" for the module needs a
+    // hardware load switch on its supply rail — see POWER notes.)
+    if (WIO_NRF.subghzAvailable()) {
+        WIO_NRF.subghzSetMode(WioNrfAccessory::SUBGHZ_MODEM_OFF);
+    }
+    WIO_NRF.disconnectPhone("sleep");
+
     STATE_WRITE_BEGIN();
     spectreBeginSleepTransitionLocked(millis(), SLEEP_PRESENTATION_TIMEOUT_MS);
     g_state.screenChanged = true;
@@ -4185,31 +4455,33 @@ void _requestSleepTransition(bool storageOk,
 
 uint32_t _displayFrameIntervalForPowerState(uint8_t powerState) {
     switch (static_cast<PowerState>(powerState)) {
-        case POWER_STATE_BATTERY_ECONOMY:  return 85UL;
-        case POWER_STATE_BATTERY_CRITICAL: return 110UL;
+        case POWER_STATE_BATTERY_NORMAL:   return 70UL;
+        case POWER_STATE_BATTERY_ECONOMY:  return 125UL;
+        case POWER_STATE_BATTERY_CRITICAL: return 180UL;
         case POWER_STATE_USB:
-        case POWER_STATE_BATTERY_NORMAL:
         default:                           return DISPLAY_FRAME_INTERVAL_MS;
     }
 }
 
 uint32_t _displayMascotIntervalForPowerState(uint8_t powerState) {
     switch (static_cast<PowerState>(powerState)) {
-        case POWER_STATE_BATTERY_ECONOMY:  return 220UL;
-        case POWER_STATE_BATTERY_CRITICAL: return 280UL;
+        case POWER_STATE_BATTERY_NORMAL:   return 260UL;
+        case POWER_STATE_BATTERY_ECONOMY:  return 420UL;
+        case POWER_STATE_BATTERY_CRITICAL: return 650UL;
         case POWER_STATE_USB:
-        case POWER_STATE_BATTERY_NORMAL:
         default:                           return DISPLAY_MASCOT_INTERVAL_MS;
     }
 }
 
 uint8_t _displayBrightnessForPowerState(uint8_t powerState) {
     switch (static_cast<PowerState>(powerState)) {
-        case POWER_STATE_BATTERY_ECONOMY:
-        case POWER_STATE_BATTERY_CRITICAL:
-            return 50;
-        case POWER_STATE_USB:
         case POWER_STATE_BATTERY_NORMAL:
+            return 72;
+        case POWER_STATE_BATTERY_ECONOMY:
+            return 38;
+        case POWER_STATE_BATTERY_CRITICAL:
+            return 22;
+        case POWER_STATE_USB:
         default:
             return 100;
     }
@@ -4217,12 +4489,13 @@ uint8_t _displayBrightnessForPowerState(uint8_t powerState) {
 
 ExecutionPolicy::UiRefreshSchedule _uiRefreshScheduleForPowerState(uint8_t powerState) {
     switch (static_cast<PowerState>(powerState)) {
-        case POWER_STATE_BATTERY_ECONOMY:
-            return {3000UL, 1250UL, 1750UL};
-        case POWER_STATE_BATTERY_CRITICAL:
-            return {4000UL, 1600UL, 2200UL};
-        case POWER_STATE_USB:
         case POWER_STATE_BATTERY_NORMAL:
+            return {2500UL, 1000UL, 1400UL};
+        case POWER_STATE_BATTERY_ECONOMY:
+            return {5000UL, 1800UL, 2500UL};
+        case POWER_STATE_BATTERY_CRITICAL:
+            return {8000UL, 2600UL, 4000UL};
+        case POWER_STATE_USB:
         default:
             return {2000UL, PWNY_SCREEN_REFRESH_MS, 1000UL};
     }
@@ -4230,6 +4503,7 @@ ExecutionPolicy::UiRefreshSchedule _uiRefreshScheduleForPowerState(uint8_t power
 
 void _initializeHardwareManagers(uint32_t& lastWifiTick) {
     MQTT_MGR.begin();
+    ENTITY_MGR.begin();
     BADUSB_MGR.begin();
 
     WIO_NRF.begin(2500);
@@ -4238,14 +4512,15 @@ void _initializeHardwareManagers(uint32_t& lastWifiTick) {
     DASHBOARD_STREAMER.begin();
     NOTIF_CENTER.begin();
 
-    SUBGHZ.attachBackend(&subghzReyax);
 #if WIO_NRF_ACCESSORY_ENABLED
-    // Scaffold: registered so the moment the WIO firmware grows SUBGHZ_*
-    // verbs and reports SX1262_PRESENT, the manager can promote it without
-    // an init-order change.  begin() currently returns false, so Reyax
-    // remains the active backend until the bridge is implemented.
+    // WIO SX1262 is the preferred sub-GHz radio: SubGhzManager::begin() keeps
+    // the first backend whose begin() succeeds, and the SX1262 backend only
+    // reports ready when CAPS confirms SX1262_PRESENT. Register it first so it
+    // wins when the WIO accessory is attached; Reyax (RYLR998) stays as the
+    // automatic fallback when the WIO/SX1262 is absent.
     SUBGHZ.attachBackend(&subghzWioSx1262);
 #endif
+    SUBGHZ.attachBackend(&subghzReyax);
     const bool subGhzOk = SUBGHZ.begin();
     if (subGhzOk) {
         SUBGHZ.setMode(SubGhzMode::MONITOR);
@@ -4262,6 +4537,14 @@ void _initializeHardwareManagers(uint32_t& lastWifiTick) {
     } else {
         DLOG_ERROR("SUBGHZ", "Init failed");
     }
+
+#if MESHTASTIC_ENABLED && WIO_NRF_ACCESSORY_ENABLED
+    // Meshtastic shares the single SX1262 with native SubGhz, so it starts
+    // DISABLED (native SubGhz owns the radio at boot). Enable on demand via the
+    // MESH command — that hands the radio to the mesh client and back.
+    MESHTASTIC.attach(&WIO_NRF);
+    MESHTASTIC.begin();
+#endif
 
     SESS.begin();
     WIFI_MGR.begin();
@@ -4428,6 +4711,15 @@ bool _visibleDisplayDataChanged(const DisplayFrameState& previous,
                    _textChanged(previous.subGhzModule, next.subGhzModule) ||
                    _textChanged(previous.loraLastPayload, next.loraLastPayload);
 
+        case SCREEN_MESHTASTIC:
+            return previous.meshEnabled != next.meshEnabled ||
+                   previous.meshNodeCount != next.meshNodeCount ||
+                   previous.meshRxText != next.meshRxText ||
+                   previous.meshTxText != next.meshTxText ||
+                   previous.meshNodeNum != next.meshNodeNum ||
+                   previous.meshLastFrom != next.meshLastFrom ||
+                   _textChanged(previous.meshLastText, next.meshLastText);
+
         case SCREEN_WIFI:
             return previous.wifiNetworkCount != next.wifiNetworkCount ||
                    previous.probePacketCount != next.probePacketCount ||
@@ -4455,9 +4747,6 @@ bool _visibleDisplayDataChanged(const DisplayFrameState& previous,
                    previous.battVoltage != next.battVoltage ||
                    previous.uptimeMs / 1000UL != next.uptimeMs / 1000UL ||
                    _textChanged(previous.storageStr, next.storageStr);
-
-        case SCREEN_MESHTASTIC:
-            return false;
 
         default:
             return true;
@@ -4507,6 +4796,7 @@ const char* _buttonEventName(ButtonEvent evt) {
         case BTN_B_SHORT: return "B_SHORT";
         case BTN_B_LONG:  return "B_LONG";
         case BTN_AB_SHORT:return "AB_SHORT";
+        case BTN_AB_LONG: return "AB_LONG";
         case BTN_NONE:
         default:          return "NONE";
     }
@@ -4551,6 +4841,8 @@ const char* _buttonActionName(SpectreButtonAction action) {
         case BUTTON_ACTION_DEBRIEF_CLEAR:    return "DEBRIEF_CLEAR";
         case BUTTON_ACTION_DEBRIEF_BACK:     return "DEBRIEF_BACK";
         case BUTTON_ACTION_BLE_TEST:          return "BLE_TEST";
+        case BUTTON_ACTION_MESH_TOGGLE:       return "MESH_TOGGLE";
+        case BUTTON_ACTION_MESH_SEND:         return "MESH_SEND";
         default:                             return "UNKNOWN";
     }
 }
@@ -4680,6 +4972,14 @@ void _logRuntimeHealth(uint32_t nowMs) {
             uint8_t radioOwner;
             bool timeValid;
             unsigned long uptimeMs;
+            int battPercent;
+            uint16_t battVoltageMv;
+            int16_t battTrendMvPerMin;
+            uint16_t battCapacityMah;
+            uint16_t battRuntimeMin;
+            uint8_t powerSource;
+            uint8_t powerState;
+            bool charging;
             int loraPacketCount;
             uint8_t subGhzMode;
             int subGhzNodeCount;
@@ -4703,6 +5003,14 @@ void _logRuntimeHealth(uint32_t nowMs) {
         health.radioOwner = g_state.radioOwner;
         health.timeValid = g_state.timeValid;
         health.uptimeMs = g_state.uptimeMs;
+        health.battPercent = g_state.battPercent;
+        health.battVoltageMv = g_state.battVoltageMv;
+        health.battTrendMvPerMin = g_state.battTrendMvPerMin;
+        health.battCapacityMah = g_state.battCapacityMah;
+        health.battRuntimeMin = g_state.battRuntimeMin;
+        health.powerSource = g_state.powerSource;
+        health.powerState = g_state.powerState;
+        health.charging = g_state.charging;
         health.loraPacketCount = g_state.loraPacketCount;
         health.subGhzMode = g_state.subGhzMode;
         health.subGhzNodeCount = g_state.subGhzNodeCount;
@@ -4774,6 +5082,14 @@ void _logRuntimeHealth(uint32_t nowMs) {
             const unsigned long m = (s % 3600UL) / 60UL;
             const unsigned long sec = s % 60UL;
             Serial.printf("[HEALTH] uptime=%luh%02lum%02lus\r\n", h, m, sec);
+            // No trusted clock this boot => every captured record has epochUtc==0
+            // and is permanently unenrichable. Surface it in the always-on
+            // health block (TIME logs are debug-area gated and were invisible).
+            Serial.printf("[HEALTH] CLOCK=UNSYNCED records-this-boot-unenrichable lastNtp=%s age=%lus\r\n",
+                          TIME_SVC.lastAttemptReason(),
+                          TIME_SVC.everAttempted()
+                              ? TIME_SVC.lastAttemptAgeMs() / 1000UL
+                              : 0UL);
         }
         Serial.printf("[HEALTH] heap used=%lu/%luKB free=%luKB min=%luKB largest=%luKB frag=%lu%%\r\n",
                       static_cast<unsigned long>(kb(usedHeap)),
@@ -4801,6 +5117,15 @@ void _logRuntimeHealth(uint32_t nowMs) {
         Serial.printf("[HEALTH] core usage: core0=%u%% core1=%u%%\r\n",
                       static_cast<unsigned>(g_coreLoad.busyPct[0]),
                       static_cast<unsigned>(g_coreLoad.busyPct[1]));
+        Serial.printf("[HEALTH] power=%s state=%s batt=%d%% %umV trend=%dmV/min runtime=%umin cap=%umAh charging=%d\r\n",
+                      _fieldVaultPowerSourceName(static_cast<PowerSource>(health.powerSource)),
+                      _fieldVaultPowerStateName(static_cast<PowerState>(health.powerState)),
+                      health.battPercent,
+                      static_cast<unsigned>(health.battVoltageMv),
+                      static_cast<int>(health.battTrendMvPerMin),
+                      static_cast<unsigned>(health.battRuntimeMin),
+                      static_cast<unsigned>(health.battCapacityMah),
+                      health.charging ? 1 : 0);
         Serial.printf("[HEALTH] radio=%s wifi=%d ble=%d gps=%d nets=%d pendingUpload=%s pendingEnrich=%lu\r\n",
                       RadioArbiter::ownerName(static_cast<RadioOwner>(health.radioOwner)),
                       health.wifiConnected ? 1 : 0,
@@ -4940,6 +5265,33 @@ bool _runButtonAction(SpectreButtonAction action, bool storageOk) {
         case BUTTON_ACTION_SAVE_LOCATION:
             _requestBleTextEntry("save_location", "Save location:");
             return true;
+        case BUTTON_ACTION_MESH_TOGGLE:
+#if MESHTASTIC_ENABLED && WIO_NRF_ACCESSORY_ENABLED
+            if (!MESHTASTIC.isAvailable()) {
+                _queueNotification(NOTIF_DEVICE_NEW, "MESH: no SX1262");
+            } else if (MESHTASTIC.isEnabled()) {
+                MESHTASTIC.disable();
+                _queueNotification(NOTIF_DEVICE_NEW, "MESH OFF");
+            } else {
+                MESHTASTIC.enable();
+                _queueNotification(NOTIF_DEVICE_NEW, "MESH ON");
+            }
+            STATE_WRITE_BEGIN();
+            g_state.dataRefresh = true;
+            STATE_WRITE_END();
+#endif
+            return true;
+        case BUTTON_ACTION_MESH_SEND:
+#if MESHTASTIC_ENABLED && WIO_NRF_ACCESSORY_ENABLED
+            if (!MESHTASTIC.isEnabled()) {
+                _queueNotification(NOTIF_DEVICE_NEW, "MESH: enable first");
+                return true;
+            }
+            // Compose over the phone-BLE keyboard; the typed text routes to
+            // MESHTASTIC.sendText() in the text-input result dispatch.
+            _requestBleTextEntry("mesh_send", "Mesh message:");
+#endif
+            return true;
         case BUTTON_ACTION_MISSION_NEXT: {
             MissionProfile next = MISSION_RECON;
             STATE_READ_BEGIN();
@@ -5055,6 +5407,7 @@ bool _runButtonAction(SpectreButtonAction action, bool storageOk) {
             g_state.kaliSyncAvailable = (pendingUploads > 0);
             g_state.dataRefresh      = true;
             STATE_WRITE_END();
+            ENTITY_MGR.reset();
             _dispatchUiCommand(UI_CMD_OPEN_DEBRIEF);
             DLOG_INFO("SYS", "Session data cleared");
             STORAGE.checkHealth();
@@ -5513,7 +5866,10 @@ static bool _syncDisplayFromSnapshot(const DisplayFrameState& s) {
                 break;
 
             case SCREEN_MESHTASTIC:
-                display.drawMeshtastic("--", "LONGFAST");
+                display.drawMeshtastic(s.meshEnabled, s.meshNodeNum,
+                                       s.meshNodeCount, s.meshRxText,
+                                       s.meshTxText, s.meshLastFrom,
+                                       s.meshLastText);
                 break;
 
             case SCREEN_WIFI:
@@ -5856,6 +6212,19 @@ void TaskHardware(void* pvParameters) {
 
     DLOG_INFO("CORE", "Hardware ready");
 
+    // Boot-time trusted-clock acquisition. A boot that reaches steady-state
+    // capture without a clock stamps every record epochUtc==0 (unenrichable),
+    // and the opportunistic retries can be starved for the whole boot by a
+    // wedged enrich session or capture-safety gate. Grab NTP here, up front,
+    // while workState is guaranteed IDLE and nothing can wedge it. Bounded by
+    // acquireUtcFromSavedWiFi's own timeout so a dead AP can't hang boot.
+    if (storageOk && !TIME_SVC.hasAccurateUtc()) {
+        DLOG_INFO("TIME", "Boot NTP acquisition starting");
+        const bool bootUtcOk = _forceQuickNtp("boot_ntp");
+        DLOG_INFO("TIME", "Boot NTP acquisition %s reason=%s",
+                  bootUtcOk ? "ok" : "failed", TIME_SVC.lastAttemptReason());
+    }
+
     for (;;) {
         static uint32_t lastWifiRefresh = 0;
         static uint32_t lastPwnyRefresh = 0;
@@ -5864,6 +6233,16 @@ void TaskHardware(void* pvParameters) {
         static uint32_t lastLoopStartMs = 0;
         static uint32_t lastLoopGapWarnMs = 0;
         static uint32_t suppressedLoopGapWarns = 0;
+        static uint32_t lastFieldVaultPowerSampleMs = 0;
+        static uint32_t lastFieldVaultRunSampleMs = 0;
+        static uint32_t lastFieldVaultRunTransitionMs = 0;
+        static uint8_t lastFieldVaultRunOwner = 0xff;
+        static uint32_t lastFieldVaultRunPendingUpload = UINT32_MAX;
+        static uint32_t lastFieldVaultRunPendingEnrich = UINT32_MAX;
+        static bool lastFieldVaultRunUploadActive = false;
+        static bool lastFieldVaultRunWioAvailable = false;
+        static bool lastFieldVaultRunWioBleProxy = false;
+        static bool lastFieldVaultRunWioPhoneConnected = false;
         const uint32_t loopNow = millis();
         if (lastLoopStartMs != 0) {
             const uint32_t loopGapMs = loopNow - lastLoopStartMs;
@@ -5899,6 +6278,99 @@ void TaskHardware(void* pvParameters) {
         POWER_MGR.tick(loopNow);
         const PowerSnapshot power = POWER_MGR.consumeSnapshot();
         _applyPowerSnapshotToState(power);
+        const uint8_t currentRadioOwner =
+            static_cast<uint8_t>(RADIO_ARB.currentOwner());
+
+        if (FieldVault::isReady()) {
+            const bool duePowerSample =
+                lastFieldVaultPowerSampleMs == 0 ||
+                (loopNow - lastFieldVaultPowerSampleMs) >= FIELDVAULT_POWER_SAMPLE_INTERVAL_MS;
+            if (power.sourceChanged || power.stateChanged || power.criticalJustEntered ||
+                duePowerSample) {
+                const char* reason = power.criticalJustEntered ? "critical" :
+                                     power.sourceChanged ? "source" :
+                                     power.stateChanged ? "state" :
+                                     (lastFieldVaultPowerSampleMs == 0 ? "boot" : "interval");
+                _appendFieldVaultPowerSample(
+                    power,
+                    currentRadioOwner,
+                    reason);
+                lastFieldVaultPowerSampleMs = loopNow;
+            }
+
+            uint32_t pendingUpload = 0;
+            uint32_t pendingEnrich = 0;
+            bool uploadActive = false;
+            STATE_READ_BEGIN();
+            pendingUpload =
+                g_state.storagePendingUploadMission + g_state.storagePendingUploadNoise;
+            pendingEnrich =
+                g_state.storagePendingEnrichMission + g_state.storagePendingEnrichNoise;
+            uploadActive = g_state.uploadActive;
+            STATE_READ_END();
+#if WIO_NRF_ACCESSORY_ENABLED
+            const bool wioAvailable = WIO_NRF.available();
+            const bool wioBleProxy = WIO_NRF.hasBleProxy();
+            const bool wioPhoneConnected = WIO_NRF.phoneConnected();
+#else
+            const bool wioAvailable = false;
+            const bool wioBleProxy = false;
+            const bool wioPhoneConnected = false;
+#endif
+            const bool firstRunSample = lastFieldVaultRunSampleMs == 0;
+            const bool dueRunSample =
+                firstRunSample ||
+                (loopNow - lastFieldVaultRunSampleMs) >= FIELDVAULT_RUN_SAMPLE_INTERVAL_MS;
+            const bool ownerChanged =
+                !firstRunSample && currentRadioOwner != lastFieldVaultRunOwner;
+            const bool uploadChanged =
+                !firstRunSample && uploadActive != lastFieldVaultRunUploadActive;
+            const bool wioChanged =
+                !firstRunSample &&
+                (wioAvailable != lastFieldVaultRunWioAvailable ||
+                 wioBleProxy != lastFieldVaultRunWioBleProxy ||
+                 wioPhoneConnected != lastFieldVaultRunWioPhoneConnected);
+            const uint32_t pendingUploadDelta =
+                (pendingUpload > lastFieldVaultRunPendingUpload)
+                    ? (pendingUpload - lastFieldVaultRunPendingUpload)
+                    : (lastFieldVaultRunPendingUpload - pendingUpload);
+            const uint32_t pendingEnrichDelta =
+                (pendingEnrich > lastFieldVaultRunPendingEnrich)
+                    ? (pendingEnrich - lastFieldVaultRunPendingEnrich)
+                    : (lastFieldVaultRunPendingEnrich - pendingEnrich);
+            const bool pendingChanged =
+                !firstRunSample &&
+                (pendingUploadDelta >= FIELDVAULT_RUN_PENDING_DELTA_MIN ||
+                 pendingEnrichDelta >= FIELDVAULT_RUN_PENDING_DELTA_MIN);
+            const bool transitionChanged =
+                ownerChanged || uploadChanged || wioChanged || pendingChanged;
+            const bool transitionAllowed =
+                firstRunSample ||
+                lastFieldVaultRunTransitionMs == 0 ||
+                (loopNow - lastFieldVaultRunTransitionMs) >=
+                    FIELDVAULT_RUN_TRANSITION_MIN_MS;
+
+            if (dueRunSample || (transitionChanged && transitionAllowed)) {
+                const char* reason = firstRunSample ? "boot" :
+                                     uploadChanged ? "upload" :
+                                     wioChanged ? "wio" :
+                                     ownerChanged ? "owner" :
+                                     pendingChanged ? "pending" :
+                                     "interval";
+                _appendFieldVaultRunSample(currentRadioOwner, reason);
+                lastFieldVaultRunSampleMs = loopNow;
+                if (transitionChanged) {
+                    lastFieldVaultRunTransitionMs = loopNow;
+                }
+                lastFieldVaultRunOwner = currentRadioOwner;
+                lastFieldVaultRunPendingUpload = pendingUpload;
+                lastFieldVaultRunPendingEnrich = pendingEnrich;
+                lastFieldVaultRunUploadActive = uploadActive;
+                lastFieldVaultRunWioAvailable = wioAvailable;
+                lastFieldVaultRunWioBleProxy = wioBleProxy;
+                lastFieldVaultRunWioPhoneConnected = wioPhoneConnected;
+            }
+        }
 
         if (power.criticalJustEntered) {
             if (storageOk) {
@@ -5933,6 +6405,7 @@ void TaskHardware(void* pvParameters) {
         DASHBOARD_STREAMER.tick();
         NOTIF_CENTER.tick();
         SUBGHZ.tick();
+        MESHTASTIC.tick();
 
         {
             const SubGhzStatus sg = SUBGHZ.status();
@@ -5949,6 +6422,10 @@ void TaskHardware(void* pvParameters) {
             g_state.subGhzNodeCount = static_cast<int>(sg.nodeCount);
             STATE_WRITE_END();
         }
+
+#if MESHTASTIC_ENABLED && WIO_NRF_ACCESSORY_ENABLED
+        _applyMeshStatusToState();
+#endif
 
         if (SUBGHZ.available()) {
             SubGhzPacket pkt = {};
@@ -5999,6 +6476,19 @@ void TaskHardware(void* pvParameters) {
         }
 
         ButtonEvent evt = buttons.getEvent();
+
+        // Global sleep chord: holding both buttons ~1.5s requests deep sleep
+        // from ANY screen, and even when the display has blanked. Handled
+        // before the display-wake swallow below so the user doesn't have to
+        // first wake the screen and then repeat the hold. It never collides
+        // with per-screen A/B bindings because those have no combo slot.
+        if (evt == BTN_AB_LONG) {
+            _markUiActivity();
+            _emitButtonLog("evt=AB_LONG action=SLEEP route=global");
+            _requestSleepTransition(storageOk, true, true, "manual_sleep");
+            continue;
+        }
+
         if (evt != BTN_NONE) {
             _markUiActivity();
             if (!_isDisplayAwake()) {
@@ -6105,24 +6595,14 @@ void TaskHardware(void* pvParameters) {
 
         TIME_SVC.tick();
 
-        // Opportunistic "if we own STORAGE_MAINT, run maintenance" block.
-        // This fires whenever the radio arbiter happens to be on STORAGE_MAINT
-        // — including transitions where a non-maintenance caller (most
-        // notably runEnrichDrain) took the lease purely to apply enrichment
-        // batches. If that caller has a resident enrichment window OR an
-        // enrichment session is actively in flight, opening a fresh maintenance
-        // window here would release the cursor and force a costly re-scan.
-        // Skip in those cases; the lease holder will release when done and
-        // the maintenance flags persist for the next genuinely-idle window.
-        //
-        // Gate on workState (the actual in-flight session), NOT on
-        // manualEnrichRequested. That request flag is a sticky user *intent*:
-        // it is deliberately retained across probe-backoff cycles while the
-        // phone is absent, and (on the enrich-failure path) is not cleared at
-        // all. Gating maintenance on it let a single failed-or-pending manual
-        // enrich starve storage maintenance indefinitely — the capture gate
-        // never cleared and the arbiter re-suspended WiFi every ~5s forever.
+        // Let queued or active user companion work preempt routine maintenance.
+        // Otherwise a multi-window audit can reacquire the storage lease before
+        // the companion scheduler has a chance to consume the request.
         if (storageOk && RADIO_ARB.isOwner(RADIO_STORAGE_MAINTENANCE) &&
+            !g_companionCmd.probe &&
+            !g_companionCmd.enrich &&
+            !g_companionCmd.cancel &&
+            !companionHasPriorityReason(companion) &&
             !STORAGE.isEnrichmentWindowResident() &&
             companion.workState != COMPANION_WORK_ENRICHING) {
             const bool rebuildCaptureIndex =
@@ -6189,23 +6669,22 @@ void TaskHardware(void* pvParameters) {
             }
         }
 
-        // Prioritize acquiring a trusted clock. The post-maintenance hook above
-        // only fires when a maintenance window happens to run; a quiet boot can
-        // otherwise capture for minutes (or until reboot) with no clock, making
-        // every record from this boot permanently unenrichable. Retry quick-NTP
-        // proactively — early (first qualifying tick) and then every
-        // UTC_ACQUIRE_RETRY_MS — but only while capture owns the radio and no
-        // enrich session is in flight, so we never disturb another lease holder.
+        // Keep this boot's captures enrichable by acquiring UTC unless a live
+        // WIO-proxy enrichment exchange is actually in flight.
+        const bool enrichActuallyInFlight =
+            companion.workState == COMPANION_WORK_ENRICHING &&
+            PHONE_XPORT.isWioActive() &&
+            (WIO_NRF.isCompanionLinkBusy() ||
+             WIO_NRF.isEnrichmentExchangeActive());
         static uint32_t lastUtcAcquireMs = 0;
         if (storageOk && !TIME_SVC.hasAccurateUtc() &&
             RADIO_ARB.isOwner(RADIO_WIFI_CAPTURE) &&
-            companion.workState != COMPANION_WORK_ENRICHING &&
+            !enrichActuallyInFlight &&
             (lastUtcAcquireMs == 0 ||
              millis() - lastUtcAcquireMs > UTC_ACQUIRE_RETRY_MS)) {
             lastUtcAcquireMs = millis();
-            const bool utcOk = _runPostMaintenanceUtcAcquisition();
-            RADIO_ARB.ensureDefaultCapture(utcOk ? "utc_acquire_done"
-                                                 : "utc_acquire_retry");
+            // Force-grab bypasses capture-safety; the gate above protects enrich.
+            const bool utcOk = _forceQuickNtp("utc_acquire");
             if (utcOk) {
                 DLOG_INFO("TIME",
                           "Trusted clock acquired via proactive quick-NTP retry");
@@ -6246,6 +6725,14 @@ void TaskHardware(void* pvParameters) {
                 g_state.sessionTagSet = true;
                 STATE_WRITE_END();
                 DLOG_INFO("TAG", "Manual tag: %s", inputBuf);
+#if MESHTASTIC_ENABLED && WIO_NRF_ACCESSORY_ENABLED
+            } else if (strncmp(prompt, "Mesh message:", 13) == 0) {
+                const bool sent = MESHTASTIC.sendText(inputBuf);
+                _queueNotification(NOTIF_DEVICE_NEW,
+                                   sent ? "MESH SENT" : "MESH SEND FAIL");
+                DLOG_INFO("MESH", "Manual send (%s): %s",
+                          sent ? "ok" : "fail", inputBuf);
+#endif
             } else if (strncmp(prompt, "Save location:", 14) == 0) {
                 float lat = 0.0f;
                 float lon = 0.0f;
@@ -6400,6 +6887,26 @@ void TaskHardware(void* pvParameters) {
                     companion.probeBackoffMissCount = 0;
                 } else if (companionPhoneAvailabilityStale(companion)) {
                     companion.phoneState = COMPANION_PHONE_UNKNOWN;
+                }
+
+                // Auto exclusive enrich: the phone is reachable and the enrich
+                // backlog crossed the threshold, so commit to a full exclusive
+                // drain (stop capture, enrich + 2-pass-retire the whole backlog,
+                // then return to capture) instead of a capture-coexisting
+                // trickle. Reuses the validated manual-drain machinery; the probe
+                // cadence/backoff rate-limits how often we re-enter, and once the
+                // backlog is drained the threshold stops re-triggering it.
+                if (companion.phoneState == COMPANION_PHONE_AVAILABLE &&
+                    companion.workState == COMPANION_WORK_IDLE &&
+                    !companion.manualEnrichRequested &&
+                    !companion.offloadPrepRequested &&
+                    !companion.timeSyncRequested &&
+                    companion.pendingItems >= ENRICH_PENDING_THRESHOLD_WIO) {
+                    companion.manualEnrichRequested = true;
+                    DLOG_INFO("COMP",
+                              "Auto exclusive enrich: phone ready, backlog=%lu >= %lu; drain then resume capture",
+                              static_cast<unsigned long>(companion.pendingItems),
+                              static_cast<unsigned long>(ENRICH_PENDING_THRESHOLD_WIO));
                 }
 
                 if (companion.manualProbeRequested) {
@@ -6699,6 +7206,8 @@ void TaskHardware(void* pvParameters) {
 
         RADIO_ARB.tick();
 
+        ENTITY_MGR.tick();
+
         syncRuntimePresentation();
 
         const uint32_t now = millis();
@@ -6724,15 +7233,33 @@ void TaskHardware(void* pvParameters) {
             canRunStorageMaintenance(companion, power, now)) {
             g_lastCaptureMaintenanceMs = now;
             sectionStartMs = millis();
-            const bool progressed = STORAGE.runCaptureMaintenanceSlice(
-                CAPTURE_MAINTENANCE_BUDGET_MS,
-                "capture_micro_idle");
-            g_lastMaintenanceRunMs = millis();
-            if (progressed) {
-                _publishStorageMaintenanceMirror(true,
-                                                 false,
-                                                 true,
-                                                 millis() - sectionStartMs);
+            if (STORAGE.needsMaintenanceBeforeCapture()) {
+                RADIO_ARB.release(RADIO_WIFI_CAPTURE,
+                                  "capture_storage_maintenance",
+                                  false);
+                const bool granted = RADIO_ARB.requestStorageMaintenanceLease(
+                    STORAGE.isCaptureSafeToResume() ? 5000UL : 30000UL,
+                    "capture_storage_maintenance",
+                    true);
+                if (!granted) {
+                    DLOG_WARN("STORAGE",
+                              "capture maintenance lease unavailable owner=%s flags=%s",
+                              RadioArbiter::ownerName(RADIO_ARB.currentOwner()),
+                              STORAGE.maintenanceFlagsText());
+                    RADIO_ARB.ensureDefaultCapture(
+                        "capture_storage_maintenance_unavailable");
+                }
+            } else {
+                const bool progressed = STORAGE.runCaptureMaintenanceSlice(
+                    CAPTURE_MAINTENANCE_BUDGET_MS,
+                    "capture_micro_idle");
+                g_lastMaintenanceRunMs = millis();
+                if (progressed) {
+                    _publishStorageMaintenanceMirror(true,
+                                                     false,
+                                                     true,
+                                                     millis() - sectionStartMs);
+                }
             }
             _logHardwareSectionIfSlow("capture_storage_maintenance",
                                       sectionStartMs,
@@ -6858,6 +7385,135 @@ static const char* _fieldVaultPowerSourceName(PowerSource source) {
     }
 }
 
+static const char* _fieldVaultPowerStateName(PowerState state) {
+    switch (state) {
+        case POWER_STATE_USB:              return "usb";
+        case POWER_STATE_BATTERY_NORMAL:   return "battery_normal";
+        case POWER_STATE_BATTERY_ECONOMY:  return "battery_economy";
+        case POWER_STATE_BATTERY_CRITICAL: return "battery_critical";
+        default:                           return "unknown";
+    }
+}
+
+void _appendFieldVaultPowerSample(const PowerSnapshot& power,
+                                  uint8_t radioOwner,
+                                  const char* reason) {
+    if (!FieldVault::isReady()) {
+        return;
+    }
+
+    uint32_t uptimeMs = 0;
+    STATE_READ_BEGIN();
+    uptimeMs = g_state.uptimeMs;
+    STATE_READ_END();
+
+    if (!FieldVault::appendPowerSample(
+            power.voltageMv,
+            power.percent,
+            power.trendMvPerMin,
+            power.batteryCapacityMah,
+            power.runtimeRemainingMin,
+            _fieldVaultPowerSourceName(power.source),
+            _fieldVaultPowerStateName(power.state),
+            power.charging,
+            radioOwner,
+            uptimeMs,
+            reason)) {
+        DLOG_WARN("FIELDVAULT", "power sample append failed");
+    }
+}
+
+void _appendFieldVaultRunSample(uint8_t radioOwner,
+                                const char* reason) {
+    if (!FieldVault::isReady()) {
+        return;
+    }
+
+    char sessionId[40] = "";
+    uint32_t uptimeMs = 0;
+    uint32_t pendingUpload = 0;
+    uint32_t pendingEnrich = 0;
+    uint16_t wifiCount = 0;
+    uint32_t probeCount = 0;
+    uint32_t loraPackets = 0;
+    uint8_t subGhzMode = 0;
+    uint16_t subGhzNodes = 0;
+    bool uploadActive = false;
+
+    STATE_READ_BEGIN();
+    strlcpy(sessionId, g_state.sessionId, sizeof(sessionId));
+    uptimeMs = g_state.uptimeMs;
+    pendingUpload =
+        g_state.storagePendingUploadMission + g_state.storagePendingUploadNoise;
+    pendingEnrich =
+        g_state.storagePendingEnrichMission + g_state.storagePendingEnrichNoise;
+    const int networks =
+        (g_state.sessionNetworks > 0) ? g_state.sessionNetworks
+                                      : g_state.wifiNetworkCount;
+    const int probes =
+        (g_state.sessionProbes > 0) ? g_state.sessionProbes
+                                    : g_state.probePacketCount;
+    wifiCount = static_cast<uint16_t>(
+        networks < 0 ? 0 : (networks > 65535 ? 65535 : networks));
+    probeCount = static_cast<uint32_t>(probes < 0 ? 0 : probes);
+    loraPackets = static_cast<uint32_t>(
+        g_state.loraPacketCount < 0 ? 0 : g_state.loraPacketCount);
+    subGhzMode = g_state.subGhzMode;
+    subGhzNodes = static_cast<uint16_t>(
+        g_state.subGhzNodeCount < 0 ? 0 :
+            (g_state.subGhzNodeCount > 65535 ? 65535 : g_state.subGhzNodeCount));
+    uploadActive = g_state.uploadActive;
+    STATE_READ_END();
+
+#if WIO_NRF_ACCESSORY_ENABLED
+    const bool wioAvailable = WIO_NRF.available();
+    const bool wioBleProxy = WIO_NRF.hasBleProxy();
+    const bool wioPhoneConnected = WIO_NRF.phoneConnected();
+#else
+    const bool wioAvailable = false;
+    const bool wioBleProxy = false;
+    const bool wioPhoneConnected = false;
+#endif
+
+    const uint32_t heapFreeKb =
+        heap_caps_get_free_size(MALLOC_CAP_8BIT) / 1024UL;
+    const uint32_t internalFreeKb =
+        heap_caps_get_free_size(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT) / 1024UL;
+
+    if (!FieldVault::appendRunSample(sessionId,
+                                     uptimeMs,
+                                     radioOwner,
+                                     pendingUpload,
+                                     pendingEnrich,
+                                     wifiCount,
+                                     probeCount,
+                                     loraPackets,
+                                     subGhzMode,
+                                     subGhzNodes,
+                                     wioAvailable,
+                                     wioBleProxy,
+                                     wioPhoneConnected,
+                                     uploadActive,
+                                     heapFreeKb,
+                                     internalFreeKb,
+                                     reason)) {
+        DLOG_WARN("FIELDVAULT", "run sample append failed");
+    }
+
+    // Ride the same sparse cadence to persist this run's totals as the "last
+    // session" snapshot the Boot Summary shows after the next reboot.
+    uint32_t recTotal = 0, pUpM = 0, pUpN = 0, pEnM = 0, pEnN = 0;
+    STATE_READ_BEGIN();
+    recTotal = g_state.storageEventTotal;
+    pUpM = g_state.storagePendingUploadMission;
+    pUpN = g_state.storagePendingUploadNoise;
+    pEnM = g_state.storagePendingEnrichMission;
+    pEnN = g_state.storagePendingEnrichNoise;
+    STATE_READ_END();
+    BootInfo::snapshotCurrentSession(recTotal, pUpM, pUpN, pEnM, pEnN,
+                                     uptimeMs / 1000UL);
+}
+
 static bool _detectBootRecoveryRequest() {
 #if BOOT_RECOVERY_ENABLED
     pinMode(BOOT_RECOVERY_BUTTON_PIN, INPUT_PULLUP);
@@ -6966,6 +7622,10 @@ void setup() {
 #endif
     }
     // ── end boot diagnostics ─────────────────────────────────────────────────
+
+    // Boot/run bookkeeping for the Boot Summary screen: bumps the boot count,
+    // latches this reset's reason, and loads the previous run's snapshot.
+    BootInfo::begin();
 
     if (!g_bootRecoveryMode) {
         const bool settingsOk = SETTINGS.begin();

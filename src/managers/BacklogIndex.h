@@ -9,6 +9,7 @@
 #include <new>
 #include <vector>
 
+#include "../core/SpiramAllocator.h"
 #include "SpoolBinaryCodec.h"
 #include "StorageLanes.h"
 
@@ -55,16 +56,7 @@ struct UploadIndexPage {
     UploadIndexRecordV1 records[UPLOAD_INDEX_PAGE_CAPACITY];
     uint8_t count = 0;
 
-    // Force PSRAM allocation. Each page is ~2.3 KB (32 records × 72 B + 1),
-    // which is below CONFIG_SPIRAM_MALLOC_ALWAYSINTERNAL (~16 KB), so the
-    // default `operator new` keeps these in internal heap. A full-backlog
-    // upload window can need hundreds of pages, which catastrophically
-    // exhausts internal heap and leaves LittleFS.open() unable to allocate
-    // its file descriptor.
-    //
-    // ESP-IDF free() accepts pointers from any heap region, but we override
-    // operator delete to be explicit and to keep the path symmetric with
-    // heap_caps_malloc().
+    // Force pages into PSRAM; full-backlog upload can need hundreds.
     static void* operator new(size_t size, const std::nothrow_t&) noexcept {
         return heap_caps_malloc(size, MALLOC_CAP_SPIRAM);
     }
@@ -98,6 +90,7 @@ struct SpoolEnrichBatchEntry {
     float       acc        = 0.0f;
     const char* tag        = nullptr;
     uint32_t    gpsEpochUtc = 0;
+    bool        noData     = false;
 };
 
 struct SpoolEnrichmentDelta {
@@ -120,12 +113,24 @@ struct SpoolEnrichmentDelta {
 struct PendingEventDescriptor {
     uint32_t eventId = 0;
     uint32_t timestampMs = 0;
+    // Absolute capture UTC (seconds). 0 => no trusted time at capture, the
+    // phone has nothing to match against (terminally no-data).
+    uint32_t epochUtc = 0;
     uint8_t type = 0;
     uint8_t status = 0;
     uint8_t lane = static_cast<uint8_t>(STORAGE_LANE_NOISE);
     uint8_t priority = static_cast<uint8_t>(STORAGE_PRIO_P3);
     uint16_t valueScore = 0;
 };
+
+// Resident upload enrichment-delta index: sessionId -> (eventId -> delta), node
+// storage forced to PSRAM (see SpiramStlAllocator).
+using UploadEnrichDeltaMap =
+    std::map<uint32_t, SpoolEnrichmentDelta, std::less<uint32_t>,
+             SpiramStlAllocator<std::pair<const uint32_t, SpoolEnrichmentDelta>>>;
+using UploadEnrichBySessionMap =
+    std::map<String, UploadEnrichDeltaMap, std::less<String>,
+             SpiramStlAllocator<std::pair<const String, UploadEnrichDeltaMap>>>;
 
 // Backlog index — paged upload index + enrichment iterator window + the
 // cached upload-read file handle. Lives as a data struct for Phase C; the
@@ -141,17 +146,26 @@ struct BacklogIndex {
 
     // Upload paged index.
     std::map<String, UploadIndexPagedSession> uploadIndexBySession;
-    std::map<String, std::map<uint32_t, SpoolEnrichmentDelta>> uploadEnrichBySession;
+    UploadEnrichBySessionMap uploadEnrichBySession;
     std::vector<String> uploadIndexSessions;
     UploadIndexStats uploadIndexStats;
     uint32_t uploadIndexWindowLimit = 0;
     bool     uploadIndexWindowTruncated = false;
 
     // Enrichment iterator window.
-    std::vector<PendingEventDescriptor> enrichmentWindow;
+    SpiramVector<PendingEventDescriptor> enrichmentWindow;
+    SpiramVector<uint32_t> enrichmentKnownIds;
     size_t   enrichmentWindowCursor = 0;
     size_t   enrichmentWindowLimit = 0;
     bool     enrichmentWindowTruncated = false;
+    size_t   enrichmentBuildIdSegmentCursor = 0;
+    size_t   enrichmentBuildSegmentCursor = 0;
+    size_t   enrichmentBuildCandidateCount = 0;
+    uint32_t enrichmentBuildStartedMs = 0;
+    bool     enrichmentBuildActive = false;
+    bool     enrichmentBuildIdsReady = false;
+    bool     enrichmentBuildHeapReady = false;
+    bool     enrichmentBuildSawOverflow = false;
 
     // Cached segment-file handle for upload reads. Repeated LittleFS.open()
     // of the same .bin file across many records in a bucket fill is fragile

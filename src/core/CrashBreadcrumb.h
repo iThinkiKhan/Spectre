@@ -6,27 +6,8 @@
 #include <Arduino.h>
 #include <esp_heap_caps.h>
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Crash breadcrumb ring — RTC slow memory
-//
-// Survives software reset, panic, and task-watchdog resets.
-// Does NOT survive a full power-off (use NVS for that).
-//
-// Keeps the last CRASH_LOG_DEPTH checkpoints across consecutive reboots.
-// Entries are never erased on boot — only overwritten by new checkpoints —
-// so you can plug in a serial monitor several boots after a crash and still
-// see what was happening.
-//
-// Usage:
-//   crashCheckpoint(phase, owner, pending)  — call before any risky transition
-//   crashBreadcrumbClear()                  — call after a transition completes
-//                                             cleanly (marks entry as [ok],
-//                                             does not erase it)
-//   crashLogPrint()                         — call once at boot (declared below,
-//                                             defined in CrashBreadcrumb.cpp)
-//
-// RadioOwner is stored as uint8_t to avoid a circular include; callers cast.
-// ─────────────────────────────────────────────────────────────────────────────
+// RTC slow-memory crash breadcrumbs survive software resets, panic resets,
+// and task-watchdog resets. They do not survive full power loss.
 
 static constexpr uint8_t  CRASH_LOG_DEPTH   = 5;
 static constexpr uint32_t CRASH_LOG_MAGIC   = 0xC0DE0002UL;  // ring metadata sentinel

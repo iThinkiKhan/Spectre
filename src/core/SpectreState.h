@@ -77,6 +77,16 @@ struct SpectreState {
     char    subGhzModule[24] = "";
     uint32_t subGhzFrequencyHz = 0;
 
+    // Meshtastic client (shares the SX1262 with native SubGhz; mutually exclusive).
+    bool     meshAvailable  = false;
+    bool     meshEnabled    = false;
+    int      meshNodeCount  = 0;
+    uint32_t meshRxText     = 0;
+    uint32_t meshTxText     = 0;
+    uint32_t meshNodeNum    = 0;
+    uint32_t meshLastFrom   = 0;
+    char     meshLastText[64] = "";
+
     bool     wifiConnected     = false;
     char     wifiSSID[32]      = "";
     int      wifiNetworkCount  = 0;
@@ -135,6 +145,24 @@ struct SpectreState {
     int     sessionProbes       = 0;
     int     sessionPMKIDs       = 0;
     int     sessionDrones       = 0;
+
+    // Unified physical-Entity working set. Observations are radio events;
+    // Entities are the deduplicated APs, clients, drones, and RF sources they
+    // describe. The table itself lives in PSRAM; the display reads this mirror.
+    uint32_t entityTotal        = 0;
+    uint32_t entityNearby       = 0;
+    uint32_t entityObservations = 0;
+    uint32_t entityDropped      = 0;
+    uint16_t entityAccessPoints = 0;
+    uint16_t entityClients      = 0;
+    uint16_t entityDrones       = 0;
+    uint16_t entitySubGhz       = 0;
+    int8_t   entityClosestRssi  = -127;
+    uint8_t  entityClosestChannel = 0;
+    uint8_t  entityClosestKind  = 1;
+    bool     entityClosestLocated = false;
+    char     entityClosestIdentity[24] = "";
+    char     entityClosestName[24] = "";
 
     int     droneCount          = 0;
     char    lastDroneID[32]     = "";
@@ -205,6 +233,7 @@ struct SpectreState {
     char    timeSource[12]  = "none";
     char    timeISO[24]     = "";
     char    timeLocal[24]   = "";
+    char    timeLastAttempt[24] = "none";  // last NTP-acquisition outcome
     uint8_t generalSubGhzMode = 0;
     uint8_t runContext = RUN_CONTEXT_GENERAL;
     uint8_t activeMissionProfile = MISSION_RECON;
@@ -218,16 +247,7 @@ struct SpectreState {
     char    exportLastISO[24] = "";
     char    exportLastSessionId[40] = "";
 
-    // Storage read-model mirror — refreshed periodically, never scanned directly.
-    //
-    // CONTRACT: UI/dashboard code reads g_state.storageSummary* fields and
-    // MUST NOT call STORAGE.getSessionStorageSummary(),
-    // STORAGE.getPendingEnrichmentCounts(), STORAGE.recountPendingFromSpool(),
-    // or any other spool-scanning method directly. The mirror is refreshed by
-    // _refreshStorageSummaryMirror() and the storage worker UI snapshot path;
-    // both honor radio-owner gating to avoid scan/capture collisions.
-    // STORAGE.getPendingEventCount() is a cheap live-counter read and is
-    // exempt from this contract.
+    // UI/dashboard code reads this mirror instead of scanning the spool.
     bool     storageSummaryValid        = false;
     uint32_t storageSummaryUpdatedMs    = 0;
     bool     storageSummaryNeedsMaint   = false;  // last refresh deferred to maintenance

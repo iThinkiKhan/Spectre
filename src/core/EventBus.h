@@ -114,7 +114,7 @@ public:
     }
 
 private:
-    static constexpr uint8_t QUEUE_DEPTH = 16;
+    static constexpr uint8_t QUEUE_DEPTH = 64;
 
     EventBus() {
         _queue = xQueueCreateStatic(

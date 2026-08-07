@@ -4,23 +4,7 @@
 
 #include "protocol/CompanionProtocol.h"
 
-// NotificationCenter
-// ==================
-//
-// Forwards "meaningful event" notifications to the phone (slice #7), with
-// per-type throttling and duplicate-collapsing.
-//
-// Internal call sites already use _queueNotification(type, text) which fans
-// out to the local display via the event bus.  This center is a second
-// consumer of those same notifications, but with phone-aware policy:
-//
-//   • Per-type throttle window — at most one chunk per type per window.
-//   • Dedup within window — same (type, text) folds into a counter and
-//     reports `collapsedCount > 0` on the next emit beyond the window.
-//   • Bounded queue — overflow drops oldest with a `[notif] queue full
-//     dropping…` log line; phone never blocks the device.
-//   • Transport-flip safe — flushes nothing across flips; pending events
-//     stay queued for the new transport.
+// Phone notification queue with throttling, duplicate collapse, and overflow drop.
 class NotificationCenter {
 public:
     static constexpr uint8_t QUEUE_DEPTH = 16;

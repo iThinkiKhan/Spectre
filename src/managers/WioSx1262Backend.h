@@ -5,10 +5,11 @@
 
 // Sub-GHz backend that delegates to the WIO nRF accessory's onboard SX1262.
 //
-// The wire protocol (SPECTRE/1 SUBGHZ_*) is not yet implemented on the WIO
-// firmware side; this class registers a placeholder so SubGhzManager picks it
-// up the moment CAPS reports SX1262_PRESENT.  Until then, begin() returns
-// false and the existing Reyax backend remains the active sub-GHz radio.
+// The nRF firmware drives the radio as a thin modem (SPECTRE/1 SUBGHZ_* verbs);
+// this backend maps the existing text-oriented ISubGhzBackend interface onto
+// that raw bridge for Spectre-native LoRa.  It reports ready only once the WIO
+// CAPS handshake confirms SX1262_PRESENT, so SubGhzManager prefers it over the
+// Reyax backend when the WIO accessory is attached and falls back otherwise.
 class WioSx1262Backend : public ISubGhzBackend {
 public:
     explicit WioSx1262Backend(WioNrfAccessory& wio) : _wio(wio) {}
@@ -29,7 +30,7 @@ public:
     bool setMode(SubGhzMode mode) override;
     SubGhzMode mode() const override { return _mode; }
 
-    bool available() override { return false; }
+    bool available() override;
     bool readPacket(SubGhzPacket& outPacket) override;
     bool send(const char* payload, uint16_t destination = 0) override;
 
@@ -42,11 +43,27 @@ public:
     SubGhzStats stats() const override { return _stats; }
 
 private:
+    // Push the cached profile (freq/sf/bw/cr/preamble + native sync word) to
+    // the modem over the SUBGHZ_CONFIG verb.
+    bool _pushConfig();
+    // RYLR998-style bandwidth index (as stored in RuntimeSettings.loraBW) to Hz.
+    static uint32_t _bwIndexToHz(uint8_t index);
+    uint32_t _beaconIntervalMsForMode() const;
+    void _emitBeacon(const char* label);
+
     WioNrfAccessory& _wio;
     bool _ready = false;
     SubGhzMode _mode = SubGhzMode::OFF;
     uint32_t _frequencyHz = 0;
+    uint32_t _bandwidthHz = 125000;  // resolved Hz for the SX1262 PHY
+    int8_t   _powerDbm = SUBGHZ_SX1262_TX_POWER_DBM;
     SubGhzRadioProfile _profile;
     SubGhzStats _stats;
     String _fwVersion;
+
+    WioNrfAccessory::SubGhzRxFrame _pending = {};
+    bool _hasPending = false;
+    bool _yielded = false;  // true while the Meshtastic client owns the radio
+    uint32_t _lastBeaconMs = 0;
+    uint32_t _beaconSeq = 0;
 };

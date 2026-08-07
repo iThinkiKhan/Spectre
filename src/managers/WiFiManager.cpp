@@ -4,6 +4,7 @@
 #include "WiFiManager.h"
 #include "AntennaManager.h"
 #include "MQTTManager.h"
+#include "EntityManager.h"
 #include "RadioArbiter.h"
 #include "SettingsManager.h"
 #include "StorageManager.h"
@@ -355,6 +356,7 @@ bool WiFiManager::startScan() {
 }
 
 void WiFiManager::pauseRadio() {
+    const WiFiOpMode previousMode = _mode;
     esp_wifi_set_promiscuous(false);
     WiFi.scanDelete();
     _mode = WIFI_OP_IDLE;
@@ -364,7 +366,11 @@ void WiFiManager::pauseRadio() {
     g_state.wifiOpMode = _mode;
     STATE_WRITE_END();
 
-    DLOG_INFO("WIFI", "Radio paused");
+    if (previousMode == WIFI_OP_IDLE) {
+        DLOG_DEBUG("WIFI", "Radio pause requested while already idle");
+    } else {
+        DLOG_INFO("WIFI", "Radio paused");
+    }
 }
 
 bool WiFiManager::prepareStationForUpload() {
@@ -464,13 +470,16 @@ bool WiFiManager::_ensureRadioReady() {
 
     _radioReady = false;
     WiFi.persistent(false);
-    esp_wifi_stop();
-    // Yield to the event-loop task so the in-flight disconnect event drains
-    // before the WIFI_OFF mode change — esp_wifi_stop() races any queued
-    // disconnect callback and can brown the rail if we flip modes too fast.
-    vTaskDelay(pdMS_TO_TICKS(150));
-    WiFi.mode(WIFI_OFF);
-    // Hardware settle between WIFI_OFF and WIFI_STA.
+    // Use the Arduino transition so its low-level started flag stays in sync
+    // with ESP-IDF. Calling esp_wifi_stop() directly first leaves Arduino
+    // believing the driver is still started; the following WIFI_STA request
+    // then fails with ESP_ERR_WIFI_NOT_INIT after a BLE/maintenance handoff.
+    const wifi_mode_t previousMode = WiFi.getMode();
+    bool offOk = true;
+    if (previousMode != WIFI_OFF) {
+        offOk = WiFi.mode(WIFI_OFF);
+        vTaskDelay(pdMS_TO_TICKS(150));
+    }
     vTaskDelay(pdMS_TO_TICKS(40));
 
     const bool modeOk = WiFi.mode(WIFI_STA);
@@ -486,17 +495,12 @@ bool WiFiManager::_ensureRadioReady() {
                  static_cast<int32_t>(millis() - deadline) < 0);
     }
 
-    const esp_err_t setModeErr = esp_wifi_set_mode(WIFI_MODE_STA);
-    const esp_err_t startErr = esp_wifi_start();
     const esp_err_t promOffErr = esp_wifi_set_promiscuous(false);
     const esp_err_t countryErr = esp_wifi_set_country_code("US", true);
     const esp_err_t getModeErr = esp_wifi_get_mode(&currentMode);
 
-    const bool startReady = (startErr == ESP_OK || startErr == ESP_ERR_INVALID_STATE);
-
-    _radioReady = modeOk &&
-                  setModeErr == ESP_OK &&
-                  startReady &&
+    _radioReady = offOk &&
+                  modeOk &&
                   promOffErr == ESP_OK &&
                   getModeErr == ESP_OK &&
                   currentMode == WIFI_MODE_STA;
@@ -508,10 +512,10 @@ bool WiFiManager::_ensureRadioReady() {
     }
 
     DLOG_ERROR("WIFI",
-               "Radio init failed: modeOk=%d setMode=%s start=%s promOff=%s country=%s getMode=%s current=%d",
+               "Radio init failed: previous=%d offOk=%d modeOk=%d promOff=%s country=%s getMode=%s current=%d",
+               static_cast<int>(previousMode),
+               offOk ? 1 : 0,
                modeOk ? 1 : 0,
-               esp_err_to_name(setModeErr),
-               esp_err_to_name(startErr),
                esp_err_to_name(promOffErr),
                esp_err_to_name(countryErr),
                esp_err_to_name(getModeErr),
@@ -644,7 +648,8 @@ void WiFiManager::_processManagementFrame(const uint8_t* p,
         case 8:  _processBeacon(p, len, rssi, ch);       break;
         case 13: _processActionFrame(p, len, rssi, ch);  break;
         case 12: {
-            // Deauth frame — flood detection
+            // Ambient deauth frames are common in dense multi-AP sites; track
+            // bursts as telemetry without raising a user-facing alert.
             _deauthCount++;
             uint32_t now = millis();
             if (now - _deauthWindowStart > DEAUTH_WINDOW_MS) {
@@ -653,8 +658,6 @@ void WiFiManager::_processManagementFrame(const uint8_t* p,
             }
             if (_deauthCount >= DEAUTH_THRESHOLD) {
                 _deauthFlood = true;
-                _queueWiFiNotification(NOTIF_DEAUTH,
-                                       "DEAUTH FLOOD DETECTED");
             }
             break;
         }
@@ -2376,6 +2379,8 @@ WiFiNetwork* WiFiManager::_findOrCreateNetwork(
     int8_t rssi,
     uint8_t ch) {
 
+    ENTITY_MGR.observeWifiAp(bssid, ssid, rssi, ch);
+
     for (int i = 0; i < _networkCount; i++) {
         if (_macsEqual(_networks[i].bssid, bssid)) {
             _networks[i].rssi    = rssi;
@@ -2703,6 +2708,10 @@ void WiFiManager::_updateSocialGraph() {
 void WiFiManager::_recordRecentProbe(const char* ssid,
                                        const uint8_t* mac,
                                        int8_t rssi) {
+    if (!_ssidHasVisibleChars(ssid)) {
+        return;
+    }
+
     RecentProbe& rp =
         _recentProbes[_recentProbeHead % WIFI_RECENT_PROBE_COUNT];
     strlcpy(rp.ssid, ssid, sizeof(rp.ssid));
@@ -2716,16 +2725,28 @@ void WiFiManager::_checkKarma(const char* ssid,
                                 const uint8_t* bssid,
                                 int8_t rssi,
                                 bool isNewNetwork) {
-    if (millis() < 10000) return;
+    if (millis() < 30000) return;
     if (!isNewNetwork) return;
+    if (!_ssidHasVisibleChars(ssid)) return;
+    if (_isTrustedSSID(ssid)) return;
+    if (rssi < KARMA_MIN_BEACON_RSSI) return;
 
     uint32_t now = millis();
+    if (_lastKarmaAlertMs != 0 &&
+        now - _lastKarmaAlertMs < KARMA_ALERT_COOLDOWN_MS) {
+        return;
+    }
+
+    uint8_t recentProbeMatches = 0;
 
     for (int i = 0; i < WIFI_RECENT_PROBE_COUNT; i++) {
         RecentProbe& rp = _recentProbes[i];
         if (rp.timestamp == 0) continue;
         if (now - rp.timestamp > 30000) continue;
         if (strcmp(rp.ssid, ssid) != 0) continue;
+        if (rp.rssi < KARMA_MIN_PROBE_RSSI) continue;
+        recentProbeMatches++;
+        if (recentProbeMatches < KARMA_MIN_RECENT_PROBES) continue;
 
         // New AP appeared for an SSID that was just probed
         if (_karmaAlertCount < WIFI_MAX_KARMA) {
@@ -2737,6 +2758,7 @@ void WiFiManager::_checkKarma(const char* ssid,
             ka.beaconRSSI = rssi;
             ka.timestamp  = now;
             _karmaAlertNew = true;
+            _lastKarmaAlertMs = now;
 
             char notifText[48];
             snprintf(notifText, sizeof(notifText), "KARMA: %s", ssid);
@@ -2890,5 +2912,3 @@ bool WiFiManager::_isTrustedSSID(const char* ssid) const {
     }
     return false;
 }
-
-

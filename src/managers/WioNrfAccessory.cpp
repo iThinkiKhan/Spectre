@@ -1,11 +1,13 @@
 #include "WioNrfAccessory.h"
 
 #include <math.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include "../core/DebugLog.h"
 #include "../core/Session.h"
 #include "CommandDispatcher.h"
+#include "TimeService.h"
 
 namespace {
 constexpr const char* TAG = "WIO";
@@ -34,6 +36,21 @@ bool startsWith(const char* text, const char* prefix) {
         }
     }
     return true;
+}
+
+// CRC-32 (zlib/IEEE poly 0xEDB88320, init 0xFFFFFFFF, final XOR). Must stay
+// byte-for-byte identical to the nRF side (wio_nrf_firmware uartFrameCrc32) so
+// the BLE_RX_BIN integrity check agrees across the UART link.
+uint32_t uartFrameCrc32(const uint8_t* data, size_t len) {
+    uint32_t crc = 0xFFFFFFFFUL;
+    for (size_t i = 0; i < len; ++i) {
+        crc ^= data[i];
+        for (uint8_t bit = 0; bit < 8; ++bit) {
+            const uint32_t mask = 0U - (crc & 1U);
+            crc = (crc >> 1) ^ (0xEDB88320UL & mask);
+        }
+    }
+    return ~crc;
 }
 
 bool isPrintableTextByte(uint8_t b) {
@@ -92,8 +109,13 @@ bool WioNrfAccessory::begin(uint32_t detectTimeoutMs) {
     _enrichmentExpectedCount = 0;
     _enrichmentRxLen = 0;
     _enrichmentAvailableCount = 0;
+    _enrichmentSessionId = 0;
+    _enrichmentBatchSeq = 0;
+    _activeEnrichmentSessionId = 0;
+    _activeEnrichmentBatchId = 0;
     _linkState = LINK_IDLE;
     _secureSession.reset();
+    _clearEnrichmentExchangeState(false);
     _setGpsUnavailable(true);
     _textInputPending = false;
     _textInputReady = false;
@@ -150,6 +172,22 @@ void WioNrfAccessory::tick() {
         _handleLine(line);
         ++lines;
     }
+    if (lines > 0) {
+        _rxFrameTotal += lines;
+    }
+
+    // Release credits: tell the nRF our cumulative drained-frame count so it can
+    // send more without overrunning our RX buffer. One small line per tick that
+    // actually consumed frames; the count is cumulative so a lost ack self-heals
+    // on the next one. Only when the peer advertised the capability.
+    if (_flowCtrl && _rxFrameTotal != _rxCreditAckedTotal) {
+        char credit[48] = {};
+        snprintf(credit, sizeof(credit), "SPECTRE/1 RXCREDIT total=%lu",
+                 static_cast<unsigned long>(_rxFrameTotal));
+        if (sendLine(credit)) {
+            _rxCreditAckedTotal = _rxFrameTotal;
+        }
+    }
 
     const uint32_t now = millis();
     if (!_present && now - _lastHelloMs >= HELLO_RETRY_INTERVAL_MS) {
@@ -162,13 +200,29 @@ void WioNrfAccessory::tick() {
     if (_linkState == LINK_PROBING &&
         now - _stateStartedMs > PROBE_TIMEOUT_MS) {
         _fail("probe_timeout");
-    } else if (_linkState == LINK_AUTHENTICATING &&
-               now - _stateStartedMs > AUTH_TIMEOUT_MS) {
-        _fail("auth_timeout");
+    } else if (_linkState == LINK_AUTHENTICATING) {
+        if (now - _stateStartedMs > AUTH_TIMEOUT_MS) {
+            _fail("auth_timeout");
+        } else if (_authChallengeLen > 0 &&
+                   _authReissues < AUTH_MAX_REISSUES &&
+                   now - _authLastTxMs >= AUTH_REISSUE_INTERVAL_MS) {
+            // No auth response yet — the phone answers in <1s, so the response
+            // notify was lost on the WIO->S3 UART hop. Re-issue the challenge;
+            // the phone rebuilds and re-notifies a fresh response.
+            ++_authReissues;
+            DLOG_WARN(TAG,
+                      "Auth response not seen in %lums; reissuing challenge attempt=%u",
+                      static_cast<unsigned long>(now - _authLastTxMs),
+                      static_cast<unsigned>(_authReissues));
+            _authLastTxMs = now;
+            _sendBleWrite("auth", _authChallengeBuf, _authChallengeLen);
+        }
     } else if ((_linkState == LINK_SENDING_BATCH ||
                 _linkState == LINK_WAITING_ENRICHMENT) &&
                now - _stateStartedMs > ENRICHMENT_TIMEOUT_MS) {
-        _fail("enrichment_timeout");
+        // A lost/corrupt response stalls one batch; drop it and re-request
+        // rather than aborting the whole bulk drain (escalates after N drops).
+        _dropEnrichmentBatch("enrichment_timeout");
     } else if (_linkState == LINK_READY &&
                _dropAfterReady &&
                _readySinceMs != 0 &&
@@ -246,8 +300,29 @@ bool WioNrfAccessory::requestEnrichmentBatch(const EventBatchRecord* records, si
         return false;
     }
 
-    const size_t payloadLen = count * EVENT_BATCH_RECORD_SIZE;
-    memcpy(_eventBatchTxBuf, records, payloadLen);
+    _clearEnrichmentExchangeState(false);
+
+    ++_enrichmentBatchSeq;
+    if (_enrichmentBatchSeq == 0) {
+        ++_enrichmentBatchSeq;
+    }
+    if (_enrichmentSessionId == 0) {
+        _enrichmentSessionId = 1;
+    }
+    _activeEnrichmentSessionId = _enrichmentSessionId;
+    _activeEnrichmentBatchId = _enrichmentBatchSeq;
+
+    PhoneEventBatchHeaderV2 header = {};
+    header.magic = PHONE_EVENT_BATCH_V2_MAGIC;
+    header.version = PHONE_BATCH_HEADER_VERSION;
+    header.recordCount = static_cast<uint16_t>(count);
+    header.sessionId = _activeEnrichmentSessionId;
+    header.batchId = _activeEnrichmentBatchId;
+
+    const size_t recordBytes = count * EVENT_BATCH_RECORD_SIZE;
+    const size_t payloadLen = PHONE_EVENT_BATCH_HEADER_V2_SIZE + recordBytes;
+    memcpy(_eventBatchTxBuf, &header, sizeof(header));
+    memcpy(_eventBatchTxBuf + PHONE_EVENT_BATCH_HEADER_V2_SIZE, records, recordBytes);
     size_t secureLen = 0;
     if (!_secureSession.encrypt(PHONE_SECURE_CHANNEL_EVENT_BATCH,
                                 _eventBatchTxBuf,
@@ -265,22 +340,16 @@ bool WioNrfAccessory::requestEnrichmentBatch(const EventBatchRecord* records, si
         return false;
     }
 
-    _enrichmentExpectedCount = count;
-    _enrichmentRxLen = 0;
-    _enrichmentAvailableCount = 0;
-    _enrichmentReady = false;
-    _enrichmentFailed = false;
     _pendingBatchWriteSeq = writeSeq;
+    _enrichmentExpectedCount = count;
     _enrichmentSendMs = millis();
-    _enrichmentWaitStartMs = 0;
-    _enrichmentXferMs = 0;
-    memset(_enrichmentRxBuf, 0, sizeof(_enrichmentRxBuf));
-    memset(_enrichmentBatch, 0, sizeof(_enrichmentBatch));
     _setLinkState(LINK_SENDING_BATCH);
     _dropAfterReady = false;
-    DLOG_DEBUG(TAG, "External enrichment batch queued count=%u bytes=%u",
+    DLOG_DEBUG(TAG, "External enrichment batch queued count=%u bytes=%u session=%lu batch=%lu",
                static_cast<unsigned>(count),
-               static_cast<unsigned>(payloadLen));
+               static_cast<unsigned>(payloadLen),
+               static_cast<unsigned long>(_activeEnrichmentSessionId),
+               static_cast<unsigned long>(_activeEnrichmentBatchId));
     return true;
 #else
     (void)records;
@@ -301,10 +370,9 @@ bool WioNrfAccessory::consumeEnrichmentBatch(PendingEnrichment* out,
         out[i] = _enrichmentBatch[i];
     }
     outCount = _enrichmentAvailableCount;
-    _enrichmentReady = false;
-    _enrichmentAvailableCount = 0;
-    _enrichmentExpectedCount = 0;
-    _enrichmentRxLen = 0;
+    const uint32_t transferMs = _enrichmentXferMs;
+    _clearEnrichmentExchangeState(false);
+    _enrichmentXferMs = transferMs;
     _setLinkState(LINK_READY);
     _dropAfterReady = true;
     return true;
@@ -318,6 +386,44 @@ bool WioNrfAccessory::consumeEnrichmentFailure() {
     _setLinkState(LINK_FAILED);
     disconnectPhone("failure");
     return true;
+}
+
+bool WioNrfAccessory::consumeEnrichmentBatchDropped() {
+    if (!_enrichmentBatchDropped) {
+        return false;
+    }
+    _enrichmentBatchDropped = false;
+    return true;
+}
+
+void WioNrfAccessory::_dropEnrichmentBatch(const char* reason) {
+    // Bound retries: a few drops are transient UART corruption (recoverable),
+    // but a sustained run means the link is genuinely bad — escalate to a hard
+    // fail so the session ends instead of spinning.
+    constexpr uint8_t kMaxConsecutiveDrops = 5;
+    if (++_enrichmentConsecutiveDrops >= kMaxConsecutiveDrops) {
+        DLOG_WARN(TAG,
+                  "Enrichment batch drop limit reached (%u) reason=%s; failing link",
+                  static_cast<unsigned>(_enrichmentConsecutiveDrops),
+                  reason ? reason : "-");
+        _fail(reason);
+        return;
+    }
+    DLOG_WARN(TAG,
+              "Dropping enrichment batch reason=%s session=%lu batch=%lu rxLen=%u drops=%u; will re-request",
+              reason ? reason : "-",
+              static_cast<unsigned long>(_activeEnrichmentSessionId),
+              static_cast<unsigned long>(_activeEnrichmentBatchId),
+              static_cast<unsigned>(_enrichmentRxLen),
+              static_cast<unsigned>(_enrichmentConsecutiveDrops));
+    // Reset only the in-flight batch reassembly; keep the secure session/link
+    // up and return to READY so the host re-requests the next batch.
+    _clearEnrichmentExchangeState(false);
+    _enrichmentBatchDropped = true;
+    if (_linkState == LINK_SENDING_BATCH || _linkState == LINK_WAITING_ENRICHMENT) {
+        _setLinkState(LINK_READY);
+    }
+    _touchReadyActivity();
 }
 
 bool WioNrfAccessory::sendLine(const char* line) {
@@ -364,10 +470,43 @@ bool WioNrfAccessory::readLine(char* out, size_t outLen) {
 
             _rxBinActive = false;
             _rxBinStartedMs = 0;
-            snprintf(out, outLen,
-                     "WIO/1 BLE_RX_BIN char=%s len=%u",
-                     _rxBinChr,
-                     static_cast<unsigned>(_rxBinLen));
+
+            if (_rxBinCrcPresent) {
+                const uint32_t actual = uartFrameCrc32(_uartRxBuf, _rxBinLen);
+                if (actual != _rxBinCrc) {
+                    // The full frame arrived but the relay corrupted/dropped a
+                    // byte. Drop just this frame and keep the link alive — do
+                    // NOT _fail() the exchange (that is what _abortRxBinary
+                    // would do). For enrichment, the device's _rxCounter is
+                    // never advanced for an unseen frame, so the phone's resend
+                    // (or the next frame) proceeds normally; a genuinely stuck
+                    // wait still falls to ENRICHMENT_TIMEOUT_MS.
+                    DLOG_WARN(TAG,
+                              "UART frame CRC mismatch char=%s len=%u crc=%08lX expected=%08lX dropped=1",
+                              _rxBinChr[0] ? _rxBinChr : "?",
+                              static_cast<unsigned>(_rxBinLen),
+                              static_cast<unsigned long>(actual),
+                              static_cast<unsigned long>(_rxBinCrc));
+                    _rxBinChr[0] = '\0';
+                    _rxBinExpected = 0;
+                    _rxBinLen = 0;
+                    _rxBinCrc = 0;
+                    _rxBinCrcPresent = false;
+                    _rxBinIsSubghz = false;
+                    return false;
+                }
+            }
+
+            if (_rxBinIsSubghz) {
+                snprintf(out, outLen,
+                         "WIO/1 SUBGHZ_RX len=%u",
+                         static_cast<unsigned>(_rxBinLen));
+            } else {
+                snprintf(out, outLen,
+                         "WIO/1 BLE_RX_BIN char=%s len=%u",
+                         _rxBinChr,
+                         static_cast<unsigned>(_rxBinLen));
+            }
             return true;
         }
 
@@ -401,9 +540,13 @@ bool WioNrfAccessory::readLine(char* out, size_t outLen) {
                     _lineLen = 0;
                     continue;
                 }
+                uint32_t crc = 0;
+                const bool crcPresent = _readUintValue(status, "crc", crc);
                 strlcpy(_rxBinChr, chr, sizeof(_rxBinChr));
                 _rxBinExpected = expected;
                 _rxBinLen = 0;
+                _rxBinCrc = crc;
+                _rxBinCrcPresent = crcPresent;
                 _rxBinActive = expected > 0;
                 _rxBinStartedMs = _rxBinActive ? millis() : 0;
                 _lineLen = 0;
@@ -411,6 +554,44 @@ bool WioNrfAccessory::readLine(char* out, size_t outLen) {
                     snprintf(out, outLen,
                              "WIO/1 BLE_RX_BIN char=%s len=0",
                              _rxBinChr);
+                    return true;
+                }
+                continue;
+            }
+            if (startsWith(_line, "WIO/1 SUBGHZ_RX ")) {
+                uint32_t expected = 0;
+                const char* status = _line + strlen("WIO/1 SUBGHZ_RX ");
+                if (!_readUintValue(status, "len", expected) ||
+                    expected > sizeof(_uartRxBuf)) {
+                    _lineLen = 0;
+                    continue;
+                }
+                uint32_t crc = 0;
+                const bool crcPresent = _readUintValue(status, "crc", crc);
+                // rssi/snr are signed (dBm / dB) so parse them as text+atoi;
+                // _readUintValue would mangle the leading minus sign.
+                char num[12] = {};
+                int rssi = 0;
+                int snr = 0;
+                if (_readKeyValue(status, "rssi", num, sizeof(num))) {
+                    rssi = atoi(num);
+                }
+                if (_readKeyValue(status, "snr", num, sizeof(num))) {
+                    snr = atoi(num);
+                }
+                _rxBinChr[0] = '\0';
+                _rxBinIsSubghz = true;
+                _rxBinRssi = static_cast<int16_t>(rssi);
+                _rxBinSnr = static_cast<int16_t>(snr);
+                _rxBinExpected = expected;
+                _rxBinLen = 0;
+                _rxBinCrc = crc;
+                _rxBinCrcPresent = crcPresent;
+                _rxBinActive = expected > 0;
+                _rxBinStartedMs = _rxBinActive ? millis() : 0;
+                _lineLen = 0;
+                if (!_rxBinActive) {
+                    snprintf(out, outLen, "WIO/1 SUBGHZ_RX len=0");
                     return true;
                 }
                 continue;
@@ -524,6 +705,31 @@ void WioNrfAccessory::_handleLine(const char* line) {
         return;
     }
 
+    if (startsWith(line, "WIO/1 SUBGHZ_RX ")) {
+        _markSeen();
+        uint32_t len = 0;
+        const char* status = line + strlen("WIO/1 SUBGHZ_RX ");
+        if (_readUintValue(status, "len", len) && len == _rxBinLen) {
+            _handleSubghzRxBytes(_uartRxBuf, _rxBinLen, _rxBinRssi, _rxBinSnr);
+        }
+        _rxBinIsSubghz = false;
+        _rxBinExpected = 0;
+        _rxBinLen = 0;
+        return;
+    }
+
+    if (startsWith(line, "WIO/1 SUBGHZ_TX ")) {
+        _markSeen();
+        _handleSubghzTxAck(line + strlen("WIO/1 SUBGHZ_TX "));
+        return;
+    }
+
+    if (startsWith(line, "WIO/1 SUBGHZ_STATUS ")) {
+        _markSeen();
+        _handleSubghzStatusLine(line + strlen("WIO/1 SUBGHZ_STATUS "));
+        return;
+    }
+
     if (startsWith(line, "WIO/1 BLE_DROP ")) {
         _markSeen();
         const bool activeAttempt =
@@ -552,10 +758,21 @@ void WioNrfAccessory::_handleCapsLine(const char* caps) {
     _uartCap = _tokenPresent(caps, "UART");
     _bleWriteBin = _tokenPresent(caps, "BLE_WRITE_BIN");
     _sx1262Present = _tokenPresent(caps, "SX1262_PRESENT");
+    _flowCtrl = _tokenPresent(caps, "UART_FLOWCTRL");
+
+    // CAPS also arrives after a fresh nRF boot (its counters just reset), so
+    // force the next tick to re-send our cumulative total. The nRF baselines off
+    // that first RXCREDIT, so it does not matter that our total kept climbing.
+    if (_flowCtrl) {
+        _rxCreditAckedTotal = _rxFrameTotal - 1;
+    }
 
     DLOG_INFO(TAG, "CAPS %s", caps ? caps : "");
     if (_bleProxy) {
         DLOG_INFO(TAG, "BLE proxy capability present");
+    }
+    if (_flowCtrl) {
+        DLOG_INFO(TAG, "UART flow control capability present");
     }
 }
 
@@ -659,7 +876,7 @@ void WioNrfAccessory::_handleProbeLine(const char* status) {
     _readKeyValue(status, "source", source, sizeof(source));
 
     DLOG_INFO(TAG,
-              "External BLE probe response seq=%lu found=%d connected=%d source=%s text=%lu err=%s rssi=%d ageMs=%lu raw=\"%s\"",
+              "External BLE probe response seq=%lu found=%d connected=%d source=%s text=%lu err=%s rssi=%d best=%d seen=%lu uuid=%lu conn=%lu fail=%lu ageMs=%lu",
               static_cast<unsigned long>(seq),
               found ? 1 : 0,
               connected ? 1 : 0,
@@ -667,8 +884,12 @@ void WioNrfAccessory::_handleProbeLine(const char* status) {
               static_cast<unsigned long>(textLink),
               err,
               _phoneRssi,
-              static_cast<unsigned long>(millis() - _stateStartedMs),
-              status ? status : "");
+              bestRssi,
+              static_cast<unsigned long>(seen),
+              static_cast<unsigned long>(uuidSeen),
+              static_cast<unsigned long>(connectAttempts),
+              static_cast<unsigned long>(connectFailures),
+              static_cast<unsigned long>(millis() - _stateStartedMs));
 
     if (!found || !connected) {
         const char* missClass = "phone_not_reachable";
@@ -706,6 +927,7 @@ void WioNrfAccessory::_handleProbeLine(const char* status) {
               _phoneRssi);
 
     size_t challengeLen = 0;
+    _clearEnrichmentExchangeState(false);
     _secureSession.reset();
     if (!_secureSession.buildChallenge(_authChallengeBuf,
                                        sizeof(_authChallengeBuf),
@@ -714,11 +936,19 @@ void WioNrfAccessory::_handleProbeLine(const char* status) {
         return;
     }
 
+    // Retain the challenge so a NAK'd forward write (UART CRC mismatch on the
+    // S3->nRF hop) can be re-sent on the same connection instead of dropping
+    // the phone and eating the full AUTH_TIMEOUT_MS window.
+    _authChallengeLen = challengeLen;
+    _authWriteRetries = 0;
+    _authReissues = 0;
+
     if (!_sendBleWrite("auth", _authChallengeBuf, challengeLen)) {
         _fail("auth_uart_write_failed");
         return;
     }
 
+    _authLastTxMs = millis();
     _setLinkState(LINK_AUTHENTICATING);
 }
 
@@ -747,6 +977,40 @@ void WioNrfAccessory::_handleWriteLine(const char* status) {
         _pendingBatchWriteSeq = 0;
         _setLinkState(LINK_WAITING_ENRICHMENT);
         _enrichmentWaitStartMs = millis();
+        return;
+    }
+
+    if (_linkState == LINK_AUTHENTICATING) {
+        // Ack for the auth-challenge write. A matching id with ok=0 means the
+        // nRF rejected the forward frame on CRC (a corrupted/dropped byte on the
+        // S3->nRF UART hop) and did NOT write it to the phone — so the phone
+        // never sees a challenge and would otherwise silently stall to
+        // auth_timeout. Re-send a bounded number of times before failing.
+        if (seq != 0 && _activeSeq != 0 && seq != _activeSeq) {
+            return;
+        }
+        if (ok == 0) {
+            if (_authChallengeLen > 0 &&
+                _authWriteRetries < AUTH_WRITE_MAX_RETRIES) {
+                ++_authWriteRetries;
+                DLOG_WARN(TAG,
+                          "Auth challenge NAK'd (uart crc); resending attempt=%u",
+                          static_cast<unsigned>(_authWriteRetries));
+                if (_sendBleWrite("auth", _authChallengeBuf, _authChallengeLen)) {
+                    _authLastTxMs = millis();
+                    return;
+                }
+            }
+            _fail("auth_uart_write_failed");
+        }
+        return;
+    }
+
+    if (_linkState == LINK_WAITING_ENRICHMENT && seq != 0 && seq != _activeSeq) {
+        DLOG_WARN(TAG, "Ignoring stale BLE_WRITE ack state=%s active=%lu ack=%lu",
+                  linkStateName(),
+                  static_cast<unsigned long>(_activeSeq),
+                  static_cast<unsigned long>(seq));
         return;
     }
 
@@ -796,6 +1060,138 @@ void WioNrfAccessory::_handleRxBytes(const char* chr, const uint8_t* data, size_
     } else {
         DLOG_DEBUG(TAG, "RX char=%s len=%u (ignored)", chr,
                    static_cast<unsigned>(len));
+    }
+}
+
+// ---------------------------------------------------------------------------
+// SX1262 sub-GHz modem bridge
+// ---------------------------------------------------------------------------
+
+void WioNrfAccessory::_handleSubghzRxBytes(const uint8_t* data, size_t len,
+                                           int rssi, int snr) {
+    if (!data || len == 0 || len > SUBGHZ_FRAME_MAX) {
+        return;
+    }
+    _markSeen();
+    _subghzLastRssi = rssi;
+    _subghzLastSnr = snr;
+
+    if (_subghzRxCount >= SUBGHZ_RX_RING) {
+        // Ring full: drop the oldest frame so live RX always wins over a
+        // backlog the consumer hasn't drained yet.
+        _subghzRxTail = (_subghzRxTail + 1) % SUBGHZ_RX_RING;
+        --_subghzRxCount;
+    }
+    SubGhzRxFrame& slot = _subghzRx[_subghzRxHead];
+    slot.len = static_cast<uint16_t>(len);
+    slot.rssi = static_cast<int16_t>(rssi);
+    slot.snr = static_cast<int16_t>(snr);
+    memcpy(slot.data, data, len);
+    _subghzRxHead = (_subghzRxHead + 1) % SUBGHZ_RX_RING;
+    ++_subghzRxCount;
+}
+
+void WioNrfAccessory::_handleSubghzTxAck(const char* status) {
+    uint32_t ok = 0;
+    _readUintValue(status, "ok", ok);
+    if (ok) {
+        ++_subghzTxOk;
+    } else {
+        ++_subghzTxFail;
+    }
+}
+
+void WioNrfAccessory::_handleSubghzStatusLine(const char* status) {
+    uint32_t mode = 0;
+    if (_readUintValue(status, "mode", mode)) {
+        _subghzMode = static_cast<SubGhzModemMode>(mode);
+    }
+    char num[12] = {};
+    if (_readKeyValue(status, "rssi", num, sizeof(num))) {
+        _subghzLastRssi = atoi(num);
+    }
+    if (_readKeyValue(status, "snr", num, sizeof(num))) {
+        _subghzLastSnr = atoi(num);
+    }
+}
+
+bool WioNrfAccessory::subghzConfigure(uint32_t freqHz, uint32_t bwHz, uint8_t sf,
+                                      uint8_t cr, uint16_t preamble,
+                                      uint8_t syncWord, int8_t powerDbm) {
+    if (!subghzAvailable()) {
+        return false;
+    }
+    char line[160] = {};
+    snprintf(line, sizeof(line),
+             "SPECTRE/1 SUBGHZ_CONFIG freq=%lu bw=%lu sf=%u cr=%u preamble=%u "
+             "sync=0x%02X power=%d",
+             static_cast<unsigned long>(freqHz),
+             static_cast<unsigned long>(bwHz),
+             static_cast<unsigned>(sf),
+             static_cast<unsigned>(cr),
+             static_cast<unsigned>(preamble),
+             static_cast<unsigned>(syncWord),
+             static_cast<int>(powerDbm));
+    return sendLine(line);
+}
+
+bool WioNrfAccessory::subghzSetMode(SubGhzModemMode mode) {
+    if (!subghzAvailable()) {
+        return false;
+    }
+    const char* name = (mode == SUBGHZ_MODEM_RX)      ? "rx" :
+                       (mode == SUBGHZ_MODEM_STANDBY) ? "standby" : "off";
+    char line[48] = {};
+    snprintf(line, sizeof(line), "SPECTRE/1 SUBGHZ_MODE mode=%s", name);
+    if (!sendLine(line)) {
+        return false;
+    }
+    _subghzMode = mode;  // optimistic; the nRF confirms via SUBGHZ_STATUS
+    return true;
+}
+
+bool WioNrfAccessory::subghzSendRaw(const uint8_t* data, size_t len) {
+    if (!subghzAvailable() || !data || len == 0 || len > SUBGHZ_FRAME_MAX) {
+        return false;
+    }
+#if WIO_NRF_ACCESSORY_ENABLED
+    if (!_serial) {
+        return false;
+    }
+    const uint32_t id = _nextSeq();
+    char header[64] = {};
+    snprintf(header, sizeof(header),
+             "SPECTRE/1 SUBGHZ_TX id=%lu len=%u",
+             static_cast<unsigned long>(id),
+             static_cast<unsigned>(len));
+    if (!sendLine(header)) {
+        return false;
+    }
+    if (_serial->write(data, len) != len) {
+        return false;
+    }
+    _serial->print("\r\n");
+    return true;
+#else
+    (void)data;
+    (void)len;
+    return false;
+#endif
+}
+
+bool WioNrfAccessory::subghzConsumeRx(SubGhzRxFrame& out) {
+    if (_subghzRxCount == 0) {
+        return false;
+    }
+    out = _subghzRx[_subghzRxTail];
+    _subghzRxTail = (_subghzRxTail + 1) % SUBGHZ_RX_RING;
+    --_subghzRxCount;
+    return true;
+}
+
+void WioNrfAccessory::subghzRequestStatus() {
+    if (subghzAvailable()) {
+        sendLine("SPECTRE/1 SUBGHZ_STATUS");
     }
 }
 
@@ -879,6 +1275,102 @@ void WioNrfAccessory::_setLinkState(LinkState state) {
     }
 }
 
+void WioNrfAccessory::_clearEnrichmentExchangeState(bool preserveFailure) {
+    _pendingBatchWriteSeq = 0;
+    _enrichmentExpectedCount = 0;
+    _enrichmentRxLen = 0;
+    _enrichmentAvailableCount = 0;
+    _enrichmentReady = false;
+    _enrichmentSendMs = 0;
+    _enrichmentWaitStartMs = 0;
+    _enrichmentXferMs = 0;
+    _activeEnrichmentSessionId = 0;
+    _activeEnrichmentBatchId = 0;
+    if (!preserveFailure) {
+        _enrichmentFailed = false;
+    }
+    memset(_eventBatchTxBuf, 0, sizeof(_eventBatchTxBuf));
+    memset(_eventBatchSecureTxBuf, 0, sizeof(_eventBatchSecureTxBuf));
+    memset(_enrichmentRxBuf, 0, sizeof(_enrichmentRxBuf));
+    memset(_enrichmentBatch, 0, sizeof(_enrichmentBatch));
+}
+
+bool WioNrfAccessory::_secureEnvelopeHeaderLooksValid(uint8_t channel,
+                                                      const uint8_t* data,
+                                                      size_t len,
+                                                      uint32_t& counter) const {
+    counter = 0;
+    if (!data || len < PHONE_SECURE_ENVELOPE_OVERHEAD) {
+        return false;
+    }
+    counter = static_cast<uint32_t>(data[2]) |
+              (static_cast<uint32_t>(data[3]) << 8) |
+              (static_cast<uint32_t>(data[4]) << 16) |
+              (static_cast<uint32_t>(data[5]) << 24);
+    return data[0] == COMPANION_PROTOCOL_VERSION &&
+           data[1] == channel &&
+           counter != 0;
+}
+
+bool WioNrfAccessory::_extractEnrichmentRecords(const uint8_t* plain,
+                                                size_t plainLen,
+                                                const uint8_t*& recordBytes,
+                                                size_t& recordLen) {
+    recordBytes = nullptr;
+    recordLen = 0;
+    if (!plain || plainLen < PHONE_ENRICHMENT_RESPONSE_HEADER_V2_SIZE) {
+        DLOG_WARN(TAG, "Ignoring enrichment frame without v2 response header len=%u session=%lu batch=%lu",
+                  static_cast<unsigned>(plainLen),
+                  static_cast<unsigned long>(_activeEnrichmentSessionId),
+                  static_cast<unsigned long>(_activeEnrichmentBatchId));
+        return false;
+    }
+
+    PhoneEnrichmentResponseHeaderV2 header = {};
+    memcpy(&header, plain, sizeof(header));
+    if (header.magic != PHONE_ENRICHMENT_RESPONSE_V2_MAGIC ||
+        header.version != PHONE_BATCH_HEADER_VERSION) {
+        DLOG_WARN(TAG, "Ignoring enrichment frame with invalid response header magic=0x%08lx version=%u",
+                  static_cast<unsigned long>(header.magic),
+                  static_cast<unsigned>(header.version));
+        return false;
+    }
+    if (header.sessionId != _activeEnrichmentSessionId ||
+        header.batchId != _activeEnrichmentBatchId) {
+        DLOG_WARN(TAG, "Ignoring stale enrichment response session=%lu/%lu batch=%lu/%lu offset=%u",
+                  static_cast<unsigned long>(header.sessionId),
+                  static_cast<unsigned long>(_activeEnrichmentSessionId),
+                  static_cast<unsigned long>(header.batchId),
+                  static_cast<unsigned long>(_activeEnrichmentBatchId),
+                  static_cast<unsigned>(header.payloadOffset));
+        return false;
+    }
+    if (header.recordCount != _enrichmentExpectedCount) {
+        DLOG_WARN(TAG, "Enrichment response count mismatch got=%u expected=%u",
+                  static_cast<unsigned>(header.recordCount),
+                  static_cast<unsigned>(_enrichmentExpectedCount));
+        _dropEnrichmentBatch("enrichment_count_mismatch");
+        return false;
+    }
+    if (header.payloadLen > plainLen - PHONE_ENRICHMENT_RESPONSE_HEADER_V2_SIZE) {
+        _dropEnrichmentBatch("enrichment_header_len_invalid");
+        return false;
+    }
+    if (header.payloadOffset != _enrichmentRxLen) {
+        DLOG_WARN(TAG, "Enrichment response offset mismatch got=%u expected=%u session=%lu batch=%lu",
+                  static_cast<unsigned>(header.payloadOffset),
+                  static_cast<unsigned>(_enrichmentRxLen),
+                  static_cast<unsigned long>(header.sessionId),
+                  static_cast<unsigned long>(header.batchId));
+        _dropEnrichmentBatch("enrichment_offset_mismatch");
+        return false;
+    }
+
+    recordBytes = plain + PHONE_ENRICHMENT_RESPONSE_HEADER_V2_SIZE;
+    recordLen = header.payloadLen;
+    return true;
+}
+
 void WioNrfAccessory::_touchReadyActivity() {
     if (_linkState == LINK_READY && _dropAfterReady) {
         _readySinceMs = millis();
@@ -899,7 +1391,8 @@ void WioNrfAccessory::_fail(const char* reason) {
     _dropAfterReady = false;
     _secureSession.reset();
     _activeSeq = 0;
-    _pendingBatchWriteSeq = 0;
+    _clearEnrichmentExchangeState(true);
+    _enrichmentFailed = true;
 
     // Phone-level failures are not accessory disappearance.  The WIO nRF can
     // remain alive while it is scanning, reconnecting, or in its own LED error
@@ -921,8 +1414,8 @@ void WioNrfAccessory::_recoverFailedLink(const char* reason) {
     _secureSession.reset();
     _phoneConnected = false;
     _dropAfterReady = false;
-    _pendingBatchWriteSeq = 0;
     _activeSeq = 0;
+    _clearEnrichmentExchangeState(false);
     if (_present && _bleProxy) {
         sendLine("SPECTRE/1 BLE_DROP");
         requestBleStatus();
@@ -936,19 +1429,33 @@ void WioNrfAccessory::_abortRxBinary(const char* reason) {
               _rxBinChr[0] ? _rxBinChr : "?",
               static_cast<unsigned>(_rxBinLen),
               static_cast<unsigned>(_rxBinExpected));
+
+    // GPS and control frames are incidental to an enrichment exchange (the
+    // device clock is already synced; these are periodic refreshes). A dropped
+    // one must NOT tear down an in-flight bulk enrich session — over a long
+    // single-connection drain the periodic GPS/time frames are the most common
+    // UART hiccup, and failing on them would abort the whole run. Only auth and
+    // enrichment frames are critical to the active exchange.
+    const bool criticalFrame =
+        (strcmp(_rxBinChr, "auth") == 0) ||
+        (strcmp(_rxBinChr, "enrich") == 0);
+
     _rxBinActive = false;
     _rxBinChr[0] = '\0';
     _rxBinExpected = 0;
     _rxBinLen = 0;
     _rxBinStartedMs = 0;
+    _rxBinIsSubghz = false;
     _lineLen = 0;
     _lineOverflow = false;
 
-    if (_linkState == LINK_AUTHENTICATING ||
-        _linkState == LINK_SENDING_BATCH ||
-        _linkState == LINK_WAITING_ENRICHMENT) {
+    if (criticalFrame &&
+        (_linkState == LINK_AUTHENTICATING ||
+         _linkState == LINK_SENDING_BATCH ||
+         _linkState == LINK_WAITING_ENRICHMENT)) {
         _fail(reason);
     } else if (_present && _bleProxy) {
+        // Drop the frame and recover; the exchange continues.
         requestBleStatus();
     }
 }
@@ -971,13 +1478,8 @@ void WioNrfAccessory::_handlePhoneDisconnected(const char* reason, bool markFail
     _secureSession.reset();
     _setGpsUnavailable(true);
     _dropAfterReady = false;
-    _pendingBatchWriteSeq = 0;
     _activeSeq = 0;
-    _enrichmentExpectedCount = 0;
-    _enrichmentRxLen = 0;
-    _enrichmentAvailableCount = 0;
-    _enrichmentReady = false;
-    _enrichmentWaitStartMs = 0;
+    _clearEnrichmentExchangeState(markFailure);
     _clearTextInputState(reason ? reason : "phone_disconnect");
 
     if (markFailure) {
@@ -996,6 +1498,7 @@ uint32_t WioNrfAccessory::_nextSeq() {
 }
 
 bool WioNrfAccessory::_sendProbe(const char* reason) {
+    _clearEnrichmentExchangeState(false);
     _activeSeq = _nextSeq();
     char line[80] = {};
     snprintf(line, sizeof(line),
@@ -1042,12 +1545,18 @@ bool WioNrfAccessory::_sendBleWriteBinary(const char* chr,
     if (seqOut) {
         *seqOut = _activeSeq;
     }
-    char header[96] = {};
+    // CRC covers the raw payload so the nRF can reject a corrupted/dropped byte
+    // on this forward hop before writing garbage to the phone (mirrors the
+    // BLE_RX_BIN crc on the return path). Older nRF firmware ignores the extra
+    // token; newer firmware validates and NAKs on mismatch.
+    const uint32_t crc = (len > 0) ? uartFrameCrc32(data, len) : 0;
+    char header[112] = {};
     snprintf(header, sizeof(header),
-             "SPECTRE/1 BLE_WRITE_BIN id=%lu char=%s len=%u",
+             "SPECTRE/1 BLE_WRITE_BIN id=%lu char=%s len=%u crc=%lu",
              static_cast<unsigned long>(_activeSeq),
              chr,
-             static_cast<unsigned>(len));
+             static_cast<unsigned>(len),
+             static_cast<unsigned long>(crc));
     if (!sendLine(header)) {
         return false;
     }
@@ -1102,9 +1611,15 @@ void WioNrfAccessory::_handleAuthBytes(const uint8_t* data, size_t len) {
         _fail("auth_response_failed");
         return;
     }
+    ++_enrichmentSessionId;
+    if (_enrichmentSessionId == 0) {
+        ++_enrichmentSessionId;
+    }
+    _clearEnrichmentExchangeState(false);
     _setLinkState(LINK_READY);
     _dropAfterReady = true;
-    DLOG_INFO(TAG, "External BLE companion authenticated");
+    DLOG_INFO(TAG, "External BLE companion authenticated session=%lu",
+              static_cast<unsigned long>(_enrichmentSessionId));
 }
 
 void WioNrfAccessory::_handleControlBytes(const uint8_t* data, size_t len) {
@@ -1170,6 +1685,22 @@ void WioNrfAccessory::_handleEnrichmentBytes(const uint8_t* data, size_t len) {
         return;
     }
 
+    uint32_t counter = 0;
+    if (!_secureEnvelopeHeaderLooksValid(PHONE_SECURE_CHANNEL_ENRICHMENT,
+                                         data,
+                                         len,
+                                         counter)) {
+        DLOG_WARN(TAG,
+                  "Ignoring invalid enrichment envelope len=%u hdr=%02X/%02X ctr=%lu rxLen=%u expected=%u",
+                  static_cast<unsigned>(len),
+                  len > 0 && data ? data[0] : 0,
+                  len > 1 && data ? data[1] : 0,
+                  static_cast<unsigned long>(counter),
+                  static_cast<unsigned>(_enrichmentRxLen),
+                  static_cast<unsigned>(_enrichmentExpectedCount));
+        return;
+    }
+
     uint8_t plain[256] = {};
     size_t plainLen = 0;
     if (!_secureSession.decrypt(PHONE_SECURE_CHANNEL_ENRICHMENT,
@@ -1180,18 +1711,11 @@ void WioNrfAccessory::_handleEnrichmentBytes(const uint8_t* data, size_t len) {
                                 plainLen)) {
         const char* err = _secureSession.lastError();
         if (err && strstr(err, "replay/stale counter")) {
-            DLOG_WARN(TAG, "Ignoring stale enrichment frame: %s", err);
+            DLOG_DEBUG(TAG, "Ignoring stale enrichment frame: %s", err);
             return;
         }
-        uint32_t counter = 0;
-        if (len >= 6) {
-            counter = static_cast<uint32_t>(data[2]) |
-                      (static_cast<uint32_t>(data[3]) << 8) |
-                      (static_cast<uint32_t>(data[4]) << 16) |
-                      (static_cast<uint32_t>(data[5]) << 24);
-        }
         DLOG_WARN(TAG,
-                  "enrichment decrypt failed err=%s len=%u hdr=%02X/%02X ctr=%lu rxLen=%u expected=%u",
+                  "enrichment decrypt failed err=%s len=%u hdr=%02X/%02X ctr=%lu rxLen=%u expected=%u dropped=1",
                   err ? err : "-",
                   static_cast<unsigned>(len),
                   len > 0 ? data[0] : 0,
@@ -1199,19 +1723,33 @@ void WioNrfAccessory::_handleEnrichmentBytes(const uint8_t* data, size_t len) {
                   static_cast<unsigned long>(counter),
                   static_cast<unsigned>(_enrichmentRxLen),
                   static_cast<unsigned>(_enrichmentExpectedCount));
-        _fail("enrichment_decrypt_failed");
+        // Drop just this frame instead of tearing down the whole exchange. The
+        // BLE_RX_BIN CRC check now catches the common cause (UART relay
+        // corruption) upstream, so reaching here is rare; when it does, the
+        // device's _rxCounter is not advanced (decrypt returned before line
+        // _rxCounter[channel]=counter), so the phone may resend the same-counter
+        // frame and it will be accepted. A genuinely stuck wait still ends at
+        // ENRICHMENT_TIMEOUT_MS.
+        return;
+    }
+
+    const uint8_t* recordBytes = nullptr;
+    size_t recordLen = 0;
+    if (!_extractEnrichmentRecords(plain, plainLen, recordBytes, recordLen)) {
         return;
     }
 
     const size_t expectedBytes = _enrichmentExpectedCount * ENRICHMENT_RECORD_SIZE;
-    if (_enrichmentRxLen + plainLen > expectedBytes ||
-        _enrichmentRxLen + plainLen > sizeof(_enrichmentRxBuf)) {
-        _fail("enrichment_overflow");
+    if (_enrichmentRxLen + recordLen > expectedBytes ||
+        _enrichmentRxLen + recordLen > sizeof(_enrichmentRxBuf)) {
+        _dropEnrichmentBatch("enrichment_overflow");
         return;
     }
 
-    memcpy(_enrichmentRxBuf + _enrichmentRxLen, plain, plainLen);
-    _enrichmentRxLen += plainLen;
+    if (recordLen > 0) {
+        memcpy(_enrichmentRxBuf + _enrichmentRxLen, recordBytes, recordLen);
+        _enrichmentRxLen += recordLen;
+    }
     if (_enrichmentRxLen < expectedBytes) {
         return;
     }
@@ -1228,6 +1766,7 @@ void WioNrfAccessory::_handleEnrichmentBytes(const uint8_t* data, size_t len) {
         out.alt = static_cast<float>(record.altCm) / 100.0f;
         out.accuracy = static_cast<float>(record.accuracyDm) / 10.0f;
         out.gpsEpochUtc = record.epochUtc;
+        out.noData = (record.flags & PHONE_ENRICH_FLAG_NO_DATA) != 0;
         char tagBuf[sizeof(record.tag)] = {};
         memcpy(tagBuf, record.tag, sizeof(record.tag));
         tagBuf[sizeof(tagBuf) - 1] = '\0';
@@ -1236,11 +1775,14 @@ void WioNrfAccessory::_handleEnrichmentBytes(const uint8_t* data, size_t len) {
 
     _enrichmentAvailableCount = _enrichmentExpectedCount;
     _enrichmentReady = true;
+    _enrichmentConsecutiveDrops = 0;  // clean batch — reset drop escalation
     _enrichmentXferMs = millis() - _enrichmentSendMs;
     _setLinkState(LINK_READY);
-    DLOG_DEBUG(TAG, "External enrichment received count=%u bytes=%u",
+    DLOG_DEBUG(TAG, "External enrichment received count=%u bytes=%u session=%lu batch=%lu",
                static_cast<unsigned>(_enrichmentAvailableCount),
-               static_cast<unsigned>(_enrichmentRxLen));
+               static_cast<unsigned>(_enrichmentRxLen),
+               static_cast<unsigned long>(_activeEnrichmentSessionId),
+               static_cast<unsigned long>(_activeEnrichmentBatchId));
 }
 
 bool WioNrfAccessory::_encodeHex(const uint8_t* data, size_t len, char* out, size_t outLen) const {
@@ -1363,7 +1905,21 @@ void WioNrfAccessory::_handleGpsBytes(const uint8_t* data, size_t len) {
     }
 
     if ((frame.flags & PHONE_GPS_FLAG_VALID) == 0) {
-        _setGpsUnavailable(false);
+        // No live location fix, but the phone still knows the wall-clock time
+        // (its NTP clock is valid even without a GPS lock). Accept a time-only
+        // frame so the device can establish trusted UTC before/without a fix —
+        // this is what lets records be dated and later enriched.
+        if ((frame.flags & PHONE_GPS_FLAG_TIME_TRUSTED) != 0 &&
+            frame.epochUtc >= 1609459200UL) {  // >= 2021-01-01 UTC
+            _lastGpsFixMs = millis();
+            _gpsEpochAtFix = frame.epochUtc;
+            _timeTrusted = true;
+            // Adopt the phone's UTC immediately rather than waiting for the
+            // 1s TimeService tick — the enrich window opens within ~200ms of
+            // auth, so the clock must be valid before the record walk runs.
+            TIME_SVC.syncFromEpoch(frame.epochUtc, TIME_SOURCE_GPS, _lastGpsFixMs);
+        }
+        _setGpsUnavailable(false);  // location absent; preserves trusted time
         return;
     }
 
@@ -1386,6 +1942,9 @@ void WioNrfAccessory::_handleGpsBytes(const uint8_t* data, size_t len) {
     _lastGpsFixMs = millis();
     _gpsEpochAtFix = frame.epochUtc;
     _timeTrusted = (frame.flags & PHONE_GPS_FLAG_TIME_TRUSTED) != 0;
+    if (_timeTrusted) {
+        TIME_SVC.syncFromEpoch(frame.epochUtc, TIME_SOURCE_GPS, _lastGpsFixMs);
+    }
 
     GPSFix fix;
     fix.lat = lat;

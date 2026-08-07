@@ -4,22 +4,7 @@
 
 #include "protocol/CompanionProtocol.h"
 
-// DashboardStreamer
-// =================
-//
-// Owns the phone-requested dashboard streaming lease (slice #4).
-//
-// Pull model: tick() runs on the hardware task.  When the interval elapses,
-// it builds a fresh CmdDashboardSnapshotV1 via
-// CommandDispatcher::populateDashboardSnapshot, wraps it in a
-// DashboardStreamChunkV1 envelope, encrypts on
-// PHONE_SECURE_CHANNEL_DASHBOARD_STREAM, and writes to the phone's
-// dashboard-stream characteristic via PhoneTransportRouter.
-//
-// Bounded lease (clamped to [LEASE_MIN, LEASE_MAX]) and interval (clamped to
-// [INTERVAL_MIN, INTERVAL_MAX]).  Auto-cancel on lease expiry or transport
-// flip — final chunk carries DASHBOARD_STREAM_FLAG_END so the phone knows
-// to release.
+// Phone-requested dashboard stream lease, serviced from the hardware task.
 class DashboardStreamer {
 public:
     struct StartResult {

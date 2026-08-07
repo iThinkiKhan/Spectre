@@ -340,7 +340,7 @@ private:
     uint32_t      _deauthCount       = 0;
     uint32_t      _deauthWindowStart = 0;
     bool          _deauthFlood       = false;
-    static const uint32_t DEAUTH_THRESHOLD  = 20;
+    static const uint32_t DEAUTH_THRESHOLD  = 200;
     static const uint32_t DEAUTH_WINDOW_MS  = 5000;
 
     // ── device aging ─────────────────────────────────────────────────────────
@@ -357,8 +357,13 @@ private:
     KarmaAlert    _karmaAlerts[WIFI_MAX_KARMA];
     int           _karmaAlertCount   = 0;
     bool          _karmaAlertNew     = false;
+    uint32_t      _lastKarmaAlertMs  = 0;
     RecentProbe   _recentProbes[WIFI_RECENT_PROBE_COUNT];
     int           _recentProbeHead   = 0;
+    static const uint32_t KARMA_ALERT_COOLDOWN_MS = 60000;
+    static const int8_t   KARMA_MIN_PROBE_RSSI = -70;
+    static const int8_t   KARMA_MIN_BEACON_RSSI = -65;
+    static const uint8_t  KARMA_MIN_RECENT_PROBES = 2;
 
     // ── device graveyard (MAC-rotation correlation) ──────────────────────────
     DeviceGrave   _graveyard[WIFI_GRAVE_SIZE];

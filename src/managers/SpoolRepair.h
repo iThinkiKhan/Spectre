@@ -4,6 +4,7 @@
 #include <Arduino.h>
 #include <vector>
 
+#include "../core/SpiramAllocator.h"
 #include "SpoolSegment.h"
 #include "SpoolRepairTypes.h"
 
@@ -20,9 +21,9 @@ struct SpoolRepairJob {
     bool active = false;
     String reason;
     SpoolAuditResult audit;
-    std::vector<SpoolSegmentInfo> repairedSegments;
-    std::vector<String> rebuiltSessions;
-    std::vector<String> segmentSessions;
+    SpiramVector<SpoolSegmentInfo> repairedSegments;
+    SpiramVector<String> rebuiltSessions;
+    SpiramVector<String> segmentSessions;
     SpoolSegmentInfo originalSegment;
     SpoolSegmentInfo rebuiltSegment;
     size_t segmentIndex = 0;

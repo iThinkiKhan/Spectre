@@ -44,6 +44,7 @@ import java.nio.charset.StandardCharsets
 import java.util.ArrayDeque
 import java.util.LinkedHashMap
 import java.util.UUID
+import org.json.JSONArray
 
 class SpectrePeripheralModule(
     private val reactContext: ReactApplicationContext,
@@ -93,6 +94,22 @@ class SpectrePeripheralModule(
       val label: String,
       val chunk: Int,
       val totalChunks: Int,
+      val postSendDelayMs: Long,
+  )
+
+  private data class EventBatchEnvelope(
+      val records: ByteArray,
+      val recordCount: Int,
+      val sessionId: Long,
+      val batchId: Long,
+  )
+
+  private data class NativeLocationFix(
+      val lat: Double,
+      val lon: Double,
+      val alt: Double,
+      val accuracy: Double,
+      val timestamp: Long,
   )
 
   private val handler = Handler(Looper.getMainLooper())
@@ -114,8 +131,12 @@ class SpectrePeripheralModule(
   private var pendingAdvertiseModeAfterService: String? = null
   private var notificationInFlight = false
   private var notificationFlightToken = 0L
+  private var notificationPostSendDelayMs = 0L
   private var enrichmentReplyToken = 0L
   private var pendingEnrichmentReplyRecords = 0
+  private var pendingEnrichmentSessionId = 0L
+  private var pendingEnrichmentBatchId = 0L
+  private var pendingEnrichmentEventRecords: ByteArray? = null
   private var useDeviceLocation = false
   private var adapterReceiverRegistered = false
   private val adapterStateReceiver =
@@ -204,7 +225,6 @@ class SpectrePeripheralModule(
           )
           useDeviceLocation = parsed.useDeviceLocation
           startFieldService()
-          syncLocationRecorder()
           state.advertiseMode = parsed.advertiseMode
           state.error = null
 
@@ -237,76 +257,16 @@ class SpectrePeripheralModule(
 
         useDeviceLocation = parsed.useDeviceLocation
         startFieldService()
-        state.advertiseMode = parsed.advertiseMode
-        state.error = null
-        state.running = false
-        state.advertising = false
-        state.advertiseStartConfirmed = false
-        secureSession.reset()
-        state.secureSessionReady = false
-
-        cacheSessionPlainValue(
-            PHONE_METADATA_UUID,
-            PHONE_SECURE_CHANNEL_META,
-            parsed.metadata.toByteArray(StandardCharsets.UTF_8),
-            true,
-        )
-        cacheSessionPlainValue(PHONE_GPS_UUID, PHONE_SECURE_CHANNEL_GPS, decodeBase64OrEmpty(parsed.gpsBase64), true)
-        cacheSessionPlainValue(PHONE_CONTROL_UUID, PHONE_SECURE_CHANNEL_CONTROL, decodeBase64OrEmpty(parsed.controlBase64), true)
-        cacheAndApply(PHONE_ENRICHMENT_UUID, decodeBase64OrEmpty(parsed.enrichmentBase64), true)
-        cacheAndApply(PHONE_COMMAND_REQ_UUID, commandChannel.requestBytes(), true)
-        // AUTH starts empty; the device populates it via a write challenge,
-        // and the session response gets installed by handleIncomingAuthChallenge.
-        cacheAndApply(PHONE_AUTH_UUID, ByteArray(0), false)
-
-        val adapter = bluetoothAdapter
-        if (adapter == null || !adapter.isEnabled) {
-          traceWarn("start_blocked", "reason" to "adapter_unavailable_or_disabled")
-          failStartup("Bluetooth adapter is unavailable or disabled.", null)
-          promise.resolve(currentStateMap())
-          return@runOnMain
-        }
-
-        val server = bluetoothManager.openGattServer(reactContext, gattCallback)
-        if (server == null) {
-          traceWarn("start_blocked", "reason" to "open_gatt_server_failed")
-          failStartup("Unable to open Android GATT server.", null)
-          promise.resolve(currentStateMap())
-          return@runOnMain
-        }
-
-        bluetoothAdvertiser = adapter.bluetoothLeAdvertiser
-        if (bluetoothAdvertiser == null) {
-          traceWarn("start_blocked", "reason" to "advertiser_unavailable")
-          failStartup("Bluetooth LE advertising is unavailable on this device.", null)
-          promise.resolve(currentStateMap())
-          return@runOnMain
-        }
-
-        bluetoothGattServer = server
-        val builtService = buildGattService()
-        service = builtService
-        pendingAdvertiseModeAfterService = parsed.advertiseMode
-        if (!server.addService(builtService)) {
-          pendingAdvertiseModeAfterService = null
-          traceWarn("start_blocked", "reason" to "add_service_returned_false")
-          failStartup("Unable to add Spectre GATT service.", null)
-          promise.resolve(currentStateMap())
-          return@runOnMain
-        }
-
-        state.running = true
-        state.advertising = false
-        state.watchdogActive = state.advertising
-        syncLocationRecorder()
-        registerAdapterStateReceiver()
-        armAdvertisingWatchdog()
-        // Session is established lazily when the device writes its challenge
-        // to the AUTH characteristic, not at startup.
-        state.secureSessionReady = false
-        state.lastAdvertiseStartedAt = System.currentTimeMillis()
-        emitState()
+        // Resolve to JS immediately and DEFER the heavy BLE/GATT setup to the
+        // next main-thread tick. startForegroundService() above schedules the
+        // field service's onStartCommand (which calls startForeground) on the
+        // main thread; if we ran openGattServer()/addService() synchronously
+        // here we'd hog the main thread and the FGS promotion would miss
+        // Android's ~5s window — killing the app with
+        // ForegroundServiceDidNotStartInTimeException. Posting lets the service
+        // promote to foreground first, then the GATT work runs.
         promise.resolve(currentStateMap())
+        handler.post { finishColdStart(parsed) }
       } catch (error: Exception) {
         traceError(
             "start_exception",
@@ -316,6 +276,87 @@ class SpectrePeripheralModule(
         failStartup(error.message ?: "Failed to start Spectre peripheral.", error)
         promise.resolve(currentStateMap())
       }
+    }
+  }
+
+  /**
+   * Cold-start GATT/advertising setup, deferred off the startServer() main-thread
+   * runnable so the foreground service can promote (call startForeground) first.
+   * Runs on the main thread (posted via handler). Owns its own error handling —
+   * the JS promise was already resolved by the time this runs.
+   */
+  private fun finishColdStart(parsed: StartConfig) {
+    try {
+      state.advertiseMode = parsed.advertiseMode
+      state.error = null
+      state.running = false
+      state.advertising = false
+      state.advertiseStartConfirmed = false
+      secureSession.reset()
+      state.secureSessionReady = false
+
+      cacheSessionPlainValue(
+          PHONE_METADATA_UUID,
+          PHONE_SECURE_CHANNEL_META,
+          parsed.metadata.toByteArray(StandardCharsets.UTF_8),
+          true,
+      )
+      cacheSessionPlainValue(PHONE_GPS_UUID, PHONE_SECURE_CHANNEL_GPS, decodeBase64OrEmpty(parsed.gpsBase64), true)
+      cacheSessionPlainValue(PHONE_CONTROL_UUID, PHONE_SECURE_CHANNEL_CONTROL, decodeBase64OrEmpty(parsed.controlBase64), true)
+      cacheAndApply(PHONE_ENRICHMENT_UUID, decodeBase64OrEmpty(parsed.enrichmentBase64), true)
+      cacheAndApply(PHONE_COMMAND_REQ_UUID, commandChannel.requestBytes(), true)
+      // The response starts empty and is populated after an auth request.
+      cacheAndApply(PHONE_AUTH_UUID, ByteArray(0), false)
+
+      val adapter = bluetoothAdapter
+      if (adapter == null || !adapter.isEnabled) {
+        traceWarn("start_blocked", "reason" to "adapter_unavailable_or_disabled")
+        failStartup("Bluetooth adapter is unavailable or disabled.", null)
+        return
+      }
+
+      val server = bluetoothManager.openGattServer(reactContext, gattCallback)
+      if (server == null) {
+        traceWarn("start_blocked", "reason" to "open_gatt_server_failed")
+        failStartup("Unable to open Android GATT server.", null)
+        return
+      }
+
+      bluetoothAdvertiser = adapter.bluetoothLeAdvertiser
+      if (bluetoothAdvertiser == null) {
+        traceWarn("start_blocked", "reason" to "advertiser_unavailable")
+        failStartup("Bluetooth LE advertising is unavailable on this device.", null)
+        return
+      }
+
+      bluetoothGattServer = server
+      val builtService = buildGattService()
+      service = builtService
+      pendingAdvertiseModeAfterService = parsed.advertiseMode
+      if (!server.addService(builtService)) {
+        pendingAdvertiseModeAfterService = null
+        traceWarn("start_blocked", "reason" to "add_service_returned_false")
+        failStartup("Unable to add Spectre GATT service.", null)
+        return
+      }
+
+      state.running = true
+      state.advertising = false
+      state.watchdogActive = state.advertising
+      registerAdapterStateReceiver()
+      armAdvertisingWatchdog()
+      // Session is established lazily when the device writes its challenge
+      // to the AUTH characteristic, not at startup.
+      state.secureSessionReady = false
+      state.lastAdvertiseStartedAt = System.currentTimeMillis()
+      emitState()
+    } catch (error: Exception) {
+      traceError(
+          "start_exception",
+          "type" to error.javaClass.simpleName,
+          "message" to error.message,
+      )
+      failStartup(error.message ?: "Failed to start Spectre peripheral.", error)
     }
   }
 
@@ -385,12 +426,10 @@ class SpectrePeripheralModule(
     runOnMain {
       val plaintext = decodeBase64OrEmpty(enrichmentBase64)
       if (notify) {
-        if (!notifyEncryptedChunks(
-                PHONE_ENRICHMENT_UUID,
-                PHONE_SECURE_CHANNEL_ENRICHMENT,
-                plaintext,
-                ENRICHMENT_NOTIFY_PLAINTEXT_CHUNK_MAX,
-            )) {
+        val recordCount =
+            pendingEnrichmentReplyRecords.takeIf { it > 0 }
+                ?: (plaintext.size / ENRICHMENT_RECORD_SIZE)
+        if (!notifyEnrichmentResponse(plaintext, recordCount)) {
           promise.reject(
               "E_ENRICHMENT_ENCRYPT_FAILED",
               secureSession.lastError ?: "encrypt returned null",
@@ -398,7 +437,7 @@ class SpectrePeripheralModule(
           return@runOnMain
         }
         enrichmentReplyToken += 1
-        pendingEnrichmentReplyRecords = 0
+        clearPendingEnrichmentReply()
         promise.resolve(null)
         return@runOnMain
       }
@@ -506,7 +545,7 @@ class SpectrePeripheralModule(
                 notificationInFlight = false
                 notificationFlightToken += 1
                 enrichmentReplyToken += 1
-                pendingEnrichmentReplyRecords = 0
+                clearPendingEnrichmentReply()
               }
               state.connectedDevices = connectedDevices.size
               state.lastDisconnectedAt = System.currentTimeMillis()
@@ -525,6 +564,14 @@ class SpectrePeripheralModule(
           }
         }
 
+        override fun onMtuChanged(device: BluetoothDevice, mtu: Int) {
+          traceInfo(
+              "mtu_changed",
+              "peer" to describeDeviceForLog(device),
+              "mtu" to mtu,
+          )
+        }
+
         override fun onNotificationSent(device: BluetoothDevice, status: Int) {
           runOnMain {
             traceInfo(
@@ -541,7 +588,13 @@ class SpectrePeripheralModule(
                   "status" to gattStatusName(status),
               )
             }
-            pumpNotificationQueue("sent")
+            val postSendDelayMs = notificationPostSendDelayMs
+            notificationPostSendDelayMs = 0L
+            if (postSendDelayMs > 0L && notificationQueue.isNotEmpty()) {
+              handler.postDelayed({ pumpNotificationQueue("sent_paced") }, postSendDelayMs)
+            } else {
+              pumpNotificationQueue("sent")
+            }
           }
         }
 
@@ -608,9 +661,19 @@ class SpectrePeripheralModule(
             offset: Int,
             value: ByteArray,
         ) {
-          runOnMain {
+          if (responseNeeded) {
+            bluetoothGattServer?.sendResponse(
+                device,
+                requestId,
+                BluetoothGatt.GATT_SUCCESS,
+                offset,
+                null,
+            )
+          }
+
+          val processWrite = {
             val merged =
-                if (characteristic.uuid == PHONE_AUTH_UUID) {
+                if (characteristic.uuid == PHONE_AUTH_REQUEST_UUID) {
                   mergeAuthWrite(device, offset, value)
                 } else {
                   mergeWrite(characteristic.uuid, offset, value)
@@ -630,7 +693,7 @@ class SpectrePeripheralModule(
             )
 
             when (characteristic.uuid) {
-              PHONE_AUTH_UUID -> {
+              PHONE_AUTH_REQUEST_UUID -> {
                 if (merged.size == AUTH_FRAME_SIZE) {
                   authWriteBuffers.remove(device.address)
                   handleIncomingAuthChallenge(device, merged)
@@ -651,17 +714,29 @@ class SpectrePeripheralModule(
               PHONE_NOTIFICATION_UUID -> handleIncomingNotification(device, merged)
               else -> Unit
             }
-
-            if (responseNeeded) {
-              bluetoothGattServer?.sendResponse(
-                  device,
-                  requestId,
-                  BluetoothGatt.GATT_SUCCESS,
-                  offset,
-                  null,
-              )
-            }
           }
+
+          if (characteristic.uuid == PHONE_AUTH_REQUEST_UUID) {
+            processWrite()
+          } else {
+            runOnMain(processWrite)
+          }
+        }
+
+        override fun onExecuteWrite(device: BluetoothDevice, requestId: Int, execute: Boolean) {
+          traceInfo(
+              "execute_write",
+              "peer" to describeDeviceForLog(device),
+              "requestId" to requestId,
+              "execute" to execute,
+          )
+          bluetoothGattServer?.sendResponse(
+              device,
+              requestId,
+              BluetoothGatt.GATT_SUCCESS,
+              0,
+              null,
+          )
         }
 
         override fun onDescriptorWriteRequest(
@@ -748,15 +823,16 @@ class SpectrePeripheralModule(
         BluetoothGattCharacteristic.PROPERTY_READ or BluetoothGattCharacteristic.PROPERTY_NOTIFY,
         BluetoothGattCharacteristic.PERMISSION_READ,
     )
-    // AUTH: device writes the challenge, phone notifies its response.  Needs
-    // WRITE (device → phone) plus NOTIFY (phone → device).  No READ — the
-    // device never reads this characteristic, only writes + subscribes.
     addCharacteristic(
         builtService,
         PHONE_AUTH_UUID,
-        BluetoothGattCharacteristic.PROPERTY_WRITE or
-            BluetoothGattCharacteristic.PROPERTY_WRITE_NO_RESPONSE or
-            BluetoothGattCharacteristic.PROPERTY_NOTIFY,
+        BluetoothGattCharacteristic.PROPERTY_NOTIFY,
+        0,
+    )
+    addCharacteristic(
+        builtService,
+        PHONE_AUTH_REQUEST_UUID,
+        BluetoothGattCharacteristic.PROPERTY_WRITE or BluetoothGattCharacteristic.PROPERTY_WRITE_NO_RESPONSE,
         BluetoothGattCharacteristic.PERMISSION_WRITE,
     )
     addCharacteristic(
@@ -844,14 +920,13 @@ class SpectrePeripheralModule(
     val scanResponseBuilder = AdvertiseData.Builder().setIncludeDeviceName(false)
     if (includeService || mode == "service" || mode == "uuidOnly") {
       dataBuilder.addServiceUuid(serviceUuid)
-      scanResponseBuilder.addServiceUuid(serviceUuid)
     }
     traceInfo(
         "advertise_start_request",
         "mode" to mode,
         "includeName" to includeName,
         "includeService" to (includeService || mode == "service" || mode == "uuidOnly"),
-        "scanResponseService" to (includeService || mode == "service" || mode == "uuidOnly"),
+        "scanResponseService" to false,
         "connectable" to true,
     )
 
@@ -965,6 +1040,9 @@ class SpectrePeripheralModule(
     if (advertiseCallback == null || !state.advertising) {
       restartAdvertising("field_service")
     }
+    // Re-sync the notification on every 5s kick so a stale "Linked" line can't
+    // outlive a silent disconnect the watchdog is still recovering from.
+    refreshFieldNotification()
   }
 
   private fun stopAdvertisingOnly() {
@@ -980,7 +1058,7 @@ class SpectrePeripheralModule(
     state.advertiseStartConfirmed = false
   }
 
-  private fun stopInternal() {
+  private fun stopInternal(tearDownFieldService: Boolean = true) {
     traceInfo(
         "stop_internal",
         "running" to state.running,
@@ -989,8 +1067,12 @@ class SpectrePeripheralModule(
     )
     disarmAdvertisingWatchdog()
     unregisterAdapterStateReceiver()
-    stopFieldService()
-    stopLocationRecorder()
+    // Drop only the BLE flag — GPS recording is independent now and must survive
+    // a BLE stop. When the anchor itself initiated this teardown (notification
+    // Stop), skip the flag flip to avoid re-entering its onStartCommand.
+    if (tearDownFieldService) {
+      stopFieldService()
+    }
     stopAdvertisingOnly()
     bluetoothGattServer?.close()
     bluetoothGattServer = null
@@ -1005,7 +1087,7 @@ class SpectrePeripheralModule(
     notificationInFlight = false
     notificationFlightToken += 1
     enrichmentReplyToken += 1
-    pendingEnrichmentReplyRecords = 0
+    clearPendingEnrichmentReply()
     state.running = false
     state.advertising = false
     state.connectedDevices = 0
@@ -1032,7 +1114,9 @@ class SpectrePeripheralModule(
   }
 
   private fun stopFromNotificationInternal() {
-    stopInternal()
+    // The anchor (SpectreFieldService) is already standing down and clears its
+    // own notification — don't bounce a SET_BLE intent back into it.
+    stopInternal(tearDownFieldService = false)
     emitLog("Field Mode stopped from notification")
   }
 
@@ -1046,7 +1130,6 @@ class SpectrePeripheralModule(
     disarmAdvertisingWatchdog()
     unregisterAdapterStateReceiver()
     stopFieldService()
-    stopLocationRecorder()
     stopAdvertisingOnly()
     bluetoothGattServer?.close()
     bluetoothGattServer = null
@@ -1060,7 +1143,7 @@ class SpectrePeripheralModule(
     notificationInFlight = false
     notificationFlightToken += 1
     enrichmentReplyToken += 1
-    pendingEnrichmentReplyRecords = 0
+    clearPendingEnrichmentReply()
     state.running = false
     state.advertising = false
     state.secureSessionReady = false
@@ -1075,47 +1158,161 @@ class SpectrePeripheralModule(
     emitState()
   }
 
+  // Raise the BLE flag on the shared foreground-service anchor. The anchor
+  // owns the foreground notification and stays up while either BLE or the
+  // (independently toggled) GPS recorder is active.
   private fun startFieldService() {
-    val intent =
-        Intent(reactContext, SpectreFieldService::class.java).apply {
-          putExtra(SpectreFieldService.EXTRA_GPS_LOGGING, useDeviceLocation)
-        }
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-      reactContext.startForegroundService(intent)
-    } else {
-      reactContext.startService(intent)
-    }
+    SpectreFieldService.setBleActive(reactContext, true)
   }
 
+  // Drop the BLE flag. The anchor re-promotes for a still-active GPS recorder
+  // or stands down (removing its notification while alive — the only reliable
+  // teardown on some OEM builds where stopService leaves the ongoing
+  // notification stuck with the FOREGROUND_SERVICE flag).
   private fun stopFieldService() {
-    runCatching {
-      reactContext.stopService(Intent(reactContext, SpectreFieldService::class.java))
-    }
+    SpectreFieldService.setBleActive(reactContext, false)
   }
 
-  private fun syncLocationRecorder() {
-    if (useDeviceLocation && state.running) {
-      startLocationRecorder()
-    } else {
-      stopLocationRecorder()
-    }
+  private fun clearPendingEnrichmentReply() {
+    pendingEnrichmentReplyRecords = 0
+    pendingEnrichmentSessionId = 0L
+    pendingEnrichmentBatchId = 0L
+    pendingEnrichmentEventRecords = null
   }
 
-  private fun startLocationRecorder() {
-    runCatching {
-      SpectreLocationService.start(reactContext.applicationContext)
-    }.onFailure {
-      traceWarn("location_recorder_start_failed", "message" to it.message)
-      emitLog("Phone GPS recorder could not start: ${it.message ?: "unknown error"}")
+  private fun parseEventBatchEnvelope(plaintext: ByteArray): EventBatchEnvelope {
+    if (plaintext.size >= EVENT_BATCH_HEADER_V2_SIZE &&
+        readLe32(plaintext, 0) == EVENT_BATCH_V2_MAGIC &&
+        (plaintext[4].toInt() and 0xff) == BATCH_HEADER_VERSION) {
+      val recordCount = readLe16(plaintext, 6)
+      val sessionId = readLe32(plaintext, 8)
+      val batchId = readLe32(plaintext, 12)
+      val available = plaintext.size - EVENT_BATCH_HEADER_V2_SIZE
+      val expected = recordCount * EVENT_BATCH_RECORD_SIZE
+      if (available < expected) {
+        traceWarn(
+            "event_batch_v2_short",
+            "records" to recordCount,
+            "available" to available,
+            "expected" to expected,
+            "sessionId" to sessionId,
+            "batchId" to batchId,
+        )
+      }
+      val recordBytes = minOf(available, expected)
+      return EventBatchEnvelope(
+          records = plaintext.copyOfRange(
+              EVENT_BATCH_HEADER_V2_SIZE,
+              EVENT_BATCH_HEADER_V2_SIZE + recordBytes,
+          ),
+          recordCount = recordBytes / EVENT_BATCH_RECORD_SIZE,
+          sessionId = sessionId,
+          batchId = batchId,
+      )
     }
+
+    return EventBatchEnvelope(
+        records = plaintext,
+        recordCount = plaintext.size / EVENT_BATCH_RECORD_SIZE,
+        sessionId = 0L,
+        batchId = 0L,
+    )
   }
 
-  private fun stopLocationRecorder() {
-    runCatching {
-      SpectreLocationService.stop(reactContext.applicationContext)
-    }.onFailure {
-      traceWarn("location_recorder_stop_failed", "message" to it.message)
+  private fun notifyEnrichmentResponse(records: ByteArray, recordCount: Int): Boolean {
+    val sessionId = pendingEnrichmentSessionId
+    val batchId = pendingEnrichmentBatchId
+    if (sessionId == 0L || batchId == 0L) {
+      traceWarn(
+          "enrichment_response_unframed",
+          "records" to recordCount,
+          "pendingRecords" to pendingEnrichmentReplyRecords,
+          "sessionId" to sessionId,
+          "batchId" to batchId,
+      )
+      return notifyEncryptedChunks(
+          PHONE_ENRICHMENT_UUID,
+          PHONE_SECURE_CHANNEL_ENRICHMENT,
+          records,
+          ENRICHMENT_NOTIFY_PLAINTEXT_CHUNK_MAX,
+      )
     }
+    if (records.size % ENRICHMENT_RECORD_SIZE != 0) {
+      traceWarn(
+          "enrichment_response_unaligned",
+          "bytes" to records.size,
+          "recordSize" to ENRICHMENT_RECORD_SIZE,
+          "sessionId" to sessionId,
+          "batchId" to batchId,
+      )
+    }
+
+    val characteristic = service?.getCharacteristic(PHONE_ENRICHMENT_UUID)
+    if (characteristic == null) {
+      traceWarn("notify_chunk_failed", "char" to uuidLabel(PHONE_ENRICHMENT_UUID), "reason" to "characteristic_missing")
+      return false
+    }
+
+    val payloadMax = ENRICHMENT_RESPONSE_CHUNK_PAYLOAD_MAX
+    if (payloadMax <= 0) {
+      traceWarn("notify_chunk_failed", "char" to uuidLabel(PHONE_ENRICHMENT_UUID), "reason" to "invalid_enrichment_chunk_size")
+      return false
+    }
+
+    val totalChunks = maxOf(1, (records.size + payloadMax - 1) / payloadMax)
+    var offset = 0
+    var chunkIndex = 0
+    var lastEnvelope = ByteArray(0)
+    traceInfo(
+        "notify_enrichment_response",
+        "records" to recordCount,
+        "plainBytes" to records.size,
+        "chunks" to totalChunks,
+        "sessionId" to sessionId,
+        "batchId" to batchId,
+    )
+    do {
+      val payloadLen = if (records.isEmpty()) 0 else minOf(payloadMax, records.size - offset)
+      val chunk = ByteArray(ENRICHMENT_RESPONSE_HEADER_V2_SIZE + payloadLen)
+      writeLe32(chunk, 0, ENRICHMENT_RESPONSE_V2_MAGIC)
+      chunk[4] = BATCH_HEADER_VERSION.toByte()
+      chunk[5] = 0
+      writeLe16(chunk, 6, recordCount)
+      writeLe32(chunk, 8, sessionId)
+      writeLe32(chunk, 12, batchId)
+      writeLe16(chunk, 16, offset)
+      writeLe16(chunk, 18, payloadLen)
+      if (payloadLen > 0) {
+        System.arraycopy(records, offset, chunk, ENRICHMENT_RESPONSE_HEADER_V2_SIZE, payloadLen)
+      }
+
+      val envelope = secureSession.encrypt(PHONE_SECURE_CHANNEL_ENRICHMENT, chunk)
+      if (envelope == null) {
+        traceWarn(
+            "enrichment_encrypt_failed",
+            "reason" to (secureSession.lastError ?: "unknown"),
+            "plainBytes" to chunk.size,
+            "chunk" to chunkIndex,
+            "sessionId" to sessionId,
+            "batchId" to batchId,
+        )
+        return false
+      }
+      lastEnvelope = envelope
+      enqueueNotificationForAllDevices(
+          characteristic,
+          envelope,
+          label = "enrichment_response",
+          chunk = chunkIndex,
+          totalChunks = totalChunks,
+          postSendDelayMs = ENRICHMENT_RESPONSE_CHUNK_PACE_MS,
+      )
+      offset += payloadLen
+      chunkIndex += 1
+    } while (offset < records.size)
+
+    characteristicCache[PHONE_ENRICHMENT_UUID] = lastEnvelope.copyOf()
+    return true
   }
 
   private fun handleIncomingEventBatch(device: BluetoothDevice, bytes: ByteArray) {
@@ -1131,66 +1328,230 @@ class SpectrePeripheralModule(
       emitLog("Event batch decrypt failed: ${secureSession.lastError ?: "unknown"}")
       return
     }
-    val base64 = Base64.encodeToString(plaintext, Base64.NO_WRAP)
+    val envelope = parseEventBatchEnvelope(plaintext)
+    val base64 = Base64.encodeToString(envelope.records, Base64.NO_WRAP)
     state.lastBatchReceivedAt = now
     state.lastBatchPeer = describeDevice(device)
-    state.lastBatchBytes = plaintext.size
-    state.lastBatchRecords = plaintext.size / EVENT_BATCH_RECORD_SIZE
+    state.lastBatchBytes = envelope.records.size
+    state.lastBatchRecords = envelope.recordCount
     state.totalBatchesReceived += 1
-    state.totalBatchBytes += plaintext.size.toLong()
+    state.totalBatchBytes += envelope.records.size.toLong()
     state.totalBatchRecords += state.lastBatchRecords.toLong()
     val fallbackToken = ++enrichmentReplyToken
     pendingEnrichmentReplyRecords = state.lastBatchRecords
+    pendingEnrichmentSessionId = envelope.sessionId
+    pendingEnrichmentBatchId = envelope.batchId
+    pendingEnrichmentEventRecords = envelope.records.copyOf()
     traceInfo(
         "event_batch_received",
         "peer" to describeDeviceForLog(device),
         "cipherBytes" to bytes.size,
         "plainBytes" to plaintext.size,
         "recordsEstimate" to state.lastBatchRecords,
+        "sessionId" to envelope.sessionId,
+        "batchId" to envelope.batchId,
         "totalBatches" to state.totalBatchesReceived,
     )
     emitEvent(
         "SpectrePeripheralEventBatch",
         Arguments.createMap().apply {
           putString("base64", base64)
-          putDouble("length", plaintext.size.toDouble())
+          putDouble("length", envelope.records.size.toDouble())
           putDouble("receivedAt", now.toDouble())
         },
     )
-    scheduleDeferredEnrichmentFallback(fallbackToken, state.lastBatchRecords)
+    scheduleDeferredEnrichmentFallback(
+        fallbackToken,
+        state.lastBatchRecords,
+        envelope.sessionId,
+        envelope.batchId,
+    )
     emitState()
   }
 
-  private fun scheduleDeferredEnrichmentFallback(token: Long, recordCount: Int) {
+  private fun scheduleDeferredEnrichmentFallback(
+      token: Long,
+      recordCount: Int,
+      sessionId: Long,
+      batchId: Long,
+      allowZeroMatch: Boolean = false,
+      delayMs: Long = ENRICHMENT_JS_REPLY_FALLBACK_MS,
+  ) {
     if (recordCount <= 0) return
     handler.postDelayed(
         {
-          if (token != enrichmentReplyToken || pendingEnrichmentReplyRecords != recordCount) {
+          if (token != enrichmentReplyToken ||
+              pendingEnrichmentReplyRecords != recordCount ||
+              pendingEnrichmentSessionId != sessionId ||
+              pendingEnrichmentBatchId != batchId) {
             return@postDelayed
           }
           if (notificationQueue.any { it.characteristicUuid == PHONE_ENRICHMENT_UUID }) {
             return@postDelayed
           }
 
-          val deferred = ByteArray(recordCount * ENRICHMENT_RECORD_SIZE)
-          traceWarn(
-              "enrichment_native_deferred",
-              "records" to recordCount,
-              "bytes" to deferred.size,
-              "reason" to "js_reply_timeout",
-          )
-          if (notifyEncryptedChunks(
-                  PHONE_ENRICHMENT_UUID,
-                  PHONE_SECURE_CHANNEL_ENRICHMENT,
-                  deferred,
-                  ENRICHMENT_NOTIFY_PLAINTEXT_CHUNK_MAX,
-              )) {
-            enrichmentReplyToken += 1
-            pendingEnrichmentReplyRecords = 0
-          }
+          val records = pendingEnrichmentEventRecords?.copyOf()
+          Thread {
+            val fallback = buildNativeEnrichmentResponse(records, recordCount)
+            val matched = countNativeEnrichmentMatches(fallback)
+            handler.post {
+              if (token != enrichmentReplyToken ||
+                  pendingEnrichmentReplyRecords != recordCount ||
+                  pendingEnrichmentSessionId != sessionId ||
+                  pendingEnrichmentBatchId != batchId) {
+                return@post
+              }
+              if (matched == 0 && !allowZeroMatch) {
+                traceWarn(
+                    "enrichment_native_wait_js",
+                    "records" to recordCount,
+                    "reason" to "native_zero_match",
+                    "retryMs" to ENRICHMENT_JS_ZERO_MATCH_FALLBACK_MS,
+                )
+                scheduleDeferredEnrichmentFallback(
+                    token,
+                    recordCount,
+                    sessionId,
+                    batchId,
+                    allowZeroMatch = true,
+                    delayMs = ENRICHMENT_JS_ZERO_MATCH_FALLBACK_MS,
+                )
+                return@post
+              }
+              traceWarn(
+                  "enrichment_native_deferred",
+                  "records" to recordCount,
+                  "bytes" to fallback.size,
+                  "matches" to matched,
+                  "reason" to "js_reply_timeout",
+              )
+              if (notifyEnrichmentResponse(fallback, recordCount)) {
+                enrichmentReplyToken += 1
+                clearPendingEnrichmentReply()
+              }
+            }
+          }.start()
         },
-        ENRICHMENT_JS_REPLY_FALLBACK_MS,
+        delayMs,
     )
+  }
+
+  private fun buildNativeEnrichmentResponse(eventRecords: ByteArray?, recordCount: Int): ByteArray {
+    val out = ByteArray(recordCount * ENRICHMENT_RECORD_SIZE)
+    if (eventRecords == null || eventRecords.isEmpty()) return out
+
+    val locations = loadNativeLocationHistory()
+
+    val usableRecords = minOf(recordCount, eventRecords.size / EVENT_BATCH_RECORD_SIZE)
+    for (i in 0 until usableRecords) {
+      val eventOffset = i * EVENT_BATCH_RECORD_SIZE
+      val eventId = readLe32(eventRecords, eventOffset)
+      val eventEpoch = readLe32(eventRecords, eventOffset + 4)
+      if (eventId == 0L || eventEpoch < EVENT_EPOCH_SECONDS_MIN) continue
+
+      val outOffset = i * ENRICHMENT_RECORD_SIZE
+      writeLe32(out, outOffset, eventId)
+      val location = findNativeLocationForEvent(eventEpoch * 1000L, locations)
+      if (location == null) {
+        out[outOffset + 22] = PHONE_ENRICH_FLAG_NO_DATA.toByte()
+        continue
+      }
+      writeLe32(out, outOffset + 4, Math.round(location.lat * 10_000_000.0))
+      writeLe32(out, outOffset + 8, Math.round(location.lon * 10_000_000.0))
+      writeLe32(out, outOffset + 12, Math.round(location.alt * 100.0))
+      writeLe16(out, outOffset + 16, maxOf(0, Math.round(location.accuracy * 10.0).toInt()))
+      writeLe32(out, outOffset + 18, location.timestamp / 1000L)
+      out[outOffset + 22] = 0
+    }
+    return out
+  }
+
+  private fun loadNativeLocationHistory(): List<NativeLocationFix> {
+    val prefs = reactContext.getSharedPreferences("spectre_companion_store", Context.MODE_PRIVATE)
+    val indexRaw = prefs.getString(LOCATION_HISTORY_INDEX_KEY, null) ?: return emptyList()
+    val now = System.currentTimeMillis()
+    val cutoff = now - LOCATION_HISTORY_MAX_AGE_MS
+    val samples = mutableListOf<NativeLocationFix>()
+    var buckets = 0
+    var oldest = Long.MAX_VALUE
+    var newest = 0L
+
+    try {
+      val index = JSONArray(indexRaw)
+      for (i in 0 until index.length()) {
+        val bucketId = index.optLong(i, Long.MIN_VALUE)
+        if (bucketId == Long.MIN_VALUE) continue
+        val bucketRaw = prefs.getString("$LOCATION_HISTORY_BUCKET_PREFIX$bucketId", null) ?: continue
+        val bucket = JSONArray(bucketRaw)
+        buckets += 1
+        for (j in 0 until bucket.length()) {
+          val fix = bucket.optJSONObject(j) ?: continue
+          val timestamp = fix.optLong("timestamp", 0L)
+          if (timestamp < cutoff || timestamp <= 0L) continue
+          val lat = fix.optDouble("lat", Double.NaN)
+          val lon = fix.optDouble("lon", Double.NaN)
+          if (lat.isNaN() || lon.isNaN()) continue
+          samples.add(
+              NativeLocationFix(
+                  lat = lat,
+                  lon = lon,
+                  alt = fix.optDouble("alt", 0.0),
+                  accuracy = maxOf(0.0, fix.optDouble("accuracy", 0.0)),
+                  timestamp = timestamp,
+              ),
+          )
+          if (timestamp < oldest) oldest = timestamp
+          if (timestamp > newest) newest = timestamp
+        }
+      }
+    } catch (error: Exception) {
+      traceWarn("location_history_native_load_failed", "message" to error.message)
+      return emptyList()
+    }
+
+    samples.sortBy { it.timestamp }
+    traceInfo(
+        "location_history_native_load",
+        "buckets" to buckets,
+        "samples" to samples.size,
+        "oldest" to if (oldest == Long.MAX_VALUE) 0L else oldest,
+        "newest" to newest,
+    )
+    return samples
+  }
+
+  private fun findNativeLocationForEvent(
+      eventUnixMs: Long,
+      locations: List<NativeLocationFix>,
+  ): NativeLocationFix? {
+    if (eventUnixMs < System.currentTimeMillis() - LOCATION_HISTORY_MAX_AGE_MS) return null
+
+    var nearest: NativeLocationFix? = null
+    var nearestDrift = Long.MAX_VALUE
+    for (location in locations) {
+      val drift = kotlin.math.abs(location.timestamp - eventUnixMs)
+      if (drift < nearestDrift) {
+        nearest = location
+        nearestDrift = drift
+      }
+      if (location.timestamp > eventUnixMs && drift > nearestDrift) break
+    }
+
+    return if (nearest != null && nearestDrift <= LOCATION_MATCH_MAX_DRIFT_MS) {
+      nearest
+    } else {
+      null
+    }
+  }
+
+  private fun countNativeEnrichmentMatches(records: ByteArray): Int {
+    var matches = 0
+    var offset = 0
+    while (offset + ENRICHMENT_RECORD_SIZE <= records.size) {
+      if (readLe32(records, offset) != 0L) matches += 1
+      offset += ENRICHMENT_RECORD_SIZE
+    }
+    return matches
   }
 
   private fun handleIncomingStorageSnapshot(device: BluetoothDevice, bytes: ByteArray) {
@@ -1397,11 +1758,14 @@ class SpectrePeripheralModule(
         sessionPlainCache[PHONE_METADATA_UUID] ?: ByteArray(0),
         false,
     )
+    // Notify the GPS frame on session-ready: the device subscribes via notify
+    // (it does not poll-read), and it needs the phone's UTC immediately after
+    // auth so it can date/enrich records within the brief connection window.
     cacheSessionPlainValue(
         PHONE_GPS_UUID,
         PHONE_SECURE_CHANNEL_GPS,
         sessionPlainCache[PHONE_GPS_UUID] ?: ByteArray(0),
-        false,
+        true,
     )
     cacheSessionPlainValue(
         PHONE_CONTROL_UUID,
@@ -1435,26 +1799,16 @@ class SpectrePeripheralModule(
   }
 
   private fun notifyAllDevices(characteristic: BluetoothGattCharacteristic) {
-    val server = bluetoothGattServer ?: return
     if (connectedDevices.isEmpty()) {
       traceInfo("notify_skipped", "char" to uuidLabel(characteristic.uuid), "reason" to "no_connected_devices")
       return
     }
 
-    for (device in connectedDevices.values) {
-      traceInfo(
-          "notify_device",
-          "peer" to describeDeviceForLog(device),
-          "char" to uuidLabel(characteristic.uuid),
-          "bytes" to (characteristicCache[characteristic.uuid]?.size ?: 0),
-      )
-      notifyCharacteristicChanged(
-          server,
-          device,
-          characteristic,
-          characteristicCache[characteristic.uuid] ?: ByteArray(0),
-      )
-    }
+    enqueueNotificationForAllDevices(
+        characteristic,
+        characteristicCache[characteristic.uuid] ?: ByteArray(0),
+        label = "value",
+    )
   }
 
   private fun notifyEncryptedChunks(
@@ -1497,6 +1851,7 @@ class SpectrePeripheralModule(
           label = "chunked",
           chunk = 0,
           totalChunks = 1,
+          postSendDelayMs = ENRICHMENT_RESPONSE_CHUNK_PACE_MS,
       )
       return true
     }
@@ -1538,6 +1893,7 @@ class SpectrePeripheralModule(
           label = "chunked",
           chunk = chunks,
           totalChunks = ((plaintext.size + chunkSize - 1) / chunkSize),
+          postSendDelayMs = ENRICHMENT_RESPONSE_CHUNK_PACE_MS,
       )
       chunks += 1
       offset = end
@@ -1553,6 +1909,7 @@ class SpectrePeripheralModule(
       label: String,
       chunk: Int = 0,
       totalChunks: Int = 1,
+      postSendDelayMs: Long = 0L,
   ) {
     if (connectedDevices.isEmpty()) {
       traceInfo("notify_skipped", "char" to uuidLabel(characteristic.uuid), "reason" to "no_connected_devices")
@@ -1568,6 +1925,7 @@ class SpectrePeripheralModule(
               label = label,
               chunk = chunk,
               totalChunks = totalChunks,
+              postSendDelayMs = postSendDelayMs,
           )
       )
       traceInfo(
@@ -1616,6 +1974,7 @@ class SpectrePeripheralModule(
     characteristicCache[pending.characteristicUuid] = pending.value.copyOf()
     characteristic.value = pending.value.copyOf()
     notificationInFlight = true
+    notificationPostSendDelayMs = pending.postSendDelayMs
     val flightToken = ++notificationFlightToken
     traceInfo(
         "notify_send",
@@ -1644,6 +2003,7 @@ class SpectrePeripheralModule(
           "bytes" to pending.value.size,
       )
       notificationInFlight = false
+      notificationPostSendDelayMs = 0L
       notificationFlightToken += 1
       handler.post { pumpNotificationQueue("send_failed") }
       return
@@ -1660,6 +2020,7 @@ class SpectrePeripheralModule(
                 "token" to flightToken,
             )
             notificationInFlight = false
+            notificationPostSendDelayMs = 0L
             pumpNotificationQueue("sent_timeout")
           }
         },
@@ -1702,7 +2063,7 @@ class SpectrePeripheralModule(
     }
 
     if (offset > 0) {
-      val merged = mergeWrite(PHONE_AUTH_UUID, offset, value)
+      val merged = mergeWrite(PHONE_AUTH_REQUEST_UUID, offset, value)
       if (merged.size < AUTH_FRAME_SIZE) {
         authWriteBuffers[device.address] = merged
       }
@@ -1793,6 +2154,21 @@ class SpectrePeripheralModule(
 
   private fun emitState() {
     emitEvent("SpectrePeripheralState", currentStateMap())
+    refreshFieldNotification()
+  }
+
+  // The Field Mode notification (id 4201) is owned ENTIRELY by
+  // SpectreFieldService via startForeground(). We deliberately do NOT update it
+  // through NotificationManager.notify() anymore: mixing manager.notify() and
+  // startForeground() on the same id leaves a notify-layer that survives the
+  // foreground-service teardown, orphaning the ongoing notification after Stop
+  // (it can't be swiped, and manager.cancel can't kill it while the FGS holds
+  // it). Keeping it purely FGS-managed means stopForeground(REMOVE) reliably
+  // clears it. The service shows a static status line; if live updates are ever
+  // wanted, route them through the service (a startForeground re-post), never
+  // through NotificationManager.notify.
+  private fun refreshFieldNotification() {
+    // no-op by design — see comment above.
   }
 
   private fun WritableMap.putNullableLong(key: String, value: Long?) {
@@ -1894,6 +2270,7 @@ class SpectrePeripheralModule(
         PHONE_EVENT_BATCH_UUID -> "event_batch"
         PHONE_ENRICHMENT_UUID -> "enrichment"
         PHONE_AUTH_UUID -> "auth"
+        PHONE_AUTH_REQUEST_UUID -> "auth_request"
         PHONE_STORAGE_UUID -> "storage"
         PHONE_COMMAND_REQ_UUID -> "command_req"
         PHONE_COMMAND_RESP_UUID -> "command_resp"
@@ -1952,8 +2329,30 @@ class SpectrePeripheralModule(
     return try {
       Base64.decode(value, Base64.DEFAULT)
     } catch (_: IllegalArgumentException) {
-      ByteArray(0)
-    }
+        ByteArray(0)
+      }
+  }
+
+  private fun readLe16(bytes: ByteArray, offset: Int): Int =
+      (bytes[offset].toInt() and 0xff) or
+          ((bytes[offset + 1].toInt() and 0xff) shl 8)
+
+  private fun readLe32(bytes: ByteArray, offset: Int): Long =
+      ((bytes[offset].toLong() and 0xffL) or
+          ((bytes[offset + 1].toLong() and 0xffL) shl 8) or
+          ((bytes[offset + 2].toLong() and 0xffL) shl 16) or
+          ((bytes[offset + 3].toLong() and 0xffL) shl 24)) and 0xffffffffL
+
+  private fun writeLe16(bytes: ByteArray, offset: Int, value: Int) {
+    bytes[offset] = (value and 0xff).toByte()
+    bytes[offset + 1] = ((value ushr 8) and 0xff).toByte()
+  }
+
+  private fun writeLe32(bytes: ByteArray, offset: Int, value: Long) {
+    bytes[offset] = (value and 0xffL).toByte()
+    bytes[offset + 1] = ((value ushr 8) and 0xffL).toByte()
+    bytes[offset + 2] = ((value ushr 16) and 0xffL).toByte()
+    bytes[offset + 3] = ((value ushr 24) and 0xffL).toByte()
   }
 
   private fun runOnMain(block: () -> Unit) {
@@ -1984,9 +2383,23 @@ class SpectrePeripheralModule(
 
     private const val EVENT_BATCH_RECORD_SIZE = 10
     private const val ENRICHMENT_RECORD_SIZE = 47
+    private const val PHONE_ENRICH_FLAG_NO_DATA = 0x02
+    private const val BATCH_HEADER_VERSION = 2
+    private const val EVENT_BATCH_V2_MAGIC = 0x32424553L
+    private const val ENRICHMENT_RESPONSE_V2_MAGIC = 0x32524553L
+    private const val EVENT_BATCH_HEADER_V2_SIZE = 16
+    private const val ENRICHMENT_RESPONSE_HEADER_V2_SIZE = 20
     private const val ENRICHMENT_NOTIFY_PLAINTEXT_CHUNK_MAX = 200
-    private const val ENRICHMENT_JS_REPLY_FALLBACK_MS = 4_000L
+    private const val ENRICHMENT_RESPONSE_CHUNK_PAYLOAD_MAX = 120
+    private const val ENRICHMENT_RESPONSE_CHUNK_PACE_MS = 75L
+    private const val ENRICHMENT_JS_REPLY_FALLBACK_MS = 12_000L
+    private const val ENRICHMENT_JS_ZERO_MATCH_FALLBACK_MS = 45_000L
     private const val NOTIFICATION_SENT_FALLBACK_MS = 1000L
+    private const val EVENT_EPOCH_SECONDS_MIN = 1_600_000_000L
+    private const val LOCATION_HISTORY_MAX_AGE_MS = 30L * 24 * 60 * 60 * 1000
+    private const val LOCATION_MATCH_MAX_DRIFT_MS = 5L * 60 * 1000
+    private const val LOCATION_HISTORY_INDEX_KEY = "@spectre/location-history-v2/index"
+    private const val LOCATION_HISTORY_BUCKET_PREFIX = "@spectre/location-history-v2/day/"
 
     // Mirrors PHONE_SECURE_CHANNEL_* in src/protocol/CompanionProtocol.h.
     private const val PHONE_SECURE_CHANNEL_GPS = 0x01
@@ -2011,6 +2424,7 @@ class SpectrePeripheralModule(
     private val PHONE_EVENT_BATCH_UUID = UUID.fromString("84f03a80-6d7b-4d4d-9a64-6b2d6f3a0005")
     private val PHONE_ENRICHMENT_UUID = UUID.fromString("84f03a80-6d7b-4d4d-9a64-6b2d6f3a0006")
     private val PHONE_AUTH_UUID = UUID.fromString("84f03a80-6d7b-4d4d-9a64-6b2d6f3a0007")
+    private val PHONE_AUTH_REQUEST_UUID = UUID.fromString("84f03a80-6d7b-4d4d-9a64-6b2d6f3a000e")
     private val PHONE_STORAGE_UUID = UUID.fromString("84f03a80-6d7b-4d4d-9a64-6b2d6f3a0008")
     private val PHONE_COMMAND_REQ_UUID = UUID.fromString("84f03a80-6d7b-4d4d-9a64-6b2d6f3a0009")
     private val PHONE_COMMAND_RESP_UUID = UUID.fromString("84f03a80-6d7b-4d4d-9a64-6b2d6f3a000a")

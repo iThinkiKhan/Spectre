@@ -1297,24 +1297,23 @@ static constexpr size_t   SPOOL_SEGMENT_TARGET_BYTES             = 48UL * 1024UL
 static constexpr size_t   SPOOL_SEGMENT_PREROTATE_BYTES          = 40UL * 1024UL;
 static constexpr size_t   SPOOL_SEGMENT_CAPTURE_HARD_BYTES       = 96UL * 1024UL;
 static constexpr uint32_t SPOOL_ENRICH_PREFLIGHT_ROTATE_BYTES   = 64U * 1024U;
-static constexpr uint32_t SPOOL_ENRICH_PREFLIGHT_ROTATE_RECORDS = 128U;
-static constexpr uint32_t SPOOL_ENRICH_PREFLIGHT_ROTATE_DELTAS  = 96U;
+static constexpr uint32_t SPOOL_ENRICH_PREFLIGHT_ROTATE_RECORDS = 1024U;
+static constexpr uint32_t SPOOL_ENRICH_PREFLIGHT_ROTATE_DELTAS  = 1024U;
 static constexpr uint32_t STORAGE_MAINT_UI_MIN_FREE_INTERNAL       = 48UL * 1024UL;
 static constexpr uint32_t STORAGE_MAINT_UI_MIN_LARGEST_BLOCK       = 20UL * 1024UL;
-// Upload/enrich release their large buffers before maintenance. The S3's
-// steady post-mission internal heap is ~50-85KB with a ~31KB largest block, so
-// these guards need to protect against true pressure instead of requiring an
-// unreachable idle watermark.
+// NimBLE stays initialized after phone work because full deinit is unsafe on
+// this board. Bounded repair therefore must run at the observed post-BLE floor
+// (~14KB free, ~7KB largest) instead of waiting for pre-BLE heap levels.
 static constexpr uint32_t STORAGE_MAINT_SUMMARY_MIN_FREE_INTERNAL  = 48UL * 1024UL;
 static constexpr uint32_t STORAGE_MAINT_SUMMARY_MIN_LARGEST_BLOCK  = 24UL * 1024UL;
 static constexpr uint32_t STORAGE_SPOOL_ENRICH_EXACT_MIN_FREE_INTERNAL  = 48UL * 1024UL;
 static constexpr uint32_t STORAGE_SPOOL_ENRICH_EXACT_MIN_LARGEST_BLOCK  = 24UL * 1024UL;
 static constexpr uint32_t STORAGE_MAINT_FS_AUDIT_MIN_FREE_INTERNAL = 64UL * 1024UL;
 static constexpr uint32_t STORAGE_MAINT_FS_AUDIT_MIN_LARGEST_BLOCK = 24UL * 1024UL;
-static constexpr uint32_t STORAGE_MAINT_REPAIR_MIN_FREE_INTERNAL   = 64UL * 1024UL;
-static constexpr uint32_t STORAGE_MAINT_REPAIR_MIN_LARGEST_BLOCK   = 24UL * 1024UL;
-static constexpr uint32_t STORAGE_MAINT_RECOUNT_MIN_FREE_INTERNAL  = 64UL * 1024UL;
-static constexpr uint32_t STORAGE_MAINT_RECOUNT_MIN_LARGEST_BLOCK  = 24UL * 1024UL;
+static constexpr uint32_t STORAGE_MAINT_REPAIR_MIN_FREE_INTERNAL   = 8UL * 1024UL;
+static constexpr uint32_t STORAGE_MAINT_REPAIR_MIN_LARGEST_BLOCK   = 4UL * 1024UL;
+static constexpr uint32_t STORAGE_MAINT_RECOUNT_MIN_FREE_INTERNAL  = 12UL * 1024UL;
+static constexpr uint32_t STORAGE_MAINT_RECOUNT_MIN_LARGEST_BLOCK  = 6UL * 1024UL;
 static constexpr uint32_t STORAGE_UPLOAD_SMALL_WINDOW_RECORDS      = 16UL;
 static constexpr uint32_t STORAGE_UPLOAD_SMALL_MIN_FREE_INTERNAL   = 16UL * 1024UL;
 static constexpr uint32_t STORAGE_UPLOAD_SMALL_MIN_LARGEST_BLOCK   = 8UL * 1024UL;
@@ -1322,7 +1321,6 @@ static constexpr uint32_t STORAGE_BOOT_ZERO_PENDING_RETAINED_RECORDS = 512UL;
 static constexpr uint32_t STORAGE_MAINT_REBUILD_MIN_FREE_INTERNAL  = 160UL * 1024UL;
 static constexpr uint32_t STORAGE_MAINT_REBUILD_MIN_LARGEST_BLOCK  = 64UL * 1024UL;
 static constexpr uint32_t STORAGE_MAINT_HEAP_RETRY_MS              = 30000UL;
-static constexpr uint32_t STORAGE_MAINT_UNSAFE_REPAIR_RETRY_MS     = 300000UL;
 
 // PATH_STORE_CONFIG_DIR, PATH_STORE_VAULT_DIR, PATH_STORE_KNOWN_LOCATIONS,
 // PATH_STORE_LEGACY_KNOWN_LOCATIONS, PATH_LEGACY_BADUSB_DIR, and
@@ -2466,6 +2464,12 @@ bool StorageManager::prepareUploadIndexForUpload(uint32_t budgetMs) {
         _releaseUploadIndexMemory("prepare_stream");
     }
 
+    // Bound the resident PSRAM index independently of total spool depth. A
+    // successful truncated window leaves the remaining records pending, so
+    // continuous drain opens the next window without growing peak memory.
+    static constexpr uint32_t kUploadIndexWindowMax = 8192U;
+    _backlog.uploadIndexWindowLimit = kUploadIndexWindowMax;
+
     const uint32_t t0 = millis();
     if (!_flushWorkerAppendFile("prepare_upload_stream", true)) {
         DLOG_WARN("STORAGE",
@@ -2473,23 +2477,24 @@ bool StorageManager::prepareUploadIndexForUpload(uint32_t budgetMs) {
         return false;
     }
 
-    // Drive every sealed segment summary to valid before streaming. The upload
-    // enrich-delta back-scan in _getEventBatchForSessionFromSpool only skips a
-    // segment when its summary is valid AND enrichDeltaCount==0. Under the
-    // bounded (one-per-call) rebuild, summaries stay perpetually stale at scale,
-    // so that skip is defeated and the stream full-decodes all segments per
-    // bucket — O(N^2) that trips the task watchdog on a 10k backlog. Capture is
-    // already suspended here and the scanner now yields, so it is safe to rebuild
-    // the invalid summaries up front. Reaching all-valid also lets the
-    // cross-segment pending-enrichment reconcile run, correcting the gross
-    // pendingEnrichment counters that otherwise report the full total. The
-    // active segment may remain invalid (it is being appended) — that is a
-    // single recent segment and does not defeat the bulk skip.
+    // Valid summaries make the upload enrich-delta skip and pending reconcile
+    // work at backlog scale; the active append segment can remain invalid.
     size_t summaryRebuildGuard = _spoolIndex.segments.size() + 1U;
     while (_hasInvalidSpoolSummaries() && summaryRebuildGuard-- > 0U) {
         if (!_rebuildInvalidSegmentSummaries(false)) {
             break;
         }
+    }
+
+    // Paged PSRAM upload index avoids per-bucket spool rescans.
+    if (!_backlog.uploadIndexResident) {
+        const uint32_t idxT0 = millis();
+        const bool idxOk = _rebuildUploadIndex();
+        DLOG_INFO("STORAGE",
+                  "Upload stream prepare index built ok=%d resident=%d ms=%lu",
+                  idxOk ? 1 : 0,
+                  _backlog.uploadIndexResident ? 1 : 0,
+                  static_cast<unsigned long>(millis() - idxT0));
     }
 
     DLOG_INFO("STORAGE",
@@ -2584,7 +2589,7 @@ StorageLaneCounts StorageManager::_getPendingEnrichmentCounts(const String& sess
         return counts;
     }
 
-    std::vector<uint32_t> enrichedIds;
+    SpiramVector<uint32_t> enrichedIds;
     if (!_loadSpoolEnrichmentIds(sessionId, filterBySession, enrichedIds)) {
         requestMaintenance(STORAGE_MAINT_UPLOAD_ENRICH_CURSOR_DIRTY,
                            "pending_enrichment_cursor_load_failed");
@@ -2779,112 +2784,309 @@ bool StorageManager::getPendingEnrichmentBatchExcluding(const uint32_t* excludeI
 }
 
 bool StorageManager::prepareEnrichmentIndexForWindow(size_t maxRecords,
-                                                     uint32_t budgetMs) {
-    // Sentinel entry log — unique string proves this build of the function
-    // is loaded. If the next crash report lacks "prepare_enter", the new
-    // code did not ship and the IDE incremental build needs a clean.
-    {
-        const uint32_t entryFree =
+                                                     uint32_t budgetMs,
+                                                     bool& ready) {
+    ready = false;
+    if (!_ready || maxRecords == 0) return false;
+    if (_backlog.enrichmentIndexResident) {
+        ready = true;
+        return true;
+    }
+
+    constexpr uint32_t kPrepareMinFreeInternal = 8UL * 1024UL;
+    constexpr uint32_t kPrepareMinLargestInternal = 4UL * 1024UL;
+    constexpr uint32_t kPrepareMinFreePsram = 64UL * 1024UL;
+    constexpr uint32_t kPrepareMinLargestPsram = 32UL * 1024UL;
+
+    if (!_backlog.enrichmentBuildActive) {
+        releaseEnrichmentIndexMemory("prepare");
+        const uint32_t freeInternal =
             heap_caps_get_free_size(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
-        const uint32_t entryLargest =
+        const uint32_t largestInternal =
             heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
+        const uint32_t freePsram = heap_caps_get_free_size(MALLOC_CAP_SPIRAM);
+        const uint32_t largestPsram = heap_caps_get_largest_free_block(MALLOC_CAP_SPIRAM);
+        if (freeInternal < kPrepareMinFreeInternal ||
+            largestInternal < kPrepareMinLargestInternal ||
+            freePsram < kPrepareMinFreePsram ||
+            largestPsram < kPrepareMinLargestPsram) {
+            DLOG_WARN("STORAGE",
+                      "Enrichment window prepare skipped reason=heap_guard internal=%lu/%lu psram=%lu/%lu maxRecords=%u",
+                      static_cast<unsigned long>(freeInternal),
+                      static_cast<unsigned long>(largestInternal),
+                      static_cast<unsigned long>(freePsram),
+                      static_cast<unsigned long>(largestPsram),
+                      static_cast<unsigned>(maxRecords));
+            requestMaintenance(STORAGE_MAINT_DIRTY_SUMMARY,
+                               "enrichment_window_heap_guard");
+            return false;
+        }
+
+        _backlog.enrichmentWindowLimit = maxRecords;
+        _backlog.enrichmentWindow.assign(maxRecords, PendingEventDescriptor{});
+        _backlog.enrichmentKnownIds.clear();
+        size_t enrichedIdReserve = 0;
+        for (const auto& seg : _spoolIndex.segments) {
+            const bool summaryReady =
+                seg.summaryValid &&
+                seg.summaryVersion == SPOOL_SEGMENT_SUMMARY_VERSION;
+            if (summaryReady) {
+                enrichedIdReserve += seg.enrichDeltaCount;
+            }
+        }
+        if (enrichedIdReserve > 0) {
+            _backlog.enrichmentKnownIds.reserve(enrichedIdReserve);
+        }
+        _backlog.enrichmentBuildIdSegmentCursor = 0;
+        _backlog.enrichmentBuildSegmentCursor = 0;
+        _backlog.enrichmentBuildCandidateCount = 0;
+        _backlog.enrichmentBuildStartedMs = millis();
+        _backlog.enrichmentBuildIdsReady = false;
+        _backlog.enrichmentBuildHeapReady = false;
+        _backlog.enrichmentBuildSawOverflow = false;
+        _backlog.enrichmentBuildActive = true;
         DLOG_INFO("STORAGE",
-                  "prepare_enter maxRecords=%u freeInternal=%lu largestInternal=%lu",
+                  "Enrichment window build started limit=%u enrichedIdReserve=%u segments=%u freeInternal=%lu freePsram=%lu",
                   static_cast<unsigned>(maxRecords),
-                  static_cast<unsigned long>(entryFree),
-                  static_cast<unsigned long>(entryLargest));
+                  static_cast<unsigned>(enrichedIdReserve),
+                  static_cast<unsigned>(_spoolIndex.segments.size()),
+                  static_cast<unsigned long>(heap_caps_get_free_size(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT)),
+                  static_cast<unsigned long>(heap_caps_get_free_size(MALLOC_CAP_SPIRAM)));
     }
 
-    releaseEnrichmentIndexMemory("prepare");
-    if (!_ready || maxRecords == 0) {
-        return false;
+    const uint32_t sliceBudgetMs =
+        budgetMs == 0 ? ENRICH_SCAN_BUDGET_MS
+                      : std::min<uint32_t>(budgetMs, ENRICH_SCAN_BUDGET_MS);
+    const uint32_t sliceStartMs = millis();
+
+    if (!_backlog.enrichmentBuildIdsReady) {
+        size_t scannedIdsThisSlice = 0;
+        size_t skippedIdsThisSlice = 0;
+        while (_backlog.enrichmentBuildIdSegmentCursor <
+               _spoolIndex.segments.size()) {
+            if (scannedIdsThisSlice > 0 &&
+                millis() - sliceStartMs >= sliceBudgetMs) {
+                break;
+            }
+
+            const SpoolSegmentInfo& seg = _spoolIndex.segments[
+                _backlog.enrichmentBuildIdSegmentCursor++];
+            const bool summaryReady =
+                seg.summaryValid &&
+                seg.summaryVersion == SPOOL_SEGMENT_SUMMARY_VERSION;
+            if (summaryReady && seg.enrichDeltaCount == 0) {
+                skippedIdsThisSlice++;
+                continue;
+            }
+
+            const bool ok = _scanSegmentRecordHeaders(seg.segmentId,
+                [&](const DecodedSpoolRecordHeader& rec) -> bool {
+                    if (rec.recordType == SPOOL_REC_ENRICH_DELTA &&
+                        rec.targetEventId != 0) {
+                        _backlog.enrichmentKnownIds.push_back(rec.targetEventId);
+                    }
+                    return true;
+                });
+            if (!ok) {
+                releaseEnrichmentIndexMemory("prepare_ids_failed");
+                requestMaintenance(STORAGE_MAINT_UPLOAD_ENRICH_CURSOR_DIRTY,
+                                   "enrichment_window_cursor_load_failed");
+                return false;
+            }
+            scannedIdsThisSlice++;
+        }
+
+        const bool idsScannedAll =
+            _backlog.enrichmentBuildIdSegmentCursor >=
+            _spoolIndex.segments.size();
+        if (!idsScannedAll) {
+            DLOG_INFO("STORAGE",
+                      "Enrichment ID slice scanned=%u skipped=%u nextSegment=%u/%u ids=%u ms=%lu",
+                      static_cast<unsigned>(scannedIdsThisSlice),
+                      static_cast<unsigned>(skippedIdsThisSlice),
+                      static_cast<unsigned>(_backlog.enrichmentBuildIdSegmentCursor),
+                      static_cast<unsigned>(_spoolIndex.segments.size()),
+                      static_cast<unsigned>(_backlog.enrichmentKnownIds.size()),
+                      static_cast<unsigned long>(millis() - sliceStartMs));
+            return true;
+        }
+
+        std::sort(_backlog.enrichmentKnownIds.begin(),
+                  _backlog.enrichmentKnownIds.end());
+        _backlog.enrichmentKnownIds.erase(
+            std::unique(_backlog.enrichmentKnownIds.begin(),
+                        _backlog.enrichmentKnownIds.end()),
+            _backlog.enrichmentKnownIds.end());
+        _backlog.enrichmentBuildIdsReady = true;
+        DLOG_INFO("STORAGE",
+                  "Enrichment IDs ready records=%u scanned=%u skipped=%u ms=%lu",
+                  static_cast<unsigned>(_backlog.enrichmentKnownIds.size()),
+                  static_cast<unsigned>(scannedIdsThisSlice),
+                  static_cast<unsigned>(skippedIdsThisSlice),
+                  static_cast<unsigned long>(millis() - sliceStartMs));
+        if (millis() - sliceStartMs >= sliceBudgetMs) {
+            return true;
+        }
     }
 
-    // Heap guard — at 22k+ pending with 82 segments resident, the internal
-    // heap reaches a steady state around 90KB free / 31KB largest. The earlier
-    // implementation allocated a scratch vector parallel to the resident
-    // window (two 16KB blocks for maxRecords=1024), which crashed when the
-    // second 16KB block couldn't find contiguous space after fragmentation.
-    // The body below now writes directly into _backlog.enrichmentWindow, so
-    // only a single block of (maxRecords * sizeof(PendingEventDescriptor))
-    // is required. Threshold sized for that — plus a small margin for the
-    // enrichedIds vector and JSON parsing temporaries inside the scan.
-    constexpr uint32_t kPrepareMinFreeInternal    = 64UL * 1024UL;
-    constexpr uint32_t kPrepareMinLargestInternal = 20UL * 1024UL;
-    const uint32_t freeInternal =
-        heap_caps_get_free_size(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
-    const uint32_t largestInternal =
-        heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
-    if (freeInternal < kPrepareMinFreeInternal ||
-        largestInternal < kPrepareMinLargestInternal) {
-        DLOG_WARN("STORAGE",
-                  "Enrichment window prepare skipped reason=heap_guard freeInternal=%lu largestInternal=%lu minFree=%lu minLargest=%lu maxRecords=%u",
-                  static_cast<unsigned long>(freeInternal),
-                  static_cast<unsigned long>(largestInternal),
-                  static_cast<unsigned long>(kPrepareMinFreeInternal),
-                  static_cast<unsigned long>(kPrepareMinLargestInternal),
-                  static_cast<unsigned>(maxRecords));
-        requestMaintenance(STORAGE_MAINT_DIRTY_SUMMARY,
-                           "enrichment_window_heap_guard");
-        return false;
+    auto eventTypeCode = [](const char* type) -> uint8_t {
+        if (!type || !type[0] || strcmp(type, "probe") == 0) return 0;
+        if (strcmp(type, "device") == 0) return 1;
+        if (strcmp(type, "drone") == 0) return 2;
+        if (strcmp(type, "pmkid") == 0) return 3;
+        return 0;
+    };
+    auto betterPending = [](const PendingEventDescriptor& lhs,
+                            const PendingEventDescriptor& rhs) -> bool {
+        const bool leftMission =
+            lhs.lane == static_cast<uint8_t>(STORAGE_LANE_MISSION);
+        const bool rightMission =
+            rhs.lane == static_cast<uint8_t>(STORAGE_LANE_MISSION);
+        if (leftMission != rightMission) return leftMission;
+        if (lhs.priority != rhs.priority) return lhs.priority < rhs.priority;
+        if (lhs.valueScore != rhs.valueScore) return lhs.valueScore > rhs.valueScore;
+        if (lhs.timestampMs != rhs.timestampMs) return lhs.timestampMs < rhs.timestampMs;
+        return lhs.eventId < rhs.eventId;
+    };
+    auto retainCandidate = [&](const PendingEventDescriptor& candidate) {
+        size_t& count = _backlog.enrichmentBuildCandidateCount;
+        PendingEventDescriptor* items = _backlog.enrichmentWindow.data();
+        if (count < _backlog.enrichmentWindowLimit) {
+            items[count++] = candidate;
+            if (count == _backlog.enrichmentWindowLimit) {
+                std::make_heap(items, items + count, betterPending);
+                _backlog.enrichmentBuildHeapReady = true;
+            }
+            return;
+        }
+        _backlog.enrichmentBuildSawOverflow = true;
+        if (betterPending(candidate, items[0])) {
+            std::pop_heap(items, items + count, betterPending);
+            items[count - 1] = candidate;
+            std::push_heap(items, items + count, betterPending);
+        }
+    };
+
+    size_t scannedThisSlice = 0;
+    size_t skippedThisSlice = 0;
+    bool reconciledThisSlice = false;
+
+    while (_backlog.enrichmentBuildSegmentCursor < _spoolIndex.segments.size()) {
+        if (scannedThisSlice > 0 && millis() - sliceStartMs >= sliceBudgetMs) {
+            break;
+        }
+
+        SpoolSegmentInfo& seg =
+            _spoolIndex.segments[_backlog.enrichmentBuildSegmentCursor++];
+        const bool summaryReady =
+            seg.summaryValid &&
+            seg.summaryVersion == SPOOL_SEGMENT_SUMMARY_VERSION;
+        if (summaryReady && seg.eventCount == 0) {
+            skippedThisSlice++;
+            continue;
+        }
+
+        uint32_t exactSegmentPending = 0;
+        const bool ok = _scanSegmentRecordHeaders(seg.segmentId,
+            [&](const DecodedSpoolRecordHeader& rec) -> bool {
+                if (rec.recordType == SPOOL_REC_ENRICH_DELTA ||
+                    !rec.sessionId.length() || rec.eventId == 0 ||
+                    std::binary_search(_backlog.enrichmentKnownIds.begin(),
+                                       _backlog.enrichmentKnownIds.end(),
+                                       rec.eventId)) {
+                    return true;
+                }
+
+                const RAMSpool::CaptureClassification cls =
+                    RAMSpool::classify(rec.typeString.c_str(), "");
+                if (!cls.enrichEligible) return true;
+
+                exactSegmentPending++;
+                PendingEventDescriptor candidate;
+                candidate.eventId = rec.eventId;
+                candidate.timestampMs = rec.timestampMs;
+                candidate.epochUtc = rec.epochUtc;
+                candidate.type = eventTypeCode(rec.typeString.c_str());
+                candidate.status =
+                    rec.eventId <= _uploadedWatermarkForSession(rec.sessionId)
+                        ? EVT_UPLOADED : EVT_RAW;
+                candidate.lane =
+                    cls.lane == RAMSpool::LANE_MISSION
+                        ? static_cast<uint8_t>(STORAGE_LANE_MISSION)
+                        : static_cast<uint8_t>(STORAGE_LANE_NOISE);
+                candidate.priority = static_cast<uint8_t>(cls.priority);
+                retainCandidate(candidate);
+                return true;
+            });
+        if (!ok) {
+            releaseEnrichmentIndexMemory("prepare_segment_failed");
+            requestMaintenance(STORAGE_MAINT_SEGMENT_AUDIT,
+                               "enrichment_window_segment_scan_failed");
+            return false;
+        }
+
+        scannedThisSlice++;
+        if (seg.pendingEnrichmentCount != exactSegmentPending) {
+            seg.pendingEnrichmentCount = exactSegmentPending;
+            reconciledThisSlice = true;
+        }
+
+        if (_backlog.enrichmentBuildCandidateCount >=
+                _backlog.enrichmentWindowLimit &&
+            millis() - sliceStartMs >= sliceBudgetMs) {
+            _backlog.enrichmentBuildSawOverflow =
+                _backlog.enrichmentBuildSawOverflow ||
+                _backlog.enrichmentBuildSegmentCursor < _spoolIndex.segments.size();
+            break;
+        }
     }
 
-    const uint32_t startMs = millis();
-    _backlog.enrichmentWindowLimit = maxRecords;
-
-    // Resize the resident window to maxRecords up front and let the batch
-    // scan write directly into it. This collapses two parallel maxRecords
-    // allocations into one and is the main reason this path now fits under
-    // tight heap pressure.
-    _backlog.enrichmentWindow.assign(maxRecords, PendingEventDescriptor{});
-    DLOG_INFO("STORAGE",
-              "prepare_assigned records=%u freeInternal=%lu",
-              static_cast<unsigned>(maxRecords),
-              static_cast<unsigned long>(heap_caps_get_free_size(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT)));
-
-    size_t outCount = 0;
-    const bool ok = _getPendingEnrichmentBatch(String(), false,
-                                               _backlog.enrichmentWindow.data(),
-                                               _backlog.enrichmentWindow.size(),
-                                               outCount);
-    DLOG_INFO("STORAGE",
-              "prepare_batch_done ok=%u outCount=%u freeInternal=%lu",
-              ok ? 1U : 0U,
-              static_cast<unsigned>(outCount),
-              static_cast<unsigned long>(heap_caps_get_free_size(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT)));
-    if (!ok) {
-        releaseEnrichmentIndexMemory("prepare_failed");
-        requestMaintenance(STORAGE_MAINT_UPLOAD_ENRICH_CURSOR_DIRTY,
-                           "enrichment_window_prepare_failed");
-        return false;
+    if (reconciledThisSlice) {
+        _spoolIndexDirty = true;
+        requestMaintenance(STORAGE_MAINT_DIRTY_SPOOL_INDEX,
+                           "enrichment_window_reconciled");
     }
 
-    // Trim unused tail so the cursor walk in getNextPendingEnrichmentRecord
-    // doesn't iterate over zeroed placeholders.
-    if (outCount < _backlog.enrichmentWindow.size()) {
-        _backlog.enrichmentWindow.resize(outCount);
+    const bool scannedAll =
+        _backlog.enrichmentBuildSegmentCursor >= _spoolIndex.segments.size();
+    const bool windowFull =
+        _backlog.enrichmentBuildCandidateCount >= _backlog.enrichmentWindowLimit;
+    if (!scannedAll && !windowFull) {
+        DLOG_INFO("STORAGE",
+                  "Enrichment window slice scanned=%u skipped=%u nextSegment=%u/%u candidates=%u ms=%lu",
+                  static_cast<unsigned>(scannedThisSlice),
+                  static_cast<unsigned>(skippedThisSlice),
+                  static_cast<unsigned>(_backlog.enrichmentBuildSegmentCursor),
+                  static_cast<unsigned>(_spoolIndex.segments.size()),
+                  static_cast<unsigned>(_backlog.enrichmentBuildCandidateCount),
+                  static_cast<unsigned long>(millis() - sliceStartMs));
+        return true;
     }
 
+    PendingEventDescriptor* items = _backlog.enrichmentWindow.data();
+    const size_t count = _backlog.enrichmentBuildCandidateCount;
+    if (_backlog.enrichmentBuildHeapReady) {
+        std::sort_heap(items, items + count, betterPending);
+    } else if (count > 1) {
+        std::sort(items, items + count, betterPending);
+    }
+    _backlog.enrichmentWindow.resize(count);
+    _backlog.enrichmentKnownIds.clear();
+    _backlog.enrichmentKnownIds.shrink_to_fit();
     _backlog.enrichmentIndexResident = true;
     _backlog.enrichmentWindowCursor = 0;
-    _backlog.enrichmentWindowTruncated = outCount >= maxRecords;
-
-    const uint32_t elapsedMs = millis() - startMs;
-    if (budgetMs > 0 && elapsedMs > budgetMs) {
-        DLOG_WARN("STORAGE",
-                  "Enrichment window prepare exceeded budget records=%u ms=%lu budget=%lu",
-                  static_cast<unsigned>(_backlog.enrichmentWindow.size()),
-                  static_cast<unsigned long>(elapsedMs),
-                  static_cast<unsigned long>(budgetMs));
-        requestMaintenance(STORAGE_MAINT_DIRTY_SUMMARY,
-                           "enrichment_window_budget_exceeded");
-    }
+    _backlog.enrichmentWindowTruncated =
+        _backlog.enrichmentBuildSawOverflow || !scannedAll;
+    _backlog.enrichmentBuildActive = false;
+    ready = true;
 
     DLOG_INFO("STORAGE",
-              "Enrichment window ready records=%u truncated=%u ms=%lu",
-              static_cast<unsigned>(_backlog.enrichmentWindow.size()),
+              "Enrichment window ready records=%u truncated=%u buildMs=%lu freeInternal=%lu freePsram=%lu",
+              static_cast<unsigned>(count),
               _backlog.enrichmentWindowTruncated ? 1U : 0U,
-              static_cast<unsigned long>(elapsedMs));
+              static_cast<unsigned long>(millis() - _backlog.enrichmentBuildStartedMs),
+              static_cast<unsigned long>(heap_caps_get_free_size(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT)),
+              static_cast<unsigned long>(heap_caps_get_free_size(MALLOC_CAP_SPIRAM)));
     return true;
 }
 
@@ -2907,16 +3109,29 @@ bool StorageManager::getNextPendingEnrichmentRecord(PendingEventDescriptor& out,
 }
 
 void StorageManager::releaseEnrichmentIndexMemory(const char* reason) {
-    if (!_backlog.enrichmentIndexResident && _backlog.enrichmentWindow.empty()) {
+    if (!_backlog.enrichmentIndexResident &&
+        !_backlog.enrichmentBuildActive &&
+        _backlog.enrichmentWindow.empty() &&
+        _backlog.enrichmentKnownIds.empty()) {
         return;
     }
 
     _backlog.enrichmentWindow.clear();
     _backlog.enrichmentWindow.shrink_to_fit();
+    _backlog.enrichmentKnownIds.clear();
+    _backlog.enrichmentKnownIds.shrink_to_fit();
     _backlog.enrichmentWindowCursor = 0;
     _backlog.enrichmentWindowLimit = 0;
     _backlog.enrichmentWindowTruncated = false;
     _backlog.enrichmentIndexResident = false;
+    _backlog.enrichmentBuildIdSegmentCursor = 0;
+    _backlog.enrichmentBuildSegmentCursor = 0;
+    _backlog.enrichmentBuildCandidateCount = 0;
+    _backlog.enrichmentBuildStartedMs = 0;
+    _backlog.enrichmentBuildActive = false;
+    _backlog.enrichmentBuildIdsReady = false;
+    _backlog.enrichmentBuildHeapReady = false;
+    _backlog.enrichmentBuildSawOverflow = false;
     DLOG_INFO("STORAGE", "Enrichment window released reason=%s",
               (reason && reason[0]) ? reason : "-");
 }
@@ -2955,7 +3170,8 @@ bool StorageManager::_getPendingEnrichmentBatch(const String& sessionId,
                                                 size_t maxCount,
                                                 size_t& outCount,
                                                 const uint32_t* excludeIds,
-                                                size_t excludeCount) {
+                                                size_t excludeCount,
+                                                bool authoritativeScan) {
     outCount = 0;
     if (!_ready || !out || maxCount == 0) return false;
 
@@ -2979,7 +3195,7 @@ bool StorageManager::_getPendingEnrichmentBatch(const String& sessionId,
         return true;
     }
 
-    std::vector<uint32_t> enrichedIds;
+    SpiramVector<uint32_t> enrichedIds;
     DLOG_INFO("STORAGE",
               "batch_load_ids_enter freeInternal=%lu segments=%u",
               static_cast<unsigned long>(heap_caps_get_free_size(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT)),
@@ -3030,19 +3246,23 @@ bool StorageManager::_getPendingEnrichmentBatch(const String& sessionId,
         return lhs.eventId < rhs.eventId;
     };
 
-    auto insertCandidate = [&](const PendingEventDescriptor& candidate) {
-        size_t insertAt = outCount;
-        while (insertAt > 0 && betterPending(candidate, out[insertAt - 1])) {
-            --insertAt;
+    bool candidateHeapReady = false;
+    auto retainCandidate = [&](const PendingEventDescriptor& candidate) {
+        if (outCount < maxCount) {
+            out[outCount++] = candidate;
+            if (outCount == maxCount) {
+                // betterPending makes the least valuable retained item the
+                // heap root, so replacement remains O(log N).
+                std::make_heap(out, out + outCount, betterPending);
+                candidateHeapReady = true;
+            }
+            return;
         }
 
-        const size_t limit = std::min(maxCount, outCount + 1);
-        for (size_t i = limit - 1; i > insertAt; --i) {
-            out[i] = out[i - 1];
-        }
-        out[insertAt] = candidate;
-        if (outCount < maxCount) {
-            outCount++;
+        if (betterPending(candidate, out[0])) {
+            std::pop_heap(out, out + outCount, betterPending);
+            out[outCount - 1] = candidate;
+            std::push_heap(out, out + outCount, betterPending);
         }
     };
 
@@ -3067,7 +3287,8 @@ bool StorageManager::_getPendingEnrichmentBatch(const String& sessionId,
               streamingBatch ? 1U : 0U,
               static_cast<unsigned long>(heap_caps_get_free_size(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT)));
 
-    for (const auto& seg : _spoolIndex.segments) {
+    bool reconciledAnySummary = false;
+    for (auto& seg : _spoolIndex.segments) {
         // Stop early once the scan budget is spent, but only after we already
         // have a full batch's worth — never return empty just because the first
         // segments were slow, or a sparse backlog could stall forever.
@@ -3081,19 +3302,21 @@ bool StorageManager::_getPendingEnrichmentBatch(const String& sessionId,
             seg.summaryValid &&
             seg.summaryVersion == SPOOL_SEGMENT_SUMMARY_VERSION;
 
-        if (summaryReady && seg.eventCount == 0) {
+        if (!authoritativeScan && summaryReady && seg.eventCount == 0) {
             segPendingSkipped++;
             continue;
         }
 
         // Live pending-enrichment counter: drained segments cannot host
         // any candidate, so skip the record scan entirely.
-        if (summaryReady && seg.pendingEnrichmentCount == 0) {
+        if (!authoritativeScan && summaryReady && seg.pendingEnrichmentCount == 0) {
             segPendingSkipped++;
             continue;
         }
 
-        DLOG_INFO("STORAGE",
+        uint32_t exactSegmentPending = 0;
+
+        DLOG_DEBUG("STORAGE",
                   "batch_pending_scan seg=%u pending=%u events=%u freeInternal=%lu largest=%lu outCount=%u",
                   static_cast<unsigned>(seg.segmentId),
                   static_cast<unsigned>(seg.pendingEnrichmentCount),
@@ -3146,6 +3369,8 @@ bool StorageManager::_getPendingEnrichmentBatch(const String& sessionId,
                     return true;
                 }
 
+                exactSegmentPending++;
+
                 PendingEventDescriptor candidate;
                 const uint32_t watermark = _uploadedWatermarkForSession(rec.sessionId);
                 candidate.eventId = rec.eventId;
@@ -3160,9 +3385,7 @@ bool StorageManager::_getPendingEnrichmentBatch(const String& sessionId,
                 candidate.priority = static_cast<uint8_t>(cls.priority);
                 candidate.valueScore = 0;  // not derivable from headers-only
 
-                if (outCount < maxCount || betterPending(candidate, out[outCount - 1])) {
-                    insertCandidate(candidate);
-                }
+                retainCandidate(candidate);
                 if (streamingBatch && outCount >= maxCount) {
                     return false;
                 }
@@ -3176,6 +3399,10 @@ bool StorageManager::_getPendingEnrichmentBatch(const String& sessionId,
                       static_cast<unsigned>(seg.segmentId));
             return false;
         }
+        if (authoritativeScan && seg.pendingEnrichmentCount != exactSegmentPending) {
+            seg.pendingEnrichmentCount = exactSegmentPending;
+            reconciledAnySummary = true;
+        }
         if (streamingBatch && outCount >= maxCount) {
             DLOG_INFO("STORAGE",
                       "batch_pending_loop_break_streaming outCount=%u maxCount=%u",
@@ -3183,6 +3410,18 @@ bool StorageManager::_getPendingEnrichmentBatch(const String& sessionId,
                       static_cast<unsigned>(maxCount));
             break;
         }
+    }
+
+    if (candidateHeapReady) {
+        std::sort_heap(out, out + outCount, betterPending);
+    } else if (outCount > 1) {
+        std::sort(out, out + outCount, betterPending);
+    }
+
+    if (reconciledAnySummary) {
+        _spoolIndexDirty = true;
+        requestMaintenance(STORAGE_MAINT_DIRTY_SPOOL_INDEX,
+                           "enrichment_window_reconciled");
     }
 
     DLOG_INFO("STORAGE",
@@ -3638,7 +3877,7 @@ void StorageManager::beginUploadBatch() {
     }
     _uploadBatchActive = true;
     _uploadBatchDirty  = false;
-    DLOG_INFO("STORAGE", "Upload batch open — deferring watermark flush");
+    DLOG_INFO("STORAGE", "Upload batch open; deferring watermark flush");
 }
 
 bool StorageManager::endUploadBatch() {
@@ -3680,7 +3919,7 @@ bool StorageManager::endUploadBatch() {
     }
     _queueStorageUiRefresh(true);
     DLOG_INFO("STORAGE",
-              "Upload batch closed — maintenance queued dirty=%d sidecar=%d flags=%s",
+              "Upload batch closed; maintenance queued dirty=%d sidecar=%d flags=%s",
               wasDirty ? 1 : 0,
               hasSidecarWork ? 1 : 0,
               maintenanceFlagsText());
@@ -4226,7 +4465,19 @@ bool StorageManager::_scanJsonlSegmentRecords(
     File f = LittleFS.open(path, "r");
     if (!f) return false;
 
+    // Yield to the scheduler periodically so a large legacy JSONL segment can't
+    // starve the task watchdog (~5s TWDT) and silently reset the device — the
+    // binary scanner does the same. This path is hit by the up-front summary
+    // rebuild before an upload, which can scan many segments back-to-back.
+    constexpr uint32_t kYieldEveryNRecords = 128U;
+    uint32_t recordsSinceYield = 0;
+
     while (f.available()) {
+        if (++recordsSinceYield >= kYieldEveryNRecords) {
+            recordsSinceYield = 0;
+            vTaskDelay(1);
+        }
+
         String line = f.readStringUntil('\n');
         line.trim();
         if (!line.length()) continue;
@@ -5164,8 +5415,11 @@ bool StorageManager::_appendSegmentRecord(SpoolSegmentInfo& seg,
                     : String((const char*)(doc["ssid"] | ""));
                 const String ieFingerprint = String((const char*)(doc["ie_fingerprint"] | ""));
                 const String probeSetHash = String((const char*)(doc["probe_set_hash"] | ""));
-                const int32_t rssi = static_cast<int32_t>(doc["rssi"] | 0);
-                const uint32_t channel = doc["channel"] | 0U;
+                // as<T>() converts across numeric variant types; `| 0` returns
+                // the default for anything is<int>() rejects (e.g. a legacy
+                // float-typed record), silently zeroing the field.
+                const int32_t rssi = doc["rssi"].as<int32_t>();
+                const uint32_t channel = doc["channel"].as<uint32_t>();
                 const bool isRandomMac = (doc["is_random_mac"] | 0) != 0;
                 const bool isBroadcast = (doc["is_broadcast"] | 0) != 0;
 
@@ -5199,7 +5453,10 @@ bool StorageManager::_appendSegmentRecord(SpoolSegmentInfo& seg,
                 const String ap = String((const char*)(doc["ap"] | doc["bssid"] | ""));
                 const String sta = String((const char*)(doc["sta"] | doc["client"] | doc["client_mac"] | ""));
                 const String ssid = String((const char*)(doc["ssid"] | ""));
-                const int32_t rssi = static_cast<int32_t>(doc["rssi"] | 0);
+                // as<T>() converts across numeric variant types; `| 0` returns
+                // the default for anything is<int>() rejects (e.g. a legacy
+                // float-typed record), silently zeroing the field.
+                const int32_t rssi = doc["rssi"].as<int32_t>();
                 const String pmkidHex = String((const char*)(doc["pmkid_hex"] | ""));
                 const String hashcatLine = String((const char*)(doc["hashcat_line"] | ""));
 
@@ -5227,7 +5484,10 @@ bool StorageManager::_appendSegmentRecord(SpoolSegmentInfo& seg,
                 const String ap = String((const char*)(doc["ap"] | doc["bssid"] | ""));
                 const String sta = String((const char*)(doc["sta"] | doc["client"] | ""));
                 const String ssid = String((const char*)(doc["ssid"] | ""));
-                const int32_t rssi = static_cast<int32_t>(doc["rssi"] | 0);
+                // as<T>() converts across numeric variant types; `| 0` returns
+                // the default for anything is<int>() rejects (e.g. a legacy
+                // float-typed record), silently zeroing the field.
+                const int32_t rssi = doc["rssi"].as<int32_t>();
                 const uint32_t frameMask = doc["frame_mask"] | 0U;
                 const uint32_t messageNumber = doc["message"] | doc["msg"] | 0U;
 
@@ -5253,8 +5513,11 @@ bool StorageManager::_appendSegmentRecord(SpoolSegmentInfo& seg,
 
                 const String droneId = String((const char*)(doc["drone_id"] | doc["id"] | ""));
                 const String mac = String((const char*)(doc["mac"] | ""));
-                const int32_t rssi = static_cast<int32_t>(doc["rssi"] | 0);
-                const uint32_t channel = doc["channel"] | 0U;
+                // as<T>() converts across numeric variant types; `| 0` returns
+                // the default for anything is<int>() rejects (e.g. a legacy
+                // float-typed record), silently zeroing the field.
+                const int32_t rssi = doc["rssi"].as<int32_t>();
+                const uint32_t channel = doc["channel"].as<uint32_t>();
                 const String protocol = String((const char*)(doc["protocol"] | ""));
                 const bool hasLatLon = !doc["latitude"].isNull() && !doc["longitude"].isNull();
                 const uint32_t altitudeCenti = _floatToCenti(doc["altitude_m"] | 0.0f);
@@ -5935,19 +6198,7 @@ void StorageManager::_updateSegmentSummaryFromEventDoc(SpoolSegmentInfo& seg,
 void StorageManager::_decrementPendingEnrichmentForEvent(uint32_t eventId) {
     if (eventId == 0) return;
 
-    // Idempotency contract: this helper must NOT double-decrement when a
-    // duplicate delta lands for an already-enriched event.  The runtime
-    // does not maintain an in-memory enrichedSet (memory cost rejected at
-    // 2k+ events scale), so we cannot cheaply prove first-application.
-    // Per the design, we therefore CLAMP and mark recount-required:
-    //   * summary stale  → can't reason about the counter; flag recount.
-    //   * counter == 0   → either a duplicate delta or stale summary drift;
-    //                      do NOT underflow, flag a summary rebuild without
-    //                      degrading upload-counter trust.
-    //   * counter  > 0   → decrement once and trust the live count until
-    //                      the next explicit recountPendingFromSpool().
-    // Cross-segment audit/rebuild paths dedupe per eventId in their own
-    // local set, so they never reach this helper for a duplicate.
+    // Clamp duplicate/stale deltas; recount paths dedupe before calling here.
     for (auto& seg : _spoolIndex.segments) {
         if (seg.firstEventId == 0 || seg.lastEventId == 0) continue;
         if (eventId < seg.firstEventId || eventId > seg.lastEventId) continue;
@@ -5962,10 +6213,7 @@ void StorageManager::_decrementPendingEnrichmentForEvent(uint32_t eventId) {
         }
 
         if (seg.pendingEnrichmentCount == 0) {
-            // Either a duplicate delta against a fully-drained segment or
-            // stale summary drift.  Either way, do not underflow; let the next
-            // explicit recount reconcile. This does not imply upload-counter
-            // corruption.
+            // Do not underflow on duplicates or stale summary drift.
             _pendingCountDirty = true;
             _spoolSummaryRebuildPending = true;
             _setCounterTrustState(STORAGE_COUNTER_TRUSTED_SNAPSHOT_LAGGED,
@@ -6255,15 +6503,12 @@ bool StorageManager::_rebuildInvalidSegmentSummaries(bool force) {
         }
     }
 
-    // Per-segment rebuild produces gross pending-enrichment counts (every
-    // event-that-wants-enrichment is counted).  Once the final stale summary
-    // has been rebuilt, apply cross-segment delta decrements: each UNIQUE
-    // enriched eventId found anywhere subtracts 1 from its originating
-    // segment's pendingEnrichmentCount. The local set guarantees idempotency:
-    // duplicate deltas decrement exactly once.
+    // After all summaries are valid, reconcile unique enrich deltas by eventId.
     bool pendingEnrichReconcileOk = true;
     if (anyRebuilt && !_hasInvalidSpoolSummaries()) {
-        std::map<uint32_t, bool> seenEnrichedIds;
+        // PSRAM-backed because mass NO_DATA retirement can add thousands.
+        std::map<uint32_t, bool, std::less<uint32_t>,
+                 SpiramStlAllocator<std::pair<const uint32_t, bool>>> seenEnrichedIds;
         for (const auto& seg : _spoolIndex.segments) {
             const bool summaryReady =
                 seg.summaryValid &&
@@ -6625,7 +6870,8 @@ bool StorageManager::_auditAndRepairSpool(const char* reason,
             _eventCounterPendingWrites = 1;
         }
 
-        _spoolIndex.segments = repairedSegments;
+        _spoolIndex.segments.assign(repairedSegments.begin(),
+                                    repairedSegments.end());
         _spoolIndex.segments.erase(
             std::remove_if(_spoolIndex.segments.begin(),
                            _spoolIndex.segments.end(),
@@ -7253,7 +7499,11 @@ bool StorageManager::_finalizeRepairJob() {
         }
     }
 
-    const bool sessionsChanged = (job.rebuiltSessions != _spoolIndex.sessions);
+    const bool sessionsChanged =
+        job.rebuiltSessions.size() != _spoolIndex.sessions.size() ||
+        !std::equal(job.rebuiltSessions.begin(),
+                    job.rebuiltSessions.end(),
+                    _spoolIndex.sessions.begin());
     const uint32_t safeNextFloor =
         std::max<uint32_t>(job.audit.maxEventIdSeen,
                            job.audit.validEventRecords);
@@ -7299,7 +7549,8 @@ bool StorageManager::_finalizeRepairJob() {
             _eventCounterPendingWrites = 1;
         }
 
-        _spoolIndex.segments = job.repairedSegments;
+        _spoolIndex.segments.assign(job.repairedSegments.begin(),
+                                    job.repairedSegments.end());
         _spoolIndex.segments.erase(
             std::remove_if(_spoolIndex.segments.begin(),
                            _spoolIndex.segments.end(),
@@ -7334,7 +7585,8 @@ bool StorageManager::_finalizeRepairJob() {
             _spoolIndex.oldestSegmentId = 0;
         }
 
-        _spoolIndex.sessions = job.rebuiltSessions;
+        _spoolIndex.sessions.assign(job.rebuiltSessions.begin(),
+                                    job.rebuiltSessions.end());
         _pendingCountDirty = false;
         _spoolIndexDirty = true;
 
@@ -7653,7 +7905,7 @@ void StorageManager::requestMaintenance(StorageMaintenanceReason reason,
     }
 
     if (!alreadySet) {
-        _maintenanceRetryAfterMs = 0;
+        _maintenanceHeapRetryAfterMs = 0;
         if (reason == STORAGE_MAINT_EMERGENCY_REPAIR) {
             _maintenanceFullRebuildAttempted = false;
         }
@@ -7848,26 +8100,10 @@ bool StorageManager::needsMaintenanceBeforeCapture() const {
         return false;
     }
 
-    if (_maintenanceRetryAfterMs != 0U &&
-        static_cast<int32_t>(millis() - _maintenanceRetryAfterMs) < 0) {
-        // _maintenanceRetryAfterMs is ONLY ever armed by the heap-guard
-        // deferral in runMaintenanceWindow(); it is cleared to 0 on progress
-        // and everywhere else. So an active backoff here always means
-        // "repair could not run because internal heap was too low/fragmented".
-        //
-        // Re-running maintenance during that window cannot make the heap
-        // recover (it frees nothing), so forcing the maintenance gate for
-        // *every* unsafe flag turns counter_untrusted|segment_audit into a hot
-        // loop: the arbiter re-leases STORAGE_MAINTENANCE, the window re-hits
-        // the heap guard, re-arms this same 30s backoff, and repeats every
-        // ~280ms — pegging core0 and flooding the log with heap_guard skips.
-        //
-        // Only ACTIVE_SEGMENT_INVALID and EMERGENCY_REPAIR make *capture
-        // itself* unsafe (appending to a broken active segment), so those
-        // still pre-empt the backoff. counter_untrusted/segment_audit are safe
-        // to defer: capture appends through the worker (counts merely become
-        // approximate), the backlog drains, and the repair is retried when the
-        // backoff expires — by which point heap may have recovered.
+    if (_maintenanceHeapRetryAfterMs != 0U &&
+        static_cast<int32_t>(millis() - _maintenanceHeapRetryAfterMs) < 0) {
+        // Heap-pressure deferrals suppress soft repair gates until retry time.
+        // Active-segment damage and emergency repair still preempt the delay.
         const uint32_t forceEvenDuringBackoff =
             STORAGE_MAINT_ACTIVE_SEGMENT_INVALID |
             STORAGE_MAINT_EMERGENCY_REPAIR;
@@ -7886,8 +8122,8 @@ bool StorageManager::shouldRunMaintenanceNow() const {
     if (!hasMaintenanceWork()) {
         return false;
     }
-    if (_maintenanceRetryAfterMs != 0U &&
-        static_cast<int32_t>(millis() - _maintenanceRetryAfterMs) < 0) {
+    if (_maintenanceHeapRetryAfterMs != 0U &&
+        static_cast<int32_t>(millis() - _maintenanceHeapRetryAfterMs) < 0) {
         return false;
     }
     if (needsMaintenanceBeforeCapture()) {
@@ -8010,7 +8246,7 @@ bool StorageManager::runCaptureMaintenanceSlice(uint32_t budgetMs,
         }
 
         if (progressed) {
-            _maintenanceRetryAfterMs = 0;
+            _maintenanceHeapRetryAfterMs = 0;
         }
 
         char actionsText[192] = {};
@@ -8139,10 +8375,6 @@ bool StorageManager::runMaintenanceWindow(uint32_t budgetMs,
               startFlagsText,
               captureSafeAtStart ? 1 : 0);
 
-    const uint32_t criticalUnsafeRepair =
-        STORAGE_MAINT_ACTIVE_SEGMENT_INVALID |
-        STORAGE_MAINT_EMERGENCY_REPAIR;
-
     if (!captureSafeAtStart &&
         !preCaptureMetadataOnly &&
         (startFlags & STORAGE_MAINT_DELETE_DRAINED) != 0U) {
@@ -8166,7 +8398,7 @@ bool StorageManager::runMaintenanceWindow(uint32_t budgetMs,
     }
 
     if (startFlags == STORAGE_MAINT_NONE && actions != STORAGE_MAINT_NONE) {
-        _maintenanceRetryAfterMs = 0;
+        _maintenanceHeapRetryAfterMs = 0;
         char actionsText[192] = {};
         char skippedText[192] = {};
         strlcpy(actionsText, _maintenanceFlagsText(actions), sizeof(actionsText));
@@ -8179,17 +8411,6 @@ bool StorageManager::runMaintenanceWindow(uint32_t budgetMs,
                   static_cast<unsigned long>(millis() - startMs),
                   captureSafeAtStart ? 1 : 0);
         return true;
-    }
-
-    if (!captureSafeAtStart &&
-        (startFlags & criticalUnsafeRepair) == 0U) {
-        _maintenanceRetryAfterMs =
-            millis() + STORAGE_MAINT_UNSAFE_REPAIR_RETRY_MS;
-        DLOG_WARN("STORAGE",
-                  "maintenance deferred reason=unsafe_repair_backoff backoffMs=%lu remaining=%s",
-                  static_cast<unsigned long>(STORAGE_MAINT_UNSAFE_REPAIR_RETRY_MS),
-                  _maintenanceFlagsText(startFlags));
-        return false;
     }
 
     auto budgetLeft = [&]() -> bool {
@@ -8654,13 +8875,13 @@ bool StorageManager::runMaintenanceWindow(uint32_t budgetMs,
         _maintenanceCaptureGate = false;
     }
     if (heapGuardDeferredWork && remainingFlags != STORAGE_MAINT_NONE) {
-        _maintenanceRetryAfterMs = millis() + STORAGE_MAINT_HEAP_RETRY_MS;
+        _maintenanceHeapRetryAfterMs = millis() + STORAGE_MAINT_HEAP_RETRY_MS;
         DLOG_WARN("STORAGE",
                   "maintenance deferred reason=heap_guard backoffMs=%lu remaining=%s",
                   static_cast<unsigned long>(STORAGE_MAINT_HEAP_RETRY_MS),
                   _maintenanceFlagsText(remainingFlags));
     } else if (!captureSafe || maintenanceDrained || madeProgress) {
-        _maintenanceRetryAfterMs = 0;
+        _maintenanceHeapRetryAfterMs = 0;
     }
     char actionsText[192] = {};
     char skippedText[192] = {};
@@ -10873,6 +11094,66 @@ void StorageManager::_setUploadedWatermarkForSession(const String& sessionId, ui
     _spoolIndex.uploadedWatermarks.push_back({sessionId, eventId});
 }
 
+uint32_t StorageManager::rewindUploadWatermarks(const char* sessionIdOverride,
+                                                uint32_t toEventId) {
+    if (!_ready) return 0;
+
+    if (_uploadBatchActive) {
+        DLOG_WARN("STORAGE",
+                  "Upload watermark rewind refused; upload batch active");
+        return 0;
+    }
+
+    const String target =
+        (sessionIdOverride && sessionIdOverride[0]) ? String(sessionIdOverride)
+                                                    : String();
+
+    // Collect first: _restoreUploadedWatermarkForSession() erases the entry
+    // when toEventId is 0, which would invalidate an in-flight iterator.
+    std::vector<String> rewindSessions;
+    for (const auto& entry : _spoolIndex.uploadedWatermarks) {
+        if (target.length() && entry.first != target) continue;
+        if (entry.second <= toEventId) continue;
+        rewindSessions.push_back(entry.first);
+    }
+
+    for (const String& sessionId : rewindSessions) {
+        const uint32_t before = _uploadedWatermarkForSession(sessionId);
+        _restoreUploadedWatermarkForSession(sessionId, toEventId);
+        DLOG_INFO("STORAGE",
+                  "Upload watermark rewound session=%s %lu -> %lu",
+                  sessionId.c_str(),
+                  static_cast<unsigned long>(before),
+                  static_cast<unsigned long>(toEventId));
+    }
+
+    if (rewindSessions.empty()) {
+        return 0;
+    }
+
+    _persistSpoolIndex(true, "upload_watermark_rewind");
+
+    // The resident index caches nothing derived from the watermark, but the
+    // dump reads its per-session start cursor from getLastUploadedEventId()
+    // once per session. Drop the index so the next upload rebuilds cleanly
+    // against the rewound watermarks.
+    _releaseUploadIndexMemory("upload_watermark_rewind");
+
+    // _pendingEventCount is a maintained counter that was decremented as these
+    // records uploaded; the rewind does not put them back. Recount so the
+    // pending total matches the watermarks again — otherwise the upload
+    // trigger sees no work and refuses to re-send anything.
+    const uint32_t pendingAfter = recountPendingFromSpool();
+
+    DLOG_INFO("STORAGE",
+              "Upload watermark rewind complete sessions=%u to=%lu pending=%lu",
+              static_cast<unsigned>(rewindSessions.size()),
+              static_cast<unsigned long>(toEventId),
+              static_cast<unsigned long>(pendingAfter));
+
+    return static_cast<uint32_t>(rewindSessions.size());
+}
+
 void StorageManager::_restoreUploadedWatermarkForSession(const String& sessionId, uint32_t eventId) {
     if (!sessionId.length()) return;
 
@@ -11175,7 +11456,7 @@ void StorageManager::_releaseUploadIndexMemory(const char* reason) {
     _closeUploadSegmentFile(reason);
 
     std::map<String, UploadIndexPagedSession>().swap(_backlog.uploadIndexBySession);
-    std::map<String, std::map<uint32_t, SpoolEnrichmentDelta>>().swap(_backlog.uploadEnrichBySession);
+    UploadEnrichBySessionMap().swap(_backlog.uploadEnrichBySession);
     std::vector<String>().swap(_backlog.uploadIndexSessions);
     _backlog.uploadIndexStats = {};
     _backlog.uploadIndexResident = false;
@@ -12418,7 +12699,7 @@ bool StorageManager::_resyncSpoolIndexFromFilesystem() {
         }
     }
 
-    _spoolIndex.segments = rebuilt;
+    _spoolIndex.segments.assign(rebuilt.begin(), rebuilt.end());
 
     if (!_spoolIndex.segments.empty()) {
         const uint32_t oldest = _spoolIndex.segments.front().segmentId;
@@ -13291,16 +13572,10 @@ bool StorageManager::_forEachResolvedEventForSession(
                 if (it != enrichById.end()) {
                     const SpoolEnrichmentDelta& enrichment = it->second;
                     if (enrichment.noData) {
-                        // Terminal "no GPS history available" disposition.
-                        // Do NOT surface the sentinel zero coords as a fix —
-                        // readers (upload/export/UI) should treat this as a
-                        // record that has been processed for enrichment but
-                        // has no location data.
+                        // NO_DATA is terminal, but never a zero-coordinate fix.
                         dst[F_ENRICH_STATE] =
                             static_cast<uint8_t>(STORAGE_ENRICH_NO_DATA);
                         dst["enriched_ts"] = enrichment.ts;
-                        // status stays EVT_RAW; the enrichment path completed
-                        // without producing a real fix.
                     } else {
                         dst["lat"] = enrichment.lat;
                         dst["lon"] = enrichment.lon;
@@ -13641,6 +13916,20 @@ bool StorageManager::_getUploadEventBatchForSessionFromIndex(const String& sessi
         return true;
     }
 
+    // Enrichment deltas are stored as separate records keyed by event_id, so
+    // every reader that emits events for output has to join them back on. The
+    // resident map is built alongside the upload index in _rebuildUploadIndex();
+    // without this lookup the upload path ships each event with its
+    // pre-enrichment body and a PENDING marker, silently discarding every fix
+    // the phone applied. Mirrors _forEachResolvedEventForSession().
+    const UploadEnrichDeltaMap* sessionEnrich = nullptr;
+    {
+        auto enrichIt = _backlog.uploadEnrichBySession.find(sessionId);
+        if (enrichIt != _backlog.uploadEnrichBySession.end()) {
+            sessionEnrich = &enrichIt->second;
+        }
+    }
+
     auto appendDecodedEvent = [&](const DecodedSpoolRecord& rec) -> bool {
         JsonObject dst = batch.add<JsonObject>();
         if (dst.isNull()) {
@@ -13656,7 +13945,38 @@ bool StorageManager::_getUploadEventBatchForSessionFromIndex(const String& sessi
         }
 
         EventStatus status = EVT_RAW;
-        if (_eventRecordPendingEnrichment(rec.doc.as<JsonObjectConst>())) {
+
+        const SpoolEnrichmentDelta* enrichment = nullptr;
+        if (sessionEnrich) {
+            auto deltaIt = sessionEnrich->find(rec.eventId);
+            if (deltaIt != sessionEnrich->end()) {
+                enrichment = &deltaIt->second;
+            }
+        }
+
+        if (enrichment) {
+            if (enrichment->noData) {
+                // NO_DATA is terminal, but never a zero-coordinate fix.
+                dst[F_ENRICH_STATE] =
+                    static_cast<uint8_t>(STORAGE_ENRICH_NO_DATA);
+                dst["enriched_ts"] = enrichment->ts;
+            } else {
+                dst["lat"] = enrichment->lat;
+                dst["lon"] = enrichment->lon;
+                dst["alt"] = enrichment->alt;
+                dst["acc"] = enrichment->acc;
+                if (enrichment->tag.length()) {
+                    dst["tag"] = enrichment->tag;
+                }
+                dst["enriched_ts"] = enrichment->ts;
+                if (enrichment->gpsTs >= MIN_ENRICH_GPS_EPOCH) {
+                    dst[F_GPS_TS] = enrichment->gpsTs;
+                }
+                dst[F_ENRICH_STATE] =
+                    static_cast<uint8_t>(STORAGE_ENRICH_DONE);
+                status = EVT_ENRICHED;
+            }
+        } else if (_eventRecordPendingEnrichment(rec.doc.as<JsonObjectConst>())) {
             dst[F_ENRICH_STATE] =
                 static_cast<uint8_t>(STORAGE_ENRICH_PENDING);
         }
@@ -14014,17 +14334,7 @@ bool StorageManager::_getEventBatchForSessionFromSpool(const String& sessionId,
         auto it = enrichById.find(event.eventId);
         const bool hasDelta = (it != enrichById.end());
 
-        // Upload enrichment holdback. A freshly-captured record that is still
-        // pending enrichment is withheld from upload so it has a chance to
-        // receive coordinates before it ships. Events are ascending eventId, so
-        // stopping here also withholds every newer record in this batch. We
-        // never add/upload the held record, so the per-session upload watermark
-        // stays behind it — the next dump cycle re-fetches and re-evaluates it
-        // once it enriches, is no-data retired, or the grace window elapses
-        // (after which it ships un-enriched so a missing phone cannot wedge the
-        // backlog). Skipped for already-uploaded records, undatable records
-        // (epochUtc==0 → unenrichable), and when the clock is untrusted (we
-        // cannot measure age, so we must not stall uploads).
+        // Hold recent enrichable records behind the upload watermark briefly.
         if (!alreadyUploaded && !hasDelta && event.epochUtc != 0 &&
             haveNowEpoch && nowEpoch >= event.epochUtc &&
             (nowEpoch - event.epochUtc) < UPLOAD_ENRICH_GRACE_SEC &&
@@ -14040,20 +14350,27 @@ bool StorageManager::_getEventBatchForSessionFromSpool(const String& sessionId,
         EventStatus status = EVT_RAW;
         if (it != enrichById.end()) {
             const SpoolEnrichmentDelta& enrichment = it->second;
-            dst["lat"] = enrichment.lat;
-            dst["lon"] = enrichment.lon;
-            dst["alt"] = enrichment.alt;
-            dst["acc"] = enrichment.acc;
-            if (enrichment.tag.length()) {
-                dst["tag"] = enrichment.tag;
+            if (enrichment.noData) {
+                // NO_DATA is terminal, but never a zero-coordinate fix.
+                dst[F_ENRICH_STATE] =
+                    static_cast<uint8_t>(STORAGE_ENRICH_NO_DATA);
+                dst["enriched_ts"] = enrichment.ts;
+            } else {
+                dst["lat"] = enrichment.lat;
+                dst["lon"] = enrichment.lon;
+                dst["alt"] = enrichment.alt;
+                dst["acc"] = enrichment.acc;
+                if (enrichment.tag.length()) {
+                    dst["tag"] = enrichment.tag;
+                }
+                dst["enriched_ts"] = enrichment.ts;
+                if (enrichment.gpsTs >= MIN_ENRICH_GPS_EPOCH) {
+                    dst[F_GPS_TS] = enrichment.gpsTs;
+                }
+                dst[F_ENRICH_STATE] =
+                    static_cast<uint8_t>(STORAGE_ENRICH_DONE);
+                status = EVT_ENRICHED;
             }
-            dst["enriched_ts"] = enrichment.ts;
-            if (enrichment.gpsTs >= MIN_ENRICH_GPS_EPOCH) {
-                dst[F_GPS_TS] = enrichment.gpsTs;
-            }
-            dst[F_ENRICH_STATE] =
-                static_cast<uint8_t>(STORAGE_ENRICH_DONE);
-            status = EVT_ENRICHED;
         } else if (_eventRecordPendingEnrichment(event.doc.as<JsonObjectConst>())) {
             dst[F_ENRICH_STATE] =
                 static_cast<uint8_t>(STORAGE_ENRICH_PENDING);
@@ -14478,7 +14795,7 @@ bool StorageManager::_loadSpoolEnrichmentsForSession(
 bool StorageManager::_loadSpoolEnrichmentIds(
     const String& sessionId,
     bool filterBySession,
-    std::vector<uint32_t>& enrichedIds) const {
+    SpiramVector<uint32_t>& enrichedIds) const {
 
     enrichedIds.clear();
     if (filterBySession && !sessionId.length()) return true;
@@ -14519,10 +14836,7 @@ bool StorageManager::_loadSpoolEnrichmentIds(
             continue;
         }
 
-        // Per-segment breadcrumb — minimal info, just enough to localize a
-        // crash mid-scan to a specific segment ID. Log level INFO so it
-        // survives the default filter.
-        DLOG_INFO("STORAGE",
+        DLOG_DEBUG("STORAGE",
                   "load_ids_scan seg=%u enrichDeltas=%u freeInternal=%lu largest=%lu",
                   static_cast<unsigned>(seg.segmentId),
                   static_cast<unsigned>(seg.enrichDeltaCount),
@@ -15655,7 +15969,7 @@ bool StorageManager::compactSpool() {
     }
 
     if (changed) {
-        _spoolIndex.segments = kept;
+        _spoolIndex.segments.assign(kept.begin(), kept.end());
         if (!_spoolIndex.segments.empty()) {
             _spoolIndex.oldestSegmentId = _spoolIndex.segments.front().segmentId;
         } else {

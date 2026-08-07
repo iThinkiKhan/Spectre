@@ -14,6 +14,7 @@ const char* StorageExclusiveWindow::_kindName(StorageWindowKind kind) const {
         case STORAGE_WINDOW_EXPORT:            return "export";
         case STORAGE_WINDOW_FIELDVAULT_UPLOAD: return "fieldvault_upload";
         case STORAGE_WINDOW_COMPACTION:        return "compaction";
+        case STORAGE_WINDOW_ENRICHMENT:        return "enrichment";
         default:                               return "unknown";
     }
 }
@@ -29,6 +30,8 @@ bool StorageExclusiveWindow::_ownerMatches(StorageWindowKind kind) const {
         case STORAGE_WINDOW_EXPORT:
             return RADIO_ARB.currentOwner() == RADIO_NONE ||
                    RADIO_ARB.isOwner(RADIO_STORAGE_MAINTENANCE);
+        case STORAGE_WINDOW_ENRICHMENT:
+            return RADIO_ARB.isOwner(RADIO_BLE_GPS);
         default:
             return false;
     }

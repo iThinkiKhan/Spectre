@@ -59,8 +59,8 @@ export interface EventBatchRecord {
 }
 
 export interface EnrichmentRecord {
-  // eventId 0 is an explicit no-match placeholder; Spectre keeps that
-  // original event pending for a later GPS-correlated enrichment pass.
+  // Legacy companions use eventId 0 as a retryable no-match placeholder.
+  // Current companions preserve eventId and set PHONE_ENRICH_FLAG_NO_DATA.
   eventId: number;
   latE7: number;
   lonE7: number;

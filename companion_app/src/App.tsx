@@ -3,88 +3,12 @@ import {StatusBar, StyleSheet, Text, View} from 'react-native';
 
 import {BottomTabs} from './components/BottomTabs';
 import {PromptOverlay} from './components/PromptOverlay';
+import {ConsoleScreen} from './screens/ConsoleScreen';
 import {EnrichScreen} from './screens/EnrichScreen';
 import {LinkScreen} from './screens/LinkScreen';
 import {OpsScreen} from './screens/OpsScreen';
 import {SpectreProvider, useSpectre} from './state/SpectreContext';
 import {theme} from './theme/theme';
-
-type RailTone = 'default' | 'accent' | 'success' | 'warn';
-
-function humanizeState(value: string) {
-  return value.replace(/_/g, ' ');
-}
-
-function formatRelativeTime(timestamp?: number | null) {
-  if (!timestamp) {
-    return 'never';
-  }
-
-  const elapsedSeconds = Math.max(0, Math.floor((Date.now() - timestamp) / 1000));
-  if (elapsedSeconds < 60) {
-    return `${elapsedSeconds}s ago`;
-  }
-
-  const elapsedMinutes = Math.floor(elapsedSeconds / 60);
-  if (elapsedMinutes < 60) {
-    return `${elapsedMinutes}m ago`;
-  }
-
-  const elapsedHours = Math.floor(elapsedMinutes / 60);
-  if (elapsedHours < 24) {
-    return `${elapsedHours}h ago`;
-  }
-
-  return `${Math.floor(elapsedHours / 24)}d ago`;
-}
-
-function railToneForLink(state: string): RailTone {
-  if (state === 'connected' || state === 'reconnecting') {
-    return 'success';
-  }
-  if (state === 'connecting' || state === 'scanning') {
-    return 'accent';
-  }
-  return 'default';
-}
-
-function railToneForBackhaul(connectedDevices: number): RailTone {
-  return connectedDevices > 0 ? 'success' : 'default';
-}
-
-function railToneForBatch(records?: number | null): RailTone {
-  return records && records > 0 ? 'accent' : 'default';
-}
-
-function RailStat({
-  label,
-  value,
-  detail,
-  tone = 'default',
-}: {
-  label: string;
-  value: string;
-  detail: string;
-  tone?: RailTone;
-}) {
-  return (
-    <View
-      style={[
-        styles.railStat,
-        tone === 'accent' ? styles.railStatAccent : null,
-        tone === 'success' ? styles.railStatSuccess : null,
-        tone === 'warn' ? styles.railStatWarn : null,
-      ]}>
-      <Text style={styles.railLabel}>{label}</Text>
-      <Text numberOfLines={1} style={styles.railValue}>
-        {value}
-      </Text>
-      <Text numberOfLines={1} style={styles.railDetail}>
-        {detail}
-      </Text>
-    </View>
-  );
-}
 
 function AppShell() {
   const spectre = useSpectre();
@@ -103,26 +27,20 @@ function AppShell() {
     spectre.promptState.token !== dismissedPromptToken;
   const pocketReady =
     spectre.peripheralState.running && spectre.peripheralState.advertising;
-  const gpsLoggingActive = spectre.nativeRecorderActive;
-  const fieldModeReady = pocketReady && gpsLoggingActive;
-  const lastBatchRecords =
-    spectre.lastPublishedBatch?.records ??
-    spectre.peripheralState.lastBatchRecords ??
-    0;
+  const fieldModeReady = pocketReady && spectre.nativeRecorderActive;
 
   let screen = <LinkScreen />;
   if (spectre.activeTab === 'enrich') {
     screen = <EnrichScreen />;
+  } else if (spectre.activeTab === 'console') {
+    screen = <ConsoleScreen />;
   } else if (spectre.activeTab === 'ops') {
     screen = <OpsScreen />;
   }
 
   return (
     <View style={styles.safe}>
-      <StatusBar
-        barStyle="light-content"
-        backgroundColor={theme.colors.bg}
-      />
+      <StatusBar barStyle="light-content" backgroundColor={theme.colors.bg} />
       <View style={styles.root}>
         <View style={styles.chrome}>
           <View style={styles.chromeRule} />
@@ -159,51 +77,6 @@ function AppShell() {
                         : 'Standby'}
               </Text>
             </View>
-          </View>
-
-          <Text style={styles.chromeNote}>
-            Text first. BLE advertises continuously. GPS logging stays armed.
-          </Text>
-
-          <View style={styles.railRow}>
-            <RailStat
-              label="Text link"
-              value={humanizeState(spectre.connectionState)}
-              detail={spectre.connectedDevice?.name || 'Scan ready'}
-              tone={railToneForLink(spectre.connectionState)}
-            />
-            <RailStat
-              label="Backhaul"
-              value={
-                spectre.peripheralState.connectedDevices > 0
-                  ? 'linked'
-                  : fieldModeReady
-                    ? 'ble + gps'
-                    : spectre.peripheralState.advertising
-                      ? 'ble only'
-                      : spectre.peripheralState.running
-                        ? 'starting'
-                        : 'offline'
-              }
-              detail={
-                spectre.peripheralState.connectedDevices > 0
-                  ? `${spectre.peripheralState.connectedDevices} attached`
-                  : gpsLoggingActive
-                    ? 'GPS history logging'
-                    : `mode ${spectre.peripheralState.advertiseMode || '--'}`
-              }
-              tone={railToneForBackhaul(spectre.peripheralState.connectedDevices)}
-            />
-            <RailStat
-              label="Last batch"
-              value={lastBatchRecords > 0 ? `${lastBatchRecords} records` : 'none'}
-              detail={
-                spectre.lastPublishedBatch
-                  ? `sent ${formatRelativeTime(spectre.lastPublishedBatch.sentAt)}`
-                  : formatRelativeTime(spectre.peripheralState.lastBatchReceivedAt)
-              }
-              tone={railToneForBatch(lastBatchRecords)}
-            />
           </View>
         </View>
 
@@ -285,7 +158,7 @@ const styles = StyleSheet.create({
   },
   chromeHeader: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
+    alignItems: 'center',
     justifyContent: 'space-between',
     gap: theme.spacing.sm,
   },
@@ -336,58 +209,6 @@ const styles = StyleSheet.create({
   },
   livePillTextActive: {
     color: theme.colors.textOnAccent,
-  },
-  chromeNote: {
-    color: theme.colors.textSoft,
-    fontSize: 11,
-    lineHeight: 14,
-    textTransform: 'uppercase',
-    letterSpacing: 0.4,
-    fontFamily: theme.fonts.label,
-  },
-  railRow: {
-    flexDirection: 'row',
-    gap: theme.spacing.xs,
-  },
-  railStat: {
-    flex: 1,
-    minWidth: 0,
-    backgroundColor: theme.colors.bgAlt,
-    borderColor: theme.colors.panelEdge,
-    borderWidth: 1,
-    borderRadius: theme.radius.md,
-    paddingHorizontal: theme.spacing.sm,
-    paddingVertical: 8,
-    gap: 2,
-  },
-  railStatAccent: {
-    borderColor: theme.colors.cyan,
-  },
-  railStatSuccess: {
-    borderColor: theme.colors.lime,
-  },
-  railStatWarn: {
-    borderColor: theme.colors.amber,
-  },
-  railLabel: {
-    color: theme.colors.textDim,
-    fontSize: 9,
-    letterSpacing: 0.8,
-    textTransform: 'uppercase',
-    fontFamily: theme.fonts.label,
-  },
-  railValue: {
-    color: theme.colors.textStrong,
-    fontSize: 12,
-    fontWeight: '700',
-    textTransform: 'uppercase',
-    fontFamily: theme.fonts.label,
-  },
-  railDetail: {
-    color: theme.colors.textSoft,
-    fontSize: 10,
-    lineHeight: 12,
-    fontFamily: theme.fonts.label,
   },
   screen: {
     flex: 1,

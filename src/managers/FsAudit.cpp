@@ -136,6 +136,26 @@ bool _isProtectedFromAction(const char* path) {
     return false;
 }
 
+// Rollback companions (foo.bak) kept by StorageManager::_atomicWriteFile() with
+// keepBackup=true are the *intended* previous-generation copy of a live file,
+// recreated on every write — not orphans. Only three metadata files use that
+// path (event counter, event meta, spool index); their .bak siblings must be
+// recognized so the audit does not churn-delete them (the next atomic write
+// would just recreate them, re-flagging on the following pass — pure flash
+// wear and log noise). Other .bak names (e.g. salvage forensic copies) are
+// intentionally left to the generic orphan rule.
+bool _isAtomicWriteBackupCompanion(const char* path) {
+    if (!path || !_endsWith(path, ".bak")) return false;
+    char live[96];
+    const size_t len = strlen(path);
+    if (len < 5 || (len - 4) >= sizeof(live)) return false;
+    memcpy(live, path, len - 4);
+    live[len - 4] = '\0';
+    return _eq(live, PATH_EVENT_COUNTER) ||
+           _eq(live, PATH_EVENT_META) ||
+           _eq(live, "/spool/index.json");
+}
+
 struct ClassifyResult {
     FsClass cls;
     bool    needsHeaderCheck;   // true → we should validate header
@@ -146,6 +166,13 @@ ClassifyResult _matchSpec(const char* path) {
     // Forensic / quarantine — never touch
     if (_startsWith(path, "/spool_bad/")) {
         return {FS_CLASS_FORENSIC, false, false};
+    }
+
+    // Expected atomic-write rollback backups — not orphans (see helper).
+    // Counted as known-valid and left untouched; no header/structured check
+    // since a backup may legitimately lag the live file's format.
+    if (_isAtomicWriteBackupCompanion(path)) {
+        return {FS_CLASS_KNOWN_VALID, false, false};
     }
 
     // Tmp/partial orphans — name-based classification

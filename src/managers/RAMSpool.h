@@ -4,20 +4,7 @@
 #include <Arduino.h>
 #include <ArduinoJson.h>
 
-// RAMSpool — dynamic priority-lane spool for the pinned storage worker.
-// Shared 1024-slot pool; the producer classifies events cheaply before
-// enqueue, and the worker drains lanes in priority order.
-//
-// Producer-side fast path: capture tasks classify, enqueue() the prepared
-// payload doc into PSRAM, and post the slot index onto an MPSC queue.
-// Returns immediately, no LittleFS.
-//
-// Consumer-side: TaskStorage (pinned to Core 1) drains the inflight queue
-// and persists probe slots through StorageManager::appendQueuedRecord().
-//
-// Provisional priority/lane/valueScore is computed by the producer cheaply
-// (no g_stateMux). Final stored priority and final policy priority are
-// recomputed by the storage worker / retention pass when needed.
+// Priority-lane RAM spool between capture producers and the storage worker.
 
 namespace RAMSpool {
 

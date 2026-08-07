@@ -24,6 +24,13 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 export const LOCATION_HISTORY_MAX_SAMPLES = 200_000;
 export const LOCATION_HISTORY_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000;
 export const LOCATION_BOOTSTRAP_MAX_DRIFT_MS = 5 * 60 * 1000;
+const LOCATION_STATIONARY_HEARTBEAT_MS = 60 * 1000;
+// Stationary fixes fold into an accuracy-weighted mean; cap the improvement so
+// we never claim sub-meter certainty from phone GPS.
+const STATIONARY_ACCURACY_FLOOR_M = 2.5;
+const STATIONARY_AVG_SAMPLE_CAP = 16;
+// Gate new fixes against the cluster centroid, not the last jittery sample.
+const STATIONARY_MOTION_K = 2.5;
 
 function bucketIdFor(timestamp: number): number {
   return Math.floor(timestamp / DAY_MS);
@@ -70,23 +77,18 @@ function sanitizeFix(value: unknown): LocationHistoryFix | null {
   };
 }
 
-function distanceMeters(a: LocationHistoryFix, b: LocationHistoryFix) {
+function distanceMetersLL(latA: number, lonA: number, latB: number, lonB: number) {
   const radiusM = 6_371_000;
-  const lat1 = (a.lat * Math.PI) / 180;
-  const lat2 = (b.lat * Math.PI) / 180;
-  const deltaLat = ((b.lat - a.lat) * Math.PI) / 180;
-  const deltaLon = ((b.lon - a.lon) * Math.PI) / 180;
+  const lat1 = (latA * Math.PI) / 180;
+  const lat2 = (latB * Math.PI) / 180;
+  const deltaLat = ((latB - latA) * Math.PI) / 180;
+  const deltaLon = ((lonB - lonA) * Math.PI) / 180;
   const sinLat = Math.sin(deltaLat / 2);
   const sinLon = Math.sin(deltaLon / 2);
   const h =
     sinLat * sinLat +
     Math.cos(lat1) * Math.cos(lat2) * sinLon * sinLon;
   return 2 * radiusM * Math.atan2(Math.sqrt(h), Math.sqrt(1 - h));
-}
-
-function withinAccuracyRadius(a: LocationHistoryFix, b: LocationHistoryFix) {
-  const thresholdM = Math.max(a.accuracy, b.accuracy, 0);
-  return distanceMeters(a, b) <= thresholdM;
 }
 
 export function pruneLocationHistory(
@@ -110,10 +112,104 @@ export function pruneLocationHistory(
   return anchor ? [anchor, ...recent.filter(entry => entry !== anchor)] : recent;
 }
 
-// Headroom past the cap before we trim in-memory.  The persist path runs the
-// full age-based prune every 30s; this just stops unbounded growth between
-// flushes.
+// Small in-memory cushion between debounced persistence passes.
 const LOCATION_HISTORY_INMEMORY_HEADROOM = 256;
+
+// Mirrored by Android SpectreLocationService; change both together.
+type StationaryAccumulator = {
+  source: LocationHistoryFix['source'];
+  anchorTimestamp: number; // identity of the marker this cluster is folding into
+  count: number;
+  sumWeight: number;
+  sumWeightLat: number;
+  sumWeightLon: number;
+  sumWeightAlt: number;
+  rawAccuracy: number; // worst raw single-fix accuracy seen — drives the motion gate
+  bestAccuracy: number; // best raw single-fix accuracy — base for the √N reduction
+};
+
+let stationaryAccumulator: StationaryAccumulator | null = null;
+
+function accumWeight(accuracy: number): number {
+  const a = Math.max(accuracy, STATIONARY_ACCURACY_FLOOR_M);
+  return 1 / (a * a);
+}
+
+function seedAccumulator(marker: LocationHistoryFix): StationaryAccumulator {
+  const w = accumWeight(marker.accuracy);
+  return {
+    source: marker.source,
+    anchorTimestamp: marker.timestamp,
+    count: 1,
+    sumWeight: w,
+    sumWeightLat: w * marker.lat,
+    sumWeightLon: w * marker.lon,
+    sumWeightAlt: w * marker.alt,
+    rawAccuracy: marker.accuracy,
+    bestAccuracy: marker.accuracy > 0 ? marker.accuracy : STATIONARY_ACCURACY_FLOOR_M,
+  };
+}
+
+function foldAccumulator(acc: StationaryAccumulator, fix: LocationHistoryFix) {
+  const w = accumWeight(fix.accuracy);
+  acc.count += 1;
+  acc.sumWeight += w;
+  acc.sumWeightLat += w * fix.lat;
+  acc.sumWeightLon += w * fix.lon;
+  acc.sumWeightAlt += w * fix.alt;
+  if (fix.accuracy > acc.rawAccuracy) {
+    acc.rawAccuracy = fix.accuracy;
+  }
+  if (fix.accuracy > 0 && fix.accuracy < acc.bestAccuracy) {
+    acc.bestAccuracy = fix.accuracy;
+  }
+}
+
+function accumulatedMean(acc: StationaryAccumulator) {
+  const n = Math.min(acc.count, STATIONARY_AVG_SAMPLE_CAP);
+  return {
+    lat: acc.sumWeightLat / acc.sumWeight,
+    lon: acc.sumWeightLon / acc.sumWeight,
+    alt: acc.sumWeightAlt / acc.sumWeight,
+    accuracy: Math.max(acc.bestAccuracy / Math.sqrt(n), STATIONARY_ACCURACY_FLOOR_M),
+  };
+}
+
+function withinMotionRadius(
+  refLat: number,
+  refLon: number,
+  refRawAccuracy: number,
+  sample: LocationHistoryFix,
+) {
+  const thresholdM =
+    STATIONARY_MOTION_K *
+    Math.max(refRawAccuracy, sample.accuracy, STATIONARY_ACCURACY_FLOOR_M);
+  return distanceMetersLL(refLat, refLon, sample.lat, sample.lon) <= thresholdM;
+}
+
+function insertFixSorted(
+  history: LocationHistoryFix[],
+  fix: LocationHistoryFix,
+): LocationHistoryFix[] {
+  const next = history.slice();
+  let insertAt = next.length;
+  for (let i = next.length - 1; i >= 0; i -= 1) {
+    if (next[i].timestamp <= fix.timestamp) {
+      insertAt = i + 1;
+      break;
+    }
+    if (i === 0) {
+      insertAt = 0;
+    }
+  }
+  next.splice(insertAt, 0, fix);
+  pendingDirtyBuckets.add(bucketIdFor(fix.timestamp));
+
+  if (next.length > LOCATION_HISTORY_MAX_SAMPLES + LOCATION_HISTORY_INMEMORY_HEADROOM) {
+    return next.slice(next.length - LOCATION_HISTORY_MAX_SAMPLES);
+  }
+  return next;
+}
 
 export function rememberLocationSample(
   previous: LocationHistoryFix[],
@@ -125,9 +221,7 @@ export function rememberLocationSample(
     return previous;
   }
 
-  // Tail scan for the most recent same-source marker.  Avoids the previous
-  // implementation's full pruneLocationHistory (sanitize + filter + sort over
-  // ~200k entries) on every 10s GPS poll.
+  // Tail scan avoids sorting the whole history on each GPS poll.
   let previousMarker: LocationHistoryFix | null = null;
   for (let i = previous.length - 1; i >= 0; i -= 1) {
     if (previous[i].source === sample.source) {
@@ -136,50 +230,81 @@ export function rememberLocationSample(
     }
   }
 
-  if (previousMarker && withinAccuracyRadius(previousMarker, sanitizedSample)) {
-    if (
-      sanitizedSample.accuracy > 0 &&
-      (previousMarker.accuracy === 0 ||
-        sanitizedSample.accuracy < previousMarker.accuracy)
-    ) {
-      previousMarker.lat = sanitizedSample.lat;
-      previousMarker.lon = sanitizedSample.lon;
-      previousMarker.alt = sanitizedSample.alt;
-      previousMarker.accuracy = sanitizedSample.accuracy;
-      previousMarker.provider = sanitizedSample.provider;
-      pendingDirtyBuckets.add(bucketIdFor(previousMarker.timestamp));
+  const accMatches =
+    !!stationaryAccumulator &&
+    !!previousMarker &&
+    stationaryAccumulator.source === sanitizedSample.source &&
+    stationaryAccumulator.anchorTimestamp === previousMarker.timestamp;
+
+  // Use raw cluster accuracy so refining the mean never tightens the gate.
+  let refLat = 0;
+  let refLon = 0;
+  let refRawAccuracy = 0;
+  if (accMatches) {
+    const centroid = accumulatedMean(stationaryAccumulator!);
+    refLat = centroid.lat;
+    refLon = centroid.lon;
+    refRawAccuracy = stationaryAccumulator!.rawAccuracy;
+  } else if (previousMarker) {
+    refLat = previousMarker.lat;
+    refLon = previousMarker.lon;
+    refRawAccuracy = previousMarker.accuracy;
+  }
+
+  if (
+    previousMarker &&
+    withinMotionRadius(refLat, refLon, refRawAccuracy, sanitizedSample)
+  ) {
+    // Stationary: fold this fix into the cluster's running mean.
+    if (!accMatches) {
+      stationaryAccumulator = seedAccumulator(previousMarker);
     }
+    foldAccumulator(stationaryAccumulator!, sanitizedSample);
+    const mean = accumulatedMean(stationaryAccumulator!);
+
+    if (
+      sanitizedSample.timestamp - previousMarker.timestamp >=
+      LOCATION_STATIONARY_HEARTBEAT_MS
+    ) {
+      // Heartbeat preserves temporal coverage while keeping the averaged fix.
+      const marker: LocationHistoryFix = {
+        lat: mean.lat,
+        lon: mean.lon,
+        alt: mean.alt,
+        accuracy: mean.accuracy,
+        timestamp: sanitizedSample.timestamp,
+        source: sanitizedSample.source,
+        provider: sanitizedSample.provider,
+      };
+      const next = insertFixSorted(previous, marker);
+      stationaryAccumulator!.anchorTimestamp = marker.timestamp;
+      return next;
+    }
+
+    // Sub-heartbeat: refine the marker in place.
+    previousMarker.lat = mean.lat;
+    previousMarker.lon = mean.lon;
+    previousMarker.alt = mean.alt;
+    previousMarker.accuracy = mean.accuracy;
+    previousMarker.provider = sanitizedSample.provider;
+    pendingDirtyBuckets.add(bucketIdFor(previousMarker.timestamp));
     return previous;
   }
 
-  // Samples almost always arrive monotonically.  Tail-insert in O(1) instead
-  // of a full Array.sort.
-  const next = previous.slice();
-  let insertAt = next.length;
-  for (let i = next.length - 1; i >= 0; i -= 1) {
-    if (next[i].timestamp <= sanitizedSample.timestamp) {
-      insertAt = i + 1;
-      break;
-    }
-    if (i === 0) {
-      insertAt = 0;
-    }
-  }
-  next.splice(insertAt, 0, sanitizedSample);
-  pendingDirtyBuckets.add(bucketIdFor(sanitizedSample.timestamp));
-
-  if (next.length > LOCATION_HISTORY_MAX_SAMPLES + LOCATION_HISTORY_INMEMORY_HEADROOM) {
-    return next.slice(next.length - LOCATION_HISTORY_MAX_SAMPLES);
-  }
-  return next;
+  // Moved (or no prior marker): start a fresh cluster.
+  stationaryAccumulator = null;
+  return insertFixSorted(previous, sanitizedSample);
 }
 
-// Pre-pruned snapshot for batch enrichment.  Callers that resolve locations
-// for many events in a row should build this once and reuse it instead of
-// re-pruning the entire history per event.
+// Pre-pruned snapshot for batch enrichment.
 export type LocationCandidateSet = {
   manualOverride: LocationHistoryFix | null;
   deviceCandidates: LocationHistoryFix[];
+};
+
+export type LocationDriftSummary = {
+  nearestTimestamp: number;
+  nearestDriftMs: number;
 };
 
 export function buildLocationCandidates(
@@ -212,19 +337,6 @@ export function locationForUnixMsFromCandidates(
 
   const candidates = set.deviceCandidates;
 
-  let bestBefore: LocationHistoryFix | null = null;
-  for (const candidate of candidates) {
-    if (candidate.timestamp <= eventUnixMs) {
-      bestBefore = candidate;
-      continue;
-    }
-    break;
-  }
-
-  if (bestBefore) {
-    return bestBefore;
-  }
-
   let nearest: LocationHistoryFix | null = null;
   let nearestDrift = Number.MAX_SAFE_INTEGER;
   for (const candidate of candidates) {
@@ -233,10 +345,43 @@ export function locationForUnixMsFromCandidates(
       nearest = candidate;
       nearestDrift = drift;
     }
+    if (candidate.timestamp > eventUnixMs && drift > nearestDrift) {
+      break;
+    }
   }
 
   return nearest && nearestDrift <= LOCATION_BOOTSTRAP_MAX_DRIFT_MS
     ? nearest
+    : null;
+}
+
+export function nearestLocationDriftFromCandidates(
+  eventUnixMs: number,
+  set: LocationCandidateSet,
+): LocationDriftSummary | null {
+  if (set.manualOverride) {
+    return {
+      nearestTimestamp: set.manualOverride.timestamp,
+      nearestDriftMs: 0,
+    };
+  }
+
+  const candidates = set.deviceCandidates;
+  let nearest: LocationHistoryFix | null = null;
+  let nearestDrift = Number.MAX_SAFE_INTEGER;
+  for (const candidate of candidates) {
+    const drift = Math.abs(candidate.timestamp - eventUnixMs);
+    if (drift < nearestDrift) {
+      nearest = candidate;
+      nearestDrift = drift;
+    }
+    if (candidate.timestamp > eventUnixMs && drift > nearestDrift) {
+      break;
+    }
+  }
+
+  return nearest
+    ? {nearestTimestamp: nearest.timestamp, nearestDriftMs: nearestDrift}
     : null;
 }
 
@@ -245,9 +390,7 @@ export function locationForUnixMs(
   activeLocation: LocationHistoryFix | null,
   history: LocationHistoryFix[],
 ): LocationHistoryFix | null {
-  // Single-event call site — builds the candidate set, then looks up.  Batch
-  // call sites should call buildLocationCandidates once and reuse the result
-  // with locationForUnixMsFromCandidates per event.
+  // Single-event convenience path; batches should reuse a candidate set.
   return locationForUnixMsFromCandidates(
     eventUnixMs,
     buildLocationCandidates(activeLocation, history),
@@ -291,7 +434,6 @@ async function migrateLegacyHistory(): Promise<LocationHistoryFix[] | null> {
     pruned = [];
   }
 
-  // Stage every surviving fix's bucket as dirty so the chunked write emits it.
   for (const fix of pruned) {
     pendingDirtyBuckets.add(bucketIdFor(fix.timestamp));
   }
@@ -353,9 +495,7 @@ export async function persistLocationHistory(history: LocationHistoryFix[]) {
     bucket.push(fix);
   }
 
-  // The cutoff bucket may have been partially trimmed by the age filter, and
-  // the oldest live bucket may have been partially trimmed by the sample cap.
-  // Force-rewrite both so storage matches the in-memory model.
+  // Boundary buckets may be partially trimmed; force-rewrite them.
   const cutoffBucket = bucketIdFor(Date.now() - LOCATION_HISTORY_MAX_AGE_MS);
   if (liveBuckets.has(cutoffBucket)) {
     pendingDirtyBuckets.add(cutoffBucket);
@@ -366,9 +506,7 @@ export async function persistLocationHistory(history: LocationHistoryFix[]) {
   }
 
   const priorIndex = await loadBucketIndex();
-  // We always write the index sorted, but sort defensively in case a future
-  // schema or external write leaves it unordered — the indexChanged check
-  // below assumes both arrays are sorted.
+  // indexChanged assumes both arrays are sorted.
   priorIndex.sort((a, b) => a - b);
   const priorIndexSet = new Set(priorIndex);
 
@@ -393,12 +531,7 @@ export async function persistLocationHistory(history: LocationHistoryFix[]) {
 
   pendingDirtyBuckets.clear();
 
-  // Buckets first, then index. A crash between the two leaves orphan bucket
-  // files (new keys absent from the on-disk index). Without a list-keys API on
-  // the native store, the next reconcile pass cannot see or delete them — they
-  // just sit unused. The alternative ordering (index first) would instead let
-  // a crash strand the index pointing at empty/stale bucket data, which is
-  // worse: silent data loss vs. wasted bytes.
+  // Buckets first, then index: a crash can waste bytes but not lose indexed data.
   await Promise.all(writes);
   if (indexChanged) {
     await setStoredString(BUCKET_INDEX_KEY, JSON.stringify(sortedLiveIds));
@@ -424,7 +557,7 @@ function runPendingPersist(): Promise<void> {
     .finally(() => {
       inFlightPersist = null;
       if (pendingPersistHistory && !pendingPersistTimer) {
-        // Another sample landed while we were writing — schedule the next flush.
+        // Another sample landed while we were writing.
         scheduleLocationHistoryPersist(pendingPersistHistory);
       }
     });

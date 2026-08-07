@@ -34,6 +34,7 @@ struct PendingEnrichment {
     float    accuracy;
     uint32_t gpsEpochUtc;
     char     tag[32];
+    bool     noData;
 };
 
 class BLEManager {
@@ -146,6 +147,7 @@ private:
     class ScanCallbacks : public NimBLEScanCallbacks {
     public:
         explicit ScanCallbacks(BLEManager& owner) : _owner(owner) {}
+        void onDiscovered(const NimBLEAdvertisedDevice* advertisedDevice) override;
         void onResult(const NimBLEAdvertisedDevice* advertisedDevice) override;
     private:
         BLEManager& _owner;
@@ -185,7 +187,7 @@ private:
     static constexpr uint32_t WORKER_JOB_POLL_CONTROL    = 0x00000004UL;
     static constexpr uint32_t WORKER_JOB_SEND_ENRICH     = 0x00000008UL;
 
-    static constexpr uint32_t WORKER_STACK_WORDS         = 10240;
+    static constexpr uint32_t WORKER_STACK_BYTES         = 10240;
 
     void _buildDeviceName();
     bool _beginFrameworkPhase();
@@ -206,6 +208,7 @@ private:
     void _ensureAdvertising(bool enable);
 
     bool _ensureWorkerTask();
+    bool _ensurePayloadBuffers();
     void _releaseWorkerTask(const char* phase);
     static void _workerTaskEntry(void* arg);
     void _workerLoop();
@@ -429,26 +432,22 @@ private:
 
     // GPS is latest-value. Dropping old GPS is acceptable.
     bool    _gpsRxPending = false;
-    uint8_t _gpsRxBuf[GPS_RX_MAX] = {};
     size_t  _gpsRxLen = 0;
     uint16_t _gpsRxDrops = 0;
 
     // Control can be latest-value for now unless you need command ordering.
     // For first phone connection, latest command is good enough.
     bool    _controlRxPending = false;
-    uint8_t _controlRxBuf[CONTROL_RX_MAX] = {};
     size_t  _controlRxLen = 0;
     uint16_t _controlRxDrops = 0;
 
     // Enrichment must preserve chunk order.
-    BleRxChunk _enrichRx[ENRICH_RX_SLOTS];
     uint8_t _enrichRxHead = 0;
     uint8_t _enrichRxTail = 0;
     uint8_t _enrichRxCount = 0;
     uint16_t _enrichRxDrops = 0;
 
     bool    _authRxPending = false;
-    uint8_t _authRxBuf[PHONE_AUTH_FRAME_SIZE] = {};
     size_t  _authRxLen = 0;
     uint16_t _authRxDrops = 0;
 
@@ -460,38 +459,46 @@ private:
     static constexpr size_t COMMAND_RESP_TX_MAX =
         PHONE_COMMAND_RESP_FRAME_MAX + PHONE_SECURE_ENVELOPE_OVERHEAD;
     bool    _commandReqRxPending = false;
-    uint8_t _commandReqRxBuf[COMMAND_REQ_RX_MAX] = {};
     size_t  _commandReqRxLen = 0;
     uint16_t _commandReqRxDrops = 0;
-    uint8_t _commandRespPlainBuf[PHONE_COMMAND_RESP_FRAME_MAX] = {};
-    uint8_t _commandRespSecureBuf[COMMAND_RESP_TX_MAX] = {};
-    uint8_t _logStreamSecureBuf[LOG_STREAM_CHUNK_FRAME_MAX +
-                                PHONE_SECURE_ENVELOPE_OVERHEAD] = {};
-    uint8_t _dashboardStreamSecureBuf[DASHBOARD_STREAM_CHUNK_FRAME_MAX +
-                                      PHONE_SECURE_ENVELOPE_OVERHEAD] = {};
-    uint8_t _notificationSecureBuf[PHONE_NOTIFICATION_FRAME_MAX +
-                                   PHONE_SECURE_ENVELOPE_OVERHEAD] = {};
-
-    // Scratch buffer used by tick-side drain.
-    // Static member, not local stack.
-    uint8_t _enrichRxScratch[ENRICH_RX_CHUNK_MAX] = {};
 
     static constexpr size_t ENRICHMENT_MAX_RECORDS = PHONE_COMPANION_ENRICH_BATCH_MAX;
     static_assert(ENRICHMENT_MAX_RECORDS > 0, "PHONE_COMPANION_ENRICH_BATCH_MAX must be > 0");
     static_assert(ENRICHMENT_MAX_RECORDS <= 64,
                   "PHONE_COMPANION_ENRICH_BATCH_MAX >64 needs a stack/buffer audit");
 
-    uint8_t   _eventBatchTxBuf[ENRICHMENT_MAX_RECORDS * EVENT_BATCH_RECORD_SIZE];
     size_t    _eventBatchTxLen = 0;
-    uint8_t   _eventBatchSecureTxBuf[ENRICHMENT_MAX_RECORDS * EVENT_BATCH_RECORD_SIZE +
-                                      PHONE_SECURE_ENVELOPE_OVERHEAD];
-    uint8_t   _storageSecureTxBuf[PHONE_STORAGE_FRAME_SIZE +
-                                   PHONE_SECURE_ENVELOPE_OVERHEAD];
-    uint8_t   _enrichmentRxBuf[ENRICHMENT_MAX_RECORDS * ENRICHMENT_RECORD_SIZE];
     size_t    _enrichmentRxLen = 0;
     size_t    _enrichmentExpectedCount = 0;
     size_t    _enrichmentAvailableCount = 0;
-    PendingEnrichment _enrichmentBatch[ENRICHMENT_MAX_RECORDS];
+
+    struct PayloadBuffers {
+        uint8_t gpsRx[GPS_RX_MAX];
+        uint8_t controlRx[CONTROL_RX_MAX];
+        BleRxChunk enrichRx[ENRICH_RX_SLOTS];
+        uint8_t authRx[PHONE_AUTH_FRAME_SIZE];
+        uint8_t commandReqRx[COMMAND_REQ_RX_MAX];
+        uint8_t commandRespPlain[PHONE_COMMAND_RESP_FRAME_MAX];
+        uint8_t commandRespSecure[COMMAND_RESP_TX_MAX];
+        uint8_t logStreamSecure[LOG_STREAM_CHUNK_FRAME_MAX +
+                                PHONE_SECURE_ENVELOPE_OVERHEAD];
+        uint8_t dashboardStreamSecure[DASHBOARD_STREAM_CHUNK_FRAME_MAX +
+                                      PHONE_SECURE_ENVELOPE_OVERHEAD];
+        uint8_t notificationSecure[PHONE_NOTIFICATION_FRAME_MAX +
+                                   PHONE_SECURE_ENVELOPE_OVERHEAD];
+        uint8_t enrichRxScratch[ENRICH_RX_CHUNK_MAX];
+        uint8_t eventBatchTx[ENRICHMENT_MAX_RECORDS * EVENT_BATCH_RECORD_SIZE];
+        uint8_t eventBatchSecureTx[ENRICHMENT_MAX_RECORDS * EVENT_BATCH_RECORD_SIZE +
+                                   PHONE_SECURE_ENVELOPE_OVERHEAD];
+        uint8_t storageSecureTx[PHONE_STORAGE_FRAME_SIZE +
+                                PHONE_SECURE_ENVELOPE_OVERHEAD];
+        uint8_t enrichmentRx[ENRICHMENT_MAX_RECORDS * ENRICHMENT_RECORD_SIZE];
+        PendingEnrichment enrichmentBatch[ENRICHMENT_MAX_RECORDS];
+        uint8_t authChallenge[PHONE_AUTH_FRAME_SIZE];
+        uint8_t authResponse[PHONE_AUTH_FRAME_SIZE];
+    };
+
+    PayloadBuffers* _payload = nullptr;
 
     NimBLEAddress               _targetAddress;
     bool                        _haveTargetAddress = false;
@@ -519,6 +526,7 @@ private:
     NimBLERemoteCharacteristic* _eventBatchRemoteChar = nullptr;
     NimBLERemoteCharacteristic* _enrichmentRemoteChar = nullptr;
     NimBLERemoteCharacteristic* _authRemoteChar = nullptr;
+    NimBLERemoteCharacteristic* _authWriteRemoteChar = nullptr;
     NimBLERemoteCharacteristic* _storageRemoteChar = nullptr;
     NimBLERemoteCharacteristic* _commandReqRemoteChar = nullptr;
     NimBLERemoteCharacteristic* _commandRespRemoteChar = nullptr;
@@ -526,8 +534,6 @@ private:
     NimBLERemoteCharacteristic* _dashboardStreamRemoteChar = nullptr;
     NimBLERemoteCharacteristic* _notificationRemoteChar = nullptr;
     BleSecureSession            _secureSession;
-    uint8_t                     _authChallengeBuf[PHONE_AUTH_FRAME_SIZE] = {};
-    uint8_t                     _authResponseBuf[PHONE_AUTH_FRAME_SIZE] = {};
 
     NimBLEServer*               _server = nullptr;
     NimBLEService*              _textService = nullptr;
@@ -537,8 +543,6 @@ private:
     NimBLECharacteristic*       _statusChar = nullptr;
 
     TaskHandle_t                _workerTask = nullptr;
-    StaticTask_t                _workerTaskBuffer;
-    StackType_t*                _workerStack = nullptr;
 
     ScanCallbacks               _scanCallbacks;
     ClientCallbacks             _clientCallbacks;

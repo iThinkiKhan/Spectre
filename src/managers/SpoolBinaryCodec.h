@@ -25,7 +25,12 @@ struct SegmentHeaderV2 {
     uint32_t recordCount = 0;
     uint32_t bodyBytes = 0;
     uint32_t dictOffset = 0;
-    uint32_t reserved0 = 0;
+    // Absolute UTC epoch (seconds) corresponding to createdMs, stamped when a
+    // trusted clock is available at segment creation or backfilled later in the
+    // same boot. 0 means "unknown" — records in this segment cannot be mapped
+    // to wall-clock time and are therefore unenrichable. Occupies what used to
+    // be reserved0, so the on-disk layout is unchanged (old segments read 0).
+    uint32_t createdEpochUtc = 0;
     uint32_t reserved1 = 0;
 };
 
@@ -221,7 +226,8 @@ inline bool fieldKeyEquals(const char* keyData,
     return keyLen == 0 || memcmp(keyData, keyLiteral, keyLen) == 0;
 }
 
-bool createEmptySegmentV2(const String& path, uint32_t segmentId, uint32_t createdMs);
+bool createEmptySegmentV2(const String& path, uint32_t segmentId, uint32_t createdMs,
+                          uint32_t createdEpochUtc = 0);
 
 } // namespace SpoolBin
 

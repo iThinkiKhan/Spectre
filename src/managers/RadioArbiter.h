@@ -103,6 +103,13 @@ private:
     void _setLease(uint32_t holdMs);
     void _log(const char* action, RadioOwner owner, const char* reason, uint32_t holdMs) const;
 
+    // Death-loop watchdog. _recordGrantForChurn() tracks a streak of back-to-back
+    // grants of the same owner; _serviceChurnWatchdog() (run from tick) escalates
+    // a wedged streak: first a fallback kick (gate bypass), then a reboot.
+    void _recordGrantForChurn(RadioOwner owner);
+    void _serviceChurnWatchdog();
+    bool _captureGateBypassActive() const;
+
     bool _begun = false;
 
     RadioOwner _owner        = RADIO_NONE;
@@ -120,6 +127,13 @@ private:
 
     WiFiPmkidIntent _pmkidIntent = WIFI_PMKID_INTENT_NONE;
     char            _pmkidTargetBssid[18] = "";
+
+    // Death-loop watchdog state (see config.h RADIO_CHURN_*).
+    RadioOwner _churnOwner = RADIO_NONE;     // owner of the current grant streak
+    uint32_t   _churnCount = 0;              // consecutive same-owner re-grants
+    uint32_t   _lastGrantMs = 0;             // millis() of the last grant
+    uint32_t   _captureGateBypassUntilMs = 0;// soft maintenance gate bypassed until
+    uint32_t   _churnKickCooldownMs = 0;     // don't re-arm a kick before this
 };
 
 extern RadioArbiter RADIO_ARB;

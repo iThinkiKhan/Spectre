@@ -9,6 +9,7 @@
 #include "../core/Session.h"
 #include "../core/SpectreState.h"
 #include "MQTTManager.h"
+#include "EntityManager.h"
 #include "StorageManager.h"
 
 bool SubGhzRecordWriter::logPacketRx(StorageManager& storage, const SubGhzPacket& pkt) {
@@ -17,6 +18,7 @@ bool SubGhzRecordWriter::logPacketRx(StorageManager& storage, const SubGhzPacket
     // consume LittleFS quickly during long missions.
     const bool legacyOk = true;
     SESS.incrementLoraPackets();
+    ENTITY_MGR.observeSubGhz(pkt.source, pkt.rssi, pkt.frequencyHz);
 
     char payloadHex[(sizeof(pkt.payload) * 2) + 1] = {};
     size_t payloadLen = strnlen(pkt.payload, sizeof(pkt.payload));

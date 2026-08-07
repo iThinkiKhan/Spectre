@@ -15,8 +15,8 @@ namespace FieldVault {
 
 namespace {
 
-constexpr size_t   kLineMax      = 256;   // max per-record JSONL line
-constexpr size_t   kRotateBytes  = 16384; // rotate when file exceeds this size
+constexpr size_t   kLineMax      = 512;   // max per-record JSONL line
+constexpr size_t   kRotateBytes  = 65536; // rotate when file exceeds this size
 
 // NVS storage for the "last vaulted crash breadcrumb seq" watermark. Used to
 // suppress duplicate crash records across reboots that all observe the same
@@ -62,10 +62,32 @@ uint32_t _scanLastSeq(const char* path) {
     return maxSeq;
 }
 
-void _ensureDir(const char* path) {
-    if (!LittleFS.exists(path)) {
-        LittleFS.mkdir(path);
+// Ensure every component of a directory path exists. LittleFS.mkdir is
+// non-recursive and silently no-ops when an intermediate parent is missing, so
+// creating only the leaf leaves the vault permanently unwritable if /config or
+// /config/vault ever gets wiped out from under us. Create each '/'-delimited
+// ancestor in turn, then the leaf. Returns true if the full path exists after.
+bool _ensureDir(const char* path) {
+    if (!path || !path[0]) return false;
+    if (LittleFS.exists(path)) return true;
+
+    char buf[80];
+    const size_t len = strlen(path);
+    if (len == 0 || len >= sizeof(buf)) return false;
+    memcpy(buf, path, len + 1);
+
+    // Temporarily terminate at each separator (and finally at end-of-string)
+    // to mkdir the prefix up to that point.
+    for (size_t i = 1; i <= len; ++i) {
+        if (buf[i] != '/' && buf[i] != '\0') continue;
+        const char saved = buf[i];
+        buf[i] = '\0';
+        if (!LittleFS.exists(buf)) {
+            LittleFS.mkdir(buf);
+        }
+        buf[i] = saved;
     }
+    return LittleFS.exists(path);
 }
 
 void _loadLvcs() {
@@ -207,7 +229,22 @@ void _rotateIfNeeded() {
 bool _appendLine(const char* line) {
     _rotateIfNeeded();
     File f = LittleFS.open(PATH_FIELDVAULT_LOG, FILE_APPEND);
-    if (!f) return false;
+    if (!f) {
+        // Open fails if the vault directory was wiped (e.g. a /config
+        // maintenance sweep) since begin(). Re-provision the full path and
+        // retry once so the vault self-heals instead of silently dropping
+        // every record until the next reboot — the exact failure mode that
+        // leaves the vault stuck empty with nextSeq frozen at 1.
+        if (_ensureDir(PATH_FIELDVAULT_DIR)) {
+            f = LittleFS.open(PATH_FIELDVAULT_LOG, FILE_APPEND);
+        }
+        if (!f) {
+            DLOG_ERROR("STOR",
+                       "FieldVault append open failed dir=%s — record dropped",
+                       PATH_FIELDVAULT_DIR);
+            return false;
+        }
+    }
     size_t wrote = f.print(line);
     if (wrote == 0) {
         f.close();
@@ -232,6 +269,8 @@ bool _resetReasonLooksCrashLike(uint8_t resetReason) {
             return false;
     }
 }
+
+void _sanitizeForJson(const char* in, char* out, size_t outSize);
 
 }  // namespace
 
@@ -435,6 +474,218 @@ bool vaultUnresolvedCrashIfNew(uint8_t resetReason,
         DLOG_WARN("STOR", "FieldVault lvcs persist failed (seq=%lu)",
                   static_cast<unsigned long>(bcrumbSeq));
     }
+    return true;
+}
+
+bool appendPowerSample(uint16_t voltageMv,
+                       int percent,
+                       int16_t trendMvPerMin,
+                       uint16_t capacityMah,
+                       uint16_t runtimeMin,
+                       const char* powerSource,
+                       const char* powerState,
+                       bool charging,
+                       uint8_t radioOwner,
+                       uint32_t uptimeMs,
+                       const char* reason) {
+    if (!_ready) return false;
+
+    char safeSource[16];
+    char safeState[16];
+    char safeReason[28];
+    _sanitizeForJson(powerSource && powerSource[0] ? powerSource : "unknown",
+                     safeSource, sizeof(safeSource));
+    _sanitizeForJson(powerState && powerState[0] ? powerState : "unknown",
+                     safeState, sizeof(safeState));
+    _sanitizeForJson(reason && reason[0] ? reason : "sample",
+                     safeReason, sizeof(safeReason));
+
+    const int pct = percent < 0 ? 0 : (percent > 100 ? 100 : percent);
+
+    char line[kLineMax];
+    const uint32_t seq = _nextSeq;
+    int n = snprintf(line, sizeof(line),
+        "{\"type\":\"power_sample\",\"seq\":%lu,\"ts_ms\":%lu,"
+        "\"uptime_s\":%lu,\"mv\":%u,\"pct\":%d,\"trend\":%d,"
+        "\"cap_mah\":%u,\"runtime_min\":%u,\"source\":\"%s\","
+        "\"state\":\"%s\",\"charging\":%u,\"owner\":%u,\"reason\":\"%s\"}\n",
+        static_cast<unsigned long>(seq),
+        static_cast<unsigned long>(millis()),
+        static_cast<unsigned long>(uptimeMs / 1000UL),
+        static_cast<unsigned>(voltageMv),
+        pct,
+        static_cast<int>(trendMvPerMin),
+        static_cast<unsigned>(capacityMah),
+        static_cast<unsigned>(runtimeMin),
+        safeSource,
+        safeState,
+        charging ? 1u : 0u,
+        static_cast<unsigned>(radioOwner),
+        safeReason);
+
+    if (n <= 0) return false;
+    if (static_cast<size_t>(n) >= sizeof(line)) {
+        line[sizeof(line) - 2] = '\n';
+        line[sizeof(line) - 1] = '\0';
+    }
+    if (!_appendLine(line)) return false;
+    _nextSeq++;
+    return true;
+}
+
+bool appendRunSample(const char* sessionId,
+                     uint32_t uptimeMs,
+                     uint8_t radioOwner,
+                     uint32_t pendingUpload,
+                     uint32_t pendingEnrich,
+                     uint16_t wifiCount,
+                     uint32_t probeCount,
+                     uint32_t loraPackets,
+                     uint8_t subGhzMode,
+                     uint16_t subGhzNodes,
+                     bool wioAvailable,
+                     bool wioBleProxy,
+                     bool wioPhoneConnected,
+                     bool uploadActive,
+                     uint32_t heapFreeKb,
+                     uint32_t internalFreeKb,
+                     const char* reason) {
+    if (!_ready) return false;
+
+    char safeSession[48];
+    char safeReason[28];
+    _sanitizeForJson(sessionId && sessionId[0] ? sessionId : "",
+                     safeSession, sizeof(safeSession));
+    _sanitizeForJson(reason && reason[0] ? reason : "sample",
+                     safeReason, sizeof(safeReason));
+
+    char line[kLineMax];
+    const uint32_t seq = _nextSeq;
+    int n = snprintf(line, sizeof(line),
+        "{\"type\":\"run_sample\",\"seq\":%lu,\"ts_ms\":%lu,"
+        "\"uptime_s\":%lu,\"session\":\"%s\",\"owner\":%u,"
+        "\"pending\":%lu,\"enrich\":%lu,\"nets\":%u,\"probes\":%lu,"
+        "\"lora\":%lu,\"sg_mode\":%u,\"sg_nodes\":%u,"
+        "\"wio\":%u,\"wio_proxy\":%u,\"wio_phone\":%u,\"upload\":%u,"
+        "\"heap_kb\":%lu,\"int_kb\":%lu,\"reason\":\"%s\"}\n",
+        static_cast<unsigned long>(seq),
+        static_cast<unsigned long>(millis()),
+        static_cast<unsigned long>(uptimeMs / 1000UL),
+        safeSession,
+        static_cast<unsigned>(radioOwner),
+        static_cast<unsigned long>(pendingUpload),
+        static_cast<unsigned long>(pendingEnrich),
+        static_cast<unsigned>(wifiCount),
+        static_cast<unsigned long>(probeCount),
+        static_cast<unsigned long>(loraPackets),
+        static_cast<unsigned>(subGhzMode),
+        static_cast<unsigned>(subGhzNodes),
+        wioAvailable ? 1u : 0u,
+        wioBleProxy ? 1u : 0u,
+        wioPhoneConnected ? 1u : 0u,
+        uploadActive ? 1u : 0u,
+        static_cast<unsigned long>(heapFreeKb),
+        static_cast<unsigned long>(internalFreeKb),
+        safeReason);
+
+    if (n <= 0) return false;
+    if (static_cast<size_t>(n) >= sizeof(line)) {
+        line[sizeof(line) - 2] = '\n';
+        line[sizeof(line) - 1] = '\0';
+    }
+    if (!_appendLine(line)) return false;
+    _nextSeq++;
+    return true;
+}
+
+bool appendEnrichSummary(const char* transport,
+                         bool success,
+                         uint32_t requested,
+                         uint32_t applied,
+                         uint32_t failed,
+                         uint32_t deferred,
+                         uint32_t batches,
+                         uint32_t xferMs,
+                         uint32_t storageMs,
+                         uint32_t totalMs,
+                         uint32_t pendingUpload,
+                         uint32_t pendingEnrich) {
+    if (!_ready) return false;
+
+    char safeTransport[16];
+    _sanitizeForJson(transport && transport[0] ? transport : "unknown",
+                     safeTransport, sizeof(safeTransport));
+
+    char line[kLineMax];
+    const uint32_t seq = _nextSeq;
+    int n = snprintf(line, sizeof(line),
+        "{\"type\":\"enrich_summary\",\"seq\":%lu,\"ts_ms\":%lu,"
+        "\"transport\":\"%s\",\"ok\":%u,\"requested\":%lu,"
+        "\"applied\":%lu,\"failed\":%lu,\"deferred\":%lu,"
+        "\"batches\":%lu,\"xfer_ms\":%lu,\"storage_ms\":%lu,"
+        "\"total_ms\":%lu,\"pending\":%lu,\"enrich\":%lu}\n",
+        static_cast<unsigned long>(seq),
+        static_cast<unsigned long>(millis()),
+        safeTransport,
+        success ? 1u : 0u,
+        static_cast<unsigned long>(requested),
+        static_cast<unsigned long>(applied),
+        static_cast<unsigned long>(failed),
+        static_cast<unsigned long>(deferred),
+        static_cast<unsigned long>(batches),
+        static_cast<unsigned long>(xferMs),
+        static_cast<unsigned long>(storageMs),
+        static_cast<unsigned long>(totalMs),
+        static_cast<unsigned long>(pendingUpload),
+        static_cast<unsigned long>(pendingEnrich));
+
+    if (n <= 0) return false;
+    if (static_cast<size_t>(n) >= sizeof(line)) {
+        line[sizeof(line) - 2] = '\n';
+        line[sizeof(line) - 1] = '\0';
+    }
+    if (!_appendLine(line)) return false;
+    _nextSeq++;
+    return true;
+}
+
+bool appendUploadSummary(const char* result,
+                         uint32_t published,
+                         uint32_t failed,
+                         uint32_t queued,
+                         uint32_t leaseMs,
+                         uint32_t pendingUpload,
+                         bool fieldOnly) {
+    if (!_ready) return false;
+
+    char safeResult[16];
+    _sanitizeForJson(result && result[0] ? result : "unknown",
+                     safeResult, sizeof(safeResult));
+
+    char line[kLineMax];
+    const uint32_t seq = _nextSeq;
+    int n = snprintf(line, sizeof(line),
+        "{\"type\":\"upload_summary\",\"seq\":%lu,\"ts_ms\":%lu,"
+        "\"result\":\"%s\",\"published\":%lu,\"failed\":%lu,"
+        "\"queued\":%lu,\"lease_ms\":%lu,\"pending\":%lu,"
+        "\"field_only\":%u}\n",
+        static_cast<unsigned long>(seq),
+        static_cast<unsigned long>(millis()),
+        safeResult,
+        static_cast<unsigned long>(published),
+        static_cast<unsigned long>(failed),
+        static_cast<unsigned long>(queued),
+        static_cast<unsigned long>(leaseMs),
+        static_cast<unsigned long>(pendingUpload),
+        fieldOnly ? 1u : 0u);
+
+    if (n <= 0) return false;
+    if (static_cast<size_t>(n) >= sizeof(line)) {
+        line[sizeof(line) - 2] = '\n';
+        line[sizeof(line) - 1] = '\0';
+    }
+    if (!_appendLine(line)) return false;
+    _nextSeq++;
     return true;
 }
 
@@ -762,4 +1013,3 @@ bool clearRetained() {
 }
 
 }  // namespace FieldVault
-

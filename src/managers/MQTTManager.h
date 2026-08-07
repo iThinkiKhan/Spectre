@@ -7,6 +7,7 @@
 #include <WiFi.h>
 #include <ArduinoJson.h>
 #include <utility>
+#include <vector>
 #include <esp_heap_caps.h>
 #include "../SecretsConfig.h"
 #include "../core/SpectreState.h"
@@ -39,6 +40,43 @@
 // Payload is a single JSONL record line (no trailing newline) with a "type"
 // tag identifying the record kind.
 #define TOPIC_FIELD     SPECTRE_MQTT_TOPIC_BASE "/" MQTT_SENSOR_ID "/field"
+
+template <typename T>
+struct PsramAllocator {
+    using value_type = T;
+
+    PsramAllocator() noexcept = default;
+    template <class U>
+    PsramAllocator(const PsramAllocator<U>&) noexcept {}
+
+    T* allocate(std::size_t n) {
+        if (n > (SIZE_MAX / sizeof(T))) return nullptr;
+        void* p = heap_caps_malloc(n * sizeof(T), MALLOC_CAP_SPIRAM);
+        if (!p) {
+            p = heap_caps_malloc(n * sizeof(T), MALLOC_CAP_8BIT);
+        }
+        return static_cast<T*>(p);
+    }
+
+    void deallocate(T* p, std::size_t) noexcept {
+        heap_caps_free(p);
+    }
+
+    template <class U>
+    struct rebind {
+        using other = PsramAllocator<U>;
+    };
+};
+
+template <class T, class U>
+bool operator==(const PsramAllocator<T>&, const PsramAllocator<U>&) noexcept {
+    return true;
+}
+
+template <class T, class U>
+bool operator!=(const PsramAllocator<T>&, const PsramAllocator<U>&) noexcept {
+    return false;
+}
 
 typedef enum {
     MQTT_IDLE,
@@ -227,11 +265,11 @@ private:
         // releases the vector's backing allocation. A static local would retain
         // peak capacity across cycles and fragment the heap.
         std::vector<String> sessionIds;
-        // Cached upload record: fetched from the binary upload index, then
-        // published on a later slice so storage reads and MQTT writes stay
-        // separated during the hot upload path.
+        // Cached upload records: streamed from spool, then published on later
+        // slices so storage reads and MQTT writes stay separated during the hot
+        // upload path.
         JsonDocument cachedBatch;
-        std::vector<UploadPublishRecord> uploadBucket;
+        std::vector<UploadPublishRecord, PsramAllocator<UploadPublishRecord>> uploadBucket;
         size_t       uploadBucketIndex = 0;
         uint32_t     publishRetryAtMs = 0;
         bool         uploadBucketComplete = false;
@@ -249,6 +287,8 @@ private:
     bool          _sessionCleared = false;
     int           _lastPublished = 0;
     int           _lastFailed    = 0;
+    uint32_t      _qos1AckedThisDump = 0;
+    bool          _qos1FirstAckLogged = false;
     uint32_t      _uploadBackoffUntilMs = 0;
     uint32_t      _uploadLeaseHoldMs   = 0;  // computed at requestDump(), scales with backlog
     bool          _continuousDrainActive = false;
@@ -257,6 +297,7 @@ private:
     uint8_t       _lastPoisonEventFailures = 0;
     uint32_t      _uploadStartStackWatermarkBytes = 0;
     uint32_t      _lastBrokerConnectAttemptMs = 0;
+    uint16_t      _nextQos1PacketId = 1;
     bool          _brokerConnectSettleLogged = false;
     bool          _resumeDumpAfterReconnect = false;
     bool          _stopRequested = false;
@@ -299,6 +340,8 @@ private:
                        uint32_t published,
                        uint32_t total,
                        bool radioBusy);
+    void _appendFieldVaultUploadSummary(const char* result,
+                                        bool fieldOnly);
     void _logUploadStackWatermark(const char* result);
     bool _wifiConnectStarted = false;
                        
@@ -315,6 +358,10 @@ private:
                          const char* payload,
                          size_t payloadLen,
                          bool retained = false);
+    bool _publishPayloadQos1(const char* topic,
+                             const char* payload,
+                             size_t payloadLen,
+                             bool retained = false);
 
     // Event backlog management
     void _migrateLegacyQueueFiles();

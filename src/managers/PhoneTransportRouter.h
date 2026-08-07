@@ -6,25 +6,11 @@
 #include "protocol/CompanionProtocol.h"
 #include "PhoneTransport.h"
 
-// Forward-declared so the header doesn't drag BLEManager/WioNrfAccessory into
-// every translation unit that just needs to ask the router which transport
-// is active.
+// Keep concrete transport managers out of router consumers.
 class BLEManager;
 class WioNrfAccessory;
 
-// PhoneTransportRouter
-// ====================
-//
-// Single source of truth for "which transport carries the phone companion
-// link right now."  WIO is preferred when its BLE proxy is up; otherwise we
-// fall back to the internal ESP32-S3 BLE radio.  This slice does not change
-// the selection policy — it just consolidates it into one place, emits a log
-// line on every transition, and exposes pass-through accessors so callers
-// stop branching at the use site.
-//
-// Health-based fallback (e.g. "WIO is up but auth keeps failing → switch to
-// internal BLE for this session") is intentionally NOT implemented yet.  See
-// project_wio_companion_role.md for the design rules.
+// Chooses WIO BLE proxy when available, otherwise internal ESP32-S3 BLE.
 class PhoneTransportRouter {
 public:
     void begin();

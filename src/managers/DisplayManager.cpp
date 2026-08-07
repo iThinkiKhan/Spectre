@@ -4,6 +4,7 @@
 #include "DisplayManager.h"
 #include "../config.h"
 #include "../SecretsConfig.h"
+#include "../core/BootInfo.h"
 #include "../core/Session.h"
 #include "../core/SpectreState.h"
 #include "../core/NotifTypes.h"
@@ -1167,7 +1168,7 @@ void DisplayManager::_buildScreenWifi() {
                               CLR_BLACK, CLR_BLACK);
 
     const uint32_t accent = displayAccentColor();
-    _makeLabel(_wifiContent, "WIFI INTEL", accent, FONT_HEADER,
+    _makeLabel(_wifiContent, "ENTITIES", accent, FONT_HEADER,
                LV_ALIGN_TOP_LEFT, 4, 4);
 
     static lv_point_precise_t sep[] = {{0,26},{THEME_CONTENT_W,26}};
@@ -1176,13 +1177,13 @@ void DisplayManager::_buildScreenWifi() {
     lv_obj_set_style_line_color(line, lv_color_hex(accent), 0);
     lv_obj_set_style_line_width(line, 1, 0);
 
-    _makeLabel(_wifiContent, "NETWORKS", CLR_GREY, FONT_SMALL,
+    _makeLabel(_wifiContent, "ENTITIES", CLR_GREY, FONT_SMALL,
                LV_ALIGN_TOP_LEFT, 4, 32);
-    _makeLabel(_wifiContent, "DEVICES", CLR_GREY, FONT_SMALL,
+    _makeLabel(_wifiContent, "NEARBY", CLR_GREY, FONT_SMALL,
                LV_ALIGN_TOP_LEFT, 100, 32);
-    _makeLabel(_wifiContent, "PROBES", CLR_GREY, FONT_SMALL,
+    _makeLabel(_wifiContent, "OBS", CLR_GREY, FONT_SMALL,
                LV_ALIGN_TOP_LEFT, 180, 32);
-    _makeLabel(_wifiContent, "LAST PROBE", CLR_GREY, FONT_SMALL,
+    _makeLabel(_wifiContent, "CLOSEST ENTITY", CLR_GREY, FONT_SMALL,
                LV_ALIGN_TOP_LEFT, 4, 68);
 
     _wifiNetworksValue = makeClippedLabel(_wifiContent, "0", CLR_GREY, FONT_BODY, 4, 46, 64);
@@ -1377,7 +1378,7 @@ void DisplayManager::_buildScreenSystem() {
     };
 
     makeSystemRow(30, "STORAGE", &_sysStorageValue, "FREE", &_sysFreeValue);
-    makeSystemRow(54, "EVENTS", &_sysPendingValue, "DEDUPE", &_sysDedupeValue);
+    makeSystemRow(54, "ENTITIES", &_sysPendingValue, "DEDUPE", &_sysDedupeValue);
     makeSystemRow(78, "MAINT", &_sysModeValue, "WORK", &_sysPolicyValue);
     _sysTimeLabel = makeClippedLabel(_sysLivePanel, "UPTIME", CLR_GREY, FONT_SMALL, 4, 102, 100);
     _sysTimeValue = makeClippedLabel(_sysLivePanel, "--", CLR_CYAN, FONT_SMALL, 4, 114, 100);
@@ -1401,9 +1402,9 @@ void DisplayManager::_buildScreenSystem() {
     };
 
     makeDebriefPair(4, 32, "DURATION", &_debriefDurationValue);
-    makeDebriefPair(4, 64, "NETWORKS", &_debriefNetworksValue);
-    makeDebriefPair(4, 96, "DEVICES", &_debriefDevicesValue);
-    makeDebriefPair(4, 128, "PROBES", &_debriefProbesValue);
+    makeDebriefPair(4, 64, "ACCESS POINTS", &_debriefNetworksValue);
+    makeDebriefPair(4, 96, "ENTITIES", &_debriefDevicesValue);
+    makeDebriefPair(4, 128, "OBSERVATIONS", &_debriefProbesValue);
     makeDebriefPair(140, 32, "PMKIDs", &_debriefPMKIDsValue);
     makeDebriefPair(140, 64, "DRONES", &_debriefDronesValue);
     makeDebriefPair(140, 96, "EXPORT", &_debriefExportValue);
@@ -1826,23 +1827,46 @@ void DisplayManager::drawMission(MissionProfile profile) {
     }
 }
 
-void DisplayManager::drawMeshtastic(const char* node, const char* channel) {
+void DisplayManager::drawMeshtastic(bool enabled, uint32_t nodeNum, int nodeCount,
+                                    uint32_t rxText, uint32_t txText,
+                                    uint32_t lastFrom, const char* lastText) {
     if (!_meshContent) return;
     const ButtonBindingSet bindings = spectreScreenBindings(SCREEN_MESHTASTIC);
     _setActionHints(bindings);
-    const char* nodeText = (node && node[0]) ? node : "--";
-    const char* channelText = (channel && channel[0]) ? channel : "LONGFAST";
 
+    char nodeText[16] = {};
+    snprintf(nodeText, sizeof(nodeText), "!%08lx",
+             static_cast<unsigned long>(nodeNum));
     lv_label_set_text(_meshNodeValue, nodeText);
+
+    char channelText[20] = {};
+    snprintf(channelText, sizeof(channelText), "LongFast %s",
+             enabled ? "ON" : "OFF");
     lv_label_set_text(_meshChannelValue, channelText);
-    lv_label_set_text(_meshLastMessageValue, "--");
-    lv_label_set_text(_meshStatsValue, "PACKETS RX: 0    NODES SEEN: 0");
+
+    char lastMsg[96] = {};
+    if (lastText && lastText[0]) {
+        snprintf(lastMsg, sizeof(lastMsg), "!%04lx: %s",
+                 static_cast<unsigned long>(lastFrom & 0xFFFF), lastText);
+    } else {
+        strlcpy(lastMsg, enabled ? "(listening...)" : "(mesh off)",
+                sizeof(lastMsg));
+    }
+    lv_label_set_text(_meshLastMessageValue, lastMsg);
+
+    char stats[48] = {};
+    snprintf(stats, sizeof(stats), "RX:%lu  TX:%lu  NODES:%d",
+             static_cast<unsigned long>(rxText),
+             static_cast<unsigned long>(txText),
+             nodeCount);
+    lv_label_set_text(_meshStatsValue, stats);
 }
 
 void DisplayManager::drawWifi(const char* ssid, int networks,
                               const char* probeActivity) {
     if (!_wifiContent) return;
     (void)ssid;
+    (void)networks;
     (void)probeActivity;
     bool scanPending = false;
     bool overlayActive = false;
@@ -1859,37 +1883,81 @@ void DisplayManager::drawWifi(const char* ssid, int networks,
     } else {
         _setActionHints(bindings, scanPending);
     }
-    char netStr[8];
-    snprintf(netStr, sizeof(netStr), "%d", networks);
-    lv_label_set_text(_wifiNetworksValue, netStr);
-    lv_obj_set_style_text_color(_wifiNetworksValue,
-                                lv_color_hex(networks > 0 ? CLR_YELLOW : CLR_GREY),
-                                0);
-
-    int devices, probes;
-    char lastMAC[18], lastSSID[33];
+    uint32_t entities = 0;
+    uint32_t nearby = 0;
+    uint32_t observations = 0;
+    int8_t closestRssi = -127;
+    uint8_t closestChannel = 0;
+    uint8_t closestKind = 0;
+    bool closestLocated = false;
+    char closestIdentity[24] = {};
+    char closestName[24] = {};
     STATE_READ_BEGIN();
-    devices = g_state.probeDeviceCount;
-    probes  = g_state.probePacketCount;
-    strlcpy(lastMAC,  g_state.lastProbedMAC,  18);
-    strlcpy(lastSSID, g_state.lastProbedSSID, 33);
+    entities = g_state.entityTotal;
+    nearby = g_state.entityNearby;
+    observations = g_state.entityObservations;
+    closestRssi = g_state.entityClosestRssi;
+    closestChannel = g_state.entityClosestChannel;
+    closestKind = g_state.entityClosestKind;
+    closestLocated = g_state.entityClosestLocated;
+    strlcpy(closestIdentity, g_state.entityClosestIdentity,
+            sizeof(closestIdentity));
+    strlcpy(closestName, g_state.entityClosestName, sizeof(closestName));
     STATE_READ_END();
 
-    char devStr[8];
-    snprintf(devStr, sizeof(devStr), "%d", devices);
-    lv_label_set_text(_wifiDevicesValue, devStr);
-    lv_obj_set_style_text_color(_wifiDevicesValue,
-                                lv_color_hex(devices > 0 ? CLR_CYAN : CLR_GREY),
+    char totalStr[12];
+    snprintf(totalStr, sizeof(totalStr), "%lu",
+             static_cast<unsigned long>(entities));
+    lv_label_set_text(_wifiNetworksValue, totalStr);
+    lv_obj_set_style_text_color(_wifiNetworksValue,
+                                lv_color_hex(entities > 0 ? CLR_YELLOW : CLR_GREY),
                                 0);
 
-    char probeStr[8];
-    snprintf(probeStr, sizeof(probeStr), "%d", probes);
-    lv_label_set_text(_wifiProbesValue, probeStr);
-    lv_obj_set_style_text_color(_wifiProbesValue,
-                                lv_color_hex(probes > 0 ? CLR_GREEN : CLR_GREY),
+    char nearbyStr[12];
+    snprintf(nearbyStr, sizeof(nearbyStr), "%lu",
+             static_cast<unsigned long>(nearby));
+    lv_label_set_text(_wifiDevicesValue, nearbyStr);
+    lv_obj_set_style_text_color(_wifiDevicesValue,
+                                lv_color_hex(nearby > 0 ? CLR_CYAN : CLR_GREY),
                                 0);
-    lv_label_set_text(_wifiLastSSIDValue, lastSSID[0] ? lastSSID : "--");
-    lv_label_set_text(_wifiLastMACValue, lastMAC[0] ? lastMAC : "--");
+
+    char obsStr[12];
+    snprintf(obsStr, sizeof(obsStr), "%lu",
+             static_cast<unsigned long>(observations));
+    lv_label_set_text(_wifiProbesValue, obsStr);
+    lv_obj_set_style_text_color(_wifiProbesValue,
+                                lv_color_hex(observations > 0 ? CLR_GREEN : CLR_GREY),
+                                0);
+
+    const char* entityType = "CLIENT";
+    switch (closestKind) {
+        case 0: entityType = "AP"; break;
+        case 2: entityType = "DRONE"; break;
+        case 3: entityType = "SUBGHZ"; break;
+        case 4: entityType = "BLE"; break;
+        default: break;
+    }
+    const char* closestLabel = closestName[0] ? closestName : closestIdentity;
+    lv_label_set_text(_wifiLastSSIDValue, closestLabel[0] ? closestLabel : "--");
+
+    char detail[64] = {};
+    if (closestRssi != -127) {
+        if (closestKind == 3) {
+            snprintf(detail, sizeof(detail), "%s  %ddBm  %uMHz%s",
+                     entityType, closestRssi,
+                     static_cast<unsigned>(closestChannel),
+                     closestLocated ? "  LOC" : "");
+        } else {
+            snprintf(detail, sizeof(detail), "%s  %ddBm  CH%u%s",
+                     entityType, closestRssi,
+                     static_cast<unsigned>(closestChannel),
+                     closestLocated ? "  LOC" : "");
+        }
+    } else {
+        snprintf(detail, sizeof(detail), "%s", closestIdentity[0]
+                     ? closestIdentity : "WAITING FOR ENTITIES");
+    }
+    lv_label_set_text(_wifiLastMACValue, detail);
 
     uint8_t ch;
     STATE_READ_BEGIN();
@@ -2784,10 +2852,8 @@ void DisplayManager::drawSystem(float battV, unsigned long uptimeMs,
     uint32_t storageMaintenanceLastDurationMs;
     uint16_t storageUsedPct;
     uint32_t storageFreeBytes;
-    uint32_t storageRecordTotal;
-    uint32_t storageEventTotal;
-    uint32_t storageMissionTotal;
-    uint32_t storageNoiseTotal;
+    uint32_t entityTotal;
+    uint32_t entityNearby;
     uint32_t storageDropped;
     uint32_t storageDeduped;
     uint16_t battVoltageMv;
@@ -2814,10 +2880,8 @@ void DisplayManager::drawSystem(float battV, unsigned long uptimeMs,
     storageMaintenanceLastDurationMs = g_state.storageMaintenanceLastDurationMs;
     storageUsedPct = g_state.storageUsedPct;
     storageFreeBytes = g_state.storageFreeBytes;
-    storageRecordTotal = g_state.storageRecordTotal;
-    storageEventTotal = g_state.storageEventTotal;
-    storageMissionTotal = g_state.storageMissionTotal;
-    storageNoiseTotal = g_state.storageNoiseTotal;
+    entityTotal = g_state.entityTotal;
+    entityNearby = g_state.entityNearby;
     storageDropped = g_state.storageDropped;
     storageDeduped = g_state.storageDeduped;
     battVoltageMv = g_state.battVoltageMv;
@@ -2877,17 +2941,12 @@ void DisplayManager::drawSystem(float battV, unsigned long uptimeMs,
 
     char pendingLine[24];
     const bool showRepairRequired = storageRepairRequired;
-    const uint32_t summaryEventTotal = storageMissionTotal + storageNoiseTotal;
-    const uint32_t displayEventTotal =
-        storageEventTotal > 0U ? storageEventTotal : summaryEventTotal;
     if (showRepairRequired) {
         snprintf(pendingLine, sizeof(pendingLine), "REPAIR REQUIRED");
-    } else if (displayEventTotal > 0U || storageRecordTotal == 0U) {
-        snprintf(pendingLine, sizeof(pendingLine), "%lu EVENTS",
-                 static_cast<unsigned long>(displayEventTotal));
     } else {
-        snprintf(pendingLine, sizeof(pendingLine), "%lu RECORDS",
-                 static_cast<unsigned long>(storageRecordTotal));
+        snprintf(pendingLine, sizeof(pendingLine), "%lu / %lu NEAR",
+                 static_cast<unsigned long>(entityTotal),
+                 static_cast<unsigned long>(entityNearby));
     }
 
     char dedupeLine[24];
@@ -2967,10 +3026,25 @@ void DisplayManager::drawSystem(float battV, unsigned long uptimeMs,
         snprintf(cfgLine, sizeof(cfgLine), "USB %s %.2fV",
                  charging ? "CHG" : "EXT",
                  battVoltageMv > 0 ? (static_cast<float>(battVoltageMv) / 1000.0f) : battV);
-    } else if (powerState == POWER_STATE_BATTERY_CRITICAL && battRuntimeMin > 0) {
-        snprintf(cfgLine, sizeof(cfgLine), "CRT %uM %.2fV",
-                 static_cast<unsigned>(battRuntimeMin),
-                 battVoltageMv > 0 ? (static_cast<float>(battVoltageMv) / 1000.0f) : battV);
+    } else if (battRuntimeMin > 0 && battVoltageMv > 0) {
+        const unsigned rtHours = battRuntimeMin / 60U;
+        const unsigned rtMins = battRuntimeMin % 60U;
+        const char* label = powerState == POWER_STATE_BATTERY_CRITICAL ? "CRT" :
+                            powerState == POWER_STATE_BATTERY_ECONOMY ? "ECO" : "BAT";
+        if (rtHours > 0) {
+            snprintf(cfgLine, sizeof(cfgLine), "%s %d%% %uh%02u %.2fV",
+                     label,
+                     battPercent,
+                     rtHours,
+                     rtMins,
+                     static_cast<float>(battVoltageMv) / 1000.0f);
+        } else {
+            snprintf(cfgLine, sizeof(cfgLine), "%s %d%% %um %.2fV",
+                     label,
+                     battPercent,
+                     rtMins,
+                     static_cast<float>(battVoltageMv) / 1000.0f);
+        }
     } else if (battVoltageMv > 0) {
         snprintf(cfgLine, sizeof(cfgLine), "BAT %d%% %.2fV",
                  battPercent,
@@ -3063,11 +3137,11 @@ void DisplayManager::drawDebrief() {
     char exportLastISO[24];
     char exportLastSessionId[40];
     STATE_READ_BEGIN();
-    nets    = g_state.sessionNetworks;
-    devs    = g_state.sessionDevices;
-    probes  = g_state.sessionProbes;
+    nets    = static_cast<int>(g_state.entityAccessPoints);
+    devs    = static_cast<int>(g_state.entityTotal);
+    probes  = static_cast<int>(g_state.entityObservations);
     pmkids  = g_state.sessionPMKIDs;
-    drones  = g_state.sessionDrones;
+    drones  = static_cast<int>(g_state.entityDrones);
     files   = STORAGE.isReady()
         ? static_cast<int>(STORAGE.getAuthoritativePendingEventCount())
         : g_state.sessionFilesPending;
@@ -3179,10 +3253,10 @@ void DisplayManager::_buildScreenMissionSummary() {
     const uint32_t accent = displayAccentColor();
     static lv_point_precise_t sep[] = {{0,26},{THEME_CONTENT_W,26}};
 
-    _makeLabel(_missionSummaryContent, "MISSION SUMMARY", accent, FONT_HEADER,
+    _makeLabel(_missionSummaryContent, "BOOT SUMMARY", accent, FONT_HEADER,
                LV_ALIGN_TOP_LEFT, 4, 4);
     _missionSummaryHeaderStatus =
-        makeClippedLabel(_missionSummaryContent, "BOOT RUN", CLR_CYAN,
+        makeClippedLabel(_missionSummaryContent, "--", CLR_CYAN,
                          FONT_SMALL, 140, 8, 100, LV_TEXT_ALIGN_RIGHT);
 
     lv_obj_t* line = lv_line_create(_missionSummaryContent);
@@ -3196,15 +3270,17 @@ void DisplayManager::_buildScreenMissionSummary() {
                                   FONT_SMALL, x, y + 12, 110);
     };
 
-    makeSummaryPair(4,   30, "ACTIVE", &_missionSummaryDurationValue);
-    makeSummaryPair(126, 30, "RECORDS", &_missionSummaryRecordValue);
-    makeSummaryPair(4,   54, "CAPTURE", &_missionSummaryCaptureValue);
-    makeSummaryPair(126, 54, "UNIQUE", &_missionSummaryUniqueValue);
-    makeSummaryPair(4,   78, "UPLOAD PEND", &_missionSummaryPendingValue);
-    makeSummaryPair(126, 78, "ENRICH PEND", &_missionSummaryEnrichValue);
-    makeSummaryPair(4,  102, "GPS ENRICH", &_missionSummaryGpsValue);
-    makeSummaryPair(126,102, "CONTEXT", &_missionSummaryContextValue);
-    makeSummaryPair(4,  126, "TAG", &_missionSummaryTagValue);
+    // Top band = this-boot health; bottom band = previous-run recap. The member
+    // pointers keep their original names but are repurposed for boot metrics.
+    makeSummaryPair(4,   30, "UPTIME", &_missionSummaryDurationValue);
+    makeSummaryPair(126, 30, "BOOTS", &_missionSummaryRecordValue);
+    makeSummaryPair(4,   54, "FREE HEAP", &_missionSummaryCaptureValue);
+    makeSummaryPair(126, 54, "STORAGE", &_missionSummaryUniqueValue);
+    makeSummaryPair(4,   78, "TIME", &_missionSummaryPendingValue);
+    makeSummaryPair(126, 78, "FW VER", &_missionSummaryEnrichValue);
+    makeSummaryPair(4,  102, "LAST REC", &_missionSummaryGpsValue);
+    makeSummaryPair(126,102, "LAST UPL", &_missionSummaryContextValue);
+    makeSummaryPair(4,  126, "LAST RUN", &_missionSummaryTagValue);
 }
 
 void DisplayManager::drawMissionSummary(unsigned long uptimeMs) {
@@ -3213,151 +3289,107 @@ void DisplayManager::drawMissionSummary(unsigned long uptimeMs) {
     const ButtonBindingSet bindings = spectreScreenBindings(SCREEN_MISSION_SUMMARY);
     _setActionHints(bindings);
 
-    int sessionProbes = 0;
-    int sessionDevices = 0;
-    int sessionPMKIDs = 0;
-    int sessionDrones = 0;
-    int uniqueNetworks = 0;
-    int uniqueDevices = 0;
-    int probePackets = 0;
-    int pmkidCaptured = 0;
-    uint32_t pendingUploadMission = 0;
-    uint32_t pendingUploadNoise = 0;
-    uint32_t pendingEnrichMission = 0;
-    uint32_t pendingEnrichNoise = 0;
-    uint8_t runContext = RUN_CONTEXT_GENERAL;
-    uint8_t activeMissionProfile = MISSION_RECON;
-    bool uploadActive = false;
-    bool gpsAvailable = false;
-    bool gpsValid = false;
-    uint32_t gpsLastFix = 0;
-    uint32_t companionPending = 0;
-    uint8_t companionPhone = 0;
-    bool tagSet = false;
-    char tag[32] = {};
+    bool storageReady = false;
+    bool timeValid = false;
+    char timeSource[12] = {};
+    char timeLastAttempt[24] = {};
 
     STATE_READ_BEGIN();
-    sessionProbes = g_state.sessionProbes;
-    sessionDevices = g_state.sessionDevices;
-    sessionPMKIDs = g_state.sessionPMKIDs;
-    sessionDrones = g_state.sessionDrones;
-    uniqueNetworks = g_state.wifiNetworkCount;
-    uniqueDevices = g_state.probeDeviceCount;
-    probePackets = g_state.probePacketCount;
-    pmkidCaptured = g_state.pmkidCaptured;
-    pendingUploadMission = g_state.storagePendingUploadMission;
-    pendingUploadNoise = g_state.storagePendingUploadNoise;
-    pendingEnrichMission = g_state.storagePendingEnrichMission;
-    pendingEnrichNoise = g_state.storagePendingEnrichNoise;
-    runContext = g_state.runContext;
-    activeMissionProfile = g_state.activeMissionProfile;
-    uploadActive = g_state.uploadActive;
-    gpsAvailable = g_state.gpsAvailable;
-    gpsValid = g_state.gpsValid;
-    gpsLastFix = g_state.gpsLastFix;
-    companionPending = g_state.companionPending;
-    companionPhone = g_state.companionPhone;
-    tagSet = g_state.sessionTagSet;
-    strlcpy(tag, g_state.sessionTag, sizeof(tag));
+    storageReady = g_state.storageReady;
+    timeValid = g_state.timeValid;
+    strlcpy(timeSource, g_state.timeSource, sizeof(timeSource));
+    strlcpy(timeLastAttempt, g_state.timeLastAttempt, sizeof(timeLastAttempt));
     STATE_READ_END();
 
+    char buf[40];
+
+    // ── This-boot health (top band) ─────────────────────────────────────
     const unsigned long seconds = uptimeMs / 1000UL;
     const unsigned long minutes = seconds / 60UL;
     const unsigned long hours = minutes / 60UL;
-
-    char buf[40];
     snprintf(buf, sizeof(buf), "%luh %02lum %02lus",
-             hours,
-             minutes % 60UL,
-             seconds % 60UL);
+             hours, minutes % 60UL, seconds % 60UL);
     lv_label_set_text(_missionSummaryDurationValue, buf);
     lv_obj_set_style_text_color(_missionSummaryDurationValue, lv_color_hex(CLR_CYAN), 0);
 
-    snprintf(buf, sizeof(buf), "P%d D%d", sessionProbes, sessionDevices);
+    snprintf(buf, sizeof(buf), "%lu",
+             static_cast<unsigned long>(BootInfo::bootCount()));
     lv_label_set_text(_missionSummaryRecordValue, buf);
-    lv_obj_set_style_text_color(_missionSummaryRecordValue,
-                                lv_color_hex((sessionProbes + sessionDevices) > 0 ? CLR_WHITE : CLR_GREY),
-                                0);
+    lv_obj_set_style_text_color(_missionSummaryRecordValue, lv_color_hex(CLR_WHITE), 0);
 
-    snprintf(buf, sizeof(buf), "PMK%d DRN%d", sessionPMKIDs, sessionDrones);
+    const uint32_t freeHeapKb =
+        static_cast<uint32_t>(heap_caps_get_free_size(MALLOC_CAP_8BIT) / 1024UL);
+    snprintf(buf, sizeof(buf), "%luKB", static_cast<unsigned long>(freeHeapKb));
     lv_label_set_text(_missionSummaryCaptureValue, buf);
     lv_obj_set_style_text_color(_missionSummaryCaptureValue,
-                                lv_color_hex((sessionPMKIDs + sessionDrones) > 0 ? CLR_GREEN : CLR_GREY),
+                                lv_color_hex(freeHeapKb < 40UL ? CLR_RED :
+                                             (freeHeapKb < 80UL ? CLR_YELLOW : CLR_GREEN)),
                                 0);
 
-    snprintf(buf, sizeof(buf), "N%d D%d", uniqueNetworks, uniqueDevices);
-    lv_label_set_text(_missionSummaryUniqueValue, buf);
+    lv_label_set_text(_missionSummaryUniqueValue, storageReady ? "READY" : "OFFLINE");
     lv_obj_set_style_text_color(_missionSummaryUniqueValue,
-                                lv_color_hex((uniqueNetworks + uniqueDevices) > 0 ? CLR_YELLOW : CLR_GREY),
-                                0);
+                                lv_color_hex(storageReady ? CLR_GREEN : CLR_RED), 0);
 
-    snprintf(buf, sizeof(buf), "M%lu N%lu",
-             static_cast<unsigned long>(pendingUploadMission),
-             static_cast<unsigned long>(pendingUploadNoise));
-    lv_label_set_text(_missionSummaryPendingValue, buf);
-    lv_obj_set_style_text_color(_missionSummaryPendingValue,
-                                lv_color_hex((pendingUploadMission + pendingUploadNoise) > 0 ? CLR_YELLOW : CLR_GREEN),
-                                0);
-
-    snprintf(buf, sizeof(buf), "M%lu N%lu",
-             static_cast<unsigned long>(pendingEnrichMission),
-             static_cast<unsigned long>(pendingEnrichNoise));
-    lv_label_set_text(_missionSummaryEnrichValue, buf);
-    lv_obj_set_style_text_color(_missionSummaryEnrichValue,
-                                lv_color_hex((pendingEnrichMission + pendingEnrichNoise) > 0 ? CLR_CYAN : CLR_GREY),
-                                0);
-
-    if (gpsValid) {
-        snprintf(buf, sizeof(buf), "FIX %lus",
-                 static_cast<unsigned long>((millis() - gpsLastFix) / 1000UL));
-    } else if (gpsAvailable) {
-        snprintf(buf, sizeof(buf), "AVAILABLE");
-    } else if (companionPhone == 1) {
-        snprintf(buf, sizeof(buf), "PHONE READY");
+    // When synced, show the source (gps/ntp). When not, show WHY the last NTP
+    // attempt failed so the operator can act (no_saved_wifi vs ntp_no_response
+    // vs capture_unsafe_skip) instead of a blank "NO SYNC".
+    char timeFieldBuf[32];
+    if (timeValid && timeSource[0]) {
+        snprintf(timeFieldBuf, sizeof(timeFieldBuf), "%s", timeSource);
+    } else if (timeLastAttempt[0] && strcmp(timeLastAttempt, "none") != 0) {
+        snprintf(timeFieldBuf, sizeof(timeFieldBuf), "NO:%s", timeLastAttempt);
     } else {
-        snprintf(buf, sizeof(buf), "NO FIX");
+        snprintf(timeFieldBuf, sizeof(timeFieldBuf), "NO SYNC");
+    }
+    lv_label_set_text(_missionSummaryPendingValue, timeFieldBuf);
+    lv_obj_set_style_text_color(_missionSummaryPendingValue,
+                                lv_color_hex(timeValid ? CLR_GREEN : CLR_RED), 0);
+
+    lv_label_set_text(_missionSummaryEnrichValue, SPECTRE_DEVICE_VERSION);
+    lv_obj_set_style_text_color(_missionSummaryEnrichValue, lv_color_hex(CLR_WHITE), 0);
+
+    // ── Previous-run recap (persisted across the reboot, bottom band) ────
+    const BootInfo::LastSession& ls = BootInfo::lastSession();
+
+    if (ls.valid) {
+        snprintf(buf, sizeof(buf), "%lu", static_cast<unsigned long>(ls.records));
+    } else {
+        snprintf(buf, sizeof(buf), "--");
     }
     lv_label_set_text(_missionSummaryGpsValue, buf);
     lv_obj_set_style_text_color(_missionSummaryGpsValue,
-                                lv_color_hex(gpsValid ? CLR_GREEN : (gpsAvailable ? CLR_CYAN : CLR_GREY)),
+                                lv_color_hex(ls.valid && ls.records > 0 ? CLR_YELLOW : CLR_GREY),
                                 0);
 
-    const RunContext context = sanitizeRunContext(runContext);
-    const MissionProfile profile = sanitizeMissionProfile(activeMissionProfile);
-    if (context == RUN_CONTEXT_MISSION) {
-        snprintf(buf, sizeof(buf), "%s", missionProfileName(profile));
-    } else if (uploadActive) {
-        snprintf(buf, sizeof(buf), "UPLINK");
+    if (ls.valid) {
+        snprintf(buf, sizeof(buf), "M%lu N%lu",
+                 static_cast<unsigned long>(ls.pendUploadMission),
+                 static_cast<unsigned long>(ls.pendUploadNoise));
     } else {
-        snprintf(buf, sizeof(buf), "GENERAL");
+        snprintf(buf, sizeof(buf), "--");
     }
     lv_label_set_text(_missionSummaryContextValue, buf);
     lv_obj_set_style_text_color(_missionSummaryContextValue,
-                                lv_color_hex(uploadActive ? CLR_GREEN : CLR_WHITE), 0);
-
-    if (tagSet && tag[0]) {
-        lv_label_set_text(_missionSummaryTagValue, tag);
-        lv_obj_set_style_text_color(_missionSummaryTagValue, lv_color_hex(CLR_GREEN), 0);
-    } else if (companionPending > 0) {
-        snprintf(buf, sizeof(buf), "PHONE %lu",
-                 static_cast<unsigned long>(companionPending));
-        lv_label_set_text(_missionSummaryTagValue, buf);
-        lv_obj_set_style_text_color(_missionSummaryTagValue, lv_color_hex(CLR_CYAN), 0);
-    } else {
-        snprintf(buf, sizeof(buf), "PKT%d PMK%d", probePackets, pmkidCaptured);
-        lv_label_set_text(_missionSummaryTagValue, buf);
-        lv_obj_set_style_text_color(_missionSummaryTagValue,
-                                    lv_color_hex((probePackets + pmkidCaptured) > 0 ? CLR_DIMCYAN : CLR_GREY),
-                                    0);
-    }
-
-    const uint32_t totalPending = pendingUploadMission + pendingUploadNoise;
-    const char* header = uploadActive ? "UPLINK" : (totalPending > 0 ? "PENDING" : "ACTIVE");
-    lv_label_set_text(_missionSummaryHeaderStatus, header);
-    lv_obj_set_style_text_color(_missionSummaryHeaderStatus,
-                                lv_color_hex(uploadActive ? CLR_GREEN :
-                                             (totalPending > 0 ? CLR_YELLOW : CLR_CYAN)),
+                                lv_color_hex(ls.valid && (ls.pendUploadMission + ls.pendUploadNoise) > 0
+                                                 ? CLR_CYAN : CLR_GREY),
                                 0);
+
+    if (ls.valid) {
+        const unsigned long lh = ls.durationSec / 3600UL;
+        const unsigned long lm = (ls.durationSec % 3600UL) / 60UL;
+        snprintf(buf, sizeof(buf), "%luh %02lum", lh, lm);
+    } else {
+        snprintf(buf, sizeof(buf), "--");
+    }
+    lv_label_set_text(_missionSummaryTagValue, buf);
+    lv_obj_set_style_text_color(_missionSummaryTagValue,
+                                lv_color_hex(ls.valid ? CLR_DIMCYAN : CLR_GREY), 0);
+
+    // ── Header: this reset's reason, colored by severity ────────────────
+    const bool cleanish = BootInfo::resetWasCleanish();
+    lv_label_set_text(_missionSummaryHeaderStatus, BootInfo::resetReasonName());
+    lv_obj_set_style_text_color(_missionSummaryHeaderStatus,
+                                lv_color_hex(cleanish ? CLR_GREEN : CLR_RED), 0);
 }
 
 // ─── Helpers ──────────────────────────────────────────────────

@@ -6,5 +6,12 @@
     <string name="field_service_title">Spectre Field Mode</string>
     <string name="field_service_text_ble_gps">BLE companion advertising and GPS coordinate logging are active.</string>
     <string name="field_service_text_ble_only">BLE companion advertising is active.</string>
+    <string name="field_service_text_gps_only">GPS coordinate logging is active.</string>
+    <!-- Concise live-status fragments, joined with " · " into the notification line. -->
+    <string name="field_status_linked">Linked to Spectre</string>
+    <string name="field_status_advertising">Advertising for Spectre</string>
+    <string name="field_status_ble_down">Restarting BLE…</string>
+    <string name="field_status_gps_on">GPS on</string>
+    <string name="field_status_gps_off">GPS off</string>
     <string name="field_service_stop_action">Stop</string>
 </resources>

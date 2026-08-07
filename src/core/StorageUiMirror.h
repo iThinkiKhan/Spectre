@@ -3,17 +3,7 @@
 
 #include <Arduino.h>
 
-// Single writer of the g_state.storage* mirror.
-//
-// Every previous direct g_state.storage*=... write was migrated into one of
-// the methods below. The mutex-acquiring methods take STATE_WRITE_BEGIN/END
-// internally. The _locked methods assume the caller already holds the state
-// mutex (used by three sites that need atomic writes spanning both storage
-// and non-storage fields — boot triage, boot recovery, and the post-manual-
-// count reconcile path).
-//
-// StorageUiSnapshot is the periodic-refresh shape. It used to live inside
-// StorageManager; moved here so the type and its writer share a home.
+// Single writer for the g_state.storage* mirror and refresh snapshot.
 
 struct StorageUiSnapshot {
     bool nearlyFull = false;

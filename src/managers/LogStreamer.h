@@ -5,20 +5,7 @@
 
 #include "protocol/CompanionProtocol.h"
 
-// LogStreamer
-// ===========
-//
-// Owns the phone-requested log-tail streaming lease (slice #3).
-//
-// Push model: DebugLog::log() hands every new line to ingestLine().  If a
-// stream is active, the line is copied into a fixed-slot ring; otherwise
-// it's discarded.  tick() runs on the hardware task and packs as many lines
-// as fit into one LogStreamChunkV1 per call, which it ships through
-// PhoneTransportRouter on the active transport.
-//
-// Capture health > console fidelity: when the ring is full, oldest lines
-// drop and a `dropped` counter rides the next chunk so the phone can render
-// a "lines lost" gap.  Never blocks DebugLog.
+// Phone-requested log-tail stream; never blocks DebugLog or capture.
 class LogStreamer {
 public:
     struct StartResult {

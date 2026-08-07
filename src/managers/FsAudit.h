@@ -3,27 +3,7 @@
 
 #include <Arduino.h>
 
-// FsAudit — bounded filesystem inventory + classification + recovery pass
-// for the maintenance owner.
-//
-// Phase 2 (current): the audit walks LittleFS, matches each file against a
-// code-encoded registry of known paths/formats, performs cheap header
-// validation for small known files, and applies per-spec recovery actions
-// inside hard limits (max deletes/quarantines per pass). Every action is
-// FieldVault-logged for forensic review.
-//
-// Per-spec actions implemented this phase:
-//   - tmp/.partial/.bak orphans → DELETE (bounded)
-//   - known file failed header validation → QUARANTINE to /spool_bad/quarantine/
-//   - /spool/index.json broken/missing → REQUEST_REBUILD (sets
-//     STORAGE_MAINT_DIRTY_SPOOL_INDEX so existing rebuild path runs)
-//   - unknown paths → LOG only (FieldVault entry)
-//   - forensic (/spool_bad/*), legacy, vault → LEAVE
-//
-// CONTRACT: callers must hold the storage maintenance radio lease
-// (RADIO_STORAGE_MAINTENANCE) before invoking runWindow(). The audit performs
-// blocking LittleFS reads/writes and is not safe to run concurrently with
-// capture.
+// Bounded LittleFS audit/recovery pass. Caller must hold STORAGE_MAINTENANCE.
 namespace FsAudit {
 
 enum FsClass : uint8_t {

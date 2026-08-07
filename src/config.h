@@ -1,26 +1,7 @@
 #pragma once
 
-// =============================================================================
-// Spectre compile-time configuration
-// =============================================================================
-// All tunable knobs live here. Heavier helper code (button bindings) is split
-// into separate headers, included below, so this file stays scannable.
-//
-// CONTENTS (search the banner text to jump):
-//   Main switches              — companion enable + enrichment trigger
-//   Enrichment drain policy     — in-flight ring drain watermarks
-//   Boot options                — boot sequence / recovery
-//   Timing                      — buttons, MQTT, sleep, BLE lease holds
-//   MQTT upload                 — upload triggers, leases, FieldVault startup
-//   Duplicate suppression       — dedup profiles + windows
-//   Debug logging               — profiles + per-area toggles
-//   Display and UI geometry     — screen layout constants
-//   Board pins                  — display / buttons / UART / battery
-//   Radio and antenna control   — antenna switch modes
-//   Power subsystem             — battery thresholds + capacity
-//   MQTT                        — broker host/port/sensor id
-//   UI labels and helpers       — see core/ButtonBindings.h
-// =============================================================================
+// Spectre compile-time configuration. Keep only durable knobs here; helper
+// tables live in the headers included below.
 
 #include "SecretsConfig.h"
 #include "core/ScreenEnum.h"
@@ -31,70 +12,32 @@ static constexpr uint8_t OFF = 0;
 
 #define SPECTRE_SECONDS_TO_MS(seconds) ((uint32_t)(seconds) * 1000UL)
 
-// -----------------------------------------------------------------------------
 // Main switches
-// -----------------------------------------------------------------------------
 
 #define PHONE_COMPANION_ENABLED     ON
 
-// Automatic enrichment trigger. When pending (un-enriched) events reach this
-// count, the companion scheduler starts an enrichment session on the next
-// idle window (subject to a 60s min-gap; see ENRICH_MIN_GAP_MS in main.cpp).
-// Manual ENRICH (BLE_TEST button) bypasses the threshold entirely.
-//   _THRESHOLD      — phone-over-ESP32-BLE path
-//   _THRESHOLD_WIO  — phone-over-WIO-nRF accessory path (lower: WIO is cheaper)
-// These feed ENRICH_PENDING_THRESHOLD_INTERNAL / _WIO in main.cpp.
+// Auto-enrich starts when pending events cross these thresholds. WIO is cheaper
+// to wake, so its threshold is lower. Manual ENRICH bypasses both.
 #define PHONE_COMPANION_ENRICH_THRESHOLD     270UL
 #define PHONE_COMPANION_ENRICH_THRESHOLD_WIO 25UL
 #define PHONE_COMPANION_ENRICH_BATCH_MAX     18
 
-// Bulk NO_DATA retirement (records with no trusted capture UTC can never be
-// enriched). Per manual-enrich walk we retire up to _BUDGET such records, in
-// chunks of _CHUNK (keeps stack/flash bursts small), and cap the walk at
-// _WALK_MS so a huge unenrichable backlog never holds the radio-suspended
-// exclusive window too long. Raising _BUDGET drains a legacy backlog in fewer
-// passes; _WALK_MS bounds the per-pass cost at scale.
-#define ENRICH_NODATA_BUDGET_PER_WALK        256U
-#define ENRICH_NODATA_CHUNK                  16U
-#define ENRICH_WALK_BUDGET_MS                1500U
+// Bound terminal writes so flash rotation cannot starve the BLE host.
+#define ENRICH_NODATA_BUDGET_PER_WALK        64U
+#define ENRICH_NODATA_CHUNK                  32U
+#define ENRICH_WALK_BUDGET_MS                2500U
 
-// Wall-time cap (ms) for building the enrichment window — the per-pass scan of
-// pending record headers across all segments, run inside the radio-suspended
-// exclusive window. Once a full window is collected and this budget is spent,
-// the scan stops early (keeps what it has) so a 20k+ backlog can't pin the
-// radio for many seconds. Must stay below the maintenance lease (5000 ms).
-#define ENRICH_SCAN_BUDGET_MS                2500U
+// Consecutive no-progress phone passes before "retry later" becomes NO_DATA.
+#define ENRICH_DEFERRED_RETIRE_PASSES        2U
 
-// A manual `wio enrich` drains the WHOLE backlog in one connection. It keeps
-// rebuilding/walking enrichment windows as long as each full window pass drains
-// something (enriches records or retires no-data), and finishes only when a
-// complete window pass drains nothing — meaning only phone-deferred records (no
-// GPS for those timestamps) remain, to be retried in a later session. Progress
-// is measured by StorageManager::livePendingEnrichmentTotal() per window pass.
+// Preserve BLE host/controller service time while ranking a large window.
+#define ENRICH_SCAN_BUDGET_MS                750U
 
-// -----------------------------------------------------------------------------
+// Manual `wio enrich` rebuilds windows until a full pass makes no progress.
+
 // Enrichment drain policy
-// -----------------------------------------------------------------------------
-// The ESP32 receives enriched records from the phone / WIO and queues them in
-// a tiny in-flight ring (ENRICH_QUEUE_DEPTH batches). Draining that ring means
-// LittleFS sidecar writes, which contend with capture for _appendMutex. The
-// drain policy classifies the queue into IDLE / TRICKLE / TORRENT modes:
-//
-//   IDLE     — queue empty, nothing to do.
-//   TRICKLE  — queue has work but capture should keep priority. Drain one
-//              batch per tick under the mutex; trust serialization to
-//              interleave us with capture appends.
-//   TORRENT  — queue is full or oldest entry has aged past MAX_AGE_MS.
-//              Request a RADIO_STORAGE_MAINTENANCE lease and drain until
-//              empty or the time budget expires.
-//
-// Soft preemption: the torrent lease is requested without force=true by
-// default. Only when the oldest queued batch has waited longer than
-// ENRICH_DRAIN_PREEMPT_AGE_MS do we escalate to force=true, letting the
-// arbiter take the radio from WIFI_CAPTURE.
-//
-// Watermarks are batch counts (queue depth is 2 today). Tune from real
-// session logs once available.
+// Enriched replies drain in trickle mode until the tiny in-flight ring is full
+// or old enough to justify a short storage-maintenance lease.
 #define ENRICH_DRAIN_HIGH_WATER       2UL    // batches → torrent
 #define ENRICH_DRAIN_LOW_WATER        1UL    // batches → exit torrent at/below
 #define ENRICH_DRAIN_MAX_AGE_MS       8000UL // oldest age → torrent
@@ -102,9 +45,7 @@ static constexpr uint8_t OFF = 0;
 #define ENRICH_DRAIN_TORRENT_BUDGET_MS 250UL // max time held in torrent
 #define ENRICH_DRAIN_LEASE_HOLD_MS    400UL  // maintenance lease hold
 
-// -----------------------------------------------------------------------------
 // Boot options
-// -----------------------------------------------------------------------------
 
 #define BOOT_SEQUENCE_ENABLED       ON
 #define BOOT_SEQUENCE_VERBOSE       OFF   // manual boot serial verbosity override
@@ -117,9 +58,7 @@ static constexpr uint8_t OFF = 0;
 
 #define PWNY_ACTIVE_ATTACKS_ENABLED OFF
 
-// -----------------------------------------------------------------------------
 // Timing
-// -----------------------------------------------------------------------------
 
 // Button timing needs sub-second precision, so it stays in milliseconds.
 #define BUTTON_LONG_PRESS_MS          800UL   // ms
@@ -133,20 +72,12 @@ static constexpr uint8_t OFF = 0;
 #define MQTT_FAILED_BACKOFF_MS        SPECTRE_SECONDS_TO_MS(MQTT_FAILED_BACKOFF_SEC)
 #define MQTT_POISON_FAIL_LIMIT        3
 
-// Trusted-clock acquisition cadence. Records captured before time is valid this
-// boot are only enrichable if a trusted clock (NTP/GPS/phone) arrives before
-// the next reboot — same-boot backfill then stamps their segment epoch base.
-// A boot that never acquires time loses that whole boot's captures, so we
-// proactively retry quick-NTP on this interval until the clock is trusted,
-// rather than only opportunistically after a maintenance window.
+// Retry trusted UTC while the boot is still recoverable for enrichment backfill.
 #define UTC_ACQUIRE_RETRY_SEC         60UL    // seconds
 #define UTC_ACQUIRE_RETRY_MS          SPECTRE_SECONDS_TO_MS(UTC_ACQUIRE_RETRY_SEC)
 
-// Upload enrichment holdback. A record that is still pending enrichment is held
-// back from MQTT upload until it is enriched, no-data-retired, OR it has been
-// pending longer than this grace window — after which it uploads un-enriched so
-// a missing phone/GPS can never wedge the upload backlog. Measured from the
-// record's capture UTC (epochUtc).
+// Hold pending-enrichment records briefly before upload; after this, ship them
+// un-enriched so a missing phone/GPS cannot wedge the backlog.
 #define UPLOAD_ENRICH_GRACE_SEC       900UL   // seconds (15 min)
 #define UPLOAD_ENRICH_GRACE_MS        SPECTRE_SECONDS_TO_MS(UPLOAD_ENRICH_GRACE_SEC)
 
@@ -158,8 +89,7 @@ static constexpr uint8_t OFF = 0;
 #define POWER_CRITICAL_SLEEP_COUNTDOWN_SEC  300UL  // seconds
 #define POWER_CRITICAL_SLEEP_COUNTDOWN_MS   SPECTRE_SECONDS_TO_MS(POWER_CRITICAL_SLEEP_COUNTDOWN_SEC)
 
-// Radio-arbiter BLE lease hold durations. Used as RadioArbiter::BLE_*_HOLD_MS
-// at call sites; tune here. See RadioArbiter.h for the constexpr surface.
+// Radio-arbiter BLE lease hold durations.
 #define BLE_TEXT_ACTIVE_HOLD_SEC      10UL    // seconds
 #define BLE_TEXT_ACTIVE_HOLD_MS_VAL   SPECTRE_SECONDS_TO_MS(BLE_TEXT_ACTIVE_HOLD_SEC)
 #define BLE_TEXT_IDLE_HOLD_SEC        180UL   // seconds
@@ -169,22 +99,8 @@ static constexpr uint8_t OFF = 0;
 #define BLE_PHONE_ENRICH_HOLD_SEC     40UL    // seconds
 #define BLE_PHONE_ENRICH_HOLD_MS_VAL  SPECTRE_SECONDS_TO_MS(BLE_PHONE_ENRICH_HOLD_SEC)
 
-// Radio death-loop watchdog. The arbiter counts consecutive re-grants of the
-// SAME owner that land back-to-back — i.e. owner X is granted, released, and
-// re-granted with no other owner taking the radio in between, each cycle
-// spaced no wider than RADIO_CHURN_MAX_GAP. A healthy device interleaves
-// owners, so a long same-owner streak means the radio is wedged. The classic
-// case: STORAGE_MAINT re-suspends WiFi every ~5s because a maintenance gate
-// can never clear (capture/upload can't run to drain it because WiFi is off).
-//
-// Recovery is graduated:
-//   1. At RADIO_CHURN_KICK_THRESHOLD: bypass the soft maintenance gate for
-//      RADIO_CHURN_BYPASS and force the fallback owner (WIFI_CAPTURE) — but
-//      only when storage is genuinely capture-safe. This brings WiFi back so
-//      the backlog can drain and the gate clears on its own.
-//   2. At RADIO_CHURN_REBOOT_THRESHOLD: the kick did not break the loop (e.g.
-//      storage is unsafe so capture can't be forced) — esp_restart() for a
-//      clean slate. A RADIO_RESUME crash breadcrumb is left for the boot log.
+// Same-owner radio churn watchdog: kick WiFi capture first, reboot only after a
+// sustained unbroken streak.
 #define RADIO_CHURN_MAX_GAP_SEC       8UL    // streak resets if re-grants spaced wider
 #define RADIO_CHURN_MAX_GAP_MS        SPECTRE_SECONDS_TO_MS(RADIO_CHURN_MAX_GAP_SEC)
 #define RADIO_CHURN_KICK_THRESHOLD    6U     // same-owner streak that arms a fallback kick
@@ -192,28 +108,18 @@ static constexpr uint8_t OFF = 0;
 #define RADIO_CHURN_BYPASS_SEC        30UL   // gate-bypass window after a kick
 #define RADIO_CHURN_BYPASS_MS         SPECTRE_SECONDS_TO_MS(RADIO_CHURN_BYPASS_SEC)
 
-// -----------------------------------------------------------------------------
 // MQTT upload
-// -----------------------------------------------------------------------------
-// Automatic upload is triggered three ways (there is no fixed time interval):
-//   1. Threshold     — main loop polls every 60s; when pending records reach
-//                      MQTT_UPLOAD_READY_THRESHOLD it requests a dump.
-//   2. Backlog drain  — once a dump starts, _continuousDrainActive keeps
-//                      draining to zero on each 60s poll (ignores threshold).
-//   3. FieldVault startup — one short field-only dump per boot after grace.
-// Manual SYNC (UPLINK_TRIGGER button) forces a dump regardless of threshold.
+// Upload is threshold-triggered, low-water drained, plus one FieldVault boot
+// attempt. Manual SYNC forces a dump.
 #define MQTT_UPLOAD_READY_THRESHOLD   40000
+// Low-water mark: drain mode exits once pending drops below this, so the next
+// upload only fires after pending climbs back to MQTT_UPLOAD_READY_THRESHOLD.
+// Keep it well below the threshold so each burst flushes most of the batch.
+// Set to 0 to restore the old "drain to empty / stream forever" behavior.
+#define MQTT_UPLOAD_DRAIN_EXIT_RECORDS 2000
 #define MQTT_BACKLOG_LARGE_WARN_THRESHOLD 10000   // boot diagnostic only
 #define MQTT_DUMP_FETCH_BATCH_SIZE     32  // records loaded per storage scan (<= UPLOAD_FETCH_STACK_CAPACITY)
-// Upload drain rate. The dump publishes at most RECORDS_PER_SLICE records (or
-// until SLICE_BUDGET_MS elapses) per MQTT_MGR.tick(), then returns to the
-// TaskHardware loop. tick() runs once per loop iteration, and the loop spends
-// hundreds of ms on UI refresh / presentation between iterations — so a small
-// slice cap throttled upload to ~4 records per iteration (~150ms/record) even
-// though each publish on a LAN takes only ~6ms. During upload the radio is held
-// on the WIFI_UPLOAD lease and capture is suspended, so draining many records
-// per tick is safe: the per-publish vTaskDelay(1) in _dumpSlicePause keeps the
-// task watchdog fed, and SLICE_BUDGET_MS still bounds how long the loop is held.
+// Upload slice size while capture is suspended under the WIFI_UPLOAD lease.
 #define MQTT_DUMP_RECORDS_PER_SLICE   48   // max publish calls per yield
 #define MQTT_DUMP_SLICE_BUDGET_MS    300   // ms
 #define MQTT_DUMP_PROGRESS_EVERY_N     64  // events per progress log
@@ -267,9 +173,7 @@ static constexpr uint8_t OFF = 0;
 #define STORAGE_ONE_SHOT_NON_VAULT_RESET_TAG     "6-15-26-reset-new-pc"
 #define STORAGE_FAST_BOOT_DEFER_SPOOL_REPAIR     ON
 
-// -----------------------------------------------------------------------------
 // Duplicate suppression
-// -----------------------------------------------------------------------------
 // Three compile-time profiles for how aggressively the spool drops repeats:
 //   0 = OFF / ballast        no dedup
 //   1 = STANDARD (default)   time-windowed dedup on P2 records (probe/device).
@@ -426,12 +330,31 @@ static constexpr uint8_t OFF = 0;
 
 // Seeed XIAO nRF52840 + Wio-SX1262 UART accessory.
 // Spectre remains the controller; the nRF acts as an external BLE/SX1262
-// coprocessor. SX1262/Meshtastic support is intentionally not enabled here.
+// coprocessor that drives the SX1262 as a thin LoRa modem (SUBGHZ_* verbs).
 #define WIO_NRF_ACCESSORY_ENABLED ON
 #define WIO_NRF_UART_NUM          1
 #define WIO_NRF_UART_TX           1   // ESP TX -> XIAO D7 RX
 #define WIO_NRF_UART_RX           2   // ESP RX <- XIAO D6 TX
 #define WIO_NRF_BAUD              115200
+
+// SX1262 sub-GHz radio (driven over the WIO nRF modem bridge). The WIO SX1262
+// is preferred over the RYLR998 (Reyax) backend when CAPS reports it present.
+#define SUBGHZ_SX1262_DEFAULT_FREQ_HZ 915000000UL
+#define SUBGHZ_SX1262_TX_POWER_DBM    17    // dBm
+#define SUBGHZ_SX1262_NATIVE_SYNC     0x12  // private LoRa sync for Spectre-native frames
+
+// Basic Meshtastic client (US 915 MHz, LongFast preset, default public channel).
+// These drive the shared SX1262 in MESHTASTIC application mode; the radio holds
+// one PHY profile at a time, so this is mutually exclusive with native SubGhz.
+#define MESHTASTIC_ENABLED            ON
+#define MESHTASTIC_FREQ_HZ            906875000UL  // US LongFast channel 0 center
+#define MESHTASTIC_BW_HZ              250000UL     // LongFast bandwidth
+#define MESHTASTIC_SF                 11           // LongFast spreading factor
+#define MESHTASTIC_CR                 5            // 4/5 coding rate (RadioLib cr=5)
+#define MESHTASTIC_PREAMBLE           16
+#define MESHTASTIC_SYNC_WORD          0x2B         // Meshtastic LoRa sync word
+#define MESHTASTIC_TX_POWER_DBM       22
+#define MESHTASTIC_MAX_NODES          32
 
 // Battery
 #define BAT_ADC     4   // LCD_BAT_VOLT pin from pinout
@@ -484,11 +407,13 @@ static constexpr uint8_t OFF = 0;
 // Battery-life characterization mode. When ON, the automatic deep-sleep that
 // fires POWER_CRITICAL_SLEEP_COUNTDOWN_SEC after entering BATTERY_CRITICAL is
 // suppressed — the device keeps running until the cell collapses on its own.
-// Defaulting to ON: power-saving is being characterized first, and any
-// premature critical-trip would cut off the test before useful data lands.
+// Set OFF for normal use so the device self-preserves: ~POWER_CRITICAL_SLEEP_
+// COUNTDOWN_SEC after entering BATTERY_CRITICAL it checkpoints and deep-sleeps
+// instead of running the cell flat and browning out on the desk. Flip back to
+// ON only for a deliberate discharge/characterization run.
 // Li-ion cutoff: most boards include a hardware undervoltage cutoff; if not,
 // observe the discharge run and unplug before the cell sags below ~2.9 V.
-#define POWER_RUN_UNTIL_DEAD               ON
+#define POWER_RUN_UNTIL_DEAD               OFF
 
 // Power thresholds (millivolts). Pushed lower than typical to bias toward
 // "let the battery run all the way out" rather than trip critical early —

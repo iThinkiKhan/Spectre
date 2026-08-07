@@ -23,7 +23,7 @@ constexpr uint32_t CURRENT_WINDOW_MS = 90000UL;
 // steep voltage sag at boot-up (battery suddenly loaded) from producing a
 // spuriously short runtime estimate and triggering a premature critical state.
 constexpr uint32_t TREND_STABLE_MIN_MS = 120000UL;
-constexpr float MIN_SOC_DELTA_FOR_CURRENT = 0.45f;
+constexpr float MIN_SOC_DELTA_FOR_CURRENT = 0.22f;
 // Calibrated against an observed ~2 h runtime on the stock 1100 mAh cell —
 // the device draws far more in promiscuous-heavy use than the original 135 mA
 // guess implied. POWER_AGGRESSIVE_SAVING (CPU scaling, backlight floor) is

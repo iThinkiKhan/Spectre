@@ -143,6 +143,16 @@ bool TimeService::epochForMillis(uint32_t monotonicMs, uint32_t& epochUtc) const
     return true;
 }
 
+bool TimeService::formatIsoForEpoch(uint32_t epochUtc, char* out, size_t len) const {
+    if (!out || len == 0) return false;
+    if (epochUtc < MIN_VALID_EPOCH) {
+        out[0] = '\0';
+        return false;
+    }
+    _formatIso8601(static_cast<time_t>(epochUtc), out, len);
+    return true;
+}
+
 bool TimeService::formatIsoForMillis(uint32_t monotonicMs, char* out, size_t len) const {
     if (!out || len == 0) return false;
 
@@ -194,17 +204,26 @@ String TimeService::dayStampForMillis(uint32_t monotonicMs) const {
     return String(buf);
 }
 
+void TimeService::recordAttempt(const char* reason) {
+    _lastAttemptMs = millis();
+    strlcpy(_lastAttemptReason, (reason && reason[0]) ? reason : "?",
+            sizeof(_lastAttemptReason));
+}
+
 bool TimeService::acquireUtcFromSavedWiFi(uint32_t totalTimeoutMs) {
     if (_utcAccurate) {
         return true;
     }
+    recordAttempt("in_progress");
     if (!SETTINGS.isReady() && !SETTINGS.begin()) {
+        recordAttempt("settings_unavailable");
         DLOG_WARN("TIME", "Quick NTP skipped: settings unavailable");
         return false;
     }
 
     const RuntimeSettings settings = SETTINGS.snapshot();
     if (settings.wifiNetworkCount == 0) {
+        recordAttempt("no_saved_wifi");
         DLOG_WARN("TIME", "Quick NTP skipped: no saved WiFi networks");
         return false;
     }
@@ -244,6 +263,7 @@ bool TimeService::acquireUtcFromSavedWiFi(uint32_t totalTimeoutMs) {
     if (WiFi.status() == WL_CONNECTED) {
         const uint32_t waitMs = std::min(QUICK_NTP_WAIT_MS, timeRemaining());
         if (waitMs > 0 && waitForNtp(waitMs)) {
+            recordAttempt("ok");
             WiFi.disconnect(false, false);
             _publishState(millis());
             return true;
@@ -274,6 +294,7 @@ bool TimeService::acquireUtcFromSavedWiFi(uint32_t totalTimeoutMs) {
         }
 
         if (WiFi.status() != WL_CONNECTED) {
+            recordAttempt("wifi_connect_failed");
             DLOG_WARN("TIME", "Quick NTP WiFi connect failed ssid=%s",
                       network.ssid);
             continue;
@@ -281,6 +302,7 @@ bool TimeService::acquireUtcFromSavedWiFi(uint32_t totalTimeoutMs) {
 
         const uint32_t waitMs = std::min(QUICK_NTP_WAIT_MS, timeRemaining());
         if (waitMs > 0 && waitForNtp(waitMs)) {
+            recordAttempt("ok");
             WiFi.disconnect(false, false);
             _publishState(millis());
             DLOG_INFO("TIME", "Quick NTP UTC acquired ssid=%s",
@@ -288,13 +310,20 @@ bool TimeService::acquireUtcFromSavedWiFi(uint32_t totalTimeoutMs) {
             return true;
         }
 
+        recordAttempt("ntp_no_response");
         DLOG_WARN("TIME", "Quick NTP wait expired ssid=%s", network.ssid);
     }
 
+    // Keep whatever specific failure reason the loop recorded (connect_failed /
+    // ntp_no_response) if one was set this attempt; otherwise mark the timeout.
+    if (strcmp(_lastAttemptReason, "in_progress") == 0) {
+        recordAttempt("unavailable_timeout");
+    }
     WiFi.disconnect(false, false);
     _publishState(millis());
-    DLOG_WARN("TIME", "Quick NTP UTC unavailable within %lums",
-              static_cast<unsigned long>(totalTimeoutMs));
+    DLOG_WARN("TIME", "Quick NTP UTC unavailable within %lums reason=%s",
+              static_cast<unsigned long>(totalTimeoutMs),
+              _lastAttemptReason);
     return false;
 }
 
@@ -358,6 +387,8 @@ void TimeService::_publishState(uint32_t referenceMs) const {
     strlcpy(g_state.timeSource, sourceName(), sizeof(g_state.timeSource));
     strlcpy(g_state.timeISO, iso, sizeof(g_state.timeISO));
     strlcpy(g_state.timeLocal, local, sizeof(g_state.timeLocal));
+    strlcpy(g_state.timeLastAttempt, _lastAttemptReason,
+            sizeof(g_state.timeLastAttempt));
     STATE_WRITE_END();
 }
 

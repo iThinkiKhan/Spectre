@@ -49,6 +49,10 @@ android {
 dependencies {
   implementation("com.facebook.react:react-android")
   implementation(project(":react-native-ble-plx"))
+  // Fused location provider for the low-power GPS recorder (batched, duty-cycled
+  // updates). Likely already present transitively via react-native-geolocation-
+  // service, but declared explicitly so SpectreLocationService can rely on it.
+  implementation("com.google.android.gms:play-services-location:21.3.0")
   if (hermesEnabled) {
     implementation("com.facebook.react:hermes-android")
   } else {

@@ -1,6 +1,8 @@
 
 #include "RadioArbiter.h"
 
+#include <esp_system.h>
+
 #include "../core/CrashBreadcrumb.h"
 #include "../core/DebugLog.h"
 #include "../core/SpectreState.h"
@@ -36,6 +38,11 @@ void RadioArbiter::begin() {
     _reason[0] = '\0';
     _pmkidIntent = WIFI_PMKID_INTENT_NONE;
     _pmkidTargetBssid[0] = '\0';
+    _churnOwner = RADIO_NONE;
+    _churnCount = 0;
+    _lastGrantMs = 0;
+    _captureGateBypassUntilMs = 0;
+    _churnKickCooldownMs = 0;
     _clearPending();
     DLOG_INFO(TAG, "arbiter ready");
 }
@@ -60,6 +67,8 @@ void RadioArbiter::tick() {
          static_cast<int32_t>(now - _nextIdleRetryMs) >= 0)) {
         _serviceIdleOwner("idle fallback");
     }
+
+    _serviceChurnWatchdog();
 }
 
 bool RadioArbiter::requestLease(RadioOwner owner,
@@ -205,7 +214,22 @@ bool RadioArbiter::ensureDefaultCapture(const char* reason) {
     if (_pendingOwner != RADIO_NONE) {
         return false;
     }
-    if (STORAGE.isReady() && STORAGE.needsMaintenanceBeforeCapture()) {
+    // Death-loop kick: while the bypass window is armed and storage is
+    // genuinely capture-safe, skip the soft maintenance gate and force capture
+    // so the radio comes back up and the backlog can drain. If storage is NOT
+    // capture-safe the bypass intentionally does nothing here — the streak then
+    // marches on toward the reboot escalation in _serviceChurnWatchdog().
+    const bool bypassGate =
+        _captureGateBypassActive() &&
+        STORAGE.isReady() &&
+        STORAGE.isCaptureSafeToResume();
+    if (bypassGate && STORAGE.needsMaintenanceBeforeCapture()) {
+        DLOG_WARN(TAG,
+                  "death-loop kick: bypassing maintenance gate reason=%s flags=%s",
+                  (reason && reason[0] != '\0') ? reason : "-",
+                  STORAGE.maintenanceFlagsText());
+    }
+    if (!bypassGate && STORAGE.isReady() && STORAGE.needsMaintenanceBeforeCapture()) {
         const uint32_t holdMs =
             STORAGE.isCaptureSafeToResume() ? 5000UL : 30000UL;
         DLOG_INFO(TAG,
@@ -367,6 +391,7 @@ void RadioArbiter::_commitOwnerState(RadioOwner owner,
     _fallbackSuppressed = false;
     strlcpy(_reason, reason ? reason : "", sizeof(_reason));
     _lastSwitchMs = millis();
+    _recordGrantForChurn(owner);
     _log("grant", owner, reason ? reason : "grant", holdMs);
 
     if (owner == RADIO_WIFI_CAPTURE) {
@@ -582,5 +607,76 @@ void RadioArbiter::_log(const char* action,
               ownerName(_owner),
               static_cast<unsigned long>(holdMs),
               safeReason);
+}
+
+bool RadioArbiter::_captureGateBypassActive() const {
+    return _captureGateBypassUntilMs != 0 &&
+           static_cast<int32_t>(millis() - _captureGateBypassUntilMs) < 0;
+}
+
+void RadioArbiter::_recordGrantForChurn(RadioOwner owner) {
+    const uint32_t now = millis();
+    // A streak only counts back-to-back grants of the SAME owner that recur
+    // within RADIO_CHURN_MAX_GAP_MS. Any grant of a different owner — i.e. the
+    // radio actually doing other work — resets the streak.
+    if (owner == _churnOwner &&
+        _lastGrantMs != 0 &&
+        (now - _lastGrantMs) <= RADIO_CHURN_MAX_GAP_MS) {
+        if (_churnCount < UINT32_MAX) {
+            _churnCount++;
+        }
+    } else {
+        _churnOwner = owner;
+        _churnCount = 1;
+    }
+    _lastGrantMs = now;
+}
+
+void RadioArbiter::_serviceChurnWatchdog() {
+    if (_churnCount < RADIO_CHURN_KICK_THRESHOLD) {
+        return;
+    }
+
+    const uint32_t now = millis();
+
+    // Stage 2 — the fallback kick did not break the loop (e.g. storage is
+    // genuinely unsafe so capture can't be forced). Reboot for a clean slate,
+    // leaving a breadcrumb so the next boot log explains the reset.
+    if (_churnCount >= RADIO_CHURN_REBOOT_THRESHOLD) {
+        DLOG_ERROR(TAG,
+                   "radio death-loop unrecovered owner=%s count=%lu — rebooting",
+                   ownerName(_churnOwner),
+                   static_cast<unsigned long>(_churnCount));
+        crashCheckpoint(CrashPhase::RADIO_RESUME,
+                        static_cast<uint8_t>(_churnOwner),
+                        STORAGE.isReady() ? STORAGE.getPendingEventCount() : 0U);
+        Serial.flush();
+        delay(50);
+        esp_restart();
+        return;  // not reached
+    }
+
+    // Stage 1 — arm the maintenance-gate bypass and break out to the fallback
+    // owner. Re-arm at most once per bypass window so we don't thrash. If the
+    // kick works, the next grant is a different owner and the streak resets; if
+    // it doesn't, the streak keeps climbing toward the reboot escalation above.
+    if (now < _churnKickCooldownMs) {
+        return;
+    }
+    _captureGateBypassUntilMs = now + RADIO_CHURN_BYPASS_MS;
+    _churnKickCooldownMs = _captureGateBypassUntilMs;
+    DLOG_WARN(TAG,
+              "radio death-loop detected owner=%s count=%lu — kicking to fallback (gate bypass %lus)",
+              ownerName(_churnOwner),
+              static_cast<unsigned long>(_churnCount),
+              static_cast<unsigned long>(RADIO_CHURN_BYPASS_SEC));
+
+    if (_owner == RADIO_STORAGE_MAINTENANCE) {
+        // release() services the idle owner, which routes through
+        // ensureDefaultCapture() — now gate-bypassed — and forces capture.
+        release(_owner, "death_loop_kick");
+    } else if (_owner == RADIO_NONE) {
+        _serviceIdleOwner("death_loop_kick");
+    }
 }
 

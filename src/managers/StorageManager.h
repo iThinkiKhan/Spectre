@@ -73,13 +73,7 @@ enum StorageEnrichmentState : uint8_t {
     STORAGE_ENRICH_NOT_ELIGIBLE = 0,
     STORAGE_ENRICH_PENDING = 1,
     STORAGE_ENRICH_DONE = 2,
-    // Event is enrichment-eligible but its captured timestamp is not a
-    // trusted UTC epoch (e.g., captured before NTP/GPS time sync). The
-    // phone has no way to look up GPS history for an unknown wall-clock
-    // time, so we mark these records as terminally enriched-no-data
-    // rather than leaving them pending forever. Distinct from DONE so
-    // exporters/uploaders can surface the absence of GPS data instead
-    // of treating zeros as a real fix.
+    // Terminal no-location result; zeros are not a real fix.
     STORAGE_ENRICH_NO_DATA = 3
 };
 
@@ -203,25 +197,13 @@ enum SpoolDecodedRecordType : uint8_t {
 struct DecodedSpoolRecord {
     SpoolDecodedRecordType recordType = SPOOL_REC_UNKNOWN;
     uint32_t eventId = 0;
-    // Absolute capture UTC (seconds), derived from the segment's createdEpochUtc
-    // base plus this record's millis delta. 0 when the segment has no trusted
-    // epoch base (record is unenrichable / undatable). Mirrors the field on
-    // DecodedSpoolRecordHeader so full-decode callers can reason about record
-    // age (e.g. the upload enrichment holdback) without re-deriving it.
+    // Absolute capture UTC seconds; 0 means undatable/unenrichable.
     uint32_t epochUtc = 0;
     String sessionId;
     JsonDocument doc;
 };
 
-// Lightweight per-record header view for hot scan paths that don't need a
-// full JsonDocument. Decoded directly into local fields by the binary
-// scanner — no heap allocation per record. Callers that need payload-
-// specific fields can request a full decode by recording the eventId/
-// session and re-fetching only the records they care about.
-//
-// String fields are real Strings (sessionId/typeString) because the
-// underlying binary decoders allocate them anyway via _readStringFromBytes.
-// We don't double-allocate by pushing them into a JsonDocument on top.
+// Heap-light record view for hot scans that do not need JsonDocument payloads.
 struct DecodedSpoolRecordHeader {
     SpoolDecodedRecordType recordType = SPOOL_REC_UNKNOWN;
     uint32_t eventId = 0;
@@ -258,7 +240,7 @@ struct SpoolIndex {
     uint32_t nextEventId = 1;
     std::vector<String> sessions;
     std::vector<std::pair<String, uint32_t>> uploadedWatermarks;
-    std::vector<SpoolSegmentInfo> segments;
+    SpiramVector<SpoolSegmentInfo> segments;
 };
 
 // BadUsbScriptInfo moved to BadUsbVault.h (included above) so the vault
@@ -365,9 +347,16 @@ public:
                                                 size_t maxCount,
                                                 size_t& outCount);
     bool     prepareEnrichmentIndexForWindow(size_t maxRecords,
-                                             uint32_t budgetMs);
+                                             uint32_t budgetMs,
+                                             bool& ready);
     bool     getNextPendingEnrichmentRecord(PendingEventDescriptor& out,
                                             bool& found);
+    size_t   enrichmentWindowSize() const {
+        return _backlog.enrichmentWindow.size();
+    }
+    bool     enrichmentWindowTruncated() const {
+        return _backlog.enrichmentWindowTruncated;
+    }
     void     releaseEnrichmentIndexMemory(const char* reason = nullptr);
     bool     markEnriched(uint32_t eventId,
                           float lat, float lon,
@@ -447,6 +436,17 @@ public:
     uint32_t getPendingEventCountForSession(const char* sessionId);
     uint32_t getSessionPendingEventCount();
     uint32_t getLastUploadedEventId(const char* sessionId = nullptr);
+
+    // Recovery: lower the per-session uploaded watermark so records already
+    // marked uploaded are offered to the upload path again. Pass nullptr/empty
+    // for every session, toEventId = 0 to re-send a session in full. Only
+    // lowers — sessions already at or below toEventId are left alone. Returns
+    // the number of sessions actually rewound. Refuses while an upload batch
+    // is active. Re-sending is safe against the receiver, which dedupes on a
+    // hash of topic + payload bytes: unchanged records collapse, records that
+    // gained enrichment hash differently and ingest.
+    uint32_t rewindUploadWatermarks(const char* sessionId = nullptr,
+                                    uint32_t toEventId = 0);
     void     listEventSessions(std::vector<String>& sessionIds);
     uint32_t getNextEventId();
     uint32_t getStoredRecordCount() const;
@@ -660,49 +660,31 @@ private:
     SpoolBin::SegmentHeaderV2 _workerAppendHeader{};
     bool        _workerAppendHeaderOk = false;
     bool        _workerAppendHeaderDirty = false;
-    // Boot-local segment epoch tracking. millis() resets every boot, so a
-    // segment created in a prior boot has a createdMs that cannot be mapped to
-    // UTC this boot. We snapshot the first segment id assignable this boot:
-    // any segment with id >= _thisBootSegmentBaseId was created this boot and
-    // is therefore safe to stamp/backfill with a UTC epoch base. Cross-boot
-    // segments are never stamped (would corrupt their wall-clock mapping).
+    // Only this-boot segments can be safely stamped from this boot's millis().
     uint32_t    _thisBootSegmentBaseId = 0;
     bool        _bootSegmentBaselineSet = false;
-    // First event append after boot rotates off any cross-boot active segment
-    // so captured events never share a segment across a millis() reset.
+    // Rotate before first event append so millis() epochs never mix.
     bool        _pendingBootEventRotate = false;
-    // This-boot segments created before a trusted clock was available, hence
-    // lacking a UTC base. Backfilled (header-only) once the clock is valid;
-    // entries are removed as they are stamped. Cross-boot segments never enter
-    // this set, so they are never (mis)stamped from this boot's millis base.
+    // This-boot segments waiting for trusted UTC header backfill.
     std::set<uint32_t> _unstampedThisBootSegments;
     CounterTrust _counterTrustState = CounterTrust::Trusted;
     String      _counterTrustReason;
     uint32_t    _counterTrustSinceMs = 0;
 
-    // Upload-batch deferral: when _uploadBatchActive, watermark updates skip
-    // flash writes; _uploadBatchDirty tracks whether endUploadBatch needs to
-    // persist the spool index + event meta.
+    // Upload batches coalesce watermark/index writes until endUploadBatch.
     bool        _uploadBatchActive = false;
     bool        _uploadBatchDirty  = false;
-    // _uploadIndexResident + _enrichmentIndexResident moved to _backlog.
-    // When summary metadata is observed invalid during a busy radio window,
-    // defer rebuilding until a quiet maintenance pass can service it.
+    // Rebuild stale summaries during a quiet maintenance pass.
     bool        _spoolSummaryRebuildPending = false;
     bool        _spoolAuditRepairRequired = false;
-    // Segment most recently rotated off the active slot (by ANY caller:
-    // compact OR the upload-completion path). compactSpool() grants it one
-    // grace cycle before attempting unlink so a lingering upload/enrich reader
-    // FD has time to close, avoiding the LittleFS "Has open FD" remove failure
-    // that otherwise trips counter=repair_required. Consumed (cleared) by the
-    // next compact pass.
+    // Grace one compact cycle before unlinking a just-rotated segment.
     uint32_t    _lastRotatedOffSegmentId = 0;
     bool        _repairRequested = false;
     bool        _binaryCheckpointDeferred = false;
     uint32_t    _maintenanceRequestedFlags = STORAGE_MAINT_NONE;
     bool        _maintenanceCaptureGate = false;
     bool        _maintenanceFullRebuildAttempted = false;
-    uint32_t    _maintenanceRetryAfterMs = 0;
+    uint32_t    _maintenanceHeapRetryAfterMs = 0;
     uint32_t    _routineMaintenanceLogWindowMs = 0;
     uint32_t    _routineMaintenanceRequestCount = 0;
     uint32_t    _lastFsAuditCompletedMs = 0;  // millis() of last completed FS audit
@@ -850,7 +832,7 @@ private:
     // Callers query via std::binary_search.
     bool _loadSpoolEnrichmentIds(const String& sessionId,
                                  bool filterBySession,
-                                 std::vector<uint32_t>& enrichedIds) const;
+                                 SpiramVector<uint32_t>& enrichedIds) const;
     StorageLaneCounts _getPendingEnrichmentCounts(const String& sessionId,
                                                   bool filterBySession);
     bool _getPendingEnrichmentBatch(const String& sessionId,
@@ -859,7 +841,8 @@ private:
                                     size_t maxCount,
                                     size_t& outCount,
                                     const uint32_t* excludeIds = nullptr,
-                                    size_t excludeCount = 0);
+                                    size_t excludeCount = 0,
+                                    bool authoritativeScan = false);
     void _clearSegmentSummary(SpoolSegmentInfo& seg);
     void _updateSegmentSummaryFromDecodedRecord(SpoolSegmentInfo& seg,
                                                 const DecodedSpoolRecord& rec);
@@ -871,20 +854,7 @@ private:
     void _markSegmentEnrichmentDelta(SpoolSegmentInfo& seg,
                                      uint32_t recordId,
                                      uint32_t timestampMs);
-    // Find the segment whose [firstEventId, lastEventId] contains eventId
-    // and decrement its pendingEnrichmentCount. Bounded O(num_segments),
-    // never opens a record file.
-    //
-    // CLAMP/RECOUNT semantics — conservative because a duplicate delta
-    // against an already-enriched event would double-decrement the live
-    // counter, and the runtime does not maintain an in-memory enriched-
-    // set (memory rejected at 2k+ event scale):
-    //   * stale segment summary           → flag _pendingCountDirty
-    //   * counter already 0 (likely dup)  → flag _pendingCountDirty
-    //   * counter > 0                     → decrement once
-    // Audit/rebuild paths dedupe at the call site (per-eventId map) so
-    // duplicate deltas in the spool decrement the gross count exactly
-    // once during repair.
+    // O(num_segments) pending-enrichment decrement with clamp/recount semantics.
     void _decrementPendingEnrichmentForEvent(uint32_t eventId);
     bool _adjustPendingUploadForEvent(uint32_t eventId,
                                       uint8_t laneHint,

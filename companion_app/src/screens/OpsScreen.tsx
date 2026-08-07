@@ -9,7 +9,6 @@ import {
   View,
 } from 'react-native';
 
-import {DeviceCommandsPanel} from '../components/DeviceCommandsPanel';
 import {FieldPanel} from '../components/FieldPanel';
 import {
   normalizeBadUsbScriptDraft,
@@ -101,46 +100,6 @@ function formatProgress(current: number, total: number) {
   return `${current}/${total}`;
 }
 
-function formatRelativeTime(timestamp?: number | null) {
-  if (!timestamp) {
-    return 'never';
-  }
-
-  const elapsedSeconds = Math.max(0, Math.floor((Date.now() - timestamp) / 1000));
-  if (elapsedSeconds < 60) {
-    return `${elapsedSeconds}s ago`;
-  }
-
-  const elapsedMinutes = Math.floor(elapsedSeconds / 60);
-  if (elapsedMinutes < 60) {
-    return `${elapsedMinutes}m ago`;
-  }
-
-  const elapsedHours = Math.floor(elapsedMinutes / 60);
-  if (elapsedHours < 24) {
-    return `${elapsedHours}h ago`;
-  }
-
-  return `${Math.floor(elapsedHours / 24)}d ago`;
-}
-
-function formatBytes(value?: number | null) {
-  if (!value) {
-    return '0B';
-  }
-  if (value < 1024) {
-    return `${value}B`;
-  }
-  return `${(value / 1024).toFixed(1)}KB`;
-}
-
-function formatCount(value?: number | null) {
-  if (typeof value !== 'number' || !Number.isFinite(value)) {
-    return '--';
-  }
-  return String(Math.round(value));
-}
-
 function progressFraction(current: number, total: number) {
   if (total <= 0) {
     return 0;
@@ -148,34 +107,11 @@ function progressFraction(current: number, total: number) {
   return Math.max(0, Math.min(1, current / total));
 }
 
-function PeripheralMetric({
-  label,
-  value,
-  detail,
-}: {
-  label: string;
-  value: string;
-  detail: string;
-}) {
-  return (
-    <View style={styles.peripheralMetric}>
-      <Text style={styles.peripheralLabel}>{label}</Text>
-      <Text numberOfLines={1} style={styles.peripheralValue}>
-        {value}
-      </Text>
-      <Text numberOfLines={1} style={styles.peripheralDetail}>
-        {detail}
-      </Text>
-    </View>
-  );
-}
-
 function stemFromImportedFileName(fileName: string) {
   const trimmed = fileName.trim();
   if (!trimmed.length) {
     return 'payload';
   }
-
   return trimmed.replace(/\.[^.]+$/g, '') || 'payload';
 }
 
@@ -205,25 +141,6 @@ export function OpsScreen() {
   const uploadActive =
     uploadState.phase === 'uploading' || uploadState.phase === 'committing';
   const uploadSupported = !!spectre.connectedDevice && uploadState.available;
-  const peripheral = spectre.peripheralState;
-  const companionTone = peripheral.error
-    ? 'danger'
-    : peripheral.advertising && spectre.nativeRecorderActive
-      ? 'success'
-      : peripheral.running
-        ? 'warn'
-        : 'default';
-  const lastTransferRecords =
-    spectre.lastPublishedBatch?.records ?? peripheral.lastBatchRecords ?? 0;
-  const lastTransferBytes =
-    spectre.lastPublishedBatch?.bytes ?? peripheral.lastBatchBytes ?? 0;
-  const lastTransferAt =
-    spectre.lastPublishedBatch?.sentAt ?? peripheral.lastBatchReceivedAt;
-  const storage = spectre.storageSnapshot;
-  const pendingUpload =
-    (storage?.pendingUploadMission ?? 0) + (storage?.pendingUploadNoise ?? 0);
-  const pendingEnrich =
-    (storage?.pendingEnrichMission ?? 0) + (storage?.pendingEnrichNoise ?? 0);
   const targetPath = normalizedDraft
     ? `/config/vault/badusb/${normalizedDraft.fileName}`
     : '/config/vault/badusb';
@@ -543,273 +460,6 @@ export function OpsScreen() {
           </Pressable>
         </View>
       </FieldPanel>
-
-      <DeviceCommandsPanel />
-
-      <FieldPanel title="Location Source" eyebrow="GPS + enrichment">
-        <View style={styles.modeRow}>
-          {(['device', 'manual', 'off'] as const).map(mode => (
-            <Pressable
-              key={mode}
-              style={[
-                styles.modeButton,
-                spectre.locationMode === mode ? styles.modeActive : null,
-              ]}
-              onPress={() => spectre.setLocationMode(mode)}>
-              <Text
-                style={[
-                  styles.modeText,
-                  spectre.locationMode === mode ? styles.modeTextActive : null,
-                ]}>
-                {mode}
-              </Text>
-            </Pressable>
-          ))}
-        </View>
-
-        <Text style={styles.bodyText}>
-          Current source:{' '}
-          {spectre.activeLocation
-            ? `${spectre.activeLocation.source} · ${spectre.activeLocation.lat.toFixed(5)}, ${spectre.activeLocation.lon.toFixed(5)}`
-            : 'off'}
-        </Text>
-
-        <View style={styles.buttonRow}>
-          <Pressable
-            style={styles.secondaryButton}
-            onPress={spectre.refreshDeviceLocation}>
-            <Text style={styles.secondaryText}>Refresh Phone Fix</Text>
-          </Pressable>
-          <Pressable
-            style={styles.secondaryButton}
-            onPress={spectre.clearManualLocation}>
-            <Text style={styles.secondaryText}>Clear Manual Fix</Text>
-          </Pressable>
-        </View>
-
-        <View style={styles.manualGrid}>
-          <TextInput
-            value={spectre.manualLocationDraft.lat}
-            onChangeText={lat => spectre.updateManualLocationDraft({lat})}
-            style={styles.input}
-            keyboardType="numeric"
-            placeholder="Latitude"
-            placeholderTextColor={theme.colors.textDim}
-          />
-          <TextInput
-            value={spectre.manualLocationDraft.lon}
-            onChangeText={lon => spectre.updateManualLocationDraft({lon})}
-            style={styles.input}
-            keyboardType="numeric"
-            placeholder="Longitude"
-            placeholderTextColor={theme.colors.textDim}
-          />
-          <TextInput
-            value={spectre.manualLocationDraft.alt}
-            onChangeText={alt => spectre.updateManualLocationDraft({alt})}
-            style={styles.input}
-            keyboardType="numeric"
-            placeholder="Altitude m"
-            placeholderTextColor={theme.colors.textDim}
-          />
-          <TextInput
-            value={spectre.manualLocationDraft.accuracy}
-            onChangeText={accuracy =>
-              spectre.updateManualLocationDraft({accuracy})
-            }
-            style={styles.input}
-            keyboardType="numeric"
-            placeholder="Accuracy m"
-            placeholderTextColor={theme.colors.textDim}
-          />
-        </View>
-
-        <Pressable style={styles.primaryButton} onPress={spectre.applyManualLocation}>
-          <Text style={styles.primaryText}>Arm Manual Field Fix</Text>
-        </Pressable>
-      </FieldPanel>
-
-      <FieldPanel
-        title="Companion Peripheral"
-        eyebrow="Android bridge // foreground service"
-        tone={companionTone}
-        action={
-          <View
-            style={[
-              styles.phasePill,
-              peripheral.error
-                ? styles.phaseDanger
-                : peripheral.advertising && spectre.nativeRecorderActive
-                  ? styles.phaseSuccess
-                  : peripheral.running || peripheral.advertising
-                    ? styles.phaseWarn
-                    : styles.phaseIdle,
-            ]}>
-            <Text style={styles.phasePillText}>
-              {peripheral.error
-                ? 'fault'
-                : peripheral.advertising && spectre.nativeRecorderActive
-                  ? 'ble + gps'
-                  : peripheral.advertising
-                    ? 'ble only'
-                    : peripheral.running
-                      ? 'warming'
-                      : 'offline'}
-            </Text>
-          </View>
-        }>
-        <View style={styles.peripheralHero}>
-          <Text style={styles.peripheralHeadline}>
-            {peripheral.advertising && spectre.nativeRecorderActive
-              ? 'BLE advertising and GPS logging active'
-              : peripheral.advertising
-                ? 'Foreground advertising active; GPS logging is starting'
-                : peripheral.running
-                  ? 'Foreground service active'
-                  : 'Peripheral bridge offline'}
-          </Text>
-          <Text style={styles.bodyText}>
-            {peripheral.error ||
-              `Mode ${peripheral.advertiseMode || '--'} - ${peripheral.connectedDevices} attached - secure ${
-                peripheral.secureSessionReady ? 'ready' : 'waiting'
-              }`}
-          </Text>
-        </View>
-
-        <View style={styles.buttonRow}>
-          <Pressable
-            style={[
-              styles.primaryButton,
-              !spectre.permissions.checked ? styles.buttonDisabled : null,
-            ]}
-            disabled={!spectre.permissions.checked}
-            onPress={() => {
-              spectre.startFieldMode().catch(() => {});
-            }}>
-            <Text style={styles.primaryText}>Start Field Mode</Text>
-          </Pressable>
-          <Pressable
-            style={[
-              styles.secondaryButton,
-              !peripheral.running ? styles.buttonDisabled : null,
-            ]}
-            disabled={!peripheral.running}
-            onPress={() => {
-              spectre.stopFieldMode().catch(() => {});
-            }}>
-            <Text style={styles.secondaryText}>Stop Field Mode</Text>
-          </Pressable>
-        </View>
-
-        <View style={styles.peripheralGrid}>
-          <PeripheralMetric
-            label="Last connect"
-            value={formatRelativeTime(peripheral.lastConnectedAt)}
-            detail={peripheral.lastConnectedPeer || '--'}
-          />
-          <PeripheralMetric
-            label="Last disconnect"
-            value={formatRelativeTime(peripheral.lastDisconnectedAt)}
-            detail={peripheral.lastDisconnectedPeer || '--'}
-          />
-          <PeripheralMetric
-            label="Native batch rx"
-            value={
-              peripheral.lastBatchRecords
-                ? `${peripheral.lastBatchRecords} records`
-                : 'none'
-            }
-            detail={`${formatBytes(peripheral.lastBatchBytes)} - ${formatRelativeTime(
-              peripheral.lastBatchReceivedAt,
-            )}`}
-          />
-          <PeripheralMetric
-            label="Last phone push"
-            value={lastTransferRecords ? `${lastTransferRecords} records` : 'none'}
-            detail={`${formatBytes(lastTransferBytes)} - ${formatRelativeTime(lastTransferAt)}`}
-          />
-          <PeripheralMetric
-            label="Watchdog"
-            value={peripheral.watchdogActive ? 'armed' : 'idle'}
-            detail={`${peripheral.totalAdvertiseRestarts ?? 0} restarts`}
-          />
-          <PeripheralMetric
-            label="GPS logger"
-            value={
-              spectre.nativeRecorderActive
-                ? 'active'
-                : peripheral.running
-                  ? 'starting'
-                  : 'off'
-            }
-            detail={
-              spectre.activeLocation
-                ? `${spectre.activeLocation.lat.toFixed(5)}, ${spectre.activeLocation.lon.toFixed(5)}`
-                : 'waiting for phone fix'
-            }
-          />
-          <PeripheralMetric
-            label="Totals"
-            value={`${peripheral.totalBatchesReceived ?? 0} batches`}
-            detail={`${peripheral.totalBatchRecords ?? 0} records / ${formatBytes(
-              peripheral.totalBatchBytes,
-            )}`}
-          />
-          <PeripheralMetric
-            label="Storage used"
-            value={storage ? `${storage.usedPct}%` : '--'}
-            detail={storage ? `${formatBytes(storage.freeBytes)} free` : 'no snapshot'}
-          />
-          <PeripheralMetric
-            label="Pending upload"
-            value={formatCount(storage ? pendingUpload : null)}
-            detail={
-              storage
-                ? `mission ${formatCount(storage.pendingUploadMission)} / noise ${formatCount(storage.pendingUploadNoise)}`
-                : 'waiting'
-            }
-          />
-          <PeripheralMetric
-            label="Pending enrich"
-            value={formatCount(storage ? pendingEnrich : null)}
-            detail={
-              storage
-                ? `mission ${formatCount(storage.pendingEnrichMission)} / noise ${formatCount(storage.pendingEnrichNoise)}`
-                : 'waiting'
-            }
-          />
-          <PeripheralMetric
-            label="Event totals"
-            value={formatCount(
-              storage ? storage.missionTotal + storage.noiseTotal : null,
-            )}
-            detail={
-              storage
-                ? `P0 ${formatCount(storage.p0Total)} / P1 ${formatCount(storage.p1Total)} / P2 ${formatCount(storage.p2Total)} / P3 ${formatCount(storage.p3Total)}`
-                : 'waiting'
-            }
-          />
-        </View>
-
-        <Pressable style={styles.secondaryButton} onPress={spectre.injectMockBatch}>
-          <Text style={styles.secondaryText}>Inject Mock Batch</Text>
-        </Pressable>
-      </FieldPanel>
-
-      <FieldPanel title="Field Log" eyebrow="Recent events">
-        {spectre.logs.length === 0 ? (
-          <Text style={styles.bodyText}>No events recorded yet.</Text>
-        ) : (
-          spectre.logs.slice(0, 8).map(entry => (
-            <View key={entry.id} style={styles.logRow}>
-              <Text style={styles.logTime}>
-                {new Date(entry.timestamp).toLocaleTimeString()}
-              </Text>
-              <Text style={styles.logBody}>{entry.message}</Text>
-            </View>
-          ))
-        )}
-      </FieldPanel>
     </ScrollView>
   );
 }
@@ -826,54 +476,6 @@ const styles = StyleSheet.create({
     color: theme.colors.textSoft,
     fontSize: 13,
     lineHeight: 19,
-  },
-  peripheralHero: {
-    gap: theme.spacing.xs,
-  },
-  peripheralHeadline: {
-    color: theme.colors.textStrong,
-    fontSize: 18,
-    lineHeight: 23,
-    fontWeight: '700',
-    textTransform: 'uppercase',
-    letterSpacing: 0.4,
-    fontFamily: theme.fonts.title,
-  },
-  peripheralGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: theme.spacing.xs,
-  },
-  peripheralMetric: {
-    flexGrow: 1,
-    flexBasis: '48%',
-    minWidth: 132,
-    padding: theme.spacing.sm,
-    borderRadius: theme.radius.md,
-    backgroundColor: theme.colors.bgAlt,
-    borderWidth: 1,
-    borderColor: theme.colors.panelEdge,
-    gap: 3,
-  },
-  peripheralLabel: {
-    color: theme.colors.textDim,
-    fontSize: 10,
-    textTransform: 'uppercase',
-    letterSpacing: 0.8,
-    fontFamily: theme.fonts.label,
-  },
-  peripheralValue: {
-    color: theme.colors.textStrong,
-    fontSize: 14,
-    fontWeight: '700',
-    textTransform: 'uppercase',
-    fontFamily: theme.fonts.label,
-  },
-  peripheralDetail: {
-    color: theme.colors.textSoft,
-    fontSize: 11,
-    lineHeight: 14,
-    fontFamily: theme.fonts.label,
   },
   phasePill: {
     borderRadius: theme.radius.pill,
@@ -1116,59 +718,6 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   switchBody: {
-    color: theme.colors.textSoft,
-    fontSize: 12,
-    lineHeight: 18,
-  },
-  modeRow: {
-    flexDirection: 'row',
-    gap: theme.spacing.sm,
-  },
-  modeButton: {
-    flex: 1,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: theme.colors.panelEdge,
-    borderRadius: theme.radius.md,
-    backgroundColor: theme.colors.bgAlt,
-    paddingVertical: 10,
-    paddingHorizontal: theme.spacing.sm,
-  },
-  modeActive: {
-    borderColor: theme.colors.amber,
-    backgroundColor: theme.colors.amber,
-  },
-  modeText: {
-    color: theme.colors.textSoft,
-    fontSize: 12,
-    fontWeight: '700',
-    textTransform: 'uppercase',
-    letterSpacing: 0.8,
-    fontFamily: theme.fonts.label,
-  },
-  modeTextActive: {
-    color: theme.colors.textOnAccent,
-  },
-  manualGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: theme.spacing.sm,
-  },
-  logRow: {
-    flexDirection: 'row',
-    gap: theme.spacing.sm,
-    paddingVertical: 6,
-    borderBottomWidth: 1,
-    borderBottomColor: theme.colors.panelEdge,
-  },
-  logTime: {
-    width: 84,
-    color: theme.colors.textDim,
-    fontSize: 11,
-    fontFamily: theme.fonts.label,
-  },
-  logBody: {
-    flex: 1,
     color: theme.colors.textSoft,
     fontSize: 12,
     lineHeight: 18,

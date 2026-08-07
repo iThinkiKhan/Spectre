@@ -46,7 +46,9 @@ public:
                   uint32_t frequencyHz, uint16_t nodeCount,
                   const char* lastPayload, int rssi, int snr, int packets);
     void drawBadUsb();
-    void drawMeshtastic(const char* node, const char* channel);
+    void drawMeshtastic(bool enabled, uint32_t nodeNum, int nodeCount,
+                        uint32_t rxText, uint32_t txText,
+                        uint32_t lastFrom, const char* lastText);
     void drawMission(MissionProfile profile);
     void drawWifi(const char* ssid, int networks, const char* probeActivity);
     void drawRecon(MissionProfile selectedProfile);

@@ -3,7 +3,7 @@ import {Pressable, StyleSheet, Text, View} from 'react-native';
 
 import {theme} from '../theme/theme';
 
-type TabKey = 'link' | 'enrich' | 'ops';
+type TabKey = 'link' | 'enrich' | 'console' | 'ops';
 
 type Props = {
   activeTab: TabKey;
@@ -13,6 +13,7 @@ type Props = {
 const tabs: Array<{key: TabKey; label: string}> = [
   {key: 'link', label: 'Link'},
   {key: 'enrich', label: 'Enrich'},
+  {key: 'console', label: 'Console'},
   {key: 'ops', label: 'Vault'},
 ];
 

@@ -36,3 +36,6 @@ companion-app-scaffold/node_modules/
 
 # Windows path artifacts
 C:/
+
+# JVM heap dumps from Android tooling
+*.hprof

@@ -57,6 +57,8 @@ import {
 
 export const PHONE_GPS_FLAG_VALID = 0x01;
 export const PHONE_GPS_FLAG_TRUSTED_TIME = 0x02;
+export const PHONE_ENRICH_FLAG_TAG_PRESENT = 0x01;
+export const PHONE_ENRICH_FLAG_NO_DATA = 0x02;
 
 export const PHONE_CONTROL_FLAG_WG_ACTIVE = 0x01;
 export const PHONE_CONTROL_FLAG_DUMP_REQUEST = 0x02;

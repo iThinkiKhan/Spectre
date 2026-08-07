@@ -5,19 +5,7 @@
 
 #include "protocol/CompanionProtocol.h"
 
-// CommandDispatcher
-// =================
-//
-// Transport-agnostic dispatcher for the phone-companion COMMAND channel.
-// Both BLEManager (internal BLE) and WioNrfAccessory (WIO proxy) own their
-// own secure session and call dispatch() with a decrypted request frame.
-// The dispatcher writes a fully-formed PhoneCommandResponseV1 + payload to
-// `response`; the caller then encrypts that as-is and notifies/writes it back
-// out the appropriate characteristic.
-//
-// Read-only in slice #2: every handler is a pure read of existing state.
-// Returns false only if the response buffer is too small to even hold the
-// header (a degenerate, unreachable case in practice).
+// Transport-agnostic phone command dispatcher for decrypted request frames.
 class CommandDispatcher {
 public:
     static bool dispatch(const uint8_t* request,

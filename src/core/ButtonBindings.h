@@ -45,7 +45,9 @@ enum SpectreButtonAction : uint8_t {
     BUTTON_ACTION_DEBRIEF_EXPORT,
     BUTTON_ACTION_DEBRIEF_CLEAR,
     BUTTON_ACTION_DEBRIEF_BACK,
-    BUTTON_ACTION_BLE_TEST
+    BUTTON_ACTION_BLE_TEST,
+    BUTTON_ACTION_MESH_TOGGLE,
+    BUTTON_ACTION_MESH_SEND
 };
 
 struct ButtonBindingSet {
@@ -93,6 +95,8 @@ static inline const char* spectreButtonActionLabel(SpectreButtonAction action,
         case BUTTON_ACTION_BADUSB_CANCEL:     return "STOP";
         case BUTTON_ACTION_PWNY_FORCE_DEAUTH: return "DEAUTH";
         case BUTTON_ACTION_BLE_TEST:          return "ENRICH";
+        case BUTTON_ACTION_MESH_TOGGLE:       return busy ? "MESH ON" : "MESH";
+        case BUTTON_ACTION_MESH_SEND:         return "SEND";
         default:                              return nullptr;
     }
 }
@@ -115,8 +119,8 @@ static inline ButtonBindingSet spectreScreenBindings(Screen screen) {
             return {BUTTON_ACTION_SESSION_TAG, BUTTON_ACTION_SLEEP,
                     BUTTON_ACTION_UPLINK_TRIGGER, BUTTON_ACTION_SCREEN_NEXT};
         case SCREEN_MESHTASTIC:
-            return {BUTTON_ACTION_NONE, BUTTON_ACTION_SLEEP,
-                    BUTTON_ACTION_BLE_TEST, BUTTON_ACTION_SCREEN_NEXT};
+            return {BUTTON_ACTION_MESH_TOGGLE, BUTTON_ACTION_SLEEP,
+                    BUTTON_ACTION_MESH_SEND, BUTTON_ACTION_SCREEN_NEXT};
         case SCREEN_RECON:
             return {BUTTON_ACTION_MISSION_ENTER, BUTTON_ACTION_MISSION_ENTER,
                     BUTTON_ACTION_MISSION_LIST_OPEN, BUTTON_ACTION_SCREEN_NEXT};

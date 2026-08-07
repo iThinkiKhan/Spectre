@@ -17,21 +17,24 @@ import android.os.IBinder
 import android.os.Looper
 import android.util.Log
 import androidx.core.content.ContextCompat
+import com.google.android.gms.common.ConnectionResult
+import com.google.android.gms.common.GoogleApiAvailability
+import com.google.android.gms.location.FusedLocationProviderClient
+import com.google.android.gms.location.LocationCallback
+import com.google.android.gms.location.LocationRequest
+import com.google.android.gms.location.LocationResult
+import com.google.android.gms.location.LocationServices
+import com.google.android.gms.location.Priority
 import kotlin.math.atan2
 import kotlin.math.cos
 import kotlin.math.max
+import kotlin.math.min
 import kotlin.math.sin
 import kotlin.math.sqrt
 import org.json.JSONArray
 import org.json.JSONObject
 
-/**
- * Field Mode GPS recorder.
- *
- * Runs only while the companion peripheral is active and phone GPS mode is
- * selected.  It writes fixes into the same @spectre/location-history-v2/day/<id>
- * SharedPreferences keys that the JS LocationHistoryStore reads on app start.
- */
+/** Field Mode GPS recorder writing the same buckets JS reads on startup. */
 class SpectreLocationService : Service(), LocationListener {
 
   private val handler = Handler(Looper.getMainLooper())
@@ -42,13 +45,22 @@ class SpectreLocationService : Service(), LocationListener {
     applicationContext.getSystemService(Context.LOCATION_SERVICE) as LocationManager
   }
 
-  // In-memory mirror of the on-disk day buckets, keyed by bucket id.  Loaded
-  // lazily on first sample so we don't blow away whatever the JS already wrote.
+  // Prefer fused; raw LocationManager is the no-Play-Services fallback.
+  private var fusedClient: FusedLocationProviderClient? = null
+  private var fusedCallback: LocationCallback? = null
+
+  // Loaded lazily so we do not clobber JS-written buckets.
   private val buckets = sortedMapOf<Long, MutableList<JSONObject>>()
   private var bucketsLoaded = false
   private val dirtyBuckets = mutableSetOf<Long>()
   private var persistScheduled = false
   private var lastAcceptedTimestamp: Long = 0
+
+  private data class BucketSummary(
+      val samples: Int,
+      val oldest: Long,
+      val newest: Long,
+  )
 
   override fun onCreate() {
     super.onCreate()
@@ -58,27 +70,24 @@ class SpectreLocationService : Service(), LocationListener {
   override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
     if (intent?.action == ACTION_STOP) {
       active = false
-      stopForegroundCompat()
       stopSelf()
       return START_NOT_STICKY
     }
 
-    startForegroundCompat(SpectreFieldService.buildNotification(this, true))
+    // Plain service: SpectreFieldService owns the foreground notification.
     active = true
     if (!hasLocationPermission()) {
       Log.w(LOG_TAG, "event=start_blocked reason=missing_location_permission")
-      // We still keep the service alive so a later grant-then-restart works,
-      // but without permission we can't register listeners.
-      return START_STICKY
+      return START_NOT_STICKY
     }
 
     registerListeners()
-    return START_STICKY
+    return START_NOT_STICKY
   }
 
   override fun onDestroy() {
     active = false
-    runCatching { locationManager.removeUpdates(this) }
+    removeUpdates()
     flushNow()
     super.onDestroy()
   }
@@ -86,20 +95,22 @@ class SpectreLocationService : Service(), LocationListener {
   override fun onBind(intent: Intent?): IBinder? = null
 
   override fun onLocationChanged(location: Location) {
+    ingestLocation(location)
+  }
+
+  private fun ingestLocation(location: Location) {
     if (!bucketsLoaded) {
       loadBucketsFromDisk()
       bucketsLoaded = true
     }
     val timestamp = if (location.time > 0) location.time else System.currentTimeMillis()
-    // Throttle to MIN_INTERVAL_MS even if multiple providers fire — keeps the
-    // backlog from filling with near-duplicates.
+    // Throttle duplicate provider bursts.
     if (timestamp - lastAcceptedTimestamp < MIN_INTERVAL_MS - INTERVAL_SLACK_MS) {
       return
     }
 
     val accuracy = if (location.hasAccuracy()) location.accuracy.toDouble() else 0.0
     if (accuracy > 0 && accuracy > MAX_ACCURACY_M) {
-      // Reject obviously bad fixes (e.g., 5km network-provider guesses).
       return
     }
 
@@ -136,31 +147,92 @@ class SpectreLocationService : Service(), LocationListener {
 
   @SuppressWarnings("MissingPermission")
   private fun registerListeners() {
-    val providers = listOf(LocationManager.GPS_PROVIDER, LocationManager.NETWORK_PROVIDER)
-    for (provider in providers) {
-      try {
-        if (!locationManager.isProviderEnabled(provider)) {
-          continue
-        }
+    if (playServicesAvailable() && registerFused()) {
+      seedFromLastKnown()
+      return
+    }
+    registerGpsProvider()
+    seedFromLastKnown()
+  }
+
+  private fun playServicesAvailable(): Boolean =
+      runCatching {
+        GoogleApiAvailability.getInstance().isGooglePlayServicesAvailable(this) ==
+            ConnectionResult.SUCCESS
+      }.getOrDefault(false)
+
+  @SuppressWarnings("MissingPermission")
+  private fun registerFused(): Boolean {
+    return try {
+      val client = LocationServices.getFusedLocationProviderClient(this)
+      // Slow, batched, high-accuracy fixes save wakeups without coarsening data.
+      val request =
+          LocationRequest.Builder(REQUEST_PRIORITY, REQUEST_INTERVAL_MS)
+              .setMinUpdateIntervalMillis(REQUEST_INTERVAL_MS)
+              .setMinUpdateDistanceMeters(REQUEST_MIN_DISTANCE_M)
+              .setMaxUpdateDelayMillis(REQUEST_MAX_BATCH_DELAY_MS)
+              .setWaitForAccurateLocation(false)
+              .build()
+      val callback =
+          object : LocationCallback() {
+            override fun onLocationResult(result: LocationResult) {
+              for (location in result.locations) {
+                ingestLocation(location)
+              }
+            }
+          }
+      client.requestLocationUpdates(request, callback, Looper.getMainLooper())
+      fusedClient = client
+      fusedCallback = callback
+      Log.i(
+          LOG_TAG,
+          "event=fused_registered intervalMs=$REQUEST_INTERVAL_MS minDistanceM=$REQUEST_MIN_DISTANCE_M maxBatchMs=$REQUEST_MAX_BATCH_DELAY_MS",
+      )
+      true
+    } catch (error: SecurityException) {
+      Log.w(LOG_TAG, "event=fused_register_failed reason=security")
+      false
+    } catch (error: Exception) {
+      Log.w(LOG_TAG, "event=fused_register_failed reason=${error.message}")
+      false
+    }
+  }
+
+  @SuppressWarnings("MissingPermission")
+  private fun registerGpsProvider() {
+    // Fallback listens to GPS only; NETWORK is used only as a last-known seed.
+    val provider = LocationManager.GPS_PROVIDER
+    try {
+      if (locationManager.isProviderEnabled(provider)) {
         @Suppress("MissingPermission")
         locationManager.requestLocationUpdates(
             provider,
-            MIN_INTERVAL_MS,
-            MIN_DISTANCE_M,
+            REQUEST_INTERVAL_MS,
+            REQUEST_MIN_DISTANCE_M,
             this,
             Looper.getMainLooper(),
         )
-        Log.i(LOG_TAG, "event=listener_registered provider=$provider intervalMs=$MIN_INTERVAL_MS")
-      } catch (error: SecurityException) {
-        Log.w(LOG_TAG, "event=listener_register_failed provider=$provider reason=security")
-      } catch (error: IllegalArgumentException) {
-        Log.w(LOG_TAG, "event=listener_register_failed provider=$provider reason=${error.message}")
+        Log.i(
+            LOG_TAG,
+            "event=listener_registered provider=$provider intervalMs=$REQUEST_INTERVAL_MS minDistanceM=$REQUEST_MIN_DISTANCE_M",
+        )
+      } else {
+        Log.w(LOG_TAG, "event=listener_register_skipped provider=$provider reason=disabled")
       }
+    } catch (error: SecurityException) {
+      Log.w(LOG_TAG, "event=listener_register_failed provider=$provider reason=security")
+    } catch (error: IllegalArgumentException) {
+      Log.w(LOG_TAG, "event=listener_register_failed provider=$provider reason=${error.message}")
     }
+  }
 
-    // Seed an immediate last-known-fix so the backlog gets a marker even before
-    // the first provider tick lands.
-    seedFromLastKnown()
+  private fun removeUpdates() {
+    runCatching { locationManager.removeUpdates(this) }
+    fusedCallback?.let { callback ->
+      runCatching { fusedClient?.removeLocationUpdates(callback) }
+    }
+    fusedCallback = null
+    fusedClient = null
   }
 
   private fun seedFromLastKnown() {
@@ -182,30 +254,148 @@ class SpectreLocationService : Service(), LocationListener {
     }
   }
 
+  // Mirrors LocationHistoryStore.ts; change both together.
+  private data class StationaryAccumulator(
+      val source: String,
+      var anchorTimestamp: Long,
+      var count: Int,
+      var sumWeight: Double,
+      var sumWeightLat: Double,
+      var sumWeightLon: Double,
+      var sumWeightAlt: Double,
+      var rawAccuracy: Double,
+      var bestAccuracy: Double,
+  )
+
+  private data class MeanFix(
+      val lat: Double,
+      val lon: Double,
+      val alt: Double,
+      val accuracy: Double,
+  )
+
+  private var stationaryAccumulator: StationaryAccumulator? = null
+
+  private fun accumWeight(accuracy: Double): Double {
+    val a = max(accuracy, STATIONARY_ACCURACY_FLOOR_M)
+    return 1.0 / (a * a)
+  }
+
+  private fun seedAccumulator(marker: JSONObject): StationaryAccumulator {
+    val acc = marker.optDouble("accuracy", 0.0)
+    val w = accumWeight(acc)
+    return StationaryAccumulator(
+        source = marker.optString("source"),
+        anchorTimestamp = marker.optLong("timestamp", 0L),
+        count = 1,
+        sumWeight = w,
+        sumWeightLat = w * marker.optDouble("lat", 0.0),
+        sumWeightLon = w * marker.optDouble("lon", 0.0),
+        sumWeightAlt = w * marker.optDouble("alt", 0.0),
+        rawAccuracy = acc,
+        bestAccuracy = if (acc > 0) acc else STATIONARY_ACCURACY_FLOOR_M,
+    )
+  }
+
+  private fun foldAccumulator(acc: StationaryAccumulator, fix: JSONObject) {
+    val a = fix.optDouble("accuracy", 0.0)
+    val w = accumWeight(a)
+    acc.count += 1
+    acc.sumWeight += w
+    acc.sumWeightLat += w * fix.optDouble("lat", 0.0)
+    acc.sumWeightLon += w * fix.optDouble("lon", 0.0)
+    acc.sumWeightAlt += w * fix.optDouble("alt", 0.0)
+    if (a > acc.rawAccuracy) acc.rawAccuracy = a
+    if (a > 0 && a < acc.bestAccuracy) acc.bestAccuracy = a
+  }
+
+  private fun accumulatedMean(acc: StationaryAccumulator): MeanFix {
+    val n = min(acc.count, STATIONARY_AVG_SAMPLE_CAP)
+    return MeanFix(
+        lat = acc.sumWeightLat / acc.sumWeight,
+        lon = acc.sumWeightLon / acc.sumWeight,
+        alt = acc.sumWeightAlt / acc.sumWeight,
+        accuracy = max(acc.bestAccuracy / sqrt(n.toDouble()), STATIONARY_ACCURACY_FLOOR_M),
+    )
+  }
+
+  private fun withinMotionRadius(
+      refLat: Double,
+      refLon: Double,
+      refRawAccuracy: Double,
+      sample: JSONObject,
+  ): Boolean {
+    val thresholdM = STATIONARY_MOTION_K *
+        max(max(refRawAccuracy, sample.optDouble("accuracy", 0.0)), STATIONARY_ACCURACY_FLOOR_M)
+    return distanceMetersLL(
+        refLat, refLon, sample.optDouble("lat", 0.0), sample.optDouble("lon", 0.0),
+    ) <= thresholdM
+  }
+
   private fun appendFix(fix: JSONObject): Boolean {
     val timestamp = fix.optLong("timestamp", 0L)
     if (timestamp <= 0) return false
+    val source = fix.optString("source", "device")
     val bucketId = timestamp / DAY_MS
-    val bucket = buckets.getOrPut(bucketId) { mutableListOf() }
 
-    // Coalesce against the most recent same-source marker — mirrors
-    // rememberLocationSample in LocationHistoryStore.ts so we don't grow the
-    // backlog while stationary.
-    val previousMarker = findPreviousMarker(bucketId, "device")
-    if (previousMarker != null && withinAccuracyRadius(previousMarker, fix)) {
-      val prevAccuracy = previousMarker.optDouble("accuracy", 0.0)
-      val newAccuracy = fix.optDouble("accuracy", 0.0)
-      if (newAccuracy > 0 && (prevAccuracy == 0.0 || newAccuracy < prevAccuracy)) {
-        previousMarker.put("lat", fix.optDouble("lat"))
-        previousMarker.put("lon", fix.optDouble("lon"))
-        previousMarker.put("alt", fix.optDouble("alt"))
-        previousMarker.put("accuracy", newAccuracy)
-        previousMarker.put("provider", fix.opt("provider"))
-        dirtyBuckets.add(previousMarker.optLong("timestamp") / DAY_MS)
+    val previousMarker = findPreviousMarker(bucketId, source)
+
+    val acc = stationaryAccumulator
+    val accMatches = acc != null && previousMarker != null &&
+        acc.source == source && acc.anchorTimestamp == previousMarker.optLong("timestamp", 0L)
+
+    var refLat = 0.0
+    var refLon = 0.0
+    var refRawAccuracy = 0.0
+    if (accMatches) {
+      val centroid = accumulatedMean(acc!!)
+      refLat = centroid.lat
+      refLon = centroid.lon
+      refRawAccuracy = acc.rawAccuracy
+    } else if (previousMarker != null) {
+      refLat = previousMarker.optDouble("lat", 0.0)
+      refLon = previousMarker.optDouble("lon", 0.0)
+      refRawAccuracy = previousMarker.optDouble("accuracy", 0.0)
+    }
+
+    if (previousMarker != null && withinMotionRadius(refLat, refLon, refRawAccuracy, fix)) {
+      val activeAcc = if (accMatches) acc!! else seedAccumulator(previousMarker).also {
+        stationaryAccumulator = it
       }
+      foldAccumulator(activeAcc, fix)
+      val mean = accumulatedMean(activeAcc)
+      val previousTimestamp = previousMarker.optLong("timestamp", 0L)
+
+      if (timestamp - previousTimestamp >= STATIONARY_HEARTBEAT_MS) {
+        // Heartbeat preserves temporal coverage while keeping the averaged fix.
+        val marker = JSONObject().apply {
+          put("lat", mean.lat)
+          put("lon", mean.lon)
+          put("alt", mean.alt)
+          put("accuracy", mean.accuracy)
+          put("timestamp", timestamp)
+          put("source", source)
+          put("provider", fix.opt("provider"))
+        }
+        val bucket = buckets.getOrPut(bucketId) { mutableListOf() }
+        bucket.add(marker)
+        dirtyBuckets.add(bucketId)
+        activeAcc.anchorTimestamp = timestamp
+        enforceCaps()
+        return true
+      }
+
+      previousMarker.put("lat", mean.lat)
+      previousMarker.put("lon", mean.lon)
+      previousMarker.put("alt", mean.alt)
+      previousMarker.put("accuracy", mean.accuracy)
+      previousMarker.put("provider", fix.opt("provider"))
+      dirtyBuckets.add(previousMarker.optLong("timestamp") / DAY_MS)
       return false
     }
 
+    stationaryAccumulator = null
+    val bucket = buckets.getOrPut(bucketId) { mutableListOf() }
     bucket.add(fix)
     dirtyBuckets.add(bucketId)
     enforceCaps()
@@ -231,7 +421,7 @@ class SpectreLocationService : Service(), LocationListener {
     val expired = buckets.keys.filter { it < cutoffBucket - 1 }.toList()
     for (id in expired) {
       buckets.remove(id)
-      dirtyBuckets.add(id) // marks for delete on flush
+      dirtyBuckets.add(id)
     }
 
     var total = 0
@@ -273,7 +463,11 @@ class SpectreLocationService : Service(), LocationListener {
           buckets[id] = list
         }
       }
-      Log.i(LOG_TAG, "event=buckets_loaded buckets=${buckets.size}")
+      val summary = summarizeBuckets()
+      Log.i(
+          LOG_TAG,
+          "event=buckets_loaded buckets=${buckets.size} samples=${summary.samples} oldest=${summary.oldest} newest=${summary.newest}",
+      )
     } catch (error: Exception) {
       Log.w(LOG_TAG, "event=buckets_load_failed reason=${error.message}")
     }
@@ -306,6 +500,7 @@ class SpectreLocationService : Service(), LocationListener {
       // Treat as empty.
     }
 
+    val dirtyCount = dirtyBuckets.size
     for (id in dirtyBuckets.toList()) {
       val list = buckets[id]
       if (list == null || list.isEmpty()) {
@@ -329,24 +524,37 @@ class SpectreLocationService : Service(), LocationListener {
       editor.putString(INDEX_KEY, arr.toString())
     }
     editor.apply()
-    Log.i(LOG_TAG, "event=flush buckets=${buckets.size}")
+    val summary = summarizeBuckets()
+    Log.i(
+        LOG_TAG,
+        "event=flush buckets=${buckets.size} dirty=$dirtyCount samples=${summary.samples} oldest=${summary.oldest} newest=${summary.newest}",
+    )
   }
 
   private fun bucketKey(id: Long): String = "$BUCKET_KEY_PREFIX$id"
 
-  private fun withinAccuracyRadius(a: JSONObject, b: JSONObject): Boolean {
-    val accA = a.optDouble("accuracy", 0.0)
-    val accB = b.optDouble("accuracy", 0.0)
-    val threshold = max(max(accA, accB), 0.0)
-    return distanceMeters(a, b) <= threshold
+  private fun summarizeBuckets(): BucketSummary {
+    var samples = 0
+    var oldest = Long.MAX_VALUE
+    var newest = 0L
+    for (list in buckets.values) {
+      for (fix in list) {
+        val timestamp = fix.optLong("timestamp", 0L)
+        if (timestamp <= 0L) continue
+        samples += 1
+        if (timestamp < oldest) oldest = timestamp
+        if (timestamp > newest) newest = timestamp
+      }
+    }
+    return BucketSummary(
+        samples = samples,
+        oldest = if (oldest == Long.MAX_VALUE) 0L else oldest,
+        newest = newest,
+    )
   }
 
-  private fun distanceMeters(a: JSONObject, b: JSONObject): Double {
+  private fun distanceMetersLL(latA: Double, lonA: Double, latB: Double, lonB: Double): Double {
     val radiusM = 6_371_000.0
-    val latA = a.optDouble("lat", 0.0)
-    val lonA = a.optDouble("lon", 0.0)
-    val latB = b.optDouble("lat", 0.0)
-    val lonB = b.optDouble("lon", 0.0)
     val lat1 = Math.toRadians(latA)
     val lat2 = Math.toRadians(latB)
     val deltaLat = Math.toRadians(latB - latA)
@@ -355,27 +563,6 @@ class SpectreLocationService : Service(), LocationListener {
     val sinLon = sin(deltaLon / 2)
     val h = sinLat * sinLat + cos(lat1) * cos(lat2) * sinLon * sinLon
     return 2 * radiusM * atan2(sqrt(h), sqrt(1 - h))
-  }
-
-  private fun stopForegroundCompat() {
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-      stopForeground(STOP_FOREGROUND_DETACH)
-    } else {
-      @Suppress("DEPRECATION")
-      stopForeground(false)
-    }
-  }
-
-  private fun startForegroundCompat(notification: android.app.Notification) {
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-      startForeground(
-          SpectreFieldService.NOTIFICATION_ID,
-          notification,
-          ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION,
-      )
-    } else {
-      startForeground(SpectreFieldService.NOTIFICATION_ID, notification)
-    }
   }
 
   companion object {
@@ -389,20 +576,28 @@ class SpectreLocationService : Service(), LocationListener {
     private const val MAX_SAMPLES = 200_000
     private const val MIN_INTERVAL_MS = 10_000L
     private const val INTERVAL_SLACK_MS = 500L
-    private const val MIN_DISTANCE_M = 0f
+
+    // Slow/distance-gated request profile for field battery life.
+    private const val REQUEST_INTERVAL_MS = 20_000L
+    private const val REQUEST_MIN_DISTANCE_M = 15f
+    // Fused-only batch window; keep priority high for enrichment quality.
+    private const val REQUEST_MAX_BATCH_DELAY_MS = 60_000L
+    private val REQUEST_PRIORITY = Priority.PRIORITY_HIGH_ACCURACY
+    private const val STATIONARY_HEARTBEAT_MS = 60_000L
     private const val PERSIST_DEBOUNCE_MS = 30_000L
     private const val MAX_ACCURACY_M = 5_000.0
+
+    // Stationary averaging parameters mirror LocationHistoryStore.ts.
+    private const val STATIONARY_ACCURACY_FLOOR_M = 2.5
+    private const val STATIONARY_AVG_SAMPLE_CAP = 16
+    private const val STATIONARY_MOTION_K = 2.5
 
     private const val INDEX_KEY = "@spectre/location-history-v2/index"
     private const val BUCKET_KEY_PREFIX = "@spectre/location-history-v2/day/"
 
     fun start(context: Context) {
       val intent = Intent(context, SpectreLocationService::class.java)
-      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-        context.startForegroundService(intent)
-      } else {
-        context.startService(intent)
-      }
+      runCatching { context.startService(intent) }
     }
 
     fun stop(context: Context) {

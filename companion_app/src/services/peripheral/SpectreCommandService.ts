@@ -60,17 +60,7 @@ import type {
   SpectrePeripheralBridge,
 } from './SpectrePeripheralBridge';
 
-// SpectreCommandService
-// =====================
-//
-// Wraps the SpectrePeripheralBridge command channel with request/response
-// correlation.  Each call allocates a requestId, sends the encoded request
-// envelope, and resolves when the matching response arrives (or rejects on
-// timeout / non-OK status).
-//
-// Read-only in slice #2 — every method is a single round-trip query against
-// device state.  Streaming opcodes (slice #3) will reuse this same channel
-// with their own framing.
+// Request/response wrapper around the peripheral command channel.
 
 export const COMMAND_DEFAULT_TIMEOUT_MS = 8000;
 
@@ -380,8 +370,6 @@ export class SpectreCommandService {
       throw error;
     }
   }
-
-  // ── Slice #4 — dashboard streaming ────────────────────────────────────────
 
   async startDashboardStream(options: {
     durationMs?: number;

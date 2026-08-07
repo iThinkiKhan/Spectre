@@ -26,7 +26,7 @@ inline const ScreenInfo& screenInfo(Screen s) {
         {"MIS", "MISSION"},
         {"RCN", "RECON"},
         {"SYS", "SYSTEM"},
-        {"SUM", "MISSION_SUMMARY"},
+        {"BOT", "BOOT_SUMMARY"},
     };
     static_assert(sizeof(kTable) / sizeof(kTable[0]) == SCREEN_COUNT,
                   "ScreenInfo table must cover every Screen enum value");

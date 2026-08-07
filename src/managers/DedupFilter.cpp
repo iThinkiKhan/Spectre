@@ -41,7 +41,14 @@ uint64_t DedupFilter::_makeDedupKey(const char* type, JsonObjectConst payload) c
     uint64_t h = hashField(FNV1A64_OFFSET, safeType);
 
     if (strcmp(safeType, "probe") == 0) {
-        h = hashField(h, payload["mac"] | "");
+        // Probe requests randomize the source MAC per burst, so keying on MAC
+        // means real repeats from one device never collapse and dedup never
+        // fires. Key on the device's IE fingerprint instead — it is stable
+        // across MAC randomization — falling back to MAC only when no
+        // fingerprint was computed, so fingerprint-less probes don't all
+        // over-collapse onto one key. Same two-field arity as before.
+        const char* fp = payload["ie_fingerprint"] | "";
+        h = hashField(h, fp[0] ? fp : (payload["mac"] | ""));
         h = hashField(h, payload["probed_ssid"] | payload["ssid"] | "");
         // Channel intentionally omitted so the same probe seen on multiple
         // channels collapses to one entry under profile 1.

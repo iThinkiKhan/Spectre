@@ -43,6 +43,35 @@ static constexpr size_t PHONE_SECURE_TAG_SIZE = 16;
 static constexpr size_t PHONE_SECURE_ENVELOPE_OVERHEAD =
     PHONE_SECURE_HEADER_SIZE + PHONE_SECURE_TAG_SIZE;
 
+static constexpr uint8_t PHONE_BATCH_HEADER_VERSION = 2;
+static constexpr uint32_t PHONE_EVENT_BATCH_V2_MAGIC = 0x32424553UL;          // "SEB2"
+static constexpr uint32_t PHONE_ENRICHMENT_RESPONSE_V2_MAGIC = 0x32524553UL; // "SER2"
+
+struct __attribute__((packed)) PhoneEventBatchHeaderV2 {
+    uint32_t magic;
+    uint8_t  version;
+    uint8_t  flags;
+    uint16_t recordCount;
+    uint32_t sessionId;
+    uint32_t batchId;
+};
+
+struct __attribute__((packed)) PhoneEnrichmentResponseHeaderV2 {
+    uint32_t magic;
+    uint8_t  version;
+    uint8_t  flags;
+    uint16_t recordCount;
+    uint32_t sessionId;
+    uint32_t batchId;
+    uint16_t payloadOffset;
+    uint16_t payloadLen;
+};
+
+static constexpr size_t PHONE_EVENT_BATCH_HEADER_V2_SIZE =
+    sizeof(PhoneEventBatchHeaderV2);
+static constexpr size_t PHONE_ENRICHMENT_RESPONSE_HEADER_V2_SIZE =
+    sizeof(PhoneEnrichmentResponseHeaderV2);
+
 struct __attribute__((packed)) PhoneGpsFrameV1 {
     uint8_t  version;
     int32_t  latE7;
@@ -106,9 +135,17 @@ static_assert(sizeof(PhoneControlFrameV1) == PHONE_CONTROL_FRAME_SIZE);
 static_assert(sizeof(PhoneStorageFrameV1) == PHONE_STORAGE_FRAME_SIZE);
 static_assert(sizeof(EventBatchRecord) == EVENT_BATCH_RECORD_SIZE);
 static_assert(sizeof(EnrichmentRecordWire) == ENRICHMENT_RECORD_SIZE);
+static_assert(sizeof(PhoneEventBatchHeaderV2) == 16);
+static_assert(sizeof(PhoneEnrichmentResponseHeaderV2) == 20);
 
 static constexpr uint8_t PHONE_GPS_FLAG_VALID = 0x01;
 static constexpr uint8_t PHONE_GPS_FLAG_TIME_TRUSTED = 0x02;
+
+// EnrichmentRecordWire::flags. TAG_PRESENT documents the existing phone
+// encoding. NO_DATA is a terminal response: the phone searched its retained
+// location history and has no usable fix for this event.
+static constexpr uint8_t PHONE_ENRICH_FLAG_TAG_PRESENT = 0x01;
+static constexpr uint8_t PHONE_ENRICH_FLAG_NO_DATA = 0x02;
 
 static constexpr uint8_t PHONE_CTRL_FLAG_WG_ACTIVE = 0x01;
 static constexpr uint8_t PHONE_CTRL_FLAG_DUMP_REQ = 0x02;
@@ -134,6 +171,7 @@ static constexpr const char* PHONE_COMMAND_RESP_CHAR_UUID = "84f03a80-6d7b-4d4d-
 static constexpr const char* PHONE_LOG_STREAM_CHAR_UUID         = "84f03a80-6d7b-4d4d-9a64-6b2d6f3a000b";
 static constexpr const char* PHONE_DASHBOARD_STREAM_CHAR_UUID   = "84f03a80-6d7b-4d4d-9a64-6b2d6f3a000c";
 static constexpr const char* PHONE_NOTIFICATION_CHAR_UUID       = "84f03a80-6d7b-4d4d-9a64-6b2d6f3a000d";
+static constexpr const char* PHONE_AUTH_REQUEST_CHAR_UUID       = "84f03a80-6d7b-4d4d-9a64-6b2d6f3a000e";
 
 // ─────────────────────────────────────────────────────────────────────
 // Phone command/control channel (slice #2)

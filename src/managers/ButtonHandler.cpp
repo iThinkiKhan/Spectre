@@ -26,7 +26,15 @@ ButtonEvent ButtonHandler::getEvent() {
     if (aPressed && bPressed) {
         if (!_comboActive) {
             _comboActive = true;
+            _comboLongFired = false;
             _comboPressTime = min(_aPressTime, _bPressTime);
+        }
+        // Fire the sleep chord once while still held so the gesture gives
+        // immediate feedback instead of waiting for release.
+        if (!_comboLongFired &&
+            (now - _comboPressTime) >= AB_LONG_PRESS_MS) {
+            _comboLongFired = true;
+            return BTN_AB_LONG;
         }
         return BTN_NONE;
     }
@@ -34,10 +42,14 @@ ButtonEvent ButtonHandler::getEvent() {
     if (_comboActive) {
         if (!aPressed && !bPressed) {
             const unsigned long held = now - _comboPressTime;
+            const bool longFired = _comboLongFired;
             _comboActive = false;
+            _comboLongFired = false;
             _aWasPressed = false;
             _bWasPressed = false;
-            if (held >= DEBOUNCE_MS) {
+            // Suppress the trailing short-combo when the long chord already
+            // fired, so one hold can't emit both AB_LONG and AB_SHORT.
+            if (!longFired && held >= DEBOUNCE_MS) {
                 return BTN_AB_SHORT;
             }
         }

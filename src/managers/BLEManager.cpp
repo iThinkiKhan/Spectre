@@ -3,45 +3,7 @@
 
 #include "BLEManager.h"
 #include "CommandDispatcher.h"
-
-// ── Phone companion bring-up decision tree ──
-// Use this when interpreting the next manual BTCON probe run.  Cross
-// the ESP32 serial against the Android logcat from
-// SpectrePeripheralModule (look for "advertise payload", "Companion
-// peripheral advertising", and "adv watchdog" lines).
-//
-//   shortName visible (adv raw name='SPHONE') BUT SpectrePhone not visible
-//     → Android is shortening the local name when payload pressure is
-//       high.  Stay in shortName for the bench session and shrink the
-//       primary AD payload further (no UUID, no manufacturer data).
-//
-//   nameOnly visible BUT uuidOnly not visible
-//     → 128-bit service UUID isn't fitting / parsing.  Either the
-//       Android side isn't actually packing the UUID (check the
-//       "primaryUuid=" field of the advertise payload log) or the
-//       NimBLE side isn't parsing it from this PDU type.  Fall back
-//       to nameOnly for production discovery until resolved.
-//
-//   Neither name visible BUT other BLE devices visible (adv raw lines
-//   for unrelated MACs)
-//     → Android advertiser/platform issue.  Confirm "callbackOk=true"
-//       on the watchdog, check `adapter.isMultipleAdvertisementSupported`,
-//       and verify Android battery saver / location services aren't
-//       suppressing advertising.  Force shortName to rule out length.
-//
-//   Visible AND ESP32 reaches "connect attempt …" BUT Android logcat
-//   shows no GATT state callback (no "GATT state addr=…" line)
-//     → Connectable/address issue.  Cached address may be a
-//       random-private (RPA) that has rotated; verify "addrType=1"
-//       on the matching advert and confirm the failure clears the
-//       cache (look for our new "clearing cached peer reason=…").
-//
-//   Android GATT state callback fires (newState=2) then disconnects
-//   immediately
-//     → GATT binding/server issue, not discovery.  Check the
-//       Spectre-side "connect failed at characteristic bind" path
-//       and Android `addService` outcome.
-// ──────────────────────────────────────────────────────────────────────
+#include "TimeService.h"
 
 #include "protocol/CompanionProtocol.h"
 
@@ -78,6 +40,7 @@ constexpr uint16_t CONNECT_SCAN_INTERVAL     = 16;  // 10 ms units used by NimBL
 constexpr uint16_t CONNECT_SCAN_WINDOW       = 16;
 constexpr uint32_t CONNECT_TIMEOUT_MS        = 8000UL;  // modest increase; was 6 s
 constexpr uint32_t CONNECT_TIMEOUT_PROBE_MS  = 45000UL;  // long field probe
+constexpr uint16_t PHONE_CONN_SUPERVISION_TIMEOUT_10MS = 1500;
 constexpr uint32_t CONNECT_WATCHDOG_MS       = 50000UL;
 constexpr uint32_t GPS_POLL_MS               = 5000UL;
 constexpr uint32_t CONTROL_POLL_MS           = 2000UL;
@@ -91,9 +54,8 @@ constexpr uint32_t ENRICHMENT_TIMEOUT_MS     = 25000UL;
 constexpr uint32_t PHONE_PEER_CACHE_TTL_MS   = 300000UL;
 constexpr int8_t   PHONE_WEAK_RSSI_DBM       = -85;
 
-// Lease window granted (well, refreshed) on each successful BLE link
-// transition so a manual bench test isn't yanked mid-session when the
-// original probe lease expires.  Refresh cadence matches phone-enrich.
+// Refresh on successful link transitions so the arbiter does not reclaim BLE
+// mid-session.
 constexpr uint32_t BLE_LINK_ACTIVE_LEASE_MS  = 60000UL;
 
 constexpr float GPS_MAX_ABS_LAT              = 90.0f;
@@ -281,8 +243,7 @@ bool payloadAdvertisesUuid128(const std::vector<uint8_t>& payload, const char* u
         const uint8_t* data = payload.data() + offset + 2U;
         const size_t dataLen = fieldLen - 1U;
 
-        // 0x06/0x07 are incomplete/complete 128-bit service UUID lists.
-        // 0x21 is 128-bit service data; accept it diagnostically too.
+        // Accept service-data UUIDs too; Android may advertise that shape.
         if (type == 0x06 || type == 0x07 || type == 0x21) {
             const size_t compareLen = (type == 0x21 && dataLen >= 16U) ? 16U : dataLen;
             for (size_t i = 0; i + 16U <= compareLen; i += 16U) {
@@ -329,6 +290,10 @@ BLEManager::BLEManager()
 }
 
 bool BLEManager::begin() {
+    if (!_ensurePayloadBuffers()) {
+        return false;
+    }
+
     if (_begun) {
         return _ensureWorkerTask();
     }
@@ -355,6 +320,8 @@ bool BLEManager::begin() {
         _metaRemoteChar = nullptr;
         _eventBatchRemoteChar = nullptr;
         _enrichmentRemoteChar = nullptr;
+        _authRemoteChar = nullptr;
+        _authWriteRemoteChar = nullptr;
         _server = nullptr;
         _textService = nullptr;
         _promptChar = nullptr;
@@ -426,8 +393,7 @@ bool BLEManager::begin() {
     NimBLEDevice::setPower(ESP_PWR_LVL_P9);
     NimBLEDevice::setMTU(247);
 
-    // BLE is only the transport. Keep the platform credential flow inactive;
-    // P-256 app auth gates the session and AES-GCM protects data.
+    // BLE is transport only; app auth and AES-GCM own trust.
     NimBLEDevice::setSecurityAuth(false, false, false);
     NimBLEDevice::setSecurityIOCap(BLE_HS_IO_NO_INPUT_OUTPUT);
     NimBLEDevice::setSecurityInitKey(0);
@@ -479,12 +445,6 @@ void BLEManager::shutdown() {
     NimBLEDevice::deinit(true);
     DLOG_INFO(TAG, "shutdown phase=nimble_deinit_ok");
 
-    if (_workerStack) {
-        DLOG_INFO(TAG, "shutdown phase=worker_stack_free");
-        heap_caps_free(_workerStack);
-        _workerStack = nullptr;
-    }
-
     _scan = nullptr;
     _client = nullptr;
     _remoteService = nullptr;
@@ -493,6 +453,8 @@ void BLEManager::shutdown() {
     _metaRemoteChar = nullptr;
     _eventBatchRemoteChar = nullptr;
     _enrichmentRemoteChar = nullptr;
+    _authRemoteChar = nullptr;
+    _authWriteRemoteChar = nullptr;
     _storageRemoteChar = nullptr;
     _server = nullptr;
     _textService = nullptr;
@@ -611,8 +573,7 @@ void BLEManager::tick() {
     const uint32_t now = millis();
     if (_workerTask && (now - _lastStackLogMs) >= STACK_LOG_INTERVAL_MS) {
         const uint32_t freeBytes =
-            static_cast<uint32_t>(uxTaskGetStackHighWaterMark(_workerTask) *
-                                  sizeof(StackType_t));
+            static_cast<uint32_t>(uxTaskGetStackHighWaterMark(_workerTask));
         if (_workerMinFreeStackBytes == 0 || freeBytes < _workerMinFreeStackBytes) {
             _workerMinFreeStackBytes = freeBytes;
         }
@@ -681,6 +642,14 @@ void BLEManager::tick() {
         _lastTargetRssi <= PHONE_WEAK_RSSI_DBM;
     const uint32_t scanWindowMs =
         weakRecentTarget ? WEAK_SIGNAL_SCAN_WINDOW_MS : SCAN_WINDOW_MS;
+
+    if (_state == BLE_SCANNING && _targetFound) {
+        _stopScanWindow();
+        DLOG_INFO(TAG, "scan stop; connect pending addr=%s", _connectedPeerAddr);
+        _state                   = BLE_IDLE;
+        _connectPendingAfterScan = true;
+        _nextActionMs            = now + 250UL;
+    }
 
     if (_state == BLE_SCANNING && (now - _scanStartedMs) >= scanWindowMs) {
         _stopScanWindow();
@@ -968,7 +937,7 @@ bool BLEManager::requestEnrichmentBatch(const EventBatchRecord* records, size_t 
     _clearBleRxQueues();
 
     const size_t payloadLen = count * EVENT_BATCH_RECORD_SIZE;
-    memcpy(_eventBatchTxBuf, records, payloadLen);
+    memcpy(_payload->eventBatchTx, records, payloadLen);
     _eventBatchTxLen = payloadLen;
     _enrichmentExpectedCount = count;
     _enrichmentRequestPending = true;
@@ -1013,15 +982,15 @@ bool BLEManager::publishStorageSnapshot(const PhoneStorageFrameV1& frame) {
     if (!_secureSession.encrypt(PHONE_SECURE_CHANNEL_STORAGE,
                                 reinterpret_cast<const uint8_t*>(&frame),
                                 sizeof(frame),
-                                _storageSecureTxBuf,
-                                sizeof(_storageSecureTxBuf),
+                                _payload->storageSecureTx,
+                                sizeof(_payload->storageSecureTx),
                                 secureTxLen)) {
         DLOG_WARN(TAG, "storage snapshot encrypt failed: %s",
                   _secureSession.lastError() ? _secureSession.lastError() : "-");
         return false;
     }
 
-    const bool ok = _storageRemoteChar->writeValue(_storageSecureTxBuf, secureTxLen, true);
+    const bool ok = _storageRemoteChar->writeValue(_payload->storageSecureTx, secureTxLen, true);
     if (!ok) {
         DLOG_WARN(TAG, "storage snapshot write failed sealed=%u",
                   static_cast<unsigned>(secureTxLen));
@@ -1056,7 +1025,7 @@ bool BLEManager::publishLogStreamChunk(const uint8_t* plain, size_t plainLen) {
     size_t secureLen = 0;
     if (!_secureSession.encrypt(PHONE_SECURE_CHANNEL_LOG_STREAM,
                                 plain, plainLen,
-                                _logStreamSecureBuf, sizeof(_logStreamSecureBuf),
+                                _payload->logStreamSecure, sizeof(_payload->logStreamSecure),
                                 secureLen)) {
         return false;
     }
@@ -1064,7 +1033,7 @@ bool BLEManager::publishLogStreamChunk(const uint8_t* plain, size_t plainLen) {
     // Prefer write-without-response: chunks are lossy by design and the
     // round-trip ack would cap our chunk rate well below what we need.
     const bool needsResponse = !_logStreamRemoteChar->canWriteNoResponse();
-    return _logStreamRemoteChar->writeValue(_logStreamSecureBuf, secureLen,
+    return _logStreamRemoteChar->writeValue(_payload->logStreamSecure, secureLen,
                                             needsResponse);
 }
 
@@ -1086,15 +1055,15 @@ bool BLEManager::publishDashboardStreamChunk(const uint8_t* plain, size_t plainL
     size_t secureLen = 0;
     if (!_secureSession.encrypt(PHONE_SECURE_CHANNEL_DASHBOARD_STREAM,
                                 plain, plainLen,
-                                _dashboardStreamSecureBuf,
-                                sizeof(_dashboardStreamSecureBuf),
+                                _payload->dashboardStreamSecure,
+                                sizeof(_payload->dashboardStreamSecure),
                                 secureLen)) {
         return false;
     }
 
     const bool needsResponse = !_dashboardStreamRemoteChar->canWriteNoResponse();
     return _dashboardStreamRemoteChar->writeValue(
-        _dashboardStreamSecureBuf, secureLen, needsResponse);
+        _payload->dashboardStreamSecure, secureLen, needsResponse);
 }
 
 bool BLEManager::publishNotification(const uint8_t* plain, size_t plainLen) {
@@ -1115,15 +1084,15 @@ bool BLEManager::publishNotification(const uint8_t* plain, size_t plainLen) {
     size_t secureLen = 0;
     if (!_secureSession.encrypt(PHONE_SECURE_CHANNEL_NOTIFICATION,
                                 plain, plainLen,
-                                _notificationSecureBuf,
-                                sizeof(_notificationSecureBuf),
+                                _payload->notificationSecure,
+                                sizeof(_payload->notificationSecure),
                                 secureLen)) {
         return false;
     }
 
     const bool needsResponse = !_notificationRemoteChar->canWriteNoResponse();
     return _notificationRemoteChar->writeValue(
-        _notificationSecureBuf, secureLen, needsResponse);
+        _payload->notificationSecure, secureLen, needsResponse);
 }
 
 bool BLEManager::consumeEnrichmentBatch(PendingEnrichment* out,
@@ -1147,7 +1116,7 @@ bool BLEManager::consumeEnrichmentBatch(PendingEnrichment* out,
 
     const size_t count = _enrichmentAvailableCount;
     for (size_t i = 0; i < count; ++i) {
-        out[i] = _enrichmentBatch[i];
+        out[i] = _payload->enrichmentBatch[i];
     }
 
     outCount = count;
@@ -1159,8 +1128,8 @@ bool BLEManager::consumeEnrichmentBatch(PendingEnrichment* out,
     _enrichmentWaitStartMs = 0;
     _eventBatchTxLen = 0;
     _enrichmentDeadlineMs = 0;
-    memset(_enrichmentRxBuf, 0, sizeof(_enrichmentRxBuf));
-    memset(_enrichmentBatch, 0, sizeof(_enrichmentBatch));
+    memset(_payload->enrichmentRx, 0, sizeof(_payload->enrichmentRx));
+    memset(_payload->enrichmentBatch, 0, sizeof(_payload->enrichmentBatch));
 
     DLOG_INFO(TAG, "enrichment batch consumed count=%u",
               static_cast<unsigned>(count));
@@ -1279,8 +1248,17 @@ void BLEManager::_setupServer() {
 
     NimBLEAdvertising* adv = NimBLEDevice::getAdvertising();
     if (adv) {
+        // Primary advertisement carries flags + the 128-bit text service UUID so
+        // the companion app's UUID-filtered scan ("search for Spectre") always
+        // matches. A 128-bit UUID (18B) + flags (3B) already fills most of the
+        // 31-byte primary budget, so the device name goes in the scan response
+        // instead — otherwise NimBLE drops one of them on overflow and the app
+        // sees a nameless or undiscoverable device even while advertising.
         adv->addServiceUUID(TEXT_SERVICE_UUID);
-        adv->setName(std::string(_deviceName));
+        NimBLEAdvertisementData scanResponse;
+        scanResponse.setName(std::string(_deviceName));
+        adv->setScanResponseData(scanResponse);
+        adv->enableScanResponse(true);
     }
 
     _setPrompt("");
@@ -1292,18 +1270,9 @@ void BLEManager::_setupScanner() {
     _scan = NimBLEDevice::getScan();
     _scan->setScanCallbacks(&_scanCallbacks, false);
 
-    // Active scan so the controller emits SCAN_REQ and we receive the
-    // peer's SCAN_RSP — required to pick up the local name when the
-    // peer puts the UUID in the primary AD and the name in scan
-    // response (and vice versa for the Android nameOnly path).
-    //
-    // NimBLE on ESP32 listens to LEGACY advertising PDUs by default in
-    // setActiveScan(); we explicitly do NOT enable extended-scan
-    // because the Android BluetoothLeAdvertiser path Spectre's
-    // companion uses always emits LEGACY connectable scannable
-    // adverts.  If we ever flip the companion to startAdvertisingSet,
-    // this is the spot that has to learn extended scanning too.
-    _scan->setActiveScan(true);
+    // The companion UUID is in the primary advertisement, so scan passively.
+    // This avoids depending on a peer scan response before service matching.
+    _scan->setActiveScan(false);
     _scan->setScanResponseTimeout(SCAN_RESPONSE_TIMEOUT_MS);
 
     // 100% duty cycle while a scan window is open — interval == window.
@@ -1315,7 +1284,7 @@ void BLEManager::_setupScanner() {
     _scan->setWindow(30);
 
     DLOG_INFO(TAG,
-              "scanner configured legacy=1 active=1 interval=%lu window=%lu srTimeout=%lu",
+              "scanner configured legacy=1 active=0 interval=%lu window=%lu srTimeout=%lu",
               30UL,
               30UL,
               static_cast<unsigned long>(SCAN_RESPONSE_TIMEOUT_MS));
@@ -1380,9 +1349,9 @@ void BLEManager::_resetState() {
     strlcpy(_receiptBuf, "IDLE", sizeof(_receiptBuf));
     memset(_statusBuf, 0, sizeof(_statusBuf));
     memset(_metadataBuf, 0, sizeof(_metadataBuf));
-    memset(_eventBatchTxBuf, 0, sizeof(_eventBatchTxBuf));
-    memset(_enrichmentRxBuf, 0, sizeof(_enrichmentRxBuf));
-    memset(_enrichmentBatch, 0, sizeof(_enrichmentBatch));
+    memset(_payload->eventBatchTx, 0, sizeof(_payload->eventBatchTx));
+    memset(_payload->enrichmentRx, 0, sizeof(_payload->enrichmentRx));
+    memset(_payload->enrichmentBatch, 0, sizeof(_payload->enrichmentBatch));
     _eventBatchTxLen = 0;
     _enrichmentRxLen = 0;
     _enrichmentExpectedCount = 0;
@@ -1402,7 +1371,7 @@ void BLEManager::_resetState() {
     _authRxPending = false;
     _authRxLen = 0;
     _authRxDrops = 0;
-    memset(_authRxBuf, 0, sizeof(_authRxBuf));
+    memset(_payload->authRx, 0, sizeof(_payload->authRx));
     _secureSession.reset();
 }
 
@@ -1437,13 +1406,13 @@ void BLEManager::_startScanWindow() {
     _state = BLE_SCANNING;
     _scan->clearResults();
     _scan->setScanCallbacks(&_scanCallbacks, diagActive);
-    _scanActive = _scan->start((scanWindowMs + 999UL) / 1000UL, false, false);
+    _scanActive = _scan->start(scanWindowMs, false, false);
     _lastScanStartMs = millis();
 
     if (_scanActive) {
         DLOG_INFO(TAG, "scan start");
         DLOG_INFO(TAG,
-                  "scan start diag=%d dup=%d diagLeft=%ld state=%u window=%lums weakRecent=%u lastRssi=%d",
+                  "scan start diag=%d deliverDuplicates=%d diagLeft=%ld state=%u window=%lums weakRecent=%u lastRssi=%d",
                   diagActive ? 1 : 0,
                   diagActive ? 1 : 0,
                   (long)(_scanDiagUntilMs > millis() ? _scanDiagUntilMs - millis() : 0),
@@ -1593,35 +1562,48 @@ void BLEManager::_queueWorker(uint32_t bits) {
     }
 }
 
+bool BLEManager::_ensurePayloadBuffers() {
+    if (_payload) {
+        return true;
+    }
+
+    _payload = static_cast<PayloadBuffers*>(
+        heap_caps_calloc(1, sizeof(PayloadBuffers), MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT));
+    if (!_payload) {
+        DLOG_ERROR(TAG, "BLE payload PSRAM alloc failed bytes=%u free=%u largest=%u",
+                   static_cast<unsigned>(sizeof(PayloadBuffers)),
+                   static_cast<unsigned>(heap_caps_get_free_size(MALLOC_CAP_SPIRAM)),
+                   static_cast<unsigned>(heap_caps_get_largest_free_block(MALLOC_CAP_SPIRAM)));
+        return false;
+    }
+
+    DLOG_INFO(TAG, "BLE payload buffers in PSRAM bytes=%u",
+              static_cast<unsigned>(sizeof(PayloadBuffers)));
+    return true;
+}
+
 bool BLEManager::_ensureWorkerTask() {
     if (_workerTask) {
         return true;
     }
 
-    if (!_workerStack) {
-        _workerStack = static_cast<StackType_t*>(heap_caps_malloc(
-            WORKER_STACK_WORDS * sizeof(StackType_t),
-            MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT));
-        if (!_workerStack) {
-            DLOG_ERROR(TAG, "worker stack alloc failed");
-            return false;
-        }
-    }
-
-    _workerTask = xTaskCreateStaticPinnedToCore(
+    const BaseType_t created = xTaskCreatePinnedToCoreWithCaps(
         _workerTaskEntry,
         "BLEWorker",
-        WORKER_STACK_WORDS,
+        WORKER_STACK_BYTES,
         this,
         2,
-        _workerStack,
-        &_workerTaskBuffer,
-        0
+        &_workerTask,
+        1,
+        MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT
     );
-    if (!_workerTask) {
-        DLOG_ERROR(TAG, "worker task create failed");
-        heap_caps_free(_workerStack);
-        _workerStack = nullptr;
+    if (created != pdPASS || !_workerTask) {
+        _workerTask = nullptr;
+        DLOG_ERROR(TAG,
+                   "worker task create failed rc=%ld psramFree=%u largest=%u",
+                   static_cast<long>(created),
+                   static_cast<unsigned>(heap_caps_get_free_size(MALLOC_CAP_SPIRAM)),
+                   static_cast<unsigned>(heap_caps_get_largest_free_block(MALLOC_CAP_SPIRAM)));
         return false;
     }
 
@@ -1636,20 +1618,7 @@ void BLEManager::_releaseWorkerTask(const char* phase) {
         DLOG_INFO(TAG, "%s phase=worker_delete", phase ? phase : "ble");
         TaskHandle_t task = _workerTask;
         _workerTask = nullptr;
-        // The worker is pinned to core 0 and may be executing while this
-        // call runs on the other core. vTaskDelete alone only marks the
-        // task for deletion — its (static) stack can still be in use until
-        // the remote core context-switches it out. Suspend first to force
-        // an immediate preemption on the worker's core before we free the
-        // backing memory.
-        vTaskSuspend(task);
-        vTaskDelete(task);
-    }
-
-    if (_workerStack) {
-        DLOG_INFO(TAG, "%s phase=worker_stack_free", phase ? phase : "ble");
-        heap_caps_free(_workerStack);
-        _workerStack = nullptr;
+        vTaskDeleteWithCaps(task);
     }
 }
 
@@ -1752,7 +1721,7 @@ void BLEManager::_doConnectJob() {
         _client->setConnectionParams(12,
                                      24,
                                      0,
-                                     60,
+                                     PHONE_CONN_SUPERVISION_TIMEOUT_10MS,
                                      CONNECT_SCAN_INTERVAL,
                                      CONNECT_SCAN_WINDOW);
     } else if (isProbe) {
@@ -1887,10 +1856,10 @@ void BLEManager::_doEnrichmentSendJob() {
 
     size_t secureTxLen = 0;
     if (!_secureSession.encrypt(PHONE_SECURE_CHANNEL_EVENT_BATCH,
-                                _eventBatchTxBuf,
+                                _payload->eventBatchTx,
                                 _eventBatchTxLen,
-                                _eventBatchSecureTxBuf,
-                                sizeof(_eventBatchSecureTxBuf),
+                                _payload->eventBatchSecureTx,
+                                sizeof(_payload->eventBatchSecureTx),
                                 secureTxLen)) {
         DLOG_WARN(TAG, "enrichment send failed: encrypt: %s",
                   _secureSession.lastError() ? _secureSession.lastError() : "-");
@@ -1898,7 +1867,7 @@ void BLEManager::_doEnrichmentSendJob() {
         return;
     }
 
-    const bool ok = _eventBatchRemoteChar->writeValue(_eventBatchSecureTxBuf, secureTxLen, true);
+    const bool ok = _eventBatchRemoteChar->writeValue(_payload->eventBatchSecureTx, secureTxLen, true);
     if (!ok) {
         // Android/Samsung can still deliver the write even when NimBLE reports
         // a false return; the phone may acknowledge BATCH_RX shortly after.
@@ -1958,7 +1927,7 @@ void BLEManager::_onAdvertisedDevice(const NimBLEAdvertisedDevice* advertisedDev
             (matchKind == TargetMatch::NameFallback) ? "name"    :
                                                        "none";
 
-        DLOG_INFO(TAG,
+        DLOG_DEBUG(TAG,
                   "adv check addr=%s addrType=%u targetSvc=%d matchedBy=%s rssi=%d",
                   addr.c_str(),
                   static_cast<unsigned>(addrType),
@@ -1982,7 +1951,7 @@ void BLEManager::_onAdvertisedDevice(const NimBLEAdvertisedDevice* advertisedDev
             char payloadHex[80];
             formatHexSnippet(payload, payloadHex, sizeof(payloadHex));
 
-            DLOG_INFO(TAG,
+            DLOG_DEBUG(TAG,
                       "adv raw name='%s' addr=%s addrType=%u rssi=%d hasName=%d hasSvc=%d targetSvc=%d rawTargetSvc=%d svcCount=%u matchedBy=%s",
                       name.c_str(),
                       addr.c_str(),
@@ -1994,13 +1963,13 @@ void BLEManager::_onAdvertisedDevice(const NimBLEAdvertisedDevice* advertisedDev
                       hasRawTargetSvc                     ? 1 : 0,
                       static_cast<unsigned>(svcCount),
                       matchedBy);
-            DLOG_INFO(TAG,
+            DLOG_DEBUG(TAG,
                       "adv raw payload len=%u hex=%s",
                       static_cast<unsigned>(payload.size()),
                       payloadHex);
 
             if (advertisedDevice->haveServiceUUID()) {
-                DLOG_INFO(TAG, "adv svc=%s",
+                DLOG_DEBUG(TAG, "adv svc=%s",
                           advertisedDevice->getServiceUUID().toString().c_str());
             }
 
@@ -2020,7 +1989,7 @@ void BLEManager::_onAdvertisedDevice(const NimBLEAdvertisedDevice* advertisedDev
                         strlcat(svcBuf, uuidStr.c_str(), sizeof(svcBuf));
                     }
                 }
-                DLOG_INFO(TAG,
+                DLOG_DEBUG(TAG,
                           "adv SPECTRE-NAME name='%s' addr=%s svcs=%u targetSvc=%d [%s]",
                           name.c_str(),
                           addr.c_str(),
@@ -2080,15 +2049,7 @@ void BLEManager::_onAdvertisedDevice(const NimBLEAdvertisedDevice* advertisedDev
               _connectedDeviceName,
               static_cast<int>(_lastTargetRssi));
 
-    // Stop the scan so the controller is idle before we open a connection.
-    // Do NOT call _startConnectAttempt() here — we are inside a NimBLE
-    // scan callback.  Instead, set a deferred flag; tick() will fire the
-    // connect after a 250 ms drain window.
-    _stopScanWindow();
-    DLOG_INFO(TAG, "scan stop; connect pending addr=%s", _connectedPeerAddr);
-    _state                   = BLE_IDLE;
-    _connectPendingAfterScan = true;
-    _nextActionMs            = millis() + 250UL;
+    // tick() stops the scanner after this callback returns, then connects.
 }
 
 void BLEManager::_onClientConnected(NimBLEClient* pClient) {
@@ -2254,8 +2215,8 @@ void BLEManager::_resetEnrichmentExchangeState(bool preserveFailure) {
         _enrichmentFailed = false;
     }
 
-    memset(_enrichmentRxBuf, 0, sizeof(_enrichmentRxBuf));
-    memset(_enrichmentBatch, 0, sizeof(_enrichmentBatch));
+    memset(_payload->enrichmentRx, 0, sizeof(_payload->enrichmentRx));
+    memset(_payload->enrichmentBatch, 0, sizeof(_payload->enrichmentBatch));
     _clearBleRxQueues();
 }
 
@@ -2265,8 +2226,7 @@ void BLEManager::_failEnrichment(const char* reason) {
 
     DLOG_WARN(TAG, "enrichment failed reason=%s", reason ? reason : "-");
 
-    // Do not touch _eventBatchTxBuf or the pending event list —
-    // the caller can retry once the link recovers.
+    // Keep the event batch and pending event list intact so the caller can retry.
     _publishBleState();
     _refreshStatusCharacteristic();
 }
@@ -2276,9 +2236,26 @@ bool BLEManager::_bindRemoteCharacteristics() {
         return false;
     }
 
+    DLOG_INFO(TAG, "remote service lookup begin core=%d internalFree=%u largest=%u",
+              xPortGetCoreID(),
+              static_cast<unsigned>(heap_caps_get_free_size(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT)),
+              static_cast<unsigned>(heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT)));
     _remoteService = _client->getService(_targetServiceUUID);
+    DLOG_INFO(TAG, "remote service lookup end found=%u err=%d",
+              _remoteService ? 1u : 0u,
+              _client ? _client->getLastError() : 0);
     if (!_remoteService) {
         DLOG_ERROR(TAG, "remote service missing %s", _targetServiceUUID);
+        return false;
+    }
+
+    DLOG_INFO(TAG, "remote characteristic discovery begin");
+    const auto& discoveredChars = _remoteService->getCharacteristics(true);
+    DLOG_INFO(TAG, "remote characteristic discovery end count=%u err=%d",
+              static_cast<unsigned>(discoveredChars.size()),
+              _client ? _client->getLastError() : 0);
+    if (discoveredChars.empty()) {
+        DLOG_ERROR(TAG, "remote service has no characteristics");
         return false;
     }
 
@@ -2288,6 +2265,7 @@ bool BLEManager::_bindRemoteCharacteristics() {
     _eventBatchRemoteChar = _remoteService->getCharacteristic(PHONE_EVENT_BATCH_UUID);
     _enrichmentRemoteChar = _remoteService->getCharacteristic(PHONE_ENRICHMENT_UUID);
     _authRemoteChar = _remoteService->getCharacteristic(PHONE_AUTH_CHAR_UUID);
+    _authWriteRemoteChar = _remoteService->getCharacteristic(PHONE_AUTH_REQUEST_CHAR_UUID);
     _storageRemoteChar = _remoteService->getCharacteristic(PHONE_STORAGE_CHAR_UUID);
     _commandReqRemoteChar  = _remoteService->getCharacteristic(PHONE_COMMAND_REQ_CHAR_UUID);
     _commandRespRemoteChar = _remoteService->getCharacteristic(PHONE_COMMAND_RESP_CHAR_UUID);
@@ -2295,16 +2273,34 @@ bool BLEManager::_bindRemoteCharacteristics() {
     _dashboardStreamRemoteChar = _remoteService->getCharacteristic(PHONE_DASHBOARD_STREAM_CHAR_UUID);
     _notificationRemoteChar = _remoteService->getCharacteristic(PHONE_NOTIFICATION_CHAR_UUID);
 
-    if (!_authRemoteChar ||
-        !_authRemoteChar->canWrite() ||
-        !_authRemoteChar->canNotify()) {
-        DLOG_ERROR(TAG, "remote service missing secure auth char");
+    if (!_authRemoteChar || !_authRemoteChar->canNotify() ||
+        !_authWriteRemoteChar ||
+        (!_authWriteRemoteChar->canWrite() && !_authWriteRemoteChar->canWriteNoResponse())) {
+        DLOG_ERROR(TAG, "remote service missing directional auth chars");
         _lastAuthFailReason = BleAuthFailReason::AUTH_CHAR_NOT_FOUND;
         return false;
     }
 
     if (!_gpsRemoteChar && !_controlRemoteChar) {
         DLOG_ERROR(TAG, "remote service has no usable chars");
+        return false;
+    }
+
+    const auto discoverNotifyDescriptors = [this](NimBLERemoteCharacteristic* chr,
+                                                   const char* label) {
+        if (!chr || !chr->canNotify()) {
+            return true;
+        }
+        const auto& descriptors = chr->getDescriptors(true);
+        DLOG_INFO(TAG, "remote descriptor discovery char=%s count=%u err=%d",
+                  label,
+                  static_cast<unsigned>(descriptors.size()),
+                  _client ? _client->getLastError() : 0);
+        return !descriptors.empty();
+    };
+
+    if (!discoverNotifyDescriptors(_authRemoteChar, "auth")) {
+        DLOG_ERROR(TAG, "remote auth descriptor discovery failed");
         return false;
     }
 
@@ -2333,21 +2329,13 @@ bool BLEManager::_bindRemoteCharacteristics() {
                   static_cast<int>(_lastTargetRssi));
     }
 
-    if (_gpsRemoteChar && _gpsRemoteChar->canNotify()) {
-        _gpsNotifyEnabled = _gpsRemoteChar->subscribe(true, _gpsNotifyThunk, false);
+    if (_enrichmentRemoteChar && _enrichmentRemoteChar->canNotify() &&
+        discoverNotifyDescriptors(_enrichmentRemoteChar, "enrichment")) {
+        _enrichmentNotifyEnabled = _enrichmentRemoteChar->subscribe(true, _enrichmentNotifyThunk, true);
     }
-
-    if (_controlRemoteChar && _controlRemoteChar->canNotify()) {
-        _controlNotifyEnabled = _controlRemoteChar->subscribe(true, _controlNotifyThunk, false);
-    }
-
-    if (_enrichmentRemoteChar && _enrichmentRemoteChar->canNotify()) {
-        _enrichmentNotifyEnabled = _enrichmentRemoteChar->subscribe(true, _enrichmentNotifyThunk, false);
-    }
-
-    if (_commandReqRemoteChar && _commandReqRemoteChar->canNotify()) {
-        _commandReqNotifyEnabled =
-            _commandReqRemoteChar->subscribe(true, _commandReqNotifyThunk, false);
+    if (!_enrichmentNotifyEnabled) {
+        DLOG_ERROR(TAG, "remote enrichment subscription failed");
+        return false;
     }
 
     if (_metaRemoteChar && _metaRemoteChar->canRead()) {
@@ -2388,13 +2376,14 @@ bool BLEManager::_bindRemoteCharacteristics() {
     _state = BLE_SUBSCRIBED;
     const uint16_t mtu = (_client && _client->isConnected()) ? _client->getMTU() : 0;
     const uint16_t attPayload = (mtu > 3) ? static_cast<uint16_t>(mtu - 3) : 0;
-    DLOG_INFO(TAG, "remote bound gps=%d ctrl=%d meta=%d batch=%d enrich=%d auth=%d storage=%d cmdReq=%d cmdResp=%d logStream=%d dashStream=%d notification=%d notify(gps=%d ctrl=%d enrich=%d auth=%d cmdReq=%d) mtu=%u attPayload=%u",
+    DLOG_INFO(TAG, "remote bound gps=%d ctrl=%d meta=%d batch=%d enrich=%d auth=%d authReq=%d storage=%d cmdReq=%d cmdResp=%d logStream=%d dashStream=%d notification=%d notify(gps=%d ctrl=%d enrich=%d auth=%d cmdReq=%d) mtu=%u attPayload=%u",
               _gpsRemoteChar ? 1 : 0,
               _controlRemoteChar ? 1 : 0,
               _metaRemoteChar ? 1 : 0,
               _eventBatchRemoteChar ? 1 : 0,
               _enrichmentRemoteChar ? 1 : 0,
               _authRemoteChar ? 1 : 0,
+              _authWriteRemoteChar ? 1 : 0,
               _storageRemoteChar ? 1 : 0,
               _commandReqRemoteChar ? 1 : 0,
               _commandRespRemoteChar ? 1 : 0,
@@ -2427,7 +2416,7 @@ bool BLEManager::_bindRemoteCharacteristics() {
 }
 
 bool BLEManager::_authenticateRemote() {
-    if (!_authRemoteChar || !_client || !_client->isConnected()) {
+    if (!_authRemoteChar || !_authWriteRemoteChar || !_client || !_client->isConnected()) {
         // Caller (_bindRemoteCharacteristics) already set AUTH_CHAR_NOT_FOUND
         // for the char-missing case; leave reason as-is.
         return false;
@@ -2435,12 +2424,14 @@ bool BLEManager::_authenticateRemote() {
 
     _lastAuthFailReason = BleAuthFailReason::NONE;
 
-    crashCheckpoint(CrashPhase::BLE_AUTH,
-                    static_cast<uint8_t>(RADIO_ARB.currentOwner()),
-                    0 /* pending not available here */);
+    // Keep the live GATT path flash-free. RTC breadcrumbs still survive
+    // panic/watchdog resets without taking the NVS lock from this worker.
+    crashCheckpointVolatile(CrashPhase::BLE_AUTH,
+                            static_cast<uint8_t>(RADIO_ARB.currentOwner()),
+                            0 /* pending not available here */);
 
     auto failAuth = []() {
-        crashBreadcrumbClear(CrashPhase::BLE_AUTH);
+        crashBreadcrumbClearVolatile(CrashPhase::BLE_AUTH);
         return false;
     };
 
@@ -2452,7 +2443,11 @@ bool BLEManager::_authenticateRemote() {
 
     _secureSession.reset();
 
-    _authNotifyEnabled = _authRemoteChar->subscribe(true, _authNotifyThunk, false);
+    DLOG_INFO(TAG, "auth notify subscribe begin");
+    _authNotifyEnabled = _authRemoteChar->subscribe(true, _authNotifyThunk, true);
+    DLOG_INFO(TAG, "auth notify subscribe end ok=%u err=%d",
+              _authNotifyEnabled ? 1u : 0u,
+              _client ? _client->getLastError() : 0);
     if (!_authNotifyEnabled) {
         DLOG_WARN(TAG, "auth notify subscribe failed");
         _lastAuthFailReason = BleAuthFailReason::AUTH_NOTIFY_MISSING;
@@ -2460,19 +2455,35 @@ bool BLEManager::_authenticateRemote() {
     }
 
     size_t challengeLen = 0;
-    if (!_secureSession.buildChallenge(_authChallengeBuf,
-                                       sizeof(_authChallengeBuf),
+    if (!_secureSession.buildChallenge(_payload->authChallenge,
+                                       sizeof(_payload->authChallenge),
                                        challengeLen)) {
         // buildChallenge failure is a local crypto init problem; no specific
         // auth-fail reason is set — _secureSession.lastError() covers it.
         return failAuth();
     }
 
-    DLOG_INFO(TAG, "auth challenge write bytes=%u", static_cast<unsigned>(challengeLen));
-    if (!_authRemoteChar->writeValue(_authChallengeBuf, challengeLen, true)) {
-        DLOG_WARN(TAG, "auth challenge write failed");
-        _lastAuthFailReason = BleAuthFailReason::GATT_WRITE_FAILED;
-        return failAuth();
+    DLOG_INFO(TAG,
+              "auth challenge write bytes=%u mtu=%u attPayload=%u mode=response",
+              static_cast<unsigned>(challengeLen),
+              static_cast<unsigned>(_client ? _client->getMTU() : 0),
+              static_cast<unsigned>(_client && _client->getMTU() > 3
+                                        ? _client->getMTU() - 3
+                                        : 0));
+    constexpr size_t AUTH_WRITE_CHUNK_SIZE = 20;
+    for (size_t offset = 0; offset < challengeLen; offset += AUTH_WRITE_CHUNK_SIZE) {
+        const size_t chunkLen = min(AUTH_WRITE_CHUNK_SIZE, challengeLen - offset);
+        if (!_authWriteRemoteChar->writeValue(_payload->authChallenge + offset, chunkLen, true)) {
+            DLOG_WARN(TAG,
+                      "auth challenge write failed offset=%u bytes=%u",
+                      static_cast<unsigned>(offset),
+                      static_cast<unsigned>(chunkLen));
+            _lastAuthFailReason = BleAuthFailReason::GATT_WRITE_FAILED;
+            return failAuth();
+        }
+        if (offset + chunkLen < challengeLen) {
+            vTaskDelay(pdMS_TO_TICKS(20));
+        }
     }
 
     const uint32_t deadline = millis() + 6000UL;
@@ -2482,8 +2493,8 @@ bool BLEManager::_authenticateRemote() {
         bool haveResponse = false;
         xSemaphoreTake(_rxMutex, portMAX_DELAY);
         if (_authRxPending && _authRxLen > 0) {
-            responseLen = min(_authRxLen, sizeof(_authResponseBuf));
-            memcpy(_authResponseBuf, _authRxBuf, responseLen);
+            responseLen = min(_authRxLen, sizeof(_payload->authResponse));
+            memcpy(_payload->authResponse, _payload->authRx, responseLen);
             _authRxPending = false;
             _authRxLen = 0;
             haveResponse = true;
@@ -2491,14 +2502,14 @@ bool BLEManager::_authenticateRemote() {
         xSemaphoreGive(_rxMutex);
 
         if (haveResponse) {
-            const bool ok = _secureSession.completeFromResponse(_authResponseBuf, responseLen);
-            memset(_authResponseBuf, 0, sizeof(_authResponseBuf));
+            const bool ok = _secureSession.completeFromResponse(_payload->authResponse, responseLen);
+            memset(_payload->authResponse, 0, sizeof(_payload->authResponse));
             if (ok) {
                 DLOG_INFO(TAG, "app secure session ready alg=P-256+ECDH+AES-256-GCM");
-                crashBreadcrumbClear(CrashPhase::BLE_AUTH);
+                crashBreadcrumbClearVolatile(CrashPhase::BLE_AUTH);
             } else {
                 _lastAuthFailReason = BleAuthFailReason::AES_GCM_OPEN_FAILED;
-                crashBreadcrumbClear(CrashPhase::BLE_AUTH);
+                crashBreadcrumbClearVolatile(CrashPhase::BLE_AUTH);
             }
             return ok;
         }
@@ -2589,6 +2600,7 @@ void BLEManager::_clearRemoteHandles() {
     _eventBatchRemoteChar = nullptr;
     _enrichmentRemoteChar = nullptr;
     _authRemoteChar = nullptr;
+    _authWriteRemoteChar = nullptr;
     _storageRemoteChar = nullptr;
     _commandReqRemoteChar = nullptr;
     _commandRespRemoteChar = nullptr;
@@ -2853,7 +2865,7 @@ void BLEManager::_queueGpsFrameFromCallback(const uint8_t* data, size_t len) {
         _gpsRxDrops++;
     }
 
-    memcpy(_gpsRxBuf, data, copyLen);
+    memcpy(_payload->gpsRx, data, copyLen);
     _gpsRxLen = copyLen;
     _gpsRxPending = true;
 
@@ -2877,7 +2889,7 @@ void BLEManager::_queueControlFrameFromCallback(const uint8_t* data, size_t len)
         _controlRxDrops++;
     }
 
-    memcpy(_controlRxBuf, data, copyLen);
+    memcpy(_payload->controlRx, data, copyLen);
     _controlRxLen = copyLen;
     _controlRxPending = true;
 
@@ -2900,7 +2912,7 @@ void BLEManager::_queueEnrichmentChunkFromCallback(const uint8_t* data, size_t l
         return;
     }
 
-    BleRxChunk& slot = _enrichRx[_enrichRxTail];
+    BleRxChunk& slot = _payload->enrichRx[_enrichRxTail];
     slot.len = static_cast<uint16_t>(len);
     memcpy(slot.data, data, len);
 
@@ -2922,7 +2934,7 @@ void BLEManager::_queueAuthFrameFromCallback(const uint8_t* data, size_t len) {
     if (_authRxPending) {
         _authRxDrops++;
     }
-    memcpy(_authRxBuf, data, len);
+    memcpy(_payload->authRx, data, len);
     _authRxLen = len;
     _authRxPending = true;
     xSemaphoreGive(_rxMutex);
@@ -2942,7 +2954,7 @@ void BLEManager::_queueCommandRequestFromCallback(const uint8_t* data, size_t le
         // submitted a different opcode and the earlier one was dropped.
         _commandReqRxDrops++;
     }
-    memcpy(_commandReqRxBuf, data, len);
+    memcpy(_payload->commandReqRx, data, len);
     _commandReqRxLen = len;
     _commandReqRxPending = true;
     xSemaphoreGive(_rxMutex);
@@ -2968,7 +2980,7 @@ void BLEManager::_drainGpsRx() {
         if (snapLen > GPS_RX_MAX) {
             snapLen = GPS_RX_MAX;
         }
-        memcpy(snapshot, _gpsRxBuf, snapLen);
+        memcpy(snapshot, _payload->gpsRx, snapLen);
         _gpsRxPending = false;
         _gpsRxLen = 0;
         hadFrame = true;
@@ -2986,8 +2998,12 @@ void BLEManager::_drainGpsRx() {
                                    plainLen)) {
             _handleGpsPayload(plain, plainLen);
         } else {
-            DLOG_WARN(TAG, "gps decrypt failed: %s",
-                      _secureSession.lastError() ? _secureSession.lastError() : "-");
+            const char* err = _secureSession.lastError();
+            if (err && strstr(err, "replay/stale counter")) {
+                DLOG_DEBUG(TAG, "Ignoring stale GPS frame: %s", err);
+            } else {
+                DLOG_WARN(TAG, "gps decrypt failed: %s", err ? err : "-");
+            }
         }
     }
 }
@@ -3003,7 +3019,7 @@ void BLEManager::_drainControlRx() {
         if (snapLen > CONTROL_RX_MAX) {
             snapLen = CONTROL_RX_MAX;
         }
-        memcpy(snapshot, _controlRxBuf, snapLen);
+        memcpy(snapshot, _payload->controlRx, snapLen);
         _controlRxPending = false;
         _controlRxLen = 0;
         hadFrame = true;
@@ -3021,8 +3037,12 @@ void BLEManager::_drainControlRx() {
                                    plainLen)) {
             _handleControlPayload(plain, plainLen);
         } else {
-            DLOG_WARN(TAG, "control decrypt failed: %s",
-                      _secureSession.lastError() ? _secureSession.lastError() : "-");
+            const char* err = _secureSession.lastError();
+            if (err && strstr(err, "replay/stale counter")) {
+                DLOG_DEBUG(TAG, "Ignoring stale control frame: %s", err);
+            } else {
+                DLOG_WARN(TAG, "control decrypt failed: %s", err ? err : "-");
+            }
         }
     }
 }
@@ -3030,6 +3050,7 @@ void BLEManager::_drainControlRx() {
 void BLEManager::_drainEnrichmentRx() {
     while (true) {
         size_t snapLen = 0;
+        uint8_t queuedAfterPop = 0;
         bool overflowed = false;
 
         xSemaphoreTake(_rxMutex, portMAX_DELAY);
@@ -3049,18 +3070,19 @@ void BLEManager::_drainEnrichmentRx() {
             break;
         }
 
-        BleRxChunk& slot = _enrichRx[_enrichRxHead];
+        BleRxChunk& slot = _payload->enrichRx[_enrichRxHead];
         snapLen = slot.len;
         if (snapLen > ENRICH_RX_CHUNK_MAX) {
             snapLen = ENRICH_RX_CHUNK_MAX;
         }
 
         if (snapLen > 0) {
-            memcpy(_enrichRxScratch, slot.data, snapLen);
+            memcpy(_payload->enrichRxScratch, slot.data, snapLen);
         }
 
         _enrichRxHead = (_enrichRxHead + 1) % ENRICH_RX_SLOTS;
         _enrichRxCount--;
+        queuedAfterPop = _enrichRxCount;
         xSemaphoreGive(_rxMutex);
 
         if (overflowed && _enrichmentInFlight) {
@@ -3069,10 +3091,13 @@ void BLEManager::_drainEnrichmentRx() {
         }
 
         if (snapLen > 0) {
+            DLOG_INFO(TAG, "enrichment rx chunk cipher=%u queued=%u",
+                      static_cast<unsigned>(snapLen),
+                      static_cast<unsigned>(queuedAfterPop));
             uint8_t plain[ENRICH_RX_CHUNK_MAX];
             size_t plainLen = 0;
             if (_secureSession.decrypt(PHONE_SECURE_CHANNEL_ENRICHMENT,
-                                       _enrichRxScratch,
+                                       _payload->enrichRxScratch,
                                        snapLen,
                                        plain,
                                        sizeof(plain),
@@ -3101,7 +3126,7 @@ void BLEManager::_drainCommandRx() {
         if (snapLen > COMMAND_REQ_RX_MAX) {
             snapLen = COMMAND_REQ_RX_MAX;
         }
-        memcpy(snapshot, _commandReqRxBuf, snapLen);
+        memcpy(snapshot, _payload->commandReqRx, snapLen);
         _commandReqRxPending = false;
         _commandReqRxLen = 0;
         hadFrame = true;
@@ -3134,8 +3159,8 @@ void BLEManager::_handleCommandRequestPayload(const uint8_t* data, size_t len) {
 
     size_t plainRespLen = 0;
     if (!CommandDispatcher::dispatch(data, len,
-                                     _commandRespPlainBuf,
-                                     sizeof(_commandRespPlainBuf),
+                                     _payload->commandRespPlain,
+                                     sizeof(_payload->commandRespPlain),
                                      plainRespLen)) {
         DLOG_WARN(TAG, "command dispatcher refused response (buffer too small)");
         return;
@@ -3143,19 +3168,17 @@ void BLEManager::_handleCommandRequestPayload(const uint8_t* data, size_t len) {
 
     size_t secureLen = 0;
     if (!_secureSession.encrypt(PHONE_SECURE_CHANNEL_COMMAND,
-                                _commandRespPlainBuf, plainRespLen,
-                                _commandRespSecureBuf,
-                                sizeof(_commandRespSecureBuf),
+                                _payload->commandRespPlain, plainRespLen,
+                                _payload->commandRespSecure,
+                                sizeof(_payload->commandRespSecure),
                                 secureLen)) {
         DLOG_WARN(TAG, "command encrypt failed: %s",
                   _secureSession.lastError() ? _secureSession.lastError() : "-");
         return;
     }
 
-    // Write-without-response would be ideal for low-latency, but stick with
-    // writeValue(true) for now — matches every other phone-write site and
-    // gives us a built-in ack the phone can use to deduplicate.
-    if (!_commandRespRemoteChar->writeValue(_commandRespSecureBuf, secureLen, true)) {
+    // Use response writes so the phone can deduplicate replies.
+    if (!_commandRespRemoteChar->writeValue(_payload->commandRespSecure, secureLen, true)) {
         DLOG_WARN(TAG, "command response write failed");
     }
 }
@@ -3196,7 +3219,17 @@ void BLEManager::_handleGpsPayload(const uint8_t* data, size_t len) {
     }
 
     if ((frame.flags & PHONE_GPS_FLAG_VALID) == 0) {
-        _setGpsUnavailable(false);
+        // Time-only frames keep capture timestamps enrichable indoors.
+        if ((frame.flags & PHONE_GPS_FLAG_TIME_TRUSTED) != 0 &&
+            frame.epochUtc >= 1609459200UL) {  // >= 2021-01-01 UTC
+            _lastGpsFixMs = millis();
+            _gpsEpochAtFix = frame.epochUtc;
+            _timeTrusted = true;
+            _formatIso8601(frame.epochUtc, _gpsTimeIso, sizeof(_gpsTimeIso));
+            // Adopt the phone's UTC immediately (see WIO path note).
+            TIME_SVC.syncFromEpoch(frame.epochUtc, TIME_SOURCE_GPS, _lastGpsFixMs);
+        }
+        _setGpsUnavailable(false);  // location absent; preserves trusted time
         return;
     }
 
@@ -3219,6 +3252,9 @@ void BLEManager::_handleGpsPayload(const uint8_t* data, size_t len) {
     _lastGpsFixMs = millis();
     _gpsEpochAtFix = frame.epochUtc;
     _timeTrusted = (frame.flags & PHONE_GPS_FLAG_TIME_TRUSTED) != 0;
+    if (_timeTrusted) {
+        TIME_SVC.syncFromEpoch(frame.epochUtc, TIME_SOURCE_GPS, _lastGpsFixMs);
+    }
     _formatIso8601(frame.epochUtc, _gpsTimeIso, sizeof(_gpsTimeIso));
     _publishGpsState();
     _refreshStatusCharacteristic();
@@ -3300,13 +3336,13 @@ void BLEManager::_handleEnrichmentPayload(const uint8_t* data, size_t len) {
         DLOG_WARN(TAG, "enrichment payload truncated");
     }
 
-    if (_enrichmentRxLen + copyLen > sizeof(_enrichmentRxBuf)) {
+    if (_enrichmentRxLen + copyLen > sizeof(_payload->enrichmentRx)) {
         DLOG_WARN(TAG, "enrichment payload overflow");
         _failEnrichment("enrichment_payload_overflow");
         return;
     }
 
-    memcpy(_enrichmentRxBuf + _enrichmentRxLen, data, copyLen);
+    memcpy(_payload->enrichmentRx + _enrichmentRxLen, data, copyLen);
     _enrichmentRxLen += copyLen;
 
     if (_enrichmentRxLen < expectedBytes) {
@@ -3317,16 +3353,17 @@ void BLEManager::_handleEnrichmentPayload(const uint8_t* data, size_t len) {
     for (size_t i = 0; i < count; ++i) {
         EnrichmentRecordWire record;
         memcpy(&record,
-               _enrichmentRxBuf + (i * ENRICHMENT_RECORD_SIZE),
+               _payload->enrichmentRx + (i * ENRICHMENT_RECORD_SIZE),
                ENRICHMENT_RECORD_SIZE);
 
-        PendingEnrichment& out = _enrichmentBatch[i];
+        PendingEnrichment& out = _payload->enrichmentBatch[i];
         out.eventId = record.eventId;
         out.lat = static_cast<float>(record.latE7) / 10000000.0f;
         out.lon = static_cast<float>(record.lonE7) / 10000000.0f;
         out.alt = static_cast<float>(record.altCm) / 100.0f;
         out.accuracy = static_cast<float>(record.accuracyDm) / 10.0f;
         out.gpsEpochUtc = record.epochUtc;
+        out.noData = (record.flags & PHONE_ENRICH_FLAG_NO_DATA) != 0;
 
         char tagBuf[sizeof(record.tag)];
         memcpy(tagBuf, record.tag, sizeof(tagBuf));
@@ -3507,6 +3544,14 @@ void BLEManager::_civilFromDays(int32_t z, int32_t& y, uint32_t& m, uint32_t& d)
 
 void BLEManager::ScanCallbacks::onResult(const NimBLEAdvertisedDevice* advertisedDevice) {
     _owner._onAdvertisedDevice(advertisedDevice);
+}
+
+void BLEManager::ScanCallbacks::onDiscovered(
+    const NimBLEAdvertisedDevice* advertisedDevice) {
+    if (advertisedDevice &&
+        _owner._matchesTarget(advertisedDevice) != TargetMatch::None) {
+        _owner._onAdvertisedDevice(advertisedDevice);
+    }
 }
 
 void BLEManager::ClientCallbacks::onConnect(NimBLEClient* pClient) {

@@ -3,30 +3,15 @@
 
 #include <Arduino.h>
 
-// FieldVault — compact persistent record of high-value field-test evidence.
-//
-// Records are appended to a single JSONL file under /config/vault/field/. Each
-// line is one tiny JSON object with a "type" tag (boot/crash/upload_*/etc.).
-// FieldVault is intentionally NOT a debug log: routine DLOG_* chatter must
-// continue to go through DebugLog and obey the debug profile. FieldVault
-// captures only events worth preserving across reboots and uploads.
-//
-// Design constraints (see plan):
-//   - No dynamic allocation. Records serialize with snprintf into a stack
-//     buffer (capped at kLineMax bytes).
-//   - No long debug strings. Crash and boot records are short, fixed-shape.
-//   - Writes are append-only. Power loss may leave a partial trailing line;
-//     readers must tolerate truncated lines.
-//   - Size-based rotation at kRotateBytes; one backup retained.
-//
+// Compact persistent JSONL evidence for boot/crash/upload/enrichment field runs.
+// Not a debug log: keep records short, append-only, and tolerant of torn tails.
 namespace FieldVault {
 
 bool begin();
 bool isReady();
 uint32_t nextSeq();
 
-// Write one {"type":"boot",...} record. Pass empty string for nowIsoOrEmpty
-// when wall-clock time is not yet available.
+// Pass empty nowIsoOrEmpty when wall-clock time is unavailable.
 bool appendBoot(uint8_t resetReason,
                 const char* resetName,
                 uint32_t freeHeapKb,
@@ -35,10 +20,7 @@ bool appendBoot(uint8_t resetReason,
                 const char* nowIsoOrEmpty,
                 bool usbSerialAttached);
 
-// Write one {"type":"reset_crash",...} record when the previous reset looks
-// crash-like and USB serial was not attached at boot. This is a cold boot-time
-// safety net for battery/field runs that crash outside a named checkpoint.
-// Returns true iff a record was written this call.
+// Cold boot safety net for crash-like resets with no USB serial attached.
 bool appendSeriallessResetCrashIfNeeded(uint8_t resetReason,
                                         const char* resetName,
                                         const char* sessionId,
@@ -48,46 +30,82 @@ bool appendSeriallessResetCrashIfNeeded(uint8_t resetReason,
                                         uint32_t pendingUploads,
                                         bool usbSerialAttached);
 
-// Inspect the in-RAM crash breadcrumb ring (must be loaded before this call;
-// crashLogPrint() in setup() does that) and write at most one {"type":"crash"}
-// record describing the newest unresolved breadcrumb. Idempotent across re-runs
-// of the same boot — and across reboots within the same crash sequence — via
-// an NVS-stored "last vaulted breadcrumb seq" watermark.
-//
-// Returns true iff a record was written this call.
+// Vault at most one newest unresolved crash breadcrumb per sequence.
 bool vaultUnresolvedCrashIfNew(uint8_t resetReason,
                                const char* resetName,
                                const char* sessionId,
                                const char* nowIsoOrEmpty,
                                bool usbSerialAttached);
 
-// ── FsAudit hooks ──────────────────────────────────────────────────────────
-//
-// Records emitted by the maintenance-owner filesystem audit (FsAudit). These
-// describe inventory and validation results — they are not crash/boot
-// breadcrumbs and may legitimately be informational.
+// Sparse battery/run telemetry for field characterization.
+bool appendPowerSample(uint16_t voltageMv,
+                       int percent,
+                       int16_t trendMvPerMin,
+                       uint16_t capacityMah,
+                       uint16_t runtimeMin,
+                       const char* powerSource,
+                       const char* powerState,
+                       bool charging,
+                       uint8_t radioOwner,
+                       uint32_t uptimeMs,
+                       const char* reason);
 
-// One record per unknown path encountered during a sweep. Caller is
-// responsible for rate-limiting (per-pass cap lives in FsAudit::FsAuditLimits).
+// Whole-run capture/upload/enrich/radio snapshot.
+bool appendRunSample(const char* sessionId,
+                     uint32_t uptimeMs,
+                     uint8_t radioOwner,
+                     uint32_t pendingUpload,
+                     uint32_t pendingEnrich,
+                     uint16_t wifiCount,
+                     uint32_t probeCount,
+                     uint32_t loraPackets,
+                     uint8_t subGhzMode,
+                     uint16_t subGhzNodes,
+                     bool wioAvailable,
+                     bool wioBleProxy,
+                     bool wioPhoneConnected,
+                     bool uploadActive,
+                     uint32_t heapFreeKb,
+                     uint32_t internalFreeKb,
+                     const char* reason);
+
+// One line per phone/WIO enrichment attempt.
+bool appendEnrichSummary(const char* transport,
+                         bool success,
+                         uint32_t requested,
+                         uint32_t applied,
+                         uint32_t failed,
+                         uint32_t deferred,
+                         uint32_t batches,
+                         uint32_t xferMs,
+                         uint32_t storageMs,
+                         uint32_t totalMs,
+                         uint32_t pendingUpload,
+                         uint32_t pendingEnrich);
+
+// Written after cursor flush/clear so the summary survives to next offload.
+bool appendUploadSummary(const char* result,
+                         uint32_t published,
+                         uint32_t failed,
+                         uint32_t queued,
+                         uint32_t leaseMs,
+                         uint32_t pendingUpload,
+                         bool fieldOnly);
+
+// FsAudit hooks: inventory/validation records emitted by maintenance owner.
 bool appendFsAuditUnknown(const char* path, uint32_t sizeBytes);
 
-// One record per known-but-invalid file (header check failed) or
-// tmp/orphan file. `reason` is a short stable token (e.g. "header_invalid",
-// "tmp_orphan").
+// reason is a short stable token.
 bool appendFsAuditInvalid(const char* path,
                           uint32_t sizeBytes,
                           const char* reason);
 
-// One record per recovery action (delete/quarantine/rebuild request) taken
-// or attempted by FsAudit. `action` is the verb (e.g. "delete_tmp",
-// "quarantine", "delete_failed"); `detail` is action-specific context (the
-// new path for a quarantine, the failure reason otherwise).
+// action is the verb; detail is action-specific context.
 bool appendFsAuditAction(const char* path,
                          const char* action,
                          const char* detail);
 
-// One record per audit pass with the per-class totals. Always emitted, even
-// when the pass aborts under the budget/heap guard.
+// One record per audit pass, even if budget/heap guard aborts.
 bool appendFsAuditSummary(uint16_t totalFiles,
                           uint16_t knownValid,
                           uint16_t knownInvalid,
@@ -98,62 +116,28 @@ bool appendFsAuditSummary(uint16_t totalFiles,
                           uint32_t durationMs,
                           bool     completed);
 
-// ── Drain API (Phase 4: MQTT upload of pending vault records) ──────────────
-//
-// MQTTManager owns the publish path. FieldVault exposes a byte-offset cursor
-// stored in NVS so reboots resume without re-publishing. Failed publishes
-// must NOT call markUploadedThrough(); the next call to peekNext() will
-// return the same record.
-//
-// Note on rotation: when the live JSONL exceeds kRotateBytes and gets
-// rotated to .1, the cursor is reset to 0. Records still in the .1 backup
-// are NOT drained — they're treated as already past, since field records
-// are tiny and rotation should be rare. If this becomes a problem in
-// practice, add a backup-file drain mode in a later phase.
-
-// Copy the next pending JSONL record (without its trailing newline) into
-// outLine[0..size-1]. Sets *outRecordEnd to the byte offset just past the
-// record's newline; the caller passes that back to markUploadedThrough()
-// after a successful publish.
-//
-// Returns false when there are no pending records, when the file is missing,
-// or when a single record exceeds size bytes (in which case the cursor is
-// advanced past the oversize record to avoid getting stuck on it; an audit
-// note is logged).
+// Drain cursor API. MQTTManager owns publishing; failed publishes must not
+// advance the cursor.
 bool peekNext(char* outLine, size_t size, uint32_t* outRecordEnd);
 
-// Persist the upload watermark. Call after a successful publish with the
-// outRecordEnd value returned by peekNext(). Idempotent.
 bool markUploadedThrough(uint32_t recordEnd);
 
-// Advance the in-RAM upload watermark without touching flash. Use while the
-// upload radio is active; call flushUploadCursor() after the radio lease is
-// released to persist the final cursor.
+// Use volatile marking while upload radio is active, then flush after release.
 bool markUploadedThroughVolatile(uint32_t recordEnd);
 bool flushUploadCursor();
 
 // True if there are pending bytes past the current upload watermark.
 bool hasPending();
 
-// Print retained FieldVault JSONL records to USB serial. Does not advance the
-// upload cursor or mutate the vault.
+// Read-only serial dump.
 void dumpToSerial();
 
-// Current upload watermark (last persisted byte offset). 0 = nothing
-// uploaded yet.
 uint32_t uploadedThrough();
 
-// Truncate the live JSONL file and reset the upload cursor to 0. Caller's
-// contract: only call this after peekNext() has returned false (i.e. the
-// live file is fully drained and every pending record has been
-// successfully published). Records still in the .1 backup are left alone.
-// Idempotent and safe to call when the file does not exist.
+// Call only after peekNext() says live records are fully drained.
 bool clearLive();
 
-// Clear every retained FieldVault file after a successful serial dump. This is
-// intentionally broader than clearLive(): it removes both live and .1 backup
-// files and resets the upload cursor.
+// Broader than clearLive: removes live and .1 backup after a serial dump.
 bool clearRetained();
 
 }  // namespace FieldVault
-

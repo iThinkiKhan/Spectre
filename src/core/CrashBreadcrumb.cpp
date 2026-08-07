@@ -44,23 +44,8 @@ static bool _restoreCrashLog() {
     return read == sizeof(g_crashLog) && _logReady();
 }
 
-// RTC_NOINIT_ATTR places g_crashLog in RTC slow memory, which the ESP32
-// preserves across software resets, panics, and watchdog resets.
-// The memory is NOT zero-initialised — _logReady() and _entryValid() check
-// magic + CRC before trusting any field.
+// RTC slow memory survives software/panic/watchdog resets; validate before use.
 RTC_NOINIT_ATTR CrashLog g_crashLog;
-
-// ─────────────────────────────────────────────────────────────────────────────
-// crashLogPrint
-//
-// Iterates the ring oldest→newest (starting at head, wrapping once), prints
-// every valid entry to both Serial and DLOG.  Resolved entries are tagged
-// [ok]; unresolved ones (= device reset while that phase was active) are
-// tagged [CRASH?].
-//
-// Entries are NOT erased: they persist until overwritten by new checkpoints,
-// so this can be called several boots after the crash and still show history.
-// ─────────────────────────────────────────────────────────────────────────────
 
 void crashLogPrint() {
 #if !BOOT_SEQUENCE_VERBOSE_ACTIVE
