@@ -1,0 +1,1680 @@
+=== session opened 2026-08-07T13:27:34.8527069-05:00 ===
+=== send: companion status ===
+companion status
+[COMP] enabled=1
+[COMP] external accessory=0 bleProxy=0 phoneConnected=0 phone=unknown rssi=0 ageMs=0
+[COMP] wio link=idle sx1262=0 textInput=0
+[COMP] phone=UNKNOWN work=IDLE
+[COMP] bleBegun=0 bleRadio=0 bleState=IDLE
+[COMP] ready link=0 gps=0 freshGps=0 ctrl=0 enrich=0
+[COMP] bleInitAgeMs=0 scanStartAgeMs=0 disconnReason=0
+[COMP] pendingEnrichMission=0 pendingEnrichNoise=4479 pendingEnrichTotal=4479
+[COMP] lastProbeAgeMs=0 lastEnrichAgeMs=0
+[COMP] radioOwner=wifi_capture
+=== send: companion enrich ===
+companion enrich
+[COMP] manual enrich queued
+[20657][I][COMP] Manual enrich request received; probe backoff bypassed
+[20658][I][WIFI] Radio paused
+[20819][I][WIFI] Radio suspended
+[20820][I][BLE] BLE payload buffers in PSRAM bytes=6204
+[20896][I][BLE] begin phase=nimble_pre bt=idle/0 heap=79328 largest=31732 stack=17224 devLen=14
+[20896][I][BLE] begin phase=nimble_init
+[20908][I][BLE] begin phase=nimble_init_ok bt=enabled/2 heap=16320 largest=8180 stack=17224
+[20909][I][BLE] BLE SM disabled; app-layer P-256/AES-GCM required
+[20910][I][BLE] begin phase=server_ok
+[20911][I][BLE] scanner configured legacy=1 active=0 interval=30 window=30 srTimeout=200
+[20911][I][BLE] begin phase=scanner_ok
+[20911][I][BLE] begin phase=worker_ok
+[20911][I][BLE] begin ready
+[20912][I][BLE] radio enabled settle=500ms
+[20912][I][BLE] companion link requested reason=manual_probe mode=fresh_scan timeout=15s settle=500ms cacheAge=0ms rssi=0
+[20917][I][BLE] Phone probe lease granted reason=manual_probe cachedFirst=0 hold=60000ms
+[20928][W][CORE] TaskHardware loop gap=272ms owner=BLE_GPS pendingUpload=4476 maintPending=1 suppressed=1
+[21523][I][BLE] scan start
+[21523][I][BLE] scan start diag=1 deliverDuplicates=1 diagLeft=44389 state=1 window=8000ms weakRecent=0 lastRssi=0
+[21542][I][BLE] adv check addr=2b:8b:14:81:51:06 addrType=1 targetSvc=0 matchedBy=none rssi=-54
+[21542][I][BLE] adv raw name='' addr=2b:8b:14:81:51:06 addrType=1 rssi=-54 hasName=0 hasSvc=0 targetSvc=0 rawTargetSvc=0 svcCount=0 matchedBy=none
+[21543][I][BLE] adv raw payload len=31 hex=1E FF 06 00 01 09 20 22 C9 2D 32 19 9A 45 D0 39 73 EA A2 A6 7B 4A CC 6C...
+[21629][I][BLE] adv check addr=72:fa:e6:ee:ac:af addrType=1 targetSvc=1 matchedBy=service rssi=-61
+[21630][I][BLE] adv raw name='' addr=72:fa:e6:ee:ac:af addrType=1 rssi=-61 hasName=0 hasSvc=1 targetSvc=1 rawTargetSvc=1 svcCount=1 matchedBy=service
+[21631][I][BLE] adv raw payload len=21 hex=02 01 02 11 07 01 00 3A 6F 2D 6B 64 9A 4D 4D 7B 6D 80 3A F0 84
+[21631][I][BLE] adv svc=84f03a80-6d7b-4d4d-9a64-6b2d6f3a0001
+[21631][I][BLE] target found matchedBy=service cachePeer=0 addr=72:fa:e6:ee:ac:af name=SpectrePhone rssi=-61
+[21632][I][BLE] adv check addr=72:fa:e6:ee:ac:af addrType=1 targetSvc=1 matchedBy=service rssi=-61
+[21633][I][BLE] adv raw name='' addr=72:fa:e6:ee:ac:af addrType=1 rssi=-61 hasName=0 hasSvc=1 targetSvc=1 rawTargetSvc=1 svcCount=1 matchedBy=service
+[21633][I][BLE] adv raw payload len=21 hex=02 01 02 11 07 01 00 3A 6F 2D 6B 64 9A 4D 4D 7B 6D 80 3A F0 84
+[21634][I][BLE] adv svc=84f03a80-6d7b-4d4d-9a64-6b2d6f3a0001
+[21635][I][BLE] target found matchedBy=service cachePeer=0 addr=72:fa:e6:ee:ac:af name=SpectrePhone rssi=-61
+[21643][I][BLE] adv check addr=2b:8b:14:81:51:06 addrType=1 targetSvc=0 matchedBy=none rssi=-54
+[21644][I][BLE] adv raw name='' addr=2b:8b:14:81:51:06 addrType=1 rssi=-54 hasName=0 hasSvc=0 targetSvc=0 rawTargetSvc=0 svcCount=0 matchedBy=none
+[21644][I][BLE] adv raw payload len=31 hex=1E FF 06 00 01 09 20 22 C9 2D 32 19 9A 45 D0 39 73 EA A2 A6 7B 4A CC 6C...
+[21650][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-77
+[21650][I][BLE] adv raw name='' addr=6c:0b:5e:94:c7:92 addrType=0 rssi=-77 hasName=0 hasSvc=0 targetSvc=0 rawTargetSvc=0 svcCount=0 matchedBy=none
+[21651][I][BLE] adv raw payload len=29 hex=02 01 06 19 16 F7 FD 01 93 53 B3 79 C7 2C 41 E9 95 11 7C AC 46 7C 95 2E...
+[21677][I][BLE] scan stop; connect pending addr=72:fa:e6:ee:ac:af
+[21977][I][BLE] connect pending settled addr=72:fa:e6:ee:ac:af
+[21978][I][BLE] connect attempt addr=72:fa:e6:ee:ac:af name=SpectrePhone
+[21978][I][BLE] connect params timeoutMs=45000 scanItvl=16 scanWin=16 addrType=1
+[22160][I][BLE] connect result ok=1 err=0 addr=72:fa:e6:ee:ac:af
+[22160][I][BLE] BLE link connected; starting app-layer auth watchdog=50000ms
+[22160][I][BLE] remote service lookup begin core=1 internalFree=14580 largest=7156
+[22218][I][BLE] remote service lookup end found=1 err=0
+[22218][I][BLE] remote characteristic discovery begin
+[22398][I][BLE] remote characteristic discovery end count=13 err=0
+[22458][I][BLE] remote descriptor discovery char=auth count=2 err=0
+[22459][I][BLE] auth notify subscribe begin
+[22518][I][BLE] auth notify subscribe end ok=1 err=0
+[22858][I][BLE] auth challenge write bytes=163 mtu=247 attPayload=244 mode=response
+[23911][I][BLE] app secure session ready alg=P-256+ECDH+AES-256-GCM
+[23911][I][BLE] phone auth confirmed; caching peer addr=72:fa:e6:ee:ac:af ttl=300000ms rssi=-61
+[23958][I][BLE] remote descriptor discovery char=enrichment count=2 err=0
+[24228][I][BLE] remote bound gps=1 ctrl=1 meta=1 batch=1 enrich=1 auth=1 authReq=1 storage=1 cmdReq=1 cmdResp=1 logStream=1 dashStream=1 notification=1 notify(gps=0 ctrl=0 enrich=1 auth=1 cmdReq=0) mtu=247 a
+[24229][I][BLE] probe_summary seen=1 matchedBy=service rssi=-61 scanMs=2389
+[24229][I][BLE] phone_session_summary auth=ok mtu=247 gps=1 ctrl=1 enrich=1 storage=1
+[24237][I][BLE] link ready state=4
+[24288][I][BLE] storage snapshot sent pendingUp=0/4476 pendingEnrich=0/4479 usedPct=18
+[24294][I][BLE] Phone probe succeeded ??? backoff reset
+[24298][I][BLE] Phone probe promoted to enrichment pendingEnrich=4479 maxBatch=18
+[24299][I][STORAGE] RAMSpool worker paused inflight=0 lastInflight=0
+[24300][I][STORAGE] Exclusive window begin kind=enrichment reason=manual_enrich_window workerPaused=1 displaySuspended=1
+[24301][I][STORAGE] prepare_assigned records=1024 freeInternal=11452 freePsram=7789272
+[24302][I][STORAGE] batch_load_ids_enter freeInternal=11452 segments=77
+[24302][I][STORAGE] load_ids_reserve count=0 freeInternal=11452 largest=7156
+[24302][I][STORAGE] load_ids_reserved freeInternal=11452
+[24303][I][STORAGE] load_ids_loop_done scanned=0 skipped=77 idsCollected=0 freeInternal=11452
+[24303][I][STORAGE] batch_load_ids_done count=0 capacity=0 freeInternal=11452
+[24303][I][STORAGE] batch_pending_loop_enter segments=77 maxCount=1024 streaming=0 freeInternal=11452
+[24304][I][STORAGE] batch_pending_scan seg=207 pending=10 events=10 freeInternal=11452 largest=7156 outCount=0
+[24367][I][STORAGE] batch_pending_scan seg=210 pending=13 events=13 freeInternal=11000 largest=7156 outCount=10
+[24431][I][STORAGE] batch_pending_scan seg=211 pending=8 events=8 freeInternal=11064 largest=7156 outCount=23
+[24493][I][STORAGE] batch_pending_scan seg=214 pending=5 events=5 freeInternal=11064 largest=7156 outCount=31
+[24554][I][STORAGE] batch_pending_scan seg=219 pending=51 events=51 freeInternal=11064 largest=7156 outCount=36
+[24622][I][STORAGE] batch_pending_scan seg=220 pending=138 events=138 freeInternal=11064 largest=7156 outCount=87
+[24702][I][STORAGE] batch_pending_scan seg=221 pending=154 events=154 freeInternal=11064 largest=7156 outCount=225
+[24794][I][STORAGE] batch_pending_scan seg=222 pending=8 events=8 freeInternal=11064 largest=7156 outCount=379
+[24856][I][STORAGE] batch_pending_scan seg=223 pending=9 events=9 freeInternal=11064 largest=7156 outCount=387
+[24918][I][STORAGE] batch_pending_scan seg=226 pending=13 events=13 freeInternal=11064 largest=7156 outCount=396
+[24981][I][STORAGE] batch_pending_scan seg=227 pending=3 events=3 freeInternal=11064 largest=7156 outCount=409
+[25041][I][STORAGE] batch_pending_scan seg=228 pending=15 events=15 freeInternal=11064 largest=7156 outCount=412
+[25103][I][STORAGE] batch_pending_scan seg=229 pending=11 events=11 freeInternal=11064 largest=7156 outCount=427
+[25165][I][STORAGE] batch_pending_scan seg=230 pending=10 events=10 freeInternal=11064 largest=7156 outCount=438
+[25226][I][STORAGE] batch_pending_scan seg=232 pending=200 events=200 freeInternal=11064 largest=7156 outCount=448
+[25329][I][STORAGE] batch_pending_scan seg=233 pending=197 events=197 freeInternal=11064 largest=7156 outCount=648
+[25414][I][STORAGE] batch_pending_scan seg=234 pending=194 events=194 freeInternal=11064 largest=7156 outCount=845
+[25493][I][STORAGE] batch_pending_scan seg=235 pending=198 events=198 freeInternal=11064 largest=7156 outCount=1024
+[25568][I][STORAGE] batch_pending_scan seg=236 pending=147 events=147 freeInternal=11064 largest=7156 outCount=1024
+[25636][I][STORAGE] batch_pending_scan seg=238 pending=443 events=443 freeInternal=11064 largest=7156 outCount=1024
+[25777][I][STORAGE] batch_pending_scan seg=240 pending=397 events=397 freeInternal=11064 largest=7156 outCount=1024
+[25903][I][STORAGE] batch_pending_scan seg=241 pending=436 events=436 freeInternal=11064 largest=7156 outCount=1024
+[26085][I][STORAGE] batch_pending_scan seg=243 pending=2 events=2 freeInternal=11064 largest=7156 outCount=1024
+[26134][I][STORAGE] batch_pending_scan seg=244 pending=53 events=53 freeInternal=11064 largest=7156 outCount=1024
+[26199][I][STORAGE] batch_pending_scan seg=245 pending=436 events=436 freeInternal=11064 largest=7156 outCount=1024
+[26363][I][STORAGE] batch_pending_scan seg=246 pending=101 events=101 freeInternal=11064 largest=7156 outCount=1024
+[26422][I][STORAGE] batch_pending_scan seg=247 pending=9 events=9 freeInternal=11064 largest=7156 outCount=1024
+[26472][I][STORAGE] batch_pending_scan seg=253 pending=191 events=191 freeInternal=11064 largest=7156 outCount=1024
+[26553][I][STORAGE] batch_pending_scan seg=255 pending=3 events=3 freeInternal=11064 largest=7156 outCount=1024
+[26599][I][STORAGE] batch_pending_scan seg=256 pending=435 events=435 freeInternal=11064 largest=7156 outCount=1024
+[26728][I][STORAGE] batch_pending_scan seg=257 pending=85 events=85 freeInternal=11064 largest=7156 outCount=1024
+[26784][I][STORAGE] batch_pending_scan seg=258 pending=226 events=226 freeInternal=11064 largest=7156 outCount=1024
+[26904][I][STORAGE] batch_pending_loop_done scanned=32 skipped=0 outCount=1024 timeHit=1 elapsedMs=2601 freeInternal=11064
+[26904][I][STORAGE] prepare_batch_done ok=1 outCount=1024 freeInternal=11064
+[26905][I][STORAGE] Enrichment window ready records=1024 truncated=1 ms=2603
+[26905][I][BLE] Manual enrichment window batch count=18 active=1 noData=0 budgetExhausted=0 timeHit=0
+[26905][I][STORAGE] RAMSpool worker resumed
+[26906][I][STORAGE] Exclusive window end kind=enrichment result=manual_batch_built reason=manual_enrich_window
+[26907][I][BLE] enrichment request queued count=18 bytes=180
+[26907][I][BLE] Requested enrichment batch count=18 queued=0
+[26958][I][BLE] enrichment send mtu=247 attPayload=244 bytes=180 count=18
+[27019][I][BLE] enrichment batch sent plain=180 sealed=202 count=18 writeOk=1
+[27072][W][BLE] control decrypt failed: secure decrypt replay/stale counter
+[27224][I][BLE] enrichment rx chunk cipher=222 queued=0
+[27375][I][BLE] enrichment rx chunk cipher=222 queued=1
+[27376][I][BLE] enrichment rx chunk cipher=222 queued=0
+[27527][I][BLE] enrichment rx chunk cipher=222 queued=1
+[27528][I][BLE] enrichment rx chunk cipher=68 queued=0
+[27529][I][BLE] enrich_xfer_perf count=18 sendMs=61 waitMs=510 rxBytes=846
+[27530][I][BLE] enrichment batch received count=18 bytes=846
+[27530][I][BLE] enrichment batch consumed count=18
+[27530][I][BLE] Enrich batch queued count=18 queueSize=1
+[27530][I][BLE] Enrichment batch received count=18 claimed=1 queued=1
+[27531][I][BLE] Enrich drain begin count=18 queueSize=1 ageMs=1
+[28119][I][STORAGE] Spool enrich_batch applied=1 failed=0 batchFirstEventId=24874 batchLastEventId=24874 firstRecord=25688 lastRecord=25688 ms=488
+[28120][I][BLE] enrich_perf count=18 applied=1 failed=0 deferred=17 storageMs=539 pendingUpload=4476
+[28121][I][BLE] Enrich drain done applied=1 failed=0 deferred=17 queueSize=0
+[28122][I][BLE] Enrich torrent done drained=1 remaining=0 tookLease=0 preempt=0 elapsedMs=590
+[28137][I][STORAGE] RAMSpool worker paused inflight=0 lastInflight=0
+[28137][I][STORAGE] Exclusive window begin kind=enrichment reason=manual_enrich_window workerPaused=1 displaySuspended=1
+[28138][I][BLE] Manual enrichment window batch count=18 active=1 noData=0 budgetExhausted=0 timeHit=0
+[28138][I][STORAGE] RAMSpool worker resumed
+[28139][I][STORAGE] Exclusive window end kind=enrichment result=manual_batch_built reason=manual_enrich_window
+[28139][I][BLE] enrichment request queued count=18 bytes=180
+[28140][I][BLE] Requested enrichment batch count=18 queued=0
+[28290][I][BLE] enrichment send mtu=247 attPayload=244 bytes=180 count=18
+[28338][I][BLE] enrichment batch sent plain=180 sealed=202 count=18 writeOk=1
+[28590][I][BLE] enrichment rx chunk cipher=222 queued=0
+[28741][I][BLE] enrichment rx chunk cipher=222 queued=1
+[28742][I][BLE] enrichment rx chunk cipher=222 queued=0
+[28893][I][BLE] enrichment rx chunk cipher=222 queued=1
+[28894][I][BLE] enrichment rx chunk cipher=68 queued=0
+[28895][I][BLE] enrich_xfer_perf count=18 sendMs=48 waitMs=557 rxBytes=846
+[28895][I][BLE] enrichment batch received count=18 bytes=846
+[28896][I][BLE] enrichment batch consumed count=18
+[28896][I][BLE] Enrich batch queued count=18 queueSize=1
+[28896][I][BLE] Enrichment batch received count=18 claimed=4 queued=1
+[28896][I][BLE] Enrich drain begin count=18 queueSize=1 ageMs=0
+[29109][I][STORAGE] Spool enrich_batch applied=4 failed=0 batchFirstEventId=24874 batchLastEventId=24877 firstRecord=25689 lastRecord=25692 ms=115
+[29110][I][BLE] enrich_perf count=18 applied=4 failed=0 deferred=14 storageMs=162 pendingUpload=4476
+[29111][I][BLE] Enrich drain done applied=4 failed=0 deferred=14 queueSize=0
+[29112][I][BLE] Enrich torrent done drained=1 remaining=0 tookLease=0 preempt=0 elapsedMs=215
+[29123][I][STORAGE] RAMSpool worker paused inflight=0 lastInflight=0
+[29124][I][STORAGE] Exclusive window begin kind=enrichment reason=manual_enrich_window workerPaused=1 displaySuspended=1
+[29124][I][BLE] Manual enrichment window batch count=18 active=1 noData=0 budgetExhausted=0 timeHit=0
+[29124][I][STORAGE] RAMSpool worker resumed
+[29125][I][STORAGE] Exclusive window end kind=enrichment result=manual_batch_built reason=manual_enrich_window
+[29125][I][BLE] enrichment request queued count=18 bytes=180
+[29126][I][BLE] Requested enrichment batch count=18 queued=0
+[29280][I][BLE] enrichment batch acknowledged by phone
+[29329][I][BLE] enrichment send mtu=247 attPayload=244 bytes=180 count=18
+[29388][I][BLE] enrichment batch sent plain=180 sealed=202 count=18 writeOk=1
+[29431][W][BLE] gps decrypt failed: secure decrypt replay/stale counter
+[29582][I][BLE] enrichment rx chunk cipher=222 queued=0
+[29733][I][BLE] enrichment rx chunk cipher=222 queued=1
+[29734][I][BLE] enrichment rx chunk cipher=222 queued=0
+[29885][I][BLE] enrichment rx chunk cipher=222 queued=1
+[29887][I][BLE] enrichment rx chunk cipher=68 queued=0
+[29889][I][BLE] enrich_xfer_perf count=18 sendMs=60 waitMs=500 rxBytes=846
+[29890][I][BLE] enrichment batch received count=18 bytes=846
+[29890][I][BLE] enrichment batch consumed count=18
+[29891][I][BLE] Enrich batch queued count=18 queueSize=1
+[29892][I][BLE] Enrichment batch received count=18 claimed=5 queued=1
+[29892][I][BLE] Enrich drain begin count=18 queueSize=1 ageMs=1
+[30112][I][STORAGE] Spool enrich_batch applied=5 failed=0 batchFirstEventId=24878 batchLastEventId=24881 firstRecord=25693 lastRecord=25697 ms=121
+[30113][I][BLE] enrich_perf count=18 applied=5 failed=0 deferred=13 storageMs=167 pendingUpload=4476
+[30114][I][BLE] Enrich drain done applied=5 failed=0 deferred=13 queueSize=0
+[30115][I][BLE] Enrich torrent done drained=1 remaining=0 tookLease=0 preempt=0 elapsedMs=223
+[30118][I][HEAP] heap free=7622KB min=7607KB largest=7552KB frag=0% internalFree=16KB internalLargest=7KB psramFree=7607KB core=0/0% owner=BLE_GPS nets=6 pendingUpload=4476 pendingEnrich=4479
+[HEALTH] time=2026-08-07 13:27:23 src=ntp
+[HEALTH] heap used=802/8424KB free=7622KB min=7607KB largest=7552KB frag=0%
+[HEALTH] internal used=216/232KB free=16KB min=1KB largest=7KB
+[HEALTH] psram used=585/8192KB free=7607KB largest=7552KB
+[HEALTH] stack free_min: core0=16KB/22KB core1=13KB/18KB
+[HEALTH] core usage: core0=0% core1=0%
+[HEALTH] power=usb state=usb batt=100% 4673mV trend=0mV/min runtime=0min cap=1100mAh charging=0
+[HEALTH] radio=BLE_GPS wifi=0 ble=1 gps=0 nets=6 pendingUpload=4476 pendingEnrich=4479
+[HEALTH] subghz=NONE mode=OFF pkts=0 nodes=0
+[30120][I][STORAGE] RAMSpool enq=3 cons=3 inflight=0/1024 high=3 pressure=0 drop[full=0 big=0 noise=0 p3Evict=0 p3Drop=0 p2Drop=0 p1Fail=0] free=1024
+[30120][I][STORAGE] RAMSpool enqueue probe[ok=2 drop=0] device[ok=1 drop=0]
+[30120][I][STORAGE] RAMSpool worker probe[ok=1 sup=1 drop=0 fail=0 slow=0] device[ok=1 sup=0 drop=0 fail=0 slow=0] slowTotal=0 maxMs=0
+[30121][I][STORAGE] RAMSpool prioEnq p0=0 p1=0 p2=3 p3=0
+[30121][I][STORAGE] RAMSpool lanes p1=0/0 p2=0/2 p3=0/0
+[30131][I][STORAGE] RAMSpool worker paused inflight=0 lastInflight=0
+[30132][I][STORAGE] Exclusive window begin kind=enrichment reason=manual_enrich_window workerPaused=1 displaySuspended=1
+[30132][I][BLE] Manual enrichment window batch count=18 active=1 noData=0 budgetExhausted=0 timeHit=0
+[30133][I][STORAGE] RAMSpool worker resumed
+[30133][I][STORAGE] Exclusive window end kind=enrichment result=manual_batch_built reason=manual_enrich_window
+[30133][I][BLE] enrichment request queued count=18 bytes=180
+[30133][I][BLE] Requested enrichment batch count=18 queued=0
+[30286][I][BLE] enrichment send mtu=247 attPayload=244 bytes=180 count=18
+[30348][I][BLE] enrichment batch sent plain=180 sealed=202 count=18 writeOk=1
+[30586][I][BLE] enrichment rx chunk cipher=222 queued=0
+[30737][I][BLE] enrichment rx chunk cipher=222 queued=1
+[30738][I][BLE] enrichment rx chunk cipher=222 queued=0
+[30889][I][BLE] enrichment rx chunk cipher=222 queued=1
+[30890][I][BLE] enrichment rx chunk cipher=68 queued=0
+[30891][I][BLE] enrich_xfer_perf count=18 sendMs=62 waitMs=543 rxBytes=846
+[30891][I][BLE] enrichment batch received count=18 bytes=846
+[30892][I][BLE] enrichment batch consumed count=18
+[30892][I][BLE] Enrich batch queued count=18 queueSize=1
+[30892][I][BLE] Enrichment batch received count=18 claimed=10 queued=1
+[30892][I][BLE] Enrich drain begin count=18 queueSize=1 ageMs=0
+[31116][I][STORAGE] Spool enrich_batch applied=10 failed=0 batchFirstEventId=24882 batchLastEventId=24885 firstRecord=25698 lastRecord=25707 ms=123
+[31117][I][BLE] enrich_perf count=18 applied=10 failed=0 deferred=8 storageMs=169 pendingUpload=4476
+[31117][I][BLE] Enrich drain done applied=10 failed=0 deferred=8 queueSize=0
+[31117][I][BLE] Enrich torrent done drained=1 remaining=0 tookLease=0 preempt=0 elapsedMs=225
+[31118][I][STACK] TaskHardware watermark=16568B min=16568B
+[31129][I][STORAGE] RAMSpool worker paused inflight=0 lastInflight=0
+[31130][I][STORAGE] Exclusive window begin kind=enrichment reason=manual_enrich_window workerPaused=1 displaySuspended=1
+[31131][I][BLE] Manual enrichment window batch count=18 active=1 noData=0 budgetExhausted=0 timeHit=0
+[31131][I][STORAGE] RAMSpool worker resumed
+[31131][I][STORAGE] Exclusive window end kind=enrichment result=manual_batch_built reason=manual_enrich_window
+[31132][I][BLE] enrichment request queued count=18 bytes=180
+[31132][I][BLE] Requested enrichment batch count=18 queued=0
+[31135][I][STACK] TaskDisplay watermark=13120B min=13120B
+[31287][I][BLE] enrichment batch acknowledged by phone
+[31289][I][BLE] enrichment send mtu=247 attPayload=244 bytes=180 count=18
+[31340][I][BLE] enrichment batch sent plain=180 sealed=202 count=18 writeOk=1
+[31589][I][BLE] enrichment rx chunk cipher=222 queued=0
+[31741][I][BLE] enrichment rx chunk cipher=222 queued=1
+[31743][I][BLE] enrichment rx chunk cipher=222 queued=0
+[31895][I][BLE] enrichment rx chunk cipher=222 queued=1
+[31896][I][BLE] enrichment rx chunk cipher=68 queued=0
+[31897][I][BLE] enrich_xfer_perf count=18 sendMs=51 waitMs=558 rxBytes=846
+[31898][I][BLE] enrichment batch received count=18 bytes=846
+[31899][I][BLE] enrichment batch consumed count=18
+[31900][I][BLE] Enrich batch queued count=18 queueSize=1
+[31900][I][BLE] Enrichment batch received count=18 claimed=11 queued=1
+[31900][I][BLE] Enrich drain begin count=18 queueSize=1 ageMs=1
+[32122][I][STORAGE] Spool enrich_batch applied=11 failed=0 batchFirstEventId=24876 batchLastEventId=24878 firstRecord=25708 lastRecord=25718 ms=125
+[32123][I][BLE] enrich_perf count=18 applied=11 failed=0 deferred=7 storageMs=171 pendingUpload=4476
+[32123][I][BLE] Enrich drain done applied=11 failed=0 deferred=7 queueSize=0
+[32123][I][BLE] Enrich torrent done drained=1 remaining=0 tookLease=0 preempt=0 elapsedMs=223
+[32133][I][STORAGE] RAMSpool worker paused inflight=0 lastInflight=0
+[32134][I][STORAGE] Exclusive window begin kind=enrichment reason=manual_enrich_window workerPaused=1 displaySuspended=1
+[32134][I][BLE] Manual enrichment window batch count=18 active=1 noData=0 budgetExhausted=0 timeHit=0
+[32135][I][STORAGE] RAMSpool worker resumed
+[32135][I][STORAGE] Exclusive window end kind=enrichment result=manual_batch_built reason=manual_enrich_window
+[32135][I][BLE] enrichment request queued count=18 bytes=180
+[32135][I][BLE] Requested enrichment batch count=18 queued=0
+[32288][I][BLE] enrichment send mtu=247 attPayload=244 bytes=180 count=18
+[32328][I][BLE] enrichment batch sent plain=180 sealed=202 count=18 writeOk=1
+[32588][I][BLE] enrichment rx chunk cipher=222 queued=0
+[32740][I][BLE] enrichment rx chunk cipher=222 queued=1
+[32741][I][BLE] enrichment rx chunk cipher=222 queued=0
+[32893][I][BLE] enrichment rx chunk cipher=222 queued=1
+[32894][I][BLE] enrichment rx chunk cipher=68 queued=0
+[32895][I][BLE] enrich_xfer_perf count=18 sendMs=40 waitMs=567 rxBytes=846
+[32895][I][BLE] enrichment batch received count=18 bytes=846
+[32896][I][BLE] enrichment batch consumed count=18
+[32896][I][BLE] Enrich batch queued count=18 queueSize=1
+[32896][I][BLE] Enrichment batch received count=18 claimed=2 queued=1
+[32897][I][BLE] Enrich drain begin count=18 queueSize=1 ageMs=0
+[33120][I][STORAGE] Spool enrich_batch applied=2 failed=0 batchFirstEventId=24879 batchLastEventId=24880 firstRecord=25719 lastRecord=25720 ms=122
+[33120][I][BLE] enrich_perf count=18 applied=2 failed=0 deferred=16 storageMs=172 pendingUpload=4476
+[33121][I][BLE] Enrich drain done applied=2 failed=0 deferred=16 queueSize=0
+[33121][I][BLE] Enrich torrent done drained=1 remaining=0 tookLease=0 preempt=0 elapsedMs=225
+[33132][I][STORAGE] RAMSpool worker paused inflight=0 lastInflight=0
+[33133][I][STORAGE] Exclusive window begin kind=enrichment reason=manual_enrich_window workerPaused=1 displaySuspended=1
+[33133][I][BLE] Manual enrichment window batch count=18 active=1 noData=0 budgetExhausted=0 timeHit=0
+[33133][I][STORAGE] RAMSpool worker resumed
+[33134][I][STORAGE] Exclusive window end kind=enrichment result=manual_batch_built reason=manual_enrich_window
+[33134][I][BLE] enrichment request queued count=18 bytes=180
+[33135][I][BLE] Requested enrichment batch count=18 queued=0
+[33289][I][BLE] enrichment batch acknowledged by phone
+[33292][I][BLE] enrichment send mtu=247 attPayload=244 bytes=180 count=18
+[33348][I][BLE] enrichment batch sent plain=180 sealed=202 count=18 writeOk=1
+[33590][I][BLE] enrichment rx chunk cipher=222 queued=1
+[33591][I][BLE] enrichment rx chunk cipher=222 queued=0
+[33742][I][BLE] enrichment rx chunk cipher=222 queued=1
+[33743][I][BLE] enrichment rx chunk cipher=222 queued=0
+[33894][I][BLE] enrichment rx chunk cipher=68 queued=0
+[33895][I][BLE] enrich_xfer_perf count=18 sendMs=57 waitMs=547 rxBytes=846
+[33896][I][BLE] enrichment batch received count=18 bytes=846
+[33896][I][BLE] enrichment batch consumed count=18
+[33896][I][BLE] Enrich batch queued count=18 queueSize=1
+[33897][I][BLE] Enrichment batch received count=18 claimed=1 queued=1
+[33897][I][BLE] Enrich drain begin count=18 queueSize=1 ageMs=1
+[34126][I][STORAGE] Spool enrich_batch applied=1 failed=0 batchFirstEventId=24886 batchLastEventId=24886 firstRecord=25721 lastRecord=25721 ms=131
+[34127][I][BLE] enrich_perf count=18 applied=1 failed=0 deferred=17 storageMs=179 pendingUpload=4476
+[34128][I][BLE] Enrich drain done applied=1 failed=0 deferred=17 queueSize=0
+[34128][I][BLE] Enrich torrent done drained=1 remaining=0 tookLease=0 preempt=0 elapsedMs=231
+[34140][I][STORAGE] RAMSpool worker paused inflight=0 lastInflight=0
+[34141][I][STORAGE] Exclusive window begin kind=enrichment reason=manual_enrich_window workerPaused=1 displaySuspended=1
+[34141][I][BLE] Manual enrichment window batch count=18 active=1 noData=0 budgetExhausted=0 timeHit=0
+[34141][I][STORAGE] RAMSpool worker resumed
+[34142][I][STORAGE] Exclusive window end kind=enrichment result=manual_batch_built reason=manual_enrich_window
+[34143][I][BLE] enrichment request queued count=18 bytes=180
+[34143][I][BLE] Requested enrichment batch count=18 queued=0
+[34339][I][BLE] enrichment send mtu=247 attPayload=244 bytes=180 count=18
+[34398][I][BLE] enrichment batch sent plain=180 sealed=202 count=18 writeOk=1
+[34447][W][BLE] gps decrypt failed: secure decrypt replay/stale counter
+[34598][I][BLE] enrichment rx chunk cipher=222 queued=0
+[34749][I][BLE] enrichment rx chunk cipher=222 queued=1
+[34750][I][BLE] enrichment rx chunk cipher=222 queued=0
+[34901][I][BLE] enrichment rx chunk cipher=222 queued=1
+[34902][I][BLE] enrichment rx chunk cipher=68 queued=0
+[34903][I][BLE] enrich_xfer_perf count=18 sendMs=60 waitMs=505 rxBytes=846
+[34903][I][BLE] enrichment batch received count=18 bytes=846
+[34904][I][BLE] enrichment batch consumed count=18
+[34904][I][BLE] Enrich batch queued count=18 queueSize=1
+[34904][I][BLE] Enrichment batch received count=18 claimed=3 queued=1
+[34904][I][BLE] Enrich drain begin count=18 queueSize=1 ageMs=0
+[35135][I][STORAGE] Spool enrich_batch applied=3 failed=0 batchFirstEventId=24879 batchLastEventId=24873 firstRecord=25722 lastRecord=25724 ms=131
+[35136][I][BLE] enrich_perf count=18 applied=3 failed=0 deferred=15 storageMs=179 pendingUpload=4476
+[35136][I][BLE] Enrich drain done applied=3 failed=0 deferred=15 queueSize=0
+[35137][I][BLE] Enrich torrent done drained=1 remaining=0 tookLease=0 preempt=0 elapsedMs=233
+[35148][I][STORAGE] RAMSpool worker paused inflight=0 lastInflight=0
+[35149][I][STORAGE] Exclusive window begin kind=enrichment reason=manual_enrich_window workerPaused=1 displaySuspended=1
+[35150][I][BLE] Manual enrichment window batch count=18 active=1 noData=0 budgetExhausted=0 timeHit=0
+[35150][I][STORAGE] RAMSpool worker resumed
+[35151][I][STORAGE] Exclusive window end kind=enrichment result=manual_batch_built reason=manual_enrich_window
+[35152][I][BLE] enrichment request queued count=18 bytes=180
+[35152][I][BLE] Requested enrichment batch count=18 queued=0
+[35308][I][BLE] enrichment batch acknowledged by phone
+[35308][I][BLE] enrichment send mtu=247 attPayload=244 bytes=180 count=18
+[35358][I][BLE] enrichment batch sent plain=180 sealed=202 count=18 writeOk=1
+[35608][I][BLE] enrichment rx chunk cipher=222 queued=1
+[35609][I][BLE] enrichment rx chunk cipher=222 queued=0
+[35760][I][BLE] enrichment rx chunk cipher=222 queued=0
+[35911][I][BLE] enrichment rx chunk cipher=222 queued=1
+[35912][I][BLE] enrichment rx chunk cipher=68 queued=0
+[35913][I][BLE] enrich_xfer_perf count=18 sendMs=50 waitMs=555 rxBytes=846
+[35913][I][BLE] enrichment batch received count=18 bytes=846
+[35914][I][BLE] enrichment batch consumed count=18
+[35914][I][BLE] Enrich batch queued count=18 queueSize=1
+[35914][I][BLE] Enrichment batch received count=18 claimed=5 queued=1
+[35914][I][BLE] Enrich drain begin count=18 queueSize=1 ageMs=0
+[36145][I][STORAGE] Spool enrich_batch applied=5 failed=0 batchFirstEventId=24881 batchLastEventId=24873 firstRecord=25725 lastRecord=25729 ms=129
+[36146][I][BLE] enrich_perf count=18 applied=5 failed=0 deferred=13 storageMs=180 pendingUpload=4476
+[36147][I][BLE] Enrich drain done applied=5 failed=0 deferred=13 queueSize=0
+[36147][I][BLE] Enrich torrent done drained=1 remaining=0 tookLease=0 preempt=0 elapsedMs=233
+[36158][I][STORAGE] RAMSpool worker paused inflight=0 lastInflight=0
+[36159][I][STORAGE] Exclusive window begin kind=enrichment reason=manual_enrich_window workerPaused=1 displaySuspended=1
+[36159][I][BLE] Manual enrichment window batch count=18 active=1 noData=0 budgetExhausted=0 timeHit=0
+[36160][I][STORAGE] RAMSpool worker resumed
+[36160][I][STORAGE] Exclusive window end kind=enrichment result=manual_batch_built reason=manual_enrich_window
+[36160][I][BLE] enrichment request queued count=18 bytes=180
+[36160][I][BLE] Requested enrichment batch count=18 queued=0
+[36313][I][BLE] enrichment send mtu=247 attPayload=244 bytes=180 count=18
+[36348][I][BLE] enrichment batch sent plain=180 sealed=202 count=18 writeOk=1
+[36613][I][BLE] enrichment rx chunk cipher=222 queued=0
+[36764][I][BLE] enrichment rx chunk cipher=222 queued=1
+[36765][I][BLE] enrichment rx chunk cipher=222 queued=0
+[36916][I][BLE] enrichment rx chunk cipher=222 queued=1
+[36917][I][BLE] enrichment rx chunk cipher=68 queued=0
+[36918][I][BLE] enrich_xfer_perf count=18 sendMs=35 waitMs=570 rxBytes=846
+[36919][I][BLE] enrichment batch received count=18 bytes=846
+[36919][I][BLE] enrichment batch consumed count=18
+[36919][I][BLE] Enrich batch queued count=18 queueSize=1
+[36919][I][BLE] Enrichment batch received count=18 claimed=1 queued=1
+[36920][I][BLE] Enrich drain begin count=18 queueSize=1 ageMs=1
+[37602][I][STORAGE] Spool enrich_batch applied=1 failed=0 batchFirstEventId=24873 batchLastEventId=24873 firstRecord=25730 lastRecord=25730 ms=264
+[37602][I][BLE] enrich_perf count=18 applied=1 failed=0 deferred=17 storageMs=631 pendingUpload=4476
+[37603][I][BLE] Enrich drain done applied=1 failed=0 deferred=17 queueSize=0
+[37603][I][BLE] Enrich torrent done drained=1 remaining=0 tookLease=0 preempt=0 elapsedMs=684
+[37613][W][CORE] TaskHardware loop gap=697ms owner=BLE_GPS pendingUpload=4476 maintPending=1 suppressed=2
+[37617][I][STORAGE] RAMSpool worker paused inflight=0 lastInflight=0
+[37618][I][STORAGE] Exclusive window begin kind=enrichment reason=manual_enrich_window workerPaused=1 displaySuspended=1
+[37618][I][BLE] Manual enrichment window batch count=18 active=1 noData=0 budgetExhausted=0 timeHit=0
+[37618][I][STORAGE] RAMSpool worker resumed
+[37619][I][STORAGE] Exclusive window end kind=enrichment result=manual_batch_built reason=manual_enrich_window
+[37619][I][BLE] enrichment request queued count=18 bytes=180
+[37619][I][BLE] Requested enrichment batch count=18 queued=0
+[37769][I][BLE] enrichment batch acknowledged by phone
+[37770][I][BLE] enrichment send mtu=247 attPayload=244 bytes=180 count=18
+[37818][I][BLE] enrichment batch sent plain=180 sealed=202 count=18 writeOk=1
+[38070][I][BLE] enrichment rx chunk cipher=222 queued=1
+[38071][I][BLE] enrichment rx chunk cipher=222 queued=0
+[38222][I][BLE] enrichment rx chunk cipher=222 queued=0
+[38373][I][BLE] enrichment rx chunk cipher=222 queued=1
+[38374][I][BLE] enrichment rx chunk cipher=68 queued=0
+[38375][I][BLE] enrich_xfer_perf count=18 sendMs=48 waitMs=557 rxBytes=846
+[38375][I][BLE] enrichment batch received count=18 bytes=846
+[38376][I][BLE] enrichment batch consumed count=18
+[38376][I][BLE] Enrich batch queued count=18 queueSize=1
+[38376][I][BLE] Enrichment batch received count=18 claimed=5 queued=1
+[38376][I][BLE] Enrich drain begin count=18 queueSize=1 ageMs=0
+[38594][I][STORAGE] Spool enrich_batch applied=5 failed=0 batchFirstEventId=24882 batchLastEventId=24883 firstRecord=25731 lastRecord=25735 ms=127
+[38595][I][BLE] enrich_perf count=18 applied=5 failed=0 deferred=13 storageMs=169 pendingUpload=4476
+[38595][I][BLE] Enrich drain done applied=5 failed=0 deferred=13 queueSize=0
+[38595][I][BLE] Enrich torrent done drained=1 remaining=0 tookLease=0 preempt=0 elapsedMs=219
+[38606][I][STORAGE] RAMSpool worker paused inflight=0 lastInflight=0
+[38607][I][STORAGE] Exclusive window begin kind=enrichment reason=manual_enrich_window workerPaused=1 displaySuspended=1
+[38607][I][BLE] Manual enrichment window batch count=18 active=1 noData=0 budgetExhausted=0 timeHit=0
+[38608][I][STORAGE] RAMSpool worker resumed
+[38608][I][STORAGE] Exclusive window end kind=enrichment result=manual_batch_built reason=manual_enrich_window
+[38608][I][BLE] enrichment request queued count=18 bytes=180
+[38608][I][BLE] Requested enrichment batch count=18 queued=0
+[38761][I][BLE] enrichment send mtu=247 attPayload=244 bytes=180 count=18
+[38808][I][BLE] enrichment batch sent plain=180 sealed=202 count=18 writeOk=1
+[39061][I][BLE] enrichment rx chunk cipher=222 queued=0
+[39212][I][BLE] enrichment rx chunk cipher=222 queued=1
+[39213][I][BLE] enrichment rx chunk cipher=222 queued=0
+[39288][I][BLE] storage snapshot sent pendingUp=0/4476 pendingEnrich=0/4479 usedPct=18
+[39368][I][BLE] enrichment rx chunk cipher=222 queued=1
+[39369][I][BLE] enrichment rx chunk cipher=68 queued=0
+[39370][I][BLE] enrich_xfer_perf count=18 sendMs=47 waitMs=562 rxBytes=846
+[39370][I][BLE] enrichment batch received count=18 bytes=846
+[39371][I][BLE] enrichment batch consumed count=18
+[39371][I][BLE] Enrich batch queued count=18 queueSize=1
+[39372][I][BLE] Enrichment batch received count=18 claimed=3 queued=1
+[39372][I][BLE] Enrich drain begin count=18 queueSize=1 ageMs=1
+[39599][I][STORAGE] Spool enrich_batch applied=3 failed=0 batchFirstEventId=24884 batchLastEventId=24888 firstRecord=25736 lastRecord=25738 ms=134
+[39600][I][BLE] enrich_perf count=18 applied=3 failed=0 deferred=15 storageMs=177 pendingUpload=4476
+[39600][I][BLE] Enrich drain done applied=3 failed=0 deferred=15 queueSize=0
+[39600][I][BLE] Enrich torrent done drained=1 remaining=0 tookLease=0 preempt=0 elapsedMs=228
+[39610][W][BLE] gps decrypt failed: secure decrypt replay/stale counter
+[39611][I][STORAGE] RAMSpool worker paused inflight=0 lastInflight=0
+[39611][I][STORAGE] Exclusive window begin kind=enrichment reason=manual_enrich_window workerPaused=1 displaySuspended=1
+[39612][I][BLE] Manual enrichment window batch count=18 active=1 noData=0 budgetExhausted=0 timeHit=0
+[39612][I][STORAGE] RAMSpool worker resumed
+[39612][I][STORAGE] Exclusive window end kind=enrichment result=manual_batch_built reason=manual_enrich_window
+[39613][I][BLE] enrichment request queued count=18 bytes=180
+[39613][I][BLE] Requested enrichment batch count=18 queued=0
+[39828][I][BLE] enrichment send mtu=247 attPayload=244 bytes=180 count=18
+[39888][I][BLE] enrichment batch sent plain=180 sealed=202 count=18 writeOk=1
+[39918][I][BLE] enrichment batch acknowledged by phone
+[40218][I][BLE] enrichment rx chunk cipher=222 queued=1
+[40219][I][BLE] enrichment rx chunk cipher=222 queued=0
+[40370][I][BLE] enrichment rx chunk cipher=222 queued=1
+[40371][I][BLE] enrichment rx chunk cipher=222 queued=0
+[40522][I][BLE] enrichment rx chunk cipher=68 queued=0
+[40523][I][BLE] enrich_xfer_perf count=18 sendMs=60 waitMs=635 rxBytes=846
+[40523][I][BLE] enrichment batch received count=18 bytes=846
+[40524][I][BLE] enrichment batch consumed count=18
+[40524][I][BLE] Enrich batch queued count=18 queueSize=1
+[40524][I][BLE] Enrichment batch received count=18 claimed=4 queued=1
+[40524][I][BLE] Enrich drain begin count=18 queueSize=1 ageMs=0
+[40757][I][STORAGE] Spool enrich_batch applied=4 failed=0 batchFirstEventId=24889 batchLastEventId=24892 firstRecord=25739 lastRecord=25742 ms=138
+[40758][I][BLE] enrich_perf count=18 applied=4 failed=0 deferred=14 storageMs=182 pendingUpload=4476
+[40758][I][BLE] Enrich drain done applied=4 failed=0 deferred=14 queueSize=0
+[40758][I][BLE] Enrich torrent done drained=1 remaining=0 tookLease=0 preempt=0 elapsedMs=234
+[40772][I][STORAGE] RAMSpool worker paused inflight=0 lastInflight=0
+[40773][I][STORAGE] Exclusive window begin kind=enrichment reason=manual_enrich_window workerPaused=1 displaySuspended=1
+[40773][I][BLE] Manual enrichment window batch count=18 active=1 noData=0 budgetExhausted=0 timeHit=0
+[40773][I][STORAGE] RAMSpool worker resumed
+[40774][I][STORAGE] Exclusive window end kind=enrichment result=manual_batch_built reason=manual_enrich_window
+[40774][I][BLE] enrichment request queued count=18 bytes=180
+[40774][I][BLE] Requested enrichment batch count=18 queued=0
+[40924][I][BLE] enrichment send mtu=247 attPayload=244 bytes=180 count=18
+[40968][I][BLE] enrichment batch sent plain=180 sealed=202 count=18 writeOk=1
+[41224][I][BLE] enrichment rx chunk cipher=222 queued=0
+[41375][I][BLE] enrichment rx chunk cipher=222 queued=1
+[41376][I][BLE] enrichment rx chunk cipher=222 queued=0
+[41527][I][BLE] enrichment rx chunk cipher=222 queued=1
+[41528][I][BLE] enrichment rx chunk cipher=68 queued=0
+[41529][I][BLE] enrich_xfer_perf count=18 sendMs=44 waitMs=561 rxBytes=846
+[41529][I][BLE] enrichment batch received count=18 bytes=846
+[41530][I][BLE] enrichment batch consumed count=18
+[41530][I][BLE] Enrich batch queued count=18 queueSize=1
+[41530][I][BLE] Enrichment batch received count=18 claimed=12 queued=1
+[41530][I][BLE] Enrich drain begin count=18 queueSize=1 ageMs=0
+[41767][I][STORAGE] Spool enrich_batch applied=12 failed=0 batchFirstEventId=24884 batchLastEventId=24894 firstRecord=25743 lastRecord=25754 ms=141
+[41768][I][BLE] enrich_perf count=18 applied=12 failed=0 deferred=6 storageMs=186 pendingUpload=4476
+[41768][I][BLE] Enrich drain done applied=12 failed=0 deferred=6 queueSize=0
+[41769][I][BLE] Enrich torrent done drained=1 remaining=0 tookLease=0 preempt=0 elapsedMs=238
+[41783][I][STORAGE] RAMSpool worker paused inflight=0 lastInflight=0
+[41783][I][STORAGE] Exclusive window begin kind=enrichment reason=manual_enrich_window workerPaused=1 displaySuspended=1
+[41784][I][BLE] Manual enrichment window batch count=18 active=1 noData=0 budgetExhausted=0 timeHit=0
+[41784][I][STORAGE] RAMSpool worker resumed
+[41784][I][STORAGE] Exclusive window end kind=enrichment result=manual_batch_built reason=manual_enrich_window
+[41784][I][BLE] enrichment request queued count=18 bytes=180
+[41785][I][BLE] Requested enrichment batch count=18 queued=0
+[41935][I][BLE] enrichment batch acknowledged by phone
+[41936][I][BLE] enrichment send mtu=247 attPayload=244 bytes=180 count=18
+[41988][I][BLE] enrichment batch sent plain=180 sealed=202 count=18 writeOk=1
+[42236][I][BLE] enrichment rx chunk cipher=222 queued=0
+[42387][I][BLE] enrichment rx chunk cipher=222 queued=1
+[42388][I][BLE] enrichment rx chunk cipher=222 queued=0
+[42539][I][BLE] enrichment rx chunk cipher=222 queued=1
+[42540][I][BLE] enrichment rx chunk cipher=68 queued=0
+[42541][I][BLE] enrich_xfer_perf count=18 sendMs=52 waitMs=553 rxBytes=846
+[42541][I][BLE] enrichment batch received count=18 bytes=846
+[42542][I][BLE] enrichment batch consumed count=18
+[42542][I][BLE] Enrich batch queued count=18 queueSize=1
+[42542][I][BLE] Enrichment batch received count=18 claimed=4 queued=1
+[42542][I][BLE] Enrich drain begin count=18 queueSize=1 ageMs=0
+[42783][I][STORAGE] Spool enrich_batch applied=4 failed=0 batchFirstEventId=24892 batchLastEventId=24885 firstRecord=25755 lastRecord=25758 ms=144
+[42784][I][BLE] enrich_perf count=18 applied=4 failed=0 deferred=14 storageMs=190 pendingUpload=4476
+[42784][I][BLE] Enrich drain done applied=4 failed=0 deferred=14 queueSize=0
+[42784][I][BLE] Enrich torrent done drained=1 remaining=0 tookLease=0 preempt=0 elapsedMs=242
+[42797][I][STORAGE] RAMSpool worker paused inflight=0 lastInflight=0
+[42798][I][STORAGE] Exclusive window begin kind=enrichment reason=manual_enrich_window workerPaused=1 displaySuspended=1
+[42798][I][BLE] Manual enrichment window batch count=18 active=1 noData=0 budgetExhausted=0 timeHit=0
+[42799][I][STORAGE] RAMSpool worker resumed
+[42799][I][STORAGE] Exclusive window end kind=enrichment result=manual_batch_built reason=manual_enrich_window
+[42799][I][BLE] enrichment request queued count=18 bytes=180
+[42799][I][BLE] Requested enrichment batch count=18 queued=0
+[42949][I][BLE] enrichment send mtu=247 attPayload=244 bytes=180 count=18
+[43038][I][BLE] enrichment batch sent plain=180 sealed=202 count=18 writeOk=1
+[43249][I][BLE] enrichment rx chunk cipher=222 queued=0
+[43400][I][BLE] enrichment rx chunk cipher=222 queued=1
+[43401][I][BLE] enrichment rx chunk cipher=222 queued=0
+[43552][I][BLE] enrichment rx chunk cipher=222 queued=1
+[43553][I][BLE] enrichment rx chunk cipher=68 queued=0
+[43554][I][BLE] enrich_xfer_perf count=18 sendMs=89 waitMs=516 rxBytes=846
+[43554][I][BLE] enrichment batch received count=18 bytes=846
+[43555][I][BLE] enrichment batch consumed count=18
+[43555][I][BLE] Enrich batch queued count=18 queueSize=1
+[43555][I][BLE] Enrichment batch received count=18 claimed=7 queued=1
+[43555][I][BLE] Enrich drain begin count=18 queueSize=1 ageMs=0
+[43797][I][STORAGE] Spool enrich_batch applied=7 failed=0 batchFirstEventId=24893 batchLastEventId=24898 firstRecord=25759 lastRecord=25765 ms=143
+[43797][I][BLE] enrich_perf count=18 applied=7 failed=0 deferred=11 storageMs=189 pendingUpload=4476
+[43798][I][BLE] Enrich drain done applied=7 failed=0 deferred=11 queueSize=0
+[43798][I][BLE] Enrich torrent done drained=1 remaining=0 tookLease=0 preempt=0 elapsedMs=243
+[43812][I][STORAGE] RAMSpool worker paused inflight=0 lastInflight=0
+[43812][I][STORAGE] Exclusive window begin kind=enrichment reason=manual_enrich_window workerPaused=1 displaySuspended=1
+[43813][I][BLE] Manual enrichment window batch count=18 active=1 noData=0 budgetExhausted=0 timeHit=0
+[43813][I][STORAGE] RAMSpool worker resumed
+[43813][I][STORAGE] Exclusive window end kind=enrichment result=manual_batch_built reason=manual_enrich_window
+[43813][I][BLE] enrichment request queued count=18 bytes=180
+[43814][I][BLE] Requested enrichment batch count=18 queued=0
+[43964][I][BLE] enrichment batch acknowledged by phone
+[43965][I][BLE] enrichment send mtu=247 attPayload=244 bytes=180 count=18
+[44000][I][BLE] enrichment batch sent plain=180 sealed=202 count=18 writeOk=1
+[44265][I][BLE] enrichment rx chunk cipher=222 queued=0
+[44416][I][BLE] enrichment rx chunk cipher=222 queued=1
+[44417][I][BLE] enrichment rx chunk cipher=222 queued=0
+[44568][W][BLE] gps decrypt failed: secure decrypt replay/stale counter
+[44569][I][BLE] enrichment rx chunk cipher=222 queued=1
+[44569][I][BLE] enrichment rx chunk cipher=68 queued=0
+[44570][I][BLE] enrich_xfer_perf count=18 sendMs=35 waitMs=570 rxBytes=846
+[44570][I][BLE] enrichment batch received count=18 bytes=846
+[44571][I][BLE] enrichment batch consumed count=18
+[44571][I][BLE] Enrich batch queued count=18 queueSize=1
+[44571][I][BLE] Enrichment batch received count=18 claimed=10 queued=1
+[44571][I][BLE] Enrich drain begin count=18 queueSize=1 ageMs=0
+[44572][I][STORAGE] Spool enrich preflight rotate seg=308 bytes=3666 records=80 enrich=78 expected=18
+[46095][I][STORAGE] Spool rotate newSeg=309 format=bin_v2
+[46096][I][STORAGE] Spool diag[rotate] validSegments=78 untrustedSegments=0 invalidSegments=0 activeSegment=309 totalRecords=4574 storedEvents=4488 pendingUpload=4476 nextEventId=25766
+[46874][I][STORAGE] Spool enrich_batch applied=10 failed=0 batchFirstEventId=24899 batchLastEventId=24908 firstRecord=25766 lastRecord=25775 ms=687
+[46874][I][BLE] enrich_perf count=18 applied=10 failed=0 deferred=8 storageMs=730 pendingUpload=4476
+[46875][I][BLE] Enrich drain done applied=10 failed=0 deferred=8 queueSize=0
+[46875][I][BLE] Enrich torrent done drained=1 remaining=0 tookLease=0 preempt=0 elapsedMs=2304
+[46889][I][STORAGE] RAMSpool worker paused inflight=0 lastInflight=0
+[46889][I][STORAGE] Exclusive window begin kind=enrichment reason=manual_enrich_window workerPaused=1 displaySuspended=1
+[46890][I][BLE] Manual enrichment window batch count=18 active=1 noData=0 budgetExhausted=0 timeHit=0
+[46890][I][STORAGE] RAMSpool worker resumed
+[46890][I][STORAGE] Exclusive window end kind=enrichment result=manual_batch_built reason=manual_enrich_window
+[46891][I][BLE] enrichment request queued count=18 bytes=180
+[46891][I][BLE] Requested enrichment batch count=18 queued=0
+[47041][I][BLE] enrichment batch acknowledged by phone
+[47042][I][BLE] enrichment send mtu=247 attPayload=244 bytes=180 count=18
+[47088][I][BLE] enrichment batch sent plain=180 sealed=202 count=18 writeOk=1
+[47342][I][BLE] enrichment rx chunk cipher=222 queued=1
+[47343][I][BLE] enrichment rx chunk cipher=222 queued=0
+[47494][I][BLE] enrichment rx chunk cipher=222 queued=1
+[47495][I][BLE] enrichment rx chunk cipher=222 queued=0
+[47646][I][BLE] enrichment rx chunk cipher=68 queued=0
+[47647][I][BLE] enrich_xfer_perf count=18 sendMs=46 waitMs=559 rxBytes=846
+[47647][I][BLE] enrichment batch received count=18 bytes=846
+[47648][I][BLE] enrichment batch consumed count=18
+[47648][I][BLE] Enrich batch queued count=18 queueSize=1
+[47648][I][BLE] Enrichment batch received count=18 claimed=10 queued=1
+[47648][I][BLE] Enrich drain begin count=18 queueSize=1 ageMs=0
+[47860][I][STORAGE] Spool enrich_batch applied=10 failed=0 batchFirstEventId=24886 batchLastEventId=24916 firstRecord=25776 lastRecord=25785 ms=118
+[47861][I][BLE] enrich_perf count=18 applied=10 failed=0 deferred=8 storageMs=161 pendingUpload=4476
+[47861][I][BLE] Enrich drain done applied=10 failed=0 deferred=8 queueSize=0
+[47861][I][BLE] Enrich torrent done drained=1 remaining=0 tookLease=0 preempt=0 elapsedMs=213
+[47871][I][STORAGE] RAMSpool worker paused inflight=0 lastInflight=0
+[47872][I][STORAGE] Exclusive window begin kind=enrichment reason=manual_enrich_window workerPaused=1 displaySuspended=1
+[47872][I][BLE] Manual enrichment window batch count=18 active=1 noData=0 budgetExhausted=0 timeHit=0
+[47873][I][STORAGE] RAMSpool worker resumed
+[47873][I][STORAGE] Exclusive window end kind=enrichment result=manual_batch_built reason=manual_enrich_window
+[47873][I][BLE] enrichment request queued count=18 bytes=180
+[47873][I][BLE] Requested enrichment batch count=18 queued=0
+[48026][I][BLE] enrichment send mtu=247 attPayload=244 bytes=180 count=18
+[48078][I][BLE] enrichment batch sent plain=180 sealed=202 count=18 writeOk=1
+[48326][I][BLE] enrichment rx chunk cipher=222 queued=0
+[48477][I][BLE] enrichment rx chunk cipher=222 queued=1
+[48478][I][BLE] enrichment rx chunk cipher=222 queued=0
+[48629][I][BLE] enrichment rx chunk cipher=222 queued=1
+[48630][I][BLE] enrichment rx chunk cipher=68 queued=0
+[48631][I][BLE] enrich_xfer_perf count=18 sendMs=52 waitMs=553 rxBytes=846
+[48631][I][BLE] enrichment batch received count=18 bytes=846
+[48632][I][BLE] enrichment batch consumed count=18
+[48632][I][BLE] Enrich batch queued count=18 queueSize=1
+[48632][I][BLE] Enrichment batch received count=18 claimed=8 queued=1
+[48632][I][BLE] Enrich drain begin count=18 queueSize=1 ageMs=0
+[48844][I][STORAGE] Spool enrich_batch applied=8 failed=0 batchFirstEventId=24888 batchLastEventId=24922 firstRecord=25786 lastRecord=25793 ms=119
+[48845][I][BLE] enrich_perf count=18 applied=8 failed=0 deferred=10 storageMs=160 pendingUpload=4476
+[48845][I][BLE] Enrich drain done applied=8 failed=0 deferred=10 queueSize=0
+[48845][I][BLE] Enrich torrent done drained=1 remaining=0 tookLease=0 preempt=0 elapsedMs=213
+[48855][I][STORAGE] RAMSpool worker paused inflight=0 lastInflight=0
+[48856][I][STORAGE] Exclusive window begin kind=enrichment reason=manual_enrich_window workerPaused=1 displaySuspended=1
+[48856][I][BLE] Manual enrichment window batch count=18 active=1 noData=0 budgetExhausted=0 timeHit=0
+[48857][I][STORAGE] RAMSpool worker resumed
+[48857][I][STORAGE] Exclusive window end kind=enrichment result=manual_batch_built reason=manual_enrich_window
+[48857][I][BLE] enrichment request queued count=18 bytes=180
+[48857][I][BLE] Requested enrichment batch count=18 queued=0
+[49068][I][BLE] enrichment send mtu=247 attPayload=244 bytes=180 count=18
+[49130][I][BLE] enrichment batch sent plain=180 sealed=202 count=18 writeOk=1
+[49160][I][BLE] enrichment batch acknowledged by phone
+[49461][I][BLE] enrichment rx chunk cipher=222 queued=2
+[49462][I][BLE] enrichment rx chunk cipher=222 queued=1
+[49463][I][BLE] enrichment rx chunk cipher=222 queued=0
+[49614][W][BLE] gps decrypt failed: secure decrypt replay/stale counter
+[49615][I][BLE] enrichment rx chunk cipher=222 queued=1
+[49615][I][BLE] enrichment rx chunk cipher=68 queued=0
+[49616][I][BLE] enrich_xfer_perf count=18 sendMs=62 waitMs=486 rxBytes=846
+[49617][I][BLE] enrichment batch received count=18 bytes=846
+[49617][I][BLE] enrichment batch consumed count=18
+[49617][I][BLE] Enrich batch queued count=18 queueSize=1
+[49617][I][BLE] Enrichment batch received count=18 claimed=16 queued=1
+[49617][I][BLE] Enrich drain begin count=18 queueSize=1 ageMs=0
+[49837][I][STORAGE] Spool enrich_batch applied=16 failed=0 batchFirstEventId=24923 batchLastEventId=24933 firstRecord=25794 lastRecord=25809 ms=124
+[49838][I][BLE] enrich_perf count=18 applied=16 failed=0 deferred=2 storageMs=167 pendingUpload=4476
+[49838][I][BLE] Enrich drain done applied=16 failed=0 deferred=2 queueSize=0
+[49838][I][BLE] Enrich torrent done drained=1 remaining=0 tookLease=0 preempt=0 elapsedMs=221
+[49848][I][STORAGE] RAMSpool worker paused inflight=0 lastInflight=0
+[49849][I][STORAGE] Exclusive window begin kind=enrichment reason=manual_enrich_window workerPaused=1 displaySuspended=1
+[49849][I][BLE] Manual enrichment window batch count=18 active=1 noData=0 budgetExhausted=0 timeHit=0
+[49850][I][STORAGE] RAMSpool worker resumed
+[49850][I][STORAGE] Exclusive window end kind=enrichment result=manual_batch_built reason=manual_enrich_window
+[49850][I][BLE] enrichment request queued count=18 bytes=180
+[49850][I][BLE] Requested enrichment batch count=18 queued=0
+[50003][I][BLE] enrichment send mtu=247 attPayload=244 bytes=180 count=18
+[50088][I][BLE] enrichment batch sent plain=180 sealed=202 count=18 writeOk=1
+[50303][I][BLE] enrichment rx chunk cipher=222 queued=1
+[50304][I][BLE] enrichment rx chunk cipher=222 queued=0
+[50455][I][BLE] enrichment rx chunk cipher=222 queued=0
+[50606][I][BLE] enrichment rx chunk cipher=222 queued=1
+[50607][I][BLE] enrichment rx chunk cipher=68 queued=0
+[50608][I][BLE] enrich_xfer_perf count=18 sendMs=85 waitMs=520 rxBytes=846
+[50608][I][BLE] enrichment batch received count=18 bytes=846
+[50609][I][BLE] enrichment batch consumed count=18
+[50609][I][BLE] Enrich batch queued count=18 queueSize=1
+[50609][I][BLE] Enrichment batch received count=18 claimed=8 queued=1
+[50609][I][BLE] Enrich drain begin count=18 queueSize=1 ageMs=0
+[50838][I][STORAGE] Spool enrich_batch applied=8 failed=0 batchFirstEventId=24934 batchLastEventId=24898 firstRecord=25810 lastRecord=25817 ms=130
+[50838][I][BLE] enrich_perf count=18 applied=8 failed=0 deferred=10 storageMs=174 pendingUpload=4476
+[50839][I][BLE] Enrich drain done applied=8 failed=0 deferred=10 queueSize=0
+[50839][I][BLE] Enrich torrent done drained=1 remaining=0 tookLease=0 preempt=0 elapsedMs=230
+[50849][I][STORAGE] RAMSpool worker paused inflight=0 lastInflight=0
+[50850][I][STORAGE] Exclusive window begin kind=enrichment reason=manual_enrich_window workerPaused=1 displaySuspended=1
+[50850][I][BLE] Manual enrichment window batch count=18 active=1 noData=0 budgetExhausted=0 timeHit=0
+[50851][I][STORAGE] RAMSpool worker resumed
+[50851][I][STORAGE] Exclusive window end kind=enrichment result=manual_batch_built reason=manual_enrich_window
+[50851][I][BLE] enrichment request queued count=18 bytes=180
+[50851][I][BLE] Requested enrichment batch count=18 queued=0
+[51004][I][BLE] worker stack free=7384B min=7384B
+[51005][I][BLE] enrichment send mtu=247 attPayload=244 bytes=180 count=18
+[51048][I][BLE] enrichment batch sent plain=180 sealed=202 count=18 writeOk=1
+[51305][I][BLE] enrichment batch acknowledged by phone
+[51306][I][BLE] enrichment rx chunk cipher=222 queued=0
+[51457][I][BLE] enrichment rx chunk cipher=222 queued=1
+[51458][I][BLE] enrichment rx chunk cipher=222 queued=0
+[51610][I][BLE] enrichment rx chunk cipher=222 queued=1
+[51611][I][BLE] enrichment rx chunk cipher=68 queued=0
+[51612][I][BLE] enrich_xfer_perf count=18 sendMs=43 waitMs=564 rxBytes=846
+[51612][I][BLE] enrichment batch received count=18 bytes=846
+[51613][I][BLE] enrichment batch consumed count=18
+[51613][I][BLE] Enrich batch queued count=18 queueSize=1
+[51613][I][BLE] Enrichment batch received count=18 claimed=12 queued=1
+[51613][I][BLE] Enrich drain begin count=18 queueSize=1 ageMs=0
+[51845][I][STORAGE] Spool enrich_batch applied=12 failed=0 batchFirstEventId=24899 batchLastEventId=24892 firstRecord=25818 lastRecord=25829 ms=131
+[51845][I][BLE] enrich_perf count=18 applied=12 failed=0 deferred=6 storageMs=175 pendingUpload=4476
+[51846][I][BLE] Enrich drain done applied=12 failed=0 deferred=6 queueSize=0
+[51846][I][BLE] Enrich torrent done drained=1 remaining=0 tookLease=0 preempt=0 elapsedMs=233
+[51856][I][STORAGE] RAMSpool worker paused inflight=0 lastInflight=0
+[51857][I][STORAGE] Exclusive window begin kind=enrichment reason=manual_enrich_window workerPaused=1 displaySuspended=1
+[51857][I][BLE] Manual enrichment window batch count=18 active=1 noData=0 budgetExhausted=0 timeHit=0
+[51858][I][STORAGE] RAMSpool worker resumed
+[51858][I][STORAGE] Exclusive window end kind=enrichment result=manual_batch_built reason=manual_enrich_window
+[51858][I][BLE] enrichment request queued count=18 bytes=180
+[51858][I][BLE] Requested enrichment batch count=18 queued=0
+[52011][I][BLE] enrichment send mtu=247 attPayload=244 bytes=180 count=18
+[52068][I][BLE] enrichment batch sent plain=180 sealed=202 count=18 writeOk=1
+[52311][I][BLE] enrichment rx chunk cipher=222 queued=0
+[52462][I][BLE] enrichment rx chunk cipher=222 queued=1
+[52463][I][BLE] enrichment rx chunk cipher=222 queued=0
+[52614][I][BLE] enrichment rx chunk cipher=222 queued=1
+[52615][I][BLE] enrichment rx chunk cipher=68 queued=0
+[52616][I][BLE] enrich_xfer_perf count=18 sendMs=57 waitMs=548 rxBytes=846
+[52616][I][BLE] enrichment batch received count=18 bytes=846
+[52617][I][BLE] enrichment batch consumed count=18
+[52617][I][BLE] Enrich batch queued count=18 queueSize=1
+[52617][I][BLE] Enrichment batch received count=18 claimed=8 queued=1
+[52617][I][BLE] Enrich drain begin count=18 queueSize=1 ageMs=0
+[52862][I][STORAGE] Spool enrich_batch applied=8 failed=0 batchFirstEventId=24893 batchLastEventId=24904 firstRecord=25830 lastRecord=25837 ms=144
+[52863][I][BLE] enrich_perf count=18 applied=8 failed=0 deferred=10 storageMs=189 pendingUpload=4476
+[52863][I][BLE] Enrich drain done applied=8 failed=0 deferred=10 queueSize=0
+[52863][I][BLE] Enrich torrent done drained=1 remaining=0 tookLease=0 preempt=0 elapsedMs=246
+[52873][W][CORE] TaskHardware loop gap=259ms owner=BLE_GPS pendingUpload=4476 maintPending=1 suppressed=4
+[52874][I][STORAGE] RAMSpool worker paused inflight=0 lastInflight=0
+[52874][I][STORAGE] Exclusive window begin kind=enrichment reason=manual_enrich_window workerPaused=1 displaySuspended=1
+[52875][I][BLE] Manual enrichment window batch count=18 active=1 noData=0 budgetExhausted=0 timeHit=0
+[52875][I][STORAGE] RAMSpool worker resumed
+[52875][I][STORAGE] Exclusive window end kind=enrichment result=manual_batch_built reason=manual_enrich_window
+[52876][I][BLE] enrichment request queued count=18 bytes=180
+[52876][I][BLE] Requested enrichment batch count=18 queued=0
+[53029][I][BLE] enrichment send mtu=247 attPayload=244 bytes=180 count=18
+[53088][I][BLE] enrichment batch sent plain=180 sealed=202 count=18 writeOk=1
+[53329][I][BLE] enrichment batch acknowledged by phone
+[53330][I][BLE] enrichment rx chunk cipher=222 queued=0
+[53481][I][BLE] enrichment rx chunk cipher=222 queued=1
+[53482][I][BLE] enrichment rx chunk cipher=222 queued=0
+[53633][I][BLE] enrichment rx chunk cipher=222 queued=1
+[53634][I][BLE] enrichment rx chunk cipher=68 queued=0
+[53635][I][BLE] enrich_xfer_perf count=18 sendMs=59 waitMs=547 rxBytes=846
+[53635][I][BLE] enrichment batch received count=18 bytes=846
+[53636][I][BLE] enrichment batch consumed count=18
+[53636][I][BLE] Enrich batch queued count=18 queueSize=1
+[53636][I][BLE] Enrichment batch received count=18 claimed=14 queued=1
+[53636][I][BLE] Enrich drain begin count=18 queueSize=1 ageMs=0
+[53880][I][STORAGE] Spool enrich_batch applied=14 failed=0 batchFirstEventId=24895 batchLastEventId=24899 firstRecord=25838 lastRecord=25851 ms=142
+[53880][I][BLE] enrich_perf count=18 applied=14 failed=0 deferred=4 storageMs=186 pendingUpload=4476
+[53881][I][BLE] Enrich drain done applied=14 failed=0 deferred=4 queueSize=0
+[53881][I][BLE] Enrich torrent done drained=1 remaining=0 tookLease=0 preempt=0 elapsedMs=245
+[53891][I][STORAGE] RAMSpool worker paused inflight=0 lastInflight=0
+[53892][I][STORAGE] Exclusive window begin kind=enrichment reason=manual_enrich_window workerPaused=1 displaySuspended=1
+[53892][I][BLE] Manual enrichment window batch count=18 active=1 noData=0 budgetExhausted=0 timeHit=0
+[53893][I][STORAGE] RAMSpool worker resumed
+[53893][I][STORAGE] Exclusive window end kind=enrichment result=manual_batch_built reason=manual_enrich_window
+[53893][I][BLE] enrichment request queued count=18 bytes=180
+[53893][I][BLE] Requested enrichment batch count=18 queued=0
+[54046][I][BLE] enrichment send mtu=247 attPayload=244 bytes=180 count=18
+[54108][I][BLE] enrichment batch sent plain=180 sealed=202 count=18 writeOk=1
+[54288][I][BLE] storage snapshot sent pendingUp=0/4476 pendingEnrich=0/4479 usedPct=18
+[54348][I][BLE] enrichment rx chunk cipher=222 queued=0
+[54499][I][BLE] enrichment rx chunk cipher=222 queued=1
+[54500][I][BLE] enrichment rx chunk cipher=222 queued=0
+[54651][W][BLE] gps decrypt failed: secure decrypt replay/stale counter
+[54651][I][BLE] enrichment rx chunk cipher=222 queued=1
+[54652][I][BLE] enrichment rx chunk cipher=68 queued=0
+[54653][I][BLE] enrich_xfer_perf count=18 sendMs=62 waitMs=545 rxBytes=846
+[54653][I][BLE] enrichment batch received count=18 bytes=846
+[54654][I][BLE] enrichment batch consumed count=18
+[54654][I][BLE] Enrich batch queued count=18 queueSize=1
+[54654][I][BLE] Enrichment batch received count=18 claimed=16 queued=1
+[54654][I][BLE] Enrich drain begin count=18 queueSize=1 ageMs=0
+[54655][I][STORAGE] Spool enrich preflight rotate seg=309 bytes=3431 records=86 enrich=86 expected=18
+[55827][I][STORAGE] Spool rotate newSeg=310 format=bin_v2
+[55827][I][STORAGE] Spool diag[rotate] validSegments=79 untrustedSegments=0 invalidSegments=0 activeSegment=310 totalRecords=4660 storedEvents=4488 pendingUpload=4476 nextEventId=25852
+[56045][I][STORAGE] Spool enrich_batch applied=16 failed=0 batchFirstEventId=24953 batchLastEventId=24900 firstRecord=25852 lastRecord=25867 ms=115
+[56046][I][BLE] enrich_perf count=18 applied=16 failed=0 deferred=2 storageMs=160 pendingUpload=4476
+[56046][I][BLE] Enrich drain done applied=16 failed=0 deferred=2 queueSize=0
+[56047][I][BLE] Enrich torrent done drained=1 remaining=0 tookLease=0 preempt=0 elapsedMs=1393
+[56061][I][STORAGE] RAMSpool worker paused inflight=0 lastInflight=0
+[56061][I][STORAGE] Exclusive window begin kind=enrichment reason=manual_enrich_window workerPaused=1 displaySuspended=1
+[56062][I][BLE] Manual enrichment window batch count=18 active=1 noData=0 budgetExhausted=0 timeHit=0
+[56062][I][STORAGE] RAMSpool worker resumed
+[56062][I][STORAGE] Exclusive window end kind=enrichment result=manual_batch_built reason=manual_enrich_window
+[56063][I][BLE] enrichment request queued count=18 bytes=180
+[56063][I][BLE] Requested enrichment batch count=18 queued=0
+[56213][I][BLE] enrichment batch acknowledged by phone
+[56214][I][BLE] enrichment send mtu=247 attPayload=244 bytes=180 count=18
+[56268][I][BLE] enrichment batch sent plain=180 sealed=202 count=18 writeOk=1
+[56514][I][BLE] enrichment rx chunk cipher=222 queued=1
+[56515][I][BLE] enrichment rx chunk cipher=222 queued=0
+[56666][I][BLE] enrichment rx chunk cipher=222 queued=0
+[56817][I][BLE] enrichment rx chunk cipher=222 queued=1
+[56818][I][BLE] enrichment rx chunk cipher=68 queued=0
+[56819][I][BLE] enrich_xfer_perf count=18 sendMs=54 waitMs=551 rxBytes=846
+[56819][I][BLE] enrichment batch received count=18 bytes=846
+[56820][I][BLE] enrichment batch consumed count=18
+[56820][I][BLE] Enrich batch queued count=18 queueSize=1
+[56820][I][BLE] Enrichment batch received count=18 claimed=15 queued=1
+[56820][I][BLE] Enrich drain begin count=18 queueSize=1 ageMs=0
+[57299][I][STORAGE] Spool enrich_batch applied=15 failed=0 batchFirstEventId=24958 batchLastEventId=24926 firstRecord=25868 lastRecord=25882 ms=192
+[57300][I][BLE] enrich_perf count=18 applied=15 failed=0 deferred=3 storageMs=420 pendingUpload=4476
+[57300][I][BLE] Enrich drain done applied=15 failed=0 deferred=3 queueSize=0
+[57300][I][BLE] Enrich torrent done drained=1 remaining=0 tookLease=0 preempt=0 elapsedMs=480
+[57314][I][STORAGE] RAMSpool worker paused inflight=0 lastInflight=0
+[57314][I][STORAGE] Exclusive window begin kind=enrichment reason=manual_enrich_window workerPaused=1 displaySuspended=1
+[57315][I][BLE] Manual enrichment window batch count=18 active=1 noData=0 budgetExhausted=0 timeHit=0
+[57315][I][STORAGE] RAMSpool worker resumed
+[57316][I][STORAGE] Exclusive window end kind=enrichment result=manual_batch_built reason=manual_enrich_window
+[57316][I][BLE] enrichment request queued count=18 bytes=180
+[57316][I][BLE] Requested enrichment batch count=18 queued=0
+[57466][I][BLE] enrichment send mtu=247 attPayload=244 bytes=180 count=18
+[57528][I][BLE] enrichment batch sent plain=180 sealed=202 count=18 writeOk=1
+[57766][I][BLE] enrichment rx chunk cipher=222 queued=0
+[57917][I][BLE] enrichment rx chunk cipher=222 queued=1
+[57918][I][BLE] enrichment rx chunk cipher=222 queued=0
+[58069][I][BLE] enrichment rx chunk cipher=222 queued=1
+[58070][I][BLE] enrichment rx chunk cipher=68 queued=0
+[58071][I][BLE] enrich_xfer_perf count=18 sendMs=62 waitMs=543 rxBytes=846
+[58071][I][BLE] enrichment batch received count=18 bytes=846
+[58072][I][BLE] enrichment batch consumed count=18
+[58072][I][BLE] Enrich batch queued count=18 queueSize=1
+[58073][I][BLE] Enrichment batch received count=18 claimed=13 queued=1
+[58073][I][BLE] Enrich drain begin count=18 queueSize=1 ageMs=1
+[58298][I][STORAGE] Spool enrich_batch applied=13 failed=0 batchFirstEventId=24964 batchLastEventId=24971 firstRecord=25883 lastRecord=25895 ms=122
+[58299][I][BLE] enrich_perf count=18 applied=13 failed=0 deferred=5 storageMs=163 pendingUpload=4476
+[58299][I][BLE] Enrich drain done applied=13 failed=0 deferred=5 queueSize=0
+[58299][I][BLE] Enrich torrent done drained=1 remaining=0 tookLease=0 preempt=0 elapsedMs=226
+[58310][I][BLE] enrichment batch acknowledged by phone
+[58310][I][STORAGE] RAMSpool worker paused inflight=0 lastInflight=0
+[58311][I][STORAGE] Exclusive window begin kind=enrichment reason=manual_enrich_window workerPaused=1 displaySuspended=1
+[58311][I][BLE] Manual enrichment window batch count=18 active=1 noData=0 budgetExhausted=0 timeHit=0
+[58311][I][STORAGE] RAMSpool worker resumed
+[58312][I][STORAGE] Exclusive window end kind=enrichment result=manual_batch_built reason=manual_enrich_window
+[58312][I][BLE] enrichment request queued count=18 bytes=180
+[58312][I][BLE] Requested enrichment batch count=18 queued=0
+[58465][I][BLE] enrichment send mtu=247 attPayload=244 bytes=180 count=18
+[58518][I][BLE] enrichment batch sent plain=180 sealed=202 count=18 writeOk=1
+[58765][I][BLE] enrichment rx chunk cipher=222 queued=0
+[58916][I][BLE] enrichment rx chunk cipher=222 queued=1
+[58917][I][BLE] enrichment rx chunk cipher=222 queued=0
+[59068][I][BLE] enrichment rx chunk cipher=222 queued=1
+[59069][I][BLE] enrichment rx chunk cipher=68 queued=0
+[59070][I][BLE] enrich_xfer_perf count=18 sendMs=53 waitMs=552 rxBytes=846
+[59070][I][BLE] enrichment batch received count=18 bytes=846
+[59071][I][BLE] enrichment batch consumed count=18
+[59071][I][BLE] Enrich batch queued count=18 queueSize=1
+[59071][I][BLE] Enrichment batch received count=18 claimed=6 queued=1
+[59071][I][BLE] Enrich drain begin count=18 queueSize=1 ageMs=0
+[59299][I][STORAGE] Spool enrich_batch applied=6 failed=0 batchFirstEventId=24972 batchLastEventId=24903 firstRecord=25896 lastRecord=25901 ms=126
+[59300][I][BLE] enrich_perf count=18 applied=6 failed=0 deferred=12 storageMs=167 pendingUpload=4476
+[59300][I][BLE] Enrich drain done applied=6 failed=0 deferred=12 queueSize=0
+[59300][I][BLE] Enrich torrent done drained=1 remaining=0 tookLease=0 preempt=0 elapsedMs=229
+[59310][I][STORAGE] RAMSpool worker paused inflight=0 lastInflight=0
+[59311][I][STORAGE] Exclusive window begin kind=enrichment reason=manual_enrich_window workerPaused=1 displaySuspended=1
+[59311][I][BLE] Manual enrichment window batch count=18 active=1 noData=0 budgetExhausted=0 timeHit=0
+[59311][I][STORAGE] RAMSpool worker resumed
+[59312][I][STORAGE] Exclusive window end kind=enrichment result=manual_batch_built reason=manual_enrich_window
+[59312][I][BLE] enrichment request queued count=18 bytes=180
+[59312][I][BLE] Requested enrichment batch count=18 queued=0
+[59465][I][BLE] enrichment send mtu=247 attPayload=244 bytes=180 count=18
+[59508][I][BLE] enrichment batch sent plain=180 sealed=202 count=18 writeOk=1
+[59765][W][BLE] gps decrypt failed: secure decrypt replay/stale counter
+[59765][I][BLE] enrichment rx chunk cipher=222 queued=0
+[59916][I][BLE] enrichment rx chunk cipher=222 queued=1
+[59917][I][BLE] enrichment rx chunk cipher=222 queued=0
+[60068][I][BLE] enrichment rx chunk cipher=222 queued=1
+[60069][I][BLE] enrichment rx chunk cipher=68 queued=0
+[60070][I][BLE] enrich_xfer_perf count=18 sendMs=43 waitMs=562 rxBytes=846
+[60070][I][BLE] enrichment batch received count=18 bytes=846
+[60071][I][BLE] enrichment batch consumed count=18
+[60071][I][BLE] Enrich batch queued count=18 queueSize=1
+[60071][I][BLE] Enrichment batch received count=18 claimed=12 queued=1
+[60071][I][BLE] Enrich drain begin count=18 queueSize=1 ageMs=0
+[60309][I][STORAGE] Spool enrich_batch applied=12 failed=0 batchFirstEventId=24977 batchLastEventId=24981 firstRecord=25902 lastRecord=25913 ms=134
+[60310][I][BLE] enrich_perf count=18 applied=12 failed=0 deferred=6 storageMs=176 pendingUpload=4476
+[60310][I][BLE] Enrich drain done applied=12 failed=0 deferred=6 queueSize=0
+[60310][I][BLE] Enrich torrent done drained=1 remaining=0 tookLease=0 preempt=0 elapsedMs=239
+[60313][I][HEAP] heap free=7622KB min=7548KB largest=7552KB frag=0% internalFree=16KB internalLargest=7KB psramFree=7607KB core=5/0% owner=BLE_GPS nets=6 pendingUpload=4476 pendingEnrich=4479
+[HEALTH] time=2026-08-07 13:27:53 src=ntp
+[HEALTH] heap used=802/8424KB free=7622KB min=7548KB largest=7552KB frag=0%
+[HEALTH] internal used=217/232KB free=16KB min=0KB largest=7KB
+[HEALTH] psram used=585/8192KB free=7607KB largest=7552KB
+[HEALTH] stack free_min: core0=15KB/22KB core1=13KB/18KB
+[HEALTH] core usage: core0=5% core1=0%
+[HEALTH] power=usb state=usb batt=100% 4734mV trend=90mV/min runtime=0min cap=1100mAh charging=1
+[HEALTH] radio=BLE_GPS wifi=0 ble=1 gps=0 nets=6 pendingUpload=4476 pendingEnrich=4479
+[HEALTH] subghz=NONE mode=OFF pkts=0 nodes=0
+[60315][I][STORAGE] RAMSpool enq=3 cons=3 inflight=0/1024 high=3 pressure=0 drop[full=0 big=0 noise=0 p3Evict=0 p3Drop=0 p2Drop=0 p1Fail=0] free=1024
+[60315][I][STORAGE] RAMSpool enqueue probe[ok=2 drop=0] device[ok=1 drop=0]
+[60315][I][STORAGE] RAMSpool worker probe[ok=1 sup=1 drop=0 fail=0 slow=0] device[ok=1 sup=0 drop=0 fail=0 slow=0] slowTotal=0 maxMs=0
+[60316][I][STORAGE] RAMSpool prioEnq p0=0 p1=0 p2=3 p3=0
+[60316][I][STORAGE] RAMSpool lanes p1=0/0 p2=0/2 p3=0/0
+[60329][I][STORAGE] RAMSpool worker paused inflight=0 lastInflight=0
+[60330][I][STORAGE] Exclusive window begin kind=enrichment reason=manual_enrich_window workerPaused=1 displaySuspended=1
+[60331][I][BLE] Manual enrichment window batch count=18 active=1 noData=0 budgetExhausted=0 timeHit=0
+[60331][I][STORAGE] RAMSpool worker resumed
+[60331][I][STORAGE] Exclusive window end kind=enrichment result=manual_batch_built reason=manual_enrich_window
+[60331][I][BLE] enrichment request queued count=18 bytes=180
+[60331][I][BLE] Requested enrichment batch count=18 queued=0
+[60481][I][BLE] enrichment batch acknowledged by phone
+[60482][I][BLE] enrichment send mtu=247 attPayload=244 bytes=180 count=18
+[60528][I][BLE] enrichment batch sent plain=180 sealed=202 count=18 writeOk=1
+[60782][I][BLE] enrichment rx chunk cipher=222 queued=0
+[60933][I][BLE] enrichment rx chunk cipher=222 queued=1
+[60934][I][BLE] enrichment rx chunk cipher=222 queued=0
+[61085][I][BLE] enrichment rx chunk cipher=222 queued=1
+[61086][I][BLE] enrichment rx chunk cipher=68 queued=0
+[61087][I][BLE] enrich_xfer_perf count=18 sendMs=46 waitMs=559 rxBytes=846
+[61087][I][BLE] enrichment batch received count=18 bytes=846
+[61088][I][BLE] enrichment batch consumed count=18
+[61088][I][BLE] Enrich batch queued count=18 queueSize=1
+[61088][I][BLE] Enrichment batch received count=18 claimed=8 queued=1
+[61088][I][BLE] Enrich drain begin count=18 queueSize=1 ageMs=0
+[61329][I][STORAGE] Spool enrich_batch applied=8 failed=0 batchFirstEventId=24893 batchLastEventId=24986 firstRecord=25914 lastRecord=25921 ms=134
+[61329][I][BLE] enrich_perf count=18 applied=8 failed=0 deferred=10 storageMs=177 pendingUpload=4476
+[61330][I][BLE] Enrich drain done applied=8 failed=0 deferred=10 queueSize=0
+[61330][I][BLE] Enrich torrent done drained=1 remaining=0 tookLease=0 preempt=0 elapsedMs=242
+[61331][I][STACK] TaskHardware watermark=15836B min=15836B
+[61344][I][STORAGE] RAMSpool worker paused inflight=0 lastInflight=0
+[61345][I][STORAGE] Exclusive window begin kind=enrichment reason=manual_enrich_window workerPaused=1 displaySuspended=1
+[61345][I][BLE] Manual enrichment window batch count=18 active=1 noData=0 budgetExhausted=0 timeHit=0
+[61345][I][STORAGE] RAMSpool worker resumed
+[61346][I][STORAGE] Exclusive window end kind=enrichment result=manual_batch_built reason=manual_enrich_window
+[61346][I][BLE] enrichment request queued count=18 bytes=180
+[61346][I][BLE] Requested enrichment batch count=18 queued=0
+[61496][I][BLE] enrichment send mtu=247 attPayload=244 bytes=180 count=18
+[61548][I][BLE] enrichment batch sent plain=180 sealed=202 count=18 writeOk=1
+[61796][I][BLE] enrichment rx chunk cipher=222 queued=1
+[61797][I][BLE] enrichment rx chunk cipher=222 queued=0
+[61948][I][BLE] enrichment rx chunk cipher=222 queued=0
+[62099][I][BLE] enrichment rx chunk cipher=222 queued=1
+[62100][I][BLE] enrichment rx chunk cipher=68 queued=0
+[62101][I][BLE] enrich_xfer_perf count=18 sendMs=52 waitMs=553 rxBytes=846
+[62101][I][BLE] enrichment batch received count=18 bytes=846
+[62102][I][BLE] enrichment batch consumed count=18
+[62102][I][BLE] Enrich batch queued count=18 queueSize=1
+[62102][I][BLE] Enrichment batch received count=18 claimed=18 queued=1
+[62112][I][BLE] Enrich drain begin count=18 queueSize=1 ageMs=10
+[62364][I][STORAGE] Spool enrich_batch applied=18 failed=0 batchFirstEventId=24910 batchLastEventId=24920 firstRecord=25922 lastRecord=25939 ms=144
+[62365][I][BLE] enrich_perf count=18 applied=18 failed=0 deferred=0 storageMs=188 pendingUpload=4476
+[62365][I][BLE] Enrich drain done applied=18 failed=0 deferred=0 queueSize=0
+[62366][I][BLE] Enrich torrent done drained=1 remaining=0 tookLease=0 preempt=0 elapsedMs=253
+[62379][I][STORAGE] RAMSpool worker paused inflight=0 lastInflight=0
+[62380][I][STORAGE] Exclusive window begin kind=enrichment reason=manual_enrich_window workerPaused=1 displaySuspended=1
+[62381][I][BLE] Manual enrichment window batch count=18 active=1 noData=0 budgetExhausted=0 timeHit=0
+[62381][I][STORAGE] RAMSpool worker resumed
+[62381][I][STORAGE] Exclusive window end kind=enrichment result=manual_batch_built reason=manual_enrich_window
+[62381][I][BLE] enrichment request queued count=18 bytes=180
+[62381][I][BLE] Requested enrichment batch count=18 queued=0
+[62531][I][BLE] enrichment batch acknowledged by phone
+[62532][I][BLE] enrichment send mtu=247 attPayload=244 bytes=180 count=18
+[62568][I][BLE] enrichment batch sent plain=180 sealed=202 count=18 writeOk=1
+[62832][I][BLE] enrichment rx chunk cipher=222 queued=1
+[62833][I][BLE] enrichment rx chunk cipher=222 queued=0
+[62984][I][BLE] enrichment rx chunk cipher=222 queued=0
+[63135][I][BLE] enrichment rx chunk cipher=222 queued=1
+[63136][I][BLE] enrichment rx chunk cipher=68 queued=0
+[63137][I][BLE] enrich_xfer_perf count=18 sendMs=36 waitMs=569 rxBytes=846
+[63137][I][BLE] enrichment batch received count=18 bytes=846
+[63138][I][BLE] enrichment batch consumed count=18
+[63138][I][BLE] Enrich batch queued count=18 queueSize=1
+[63138][I][BLE] Enrichment batch received count=18 claimed=16 queued=1
+[63138][I][BLE] Enrich drain begin count=18 queueSize=1 ageMs=0
+[63139][I][STORAGE] Spool enrich preflight rotate seg=310 bytes=3513 records=88 enrich=88 expected=18
+[64352][I][STORAGE] Spool rotate newSeg=311 format=bin_v2
+[64353][I][STORAGE] Spool diag[rotate] validSegments=80 untrustedSegments=0 invalidSegments=0 activeSegment=311 totalRecords=4748 storedEvents=4488 pendingUpload=4476 nextEventId=25940
+[64573][I][STORAGE] Spool enrich_batch applied=16 failed=0 batchFirstEventId=24921 batchLastEventId=24929 firstRecord=25940 lastRecord=25955 ms=109
+[64574][I][BLE] enrich_perf count=18 applied=16 failed=0 deferred=2 storageMs=154 pendingUpload=4476
+[64574][I][BLE] Enrich drain done applied=16 failed=0 deferred=2 queueSize=0
+[64575][I][BLE] Enrich torrent done drained=1 remaining=0 tookLease=0 preempt=0 elapsedMs=1437
+[64585][W][CORE] TaskHardware loop gap=1450ms owner=BLE_GPS pendingUpload=4476 maintPending=1 suppressed=6
+[64589][I][STORAGE] RAMSpool worker paused inflight=0 lastInflight=0
+[64590][I][STORAGE] Exclusive window begin kind=enrichment reason=manual_enrich_window workerPaused=1 displaySuspended=1
+[64590][I][BLE] Manual enrichment window batch count=18 active=1 noData=0 budgetExhausted=0 timeHit=0
+[64590][I][STORAGE] RAMSpool worker resumed
+[64591][I][STORAGE] Exclusive window end kind=enrichment result=manual_batch_built reason=manual_enrich_window
+[64591][I][BLE] enrichment request queued count=18 bytes=180
+[64591][I][BLE] Requested enrichment batch count=18 queued=0
+[64741][I][BLE] enrichment batch acknowledged by phone
+[64788][I][BLE] enrichment send mtu=247 attPayload=244 bytes=180 count=18
+[64848][I][BLE] enrichment batch sent plain=180 sealed=202 count=18 writeOk=1
+[64892][W][BLE] gps decrypt failed: secure decrypt replay/stale counter
+[65052][I][BLE] enrichment rx chunk cipher=222 queued=0
+[65203][I][BLE] enrichment rx chunk cipher=222 queued=1
+[65204][I][BLE] enrichment rx chunk cipher=222 queued=0
+[65355][I][BLE] enrichment rx chunk cipher=222 queued=0
+[65506][I][BLE] enrichment rx chunk cipher=68 queued=0
+[65507][I][BLE] enrich_xfer_perf count=18 sendMs=60 waitMs=659 rxBytes=846
+[65508][I][BLE] enrichment batch received count=18 bytes=846
+[65508][I][BLE] enrichment batch consumed count=18
+[65508][I][BLE] Enrich batch queued count=18 queueSize=1
+[65508][I][BLE] Enrichment batch received count=18 claimed=14 queued=1
+[65509][I][BLE] Enrich drain begin count=18 queueSize=1 ageMs=0
+[65746][I][STORAGE] Spool enrich_batch applied=14 failed=0 batchFirstEventId=24930 batchLastEventId=25003 firstRecord=25956 lastRecord=25969 ms=123
+[65747][I][BLE] enrich_perf count=18 applied=14 failed=0 deferred=4 storageMs=168 pendingUpload=4476
+[65747][I][BLE] Enrich drain done applied=14 failed=0 deferred=4 queueSize=0
+[65748][I][BLE] Enrich torrent done drained=1 remaining=0 tookLease=0 preempt=0 elapsedMs=240
+[65761][I][STORAGE] RAMSpool worker paused inflight=0 lastInflight=0
+[65762][I][STORAGE] Exclusive window begin kind=enrichment reason=manual_enrich_window workerPaused=1 displaySuspended=1
+[65762][I][BLE] Manual enrichment window batch count=18 active=1 noData=0 budgetExhausted=0 timeHit=0
+[65762][I][STORAGE] RAMSpool worker resumed
+[65763][I][STORAGE] Exclusive window end kind=enrichment result=manual_batch_built reason=manual_enrich_window
+[65763][I][BLE] enrichment request queued count=18 bytes=180
+[65763][I][BLE] Requested enrichment batch count=18 queued=0
+[65913][I][BLE] enrichment send mtu=247 attPayload=244 bytes=180 count=18
+[65958][I][BLE] enrichment batch sent plain=180 sealed=202 count=18 writeOk=1
+[66213][I][BLE] enrichment rx chunk cipher=222 queued=0
+[66364][I][BLE] enrichment rx chunk cipher=222 queued=1
+[66365][I][BLE] enrichment rx chunk cipher=222 queued=0
+[66516][I][BLE] enrichment rx chunk cipher=222 queued=1
+[66517][I][BLE] enrichment rx chunk cipher=68 queued=0
+[66518][I][BLE] enrich_xfer_perf count=18 sendMs=45 waitMs=560 rxBytes=846
+[66518][I][BLE] enrichment batch received count=18 bytes=846
+[66519][I][BLE] enrichment batch consumed count=18
+[66519][I][BLE] Enrich batch queued count=18 queueSize=1
+[66519][I][BLE] Enrichment batch received count=18 claimed=12 queued=1
+[66519][I][BLE] Enrich drain begin count=18 queueSize=1 ageMs=0
+[66760][I][STORAGE] Spool enrich_batch applied=12 failed=0 batchFirstEventId=25004 batchLastEventId=24938 firstRecord=25970 lastRecord=25981 ms=126
+[66760][I][BLE] enrich_perf count=18 applied=12 failed=0 deferred=6 storageMs=172 pendingUpload=4476
+[66761][I][BLE] Enrich drain done applied=12 failed=0 deferred=6 queueSize=0
+[66761][I][BLE] Enrich torrent done drained=1 remaining=0 tookLease=0 preempt=0 elapsedMs=242
+[66775][I][STORAGE] RAMSpool worker paused inflight=0 lastInflight=0
+[66775][I][STORAGE] Exclusive window begin kind=enrichment reason=manual_enrich_window workerPaused=1 displaySuspended=1
+[66776][I][BLE] Manual enrichment window batch count=18 active=1 noData=0 budgetExhausted=0 timeHit=0
+[66776][I][STORAGE] RAMSpool worker resumed
+[66776][I][STORAGE] Exclusive window end kind=enrichment result=manual_batch_built reason=manual_enrich_window
+[66776][I][BLE] enrichment request queued count=18 bytes=180
+[66777][I][BLE] Requested enrichment batch count=18 queued=0
+[66927][I][BLE] enrichment batch acknowledged by phone
+[66928][I][BLE] enrichment send mtu=247 attPayload=244 bytes=180 count=18
+[66978][I][BLE] enrichment batch sent plain=180 sealed=202 count=18 writeOk=1
+[67228][I][BLE] enrichment rx chunk cipher=222 queued=0
+[67379][I][BLE] enrichment rx chunk cipher=222 queued=1
+[67380][I][BLE] enrichment rx chunk cipher=222 queued=0
+[67531][I][BLE] enrichment rx chunk cipher=222 queued=1
+[67532][I][BLE] enrichment rx chunk cipher=68 queued=0
+[67533][I][BLE] enrich_xfer_perf count=18 sendMs=50 waitMs=555 rxBytes=846
+[67533][I][BLE] enrichment batch received count=18 bytes=846
+[67534][I][BLE] enrichment batch consumed count=18
+[67534][I][BLE] Enrich batch queued count=18 queueSize=1
+[67534][I][BLE] Enrichment batch received count=18 claimed=14 queued=1
+[67534][I][BLE] Enrich drain begin count=18 queueSize=1 ageMs=0
+[67777][I][STORAGE] Spool enrich_batch applied=14 failed=0 batchFirstEventId=24939 batchLastEventId=24901 firstRecord=25982 lastRecord=25995 ms=128
+[67778][I][BLE] enrich_perf count=18 applied=14 failed=0 deferred=4 storageMs=174 pendingUpload=4476
+[67779][I][BLE] Enrich drain done applied=14 failed=0 deferred=4 queueSize=0
+[67779][I][BLE] Enrich torrent done drained=1 remaining=0 tookLease=0 preempt=0 elapsedMs=245
+[67792][I][STORAGE] RAMSpool worker paused inflight=0 lastInflight=0
+[67793][I][STORAGE] Exclusive window begin kind=enrichment reason=manual_enrich_window workerPaused=1 displaySuspended=1
+[67793][I][BLE] Manual enrichment window batch count=18 active=1 noData=0 budgetExhausted=0 timeHit=0
+[67793][I][STORAGE] RAMSpool worker resumed
+[67794][I][STORAGE] Exclusive window end kind=enrichment result=manual_batch_built reason=manual_enrich_window
+[67794][I][BLE] enrichment request queued count=18 bytes=180
+[67794][I][BLE] Requested enrichment batch count=18 queued=0
+[67944][I][BLE] enrichment send mtu=247 attPayload=244 bytes=180 count=18
+[67998][I][BLE] enrichment batch sent plain=180 sealed=202 count=18 writeOk=1
+[68244][I][BLE] enrichment rx chunk cipher=222 queued=0
+[68395][I][BLE] enrichment rx chunk cipher=222 queued=1
+[68396][I][BLE] enrichment rx chunk cipher=222 queued=0
+[68548][I][BLE] enrichment rx chunk cipher=222 queued=1
+[68549][I][BLE] enrichment rx chunk cipher=68 queued=0
+[68550][I][BLE] enrich_xfer_perf count=18 sendMs=54 waitMs=552 rxBytes=846
+[68550][I][BLE] enrichment batch received count=18 bytes=846
+[68551][I][BLE] enrichment batch consumed count=18
+[68551][I][BLE] Enrich batch queued count=18 queueSize=1
+[68551][I][BLE] Enrichment batch received count=18 claimed=15 queued=1
+[68551][I][BLE] Enrich drain begin count=18 queueSize=1 ageMs=0
+[68808][I][STORAGE] Spool enrich_batch applied=15 failed=0 batchFirstEventId=25020 batchLastEventId=24948 firstRecord=25996 lastRecord=26010 ms=137
+[68809][I][BLE] enrich_perf count=18 applied=15 failed=0 deferred=3 storageMs=186 pendingUpload=4476
+[68809][I][BLE] Enrich drain done applied=15 failed=0 deferred=3 queueSize=0
+[68809][I][BLE] Enrich torrent done drained=1 remaining=0 tookLease=0 preempt=0 elapsedMs=258
+[68823][I][STORAGE] RAMSpool worker paused inflight=0 lastInflight=0
+[68823][I][STORAGE] Exclusive window begin kind=enrichment reason=manual_enrich_window workerPaused=1 displaySuspended=1
+[68824][I][BLE] Manual enrichment window batch count=18 active=1 noData=0 budgetExhausted=0 timeHit=0
+[68824][I][STORAGE] RAMSpool worker resumed
+[68824][I][STORAGE] Exclusive window end kind=enrichment result=manual_batch_built reason=manual_enrich_window
+[68824][I][BLE] enrichment request queued count=18 bytes=180
+[68825][I][BLE] Requested enrichment batch count=18 queued=0
+[68975][I][BLE] enrichment batch acknowledged by phone
+[68976][I][BLE] enrichment send mtu=247 attPayload=244 bytes=180 count=18
+[69018][I][BLE] enrichment batch sent plain=180 sealed=202 count=18 writeOk=1
+[69290][I][BLE] storage snapshot sent pendingUp=0/4476 pendingEnrich=0/4479 usedPct=18
+[69300][I][BLE] enrichment rx chunk cipher=222 queued=1
+[69301][I][BLE] enrichment rx chunk cipher=222 queued=0
+[69452][I][BLE] enrichment rx chunk cipher=222 queued=1
+[69453][I][BLE] enrichment rx chunk cipher=222 queued=0
+[69604][I][BLE] enrichment rx chunk cipher=68 queued=0
+[69605][I][BLE] enrich_xfer_perf count=18 sendMs=42 waitMs=587 rxBytes=846
+[69605][I][BLE] enrichment batch received count=18 bytes=846
+[69606][I][BLE] enrichment batch consumed count=18
+[69606][I][BLE] Enrich batch queued count=18 queueSize=1
+[69606][I][BLE] Enrichment batch received count=18 claimed=14 queued=1
+[69606][I][BLE] Enrich drain begin count=18 queueSize=1 ageMs=0
+[69870][I][STORAGE] Spool enrich_batch applied=14 failed=0 batchFirstEventId=25027 batchLastEventId=24957 firstRecord=26011 lastRecord=26024 ms=143
+[69870][I][BLE] enrich_perf count=18 applied=14 failed=0 deferred=4 storageMs=191 pendingUpload=4476
+[69871][I][BLE] Enrich drain done applied=14 failed=0 deferred=4 queueSize=0
+[69871][I][BLE] Enrich torrent done drained=1 remaining=0 tookLease=0 preempt=0 elapsedMs=265
+[69885][I][STORAGE] RAMSpool worker paused inflight=0 lastInflight=0
+[69885][I][STORAGE] Exclusive window begin kind=enrichment reason=manual_enrich_window workerPaused=1 displaySuspended=1
+[69886][I][BLE] Manual enrichment window batch count=18 active=1 noData=0 budgetExhausted=0 timeHit=0
+[69886][I][STORAGE] RAMSpool worker resumed
+[69886][I][STORAGE] Exclusive window end kind=enrichment result=manual_batch_built reason=manual_enrich_window
+[69887][I][BLE] enrichment request queued count=18 bytes=180
+[69887][I][BLE] Requested enrichment batch count=18 queued=0
+[70037][W][BLE] gps decrypt failed: secure decrypt replay/stale counter
+[70038][I][BLE] enrichment send mtu=247 attPayload=244 bytes=180 count=18
+[70098][I][BLE] enrichment batch sent plain=180 sealed=202 count=18 writeOk=1
+[70338][I][BLE] enrichment rx chunk cipher=222 queued=0
+[70489][I][BLE] enrichment rx chunk cipher=222 queued=1
+[70490][I][BLE] enrichment rx chunk cipher=222 queued=0
+[70641][I][BLE] enrichment rx chunk cipher=222 queued=1
+[70642][I][BLE] enrichment rx chunk cipher=68 queued=0
+[70643][I][BLE] enrich_xfer_perf count=18 sendMs=60 waitMs=545 rxBytes=846
+[70643][I][BLE] enrichment batch received count=18 bytes=846
+[70644][I][BLE] enrichment batch consumed count=18
+[70644][I][BLE] Enrich batch queued count=18 queueSize=1
+[70644][I][BLE] Enrichment batch received count=18 claimed=13 queued=1
+[70644][I][BLE] Enrich drain begin count=18 queueSize=1 ageMs=0
+[70645][I][STORAGE] Spool enrich preflight rotate seg=311 bytes=3421 records=85 enrich=85 expected=18
+[72300][I][STORAGE] Spool rotate newSeg=312 format=bin_v2
+[72300][I][STORAGE] Spool diag[rotate] validSegments=81 untrustedSegments=0 invalidSegments=0 activeSegment=312 totalRecords=4833 storedEvents=4488 pendingUpload=4476 nextEventId=26025
+[72531][I][STORAGE] Spool enrich_batch applied=13 failed=0 batchFirstEventId=24958 batchLastEventId=24965 firstRecord=26025 lastRecord=26037 ms=114
+[72531][I][BLE] enrich_perf count=18 applied=13 failed=0 deferred=5 storageMs=157 pendingUpload=4476
+[72532][I][BLE] Enrich drain done applied=13 failed=0 deferred=5 queueSize=0
+[72532][I][BLE] Enrich torrent done drained=1 remaining=0 tookLease=0 preempt=0 elapsedMs=1888
+[72546][I][STORAGE] RAMSpool worker paused inflight=0 lastInflight=0
+[72546][I][STORAGE] Exclusive window begin kind=enrichment reason=manual_enrich_window workerPaused=1 displaySuspended=1
+[72547][I][BLE] Manual enrichment window batch count=18 active=1 noData=0 budgetExhausted=0 timeHit=0
+[72547][I][STORAGE] RAMSpool worker resumed
+[72547][I][STORAGE] Exclusive window end kind=enrichment result=manual_batch_built reason=manual_enrich_window
+[72548][I][BLE] enrichment request queued count=18 bytes=180
+[72548][I][BLE] Requested enrichment batch count=18 queued=0
+[72698][I][BLE] enrichment batch acknowledged by phone
+[72699][I][BLE] enrichment send mtu=247 attPayload=244 bytes=180 count=18
+[72738][I][BLE] enrichment batch sent plain=180 sealed=202 count=18 writeOk=1
+[72999][I][BLE] enrichment rx chunk cipher=222 queued=0
+[73150][I][BLE] enrichment rx chunk cipher=222 queued=1
+[73151][I][BLE] enrichment rx chunk cipher=222 queued=0
+[73302][I][BLE] enrichment rx chunk cipher=222 queued=1
+[73303][I][BLE] enrichment rx chunk cipher=68 queued=0
+[73304][I][BLE] enrich_xfer_perf count=18 sendMs=39 waitMs=566 rxBytes=846
+[73304][I][BLE] enrichment batch received count=18 bytes=846
+[73305][I][BLE] enrichment batch consumed count=18
+[73305][I][BLE] Enrich batch queued count=18 queueSize=1
+[73305][I][BLE] Enrichment batch received count=18 claimed=12 queued=1
+[73305][I][BLE] Enrich drain begin count=18 queueSize=1 ageMs=0
+[73535][I][STORAGE] Spool enrich_batch applied=12 failed=0 batchFirstEventId=24936 batchLastEventId=24971 firstRecord=26038 lastRecord=26049 ms=121
+[73536][I][BLE] enrich_perf count=18 applied=12 failed=0 deferred=6 storageMs=165 pendingUpload=4476
+[73536][I][BLE] Enrich drain done applied=12 failed=0 deferred=6 queueSize=0
+[73537][I][BLE] Enrich torrent done drained=1 remaining=0 tookLease=0 preempt=0 elapsedMs=231
+[73550][I][STORAGE] RAMSpool worker paused inflight=0 lastInflight=0
+[73551][I][STORAGE] Exclusive window begin kind=enrichment reason=manual_enrich_window workerPaused=1 displaySuspended=1
+[73551][I][BLE] Manual enrichment window batch count=18 active=1 noData=0 budgetExhausted=0 timeHit=0
+[73551][I][STORAGE] RAMSpool worker resumed
+[73552][I][STORAGE] Exclusive window end kind=enrichment result=manual_batch_built reason=manual_enrich_window
+[73552][I][BLE] enrichment request queued count=18 bytes=180
+[73552][I][BLE] Requested enrichment batch count=18 queued=0
+[73702][I][BLE] enrichment send mtu=247 attPayload=244 bytes=180 count=18
+[73758][I][BLE] enrichment batch sent plain=180 sealed=202 count=18 writeOk=1
+[74002][I][BLE] enrichment rx chunk cipher=222 queued=0
+[74153][I][BLE] enrichment rx chunk cipher=222 queued=1
+[74154][I][BLE] enrichment rx chunk cipher=222 queued=0
+[74305][I][BLE] enrichment rx chunk cipher=222 queued=1
+[74306][I][BLE] enrichment rx chunk cipher=68 queued=0
+[74307][I][BLE] enrich_xfer_perf count=18 sendMs=56 waitMs=549 rxBytes=846
+[74307][I][BLE] enrichment batch received count=18 bytes=846
+[74308][I][BLE] enrichment batch consumed count=18
+[74308][I][BLE] Enrich batch queued count=18 queueSize=1
+[74308][I][BLE] Enrichment batch received count=18 claimed=11 queued=1
+[74308][I][BLE] Enrich drain begin count=18 queueSize=1 ageMs=0
+[74534][I][STORAGE] Spool enrich_batch applied=11 failed=0 batchFirstEventId=24909 batchLastEventId=24978 firstRecord=26050 lastRecord=26060 ms=117
+[74535][I][BLE] enrich_perf count=18 applied=11 failed=0 deferred=7 storageMs=161 pendingUpload=4476
+[74535][I][BLE] Enrich drain done applied=11 failed=0 deferred=7 queueSize=0
+[74536][I][BLE] Enrich torrent done drained=1 remaining=0 tookLease=0 preempt=0 elapsedMs=227
+[74547][I][STORAGE] RAMSpool worker paused inflight=0 lastInflight=0
+[74547][I][STORAGE] Exclusive window begin kind=enrichment reason=manual_enrich_window workerPaused=1 displaySuspended=1
+[74548][I][BLE] Manual enrichment window batch count=18 active=1 noData=0 budgetExhausted=0 timeHit=0
+[74548][I][STORAGE] RAMSpool worker resumed
+[74548][I][STORAGE] Exclusive window end kind=enrichment result=manual_batch_built reason=manual_enrich_window
+[74549][I][BLE] enrichment request queued count=18 bytes=180
+[74549][I][BLE] Requested enrichment batch count=18 queued=0
+[74702][I][BLE] enrichment batch acknowledged by phone
+[74703][I][BLE] enrichment send mtu=247 attPayload=244 bytes=180 count=18
+[74748][I][BLE] enrichment batch sent plain=180 sealed=202 count=18 writeOk=1
+[75003][I][BLE] enrichment rx chunk cipher=222 queued=0
+[75154][W][BLE] gps decrypt failed: secure decrypt replay/stale counter
+[75155][I][BLE] enrichment rx chunk cipher=222 queued=1
+[75155][I][BLE] enrichment rx chunk cipher=222 queued=0
+[75306][I][BLE] enrichment rx chunk cipher=222 queued=1
+[75307][I][BLE] enrichment rx chunk cipher=68 queued=0
+[75308][I][BLE] enrich_xfer_perf count=18 sendMs=45 waitMs=560 rxBytes=846
+[75308][I][BLE] enrichment batch received count=18 bytes=846
+[75309][I][BLE] enrichment batch consumed count=18
+[75309][I][BLE] Enrich batch queued count=18 queueSize=1
+[75309][I][BLE] Enrichment batch received count=18 claimed=15 queued=1
+[75309][I][BLE] Enrich drain begin count=18 queueSize=1 ageMs=0
+[75540][I][STORAGE] Spool enrich_batch applied=15 failed=0 batchFirstEventId=24979 batchLastEventId=24987 firstRecord=26061 lastRecord=26075 ms=118
+[75541][I][BLE] enrich_perf count=18 applied=15 failed=0 deferred=3 storageMs=164 pendingUpload=4476
+[75542][I][BLE] Enrich drain done applied=15 failed=0 deferred=3 queueSize=0
+[75542][I][BLE] Enrich torrent done drained=1 remaining=0 tookLease=0 preempt=0 elapsedMs=233
+[75552][I][STORAGE] RAMSpool worker paused inflight=0 lastInflight=0
+[75553][I][STORAGE] Exclusive window begin kind=enrichment reason=manual_enrich_window workerPaused=1 displaySuspended=1
+[75553][I][BLE] Manual enrichment window batch count=18 active=1 noData=0 budgetExhausted=0 timeHit=0
+[75553][I][STORAGE] RAMSpool worker resumed
+[75554][I][STORAGE] Exclusive window end kind=enrichment result=manual_batch_built reason=manual_enrich_window
+[75554][I][BLE] enrichment request queued count=18 bytes=180
+[75554][I][BLE] Requested enrichment batch count=18 queued=0
+[75707][I][BLE] enrichment send mtu=247 attPayload=244 bytes=180 count=18
+[75768][I][BLE] enrichment batch sent plain=180 sealed=202 count=18 writeOk=1
+[76007][I][BLE] enrichment rx chunk cipher=222 queued=0
+[76158][I][BLE] enrichment rx chunk cipher=222 queued=1
+[76159][I][BLE] enrichment rx chunk cipher=222 queued=0
+[76310][I][BLE] enrichment rx chunk cipher=222 queued=1
+[76311][I][BLE] enrichment rx chunk cipher=68 queued=0
+[76312][I][BLE] enrich_xfer_perf count=18 sendMs=61 waitMs=544 rxBytes=846
+[76312][I][BLE] enrichment batch received count=18 bytes=846
+[76313][I][BLE] enrichment batch consumed count=18
+[76313][I][BLE] Enrich batch queued count=18 queueSize=1
+[76313][I][BLE] Enrichment batch received count=18 claimed=13 queued=1
+[76313][I][BLE] Enrich drain begin count=18 queueSize=1 ageMs=0
+[76565][I][STORAGE] Spool enrich_batch applied=13 failed=0 batchFirstEventId=24988 batchLastEventId=24992 firstRecord=26076 lastRecord=26088 ms=138
+[76565][I][BLE] enrich_perf count=18 applied=13 failed=0 deferred=5 storageMs=184 pendingUpload=4476
+[76566][I][BLE] Enrich drain done applied=13 failed=0 deferred=5 queueSize=0
+[76566][I][BLE] Enrich torrent done drained=1 remaining=0 tookLease=0 preempt=0 elapsedMs=253
+[76576][W][CORE] TaskHardware loop gap=266ms owner=BLE_GPS pendingUpload=4476 maintPending=1 suppressed=6
+[76580][I][STORAGE] RAMSpool worker paused inflight=0 lastInflight=0
+[76581][I][STORAGE] Exclusive window begin kind=enrichment reason=manual_enrich_window workerPaused=1 displaySuspended=1
+[76581][I][BLE] Manual enrichment window batch count=18 active=1 noData=0 budgetExhausted=0 timeHit=0
+[76581][I][STORAGE] RAMSpool worker resumed
+[76582][I][STORAGE] Exclusive window end kind=enrichment result=manual_batch_built reason=manual_enrich_window
+[76582][I][BLE] enrichment request queued count=18 bytes=180
+[76582][I][BLE] Requested enrichment batch count=18 queued=0
+[76732][I][BLE] enrichment batch acknowledged by phone
+[76733][I][BLE] enrichment send mtu=247 attPayload=244 bytes=180 count=18
+[76788][I][BLE] enrichment batch sent plain=180 sealed=202 count=18 writeOk=1
+[77033][I][BLE] enrichment rx chunk cipher=222 queued=0
+[77184][I][BLE] enrichment rx chunk cipher=222 queued=1
+[77185][I][BLE] enrichment rx chunk cipher=222 queued=0
+[77336][I][BLE] enrichment rx chunk cipher=222 queued=1
+[77337][I][BLE] enrichment rx chunk cipher=68 queued=0
+[77338][I][BLE] enrich_xfer_perf count=18 sendMs=55 waitMs=550 rxBytes=846
+[77338][I][BLE] enrichment batch received count=18 bytes=846
+[77339][I][BLE] enrichment batch consumed count=18
+[77339][I][BLE] Enrich batch queued count=18 queueSize=1
+[77339][I][BLE] Enrichment batch received count=18 claimed=17 queued=1
+[77339][I][BLE] Enrich drain begin count=18 queueSize=1 ageMs=0
+[77597][I][STORAGE] Spool enrich_batch applied=17 failed=0 batchFirstEventId=24927 batchLastEventId=24997 firstRecord=26089 lastRecord=26105 ms=143
+[77598][I][BLE] enrich_perf count=18 applied=17 failed=0 deferred=1 storageMs=190 pendingUpload=4476
+[77598][I][BLE] Enrich drain done applied=17 failed=0 deferred=1 queueSize=0
+[77598][I][BLE] Enrich torrent done drained=1 remaining=0 tookLease=0 preempt=0 elapsedMs=259
+[77611][I][STORAGE] RAMSpool worker paused inflight=0 lastInflight=0
+[77612][I][STORAGE] Exclusive window begin kind=enrichment reason=manual_enrich_window workerPaused=1 displaySuspended=1
+[77612][I][BLE] Manual enrichment window batch count=18 active=1 noData=0 budgetExhausted=0 timeHit=0
+[77612][I][STORAGE] RAMSpool worker resumed
+[77613][I][STORAGE] Exclusive window end kind=enrichment result=manual_batch_built reason=manual_enrich_window
+[77613][I][BLE] enrichment request queued count=18 bytes=180
+[77613][I][BLE] Requested enrichment batch count=18 queued=0
+[77763][I][BLE] enrichment send mtu=247 attPayload=244 bytes=180 count=18
+[77808][I][BLE] enrichment batch sent plain=180 sealed=202 count=18 writeOk=1
+[78063][I][BLE] enrichment rx chunk cipher=222 queued=0
+[78214][I][BLE] enrichment rx chunk cipher=222 queued=1
+[78215][I][BLE] enrichment rx chunk cipher=222 queued=0
+[78366][I][BLE] enrichment rx chunk cipher=222 queued=1
+[78367][I][BLE] enrichment rx chunk cipher=68 queued=0
+[78368][I][BLE] enrich_xfer_perf count=18 sendMs=45 waitMs=560 rxBytes=846
+[78368][I][BLE] enrichment batch received count=18 bytes=846
+[78369][I][BLE] enrichment batch consumed count=18
+[78369][I][BLE] Enrich batch queued count=18 queueSize=1
+[78369][I][BLE] Enrichment batch received count=18 claimed=9 queued=1
+[78369][I][BLE] Enrich drain begin count=18 queueSize=1 ageMs=0
+[78370][I][STORAGE] Spool enrich preflight rotate seg=312 bytes=3253 records=81 enrich=81 expected=18
+[79916][I][STORAGE] Spool rotate newSeg=313 format=bin_v2
+[79917][I][STORAGE] Spool diag[rotate] validSegments=82 untrustedSegments=0 invalidSegments=0 activeSegment=313 totalRecords=4914 storedEvents=4488 pendingUpload=4476 nextEventId=26106
+[80025][I][STORAGE] Spool enrich_batch applied=9 failed=0 batchFirstEventId=24998 batchLastEventId=25001 firstRecord=26106 lastRecord=26114 ms=4
+[80025][I][BLE] enrich_perf count=18 applied=9 failed=0 deferred=9 storageMs=45 pendingUpload=4476
+[80026][I][BLE] Enrich drain done applied=9 failed=0 deferred=9 queueSize=0
+[80026][I][BLE] Enrich torrent done drained=1 remaining=0 tookLease=0 preempt=0 elapsedMs=1657
+[80040][I][STORAGE] RAMSpool worker paused inflight=0 lastInflight=0
+[80040][I][STORAGE] Exclusive window begin kind=enrichment reason=manual_enrich_window workerPaused=1 displaySuspended=1
+[80041][I][BLE] Manual enrichment window batch count=18 active=1 noData=0 budgetExhausted=0 timeHit=0
+[80041][I][STORAGE] RAMSpool worker resumed
+[80041][I][STORAGE] Exclusive window end kind=enrichment result=manual_batch_built reason=manual_enrich_window
+[80042][I][BLE] enrichment request queued count=18 bytes=180
+[80042][I][BLE] Requested enrichment batch count=18 queued=0
+[80192][W][BLE] gps decrypt failed: secure decrypt replay/stale counter
+[80193][I][BLE] enrichment batch acknowledged by phone
+[80194][I][BLE] enrichment send mtu=247 attPayload=244 bytes=180 count=18
+[80238][I][BLE] enrichment batch sent plain=180 sealed=202 count=18 writeOk=1
+[80493][I][BLE] enrichment rx chunk cipher=222 queued=1
+[80494][I][BLE] enrichment rx chunk cipher=222 queued=0
+[80645][I][BLE] enrichment rx chunk cipher=222 queued=0
+[80796][I][BLE] enrichment rx chunk cipher=222 queued=1
+[80797][I][BLE] enrichment rx chunk cipher=68 queued=0
+[80798][I][BLE] enrich_xfer_perf count=18 sendMs=45 waitMs=560 rxBytes=846
+[80798][I][BLE] enrichment batch received count=18 bytes=846
+[80799][I][BLE] enrichment batch consumed count=18
+[80799][I][BLE] Enrich batch queued count=18 queueSize=1
+[80799][I][BLE] Enrichment batch received count=18 claimed=13 queued=1
+[80799][I][BLE] Enrich drain begin count=18 queueSize=1 ageMs=0
+[81224][I][STORAGE] Spool enrich_batch applied=13 failed=0 batchFirstEventId=24943 batchLastEventId=25006 firstRecord=26115 lastRecord=26127 ms=316
+[81224][I][BLE] enrich_perf count=18 applied=13 failed=0 deferred=5 storageMs=361 pendingUpload=4476
+[81225][I][BLE] Enrich drain done applied=13 failed=0 deferred=5 queueSize=0
+[81225][I][BLE] Enrich torrent done drained=1 remaining=0 tookLease=0 preempt=0 elapsedMs=426
+[81238][I][BLE] worker stack free=7384B min=7384B
+[81239][I][STORAGE] RAMSpool worker paused inflight=0 lastInflight=0
+[81239][I][STORAGE] Exclusive window begin kind=enrichment reason=manual_enrich_window workerPaused=1 displaySuspended=1
+[81240][I][BLE] Manual enrichment window batch count=18 active=1 noData=0 budgetExhausted=0 timeHit=0
+[81240][I][STORAGE] RAMSpool worker resumed
+[81240][I][STORAGE] Exclusive window end kind=enrichment result=manual_batch_built reason=manual_enrich_window
+[81241][I][BLE] enrichment request queued count=18 bytes=180
+[81241][I][BLE] Requested enrichment batch count=18 queued=0
+[81391][I][BLE] enrichment send mtu=247 attPayload=244 bytes=180 count=18
+[81438][I][BLE] enrichment batch sent plain=180 sealed=202 count=18 writeOk=1
+[81691][I][BLE] enrichment rx chunk cipher=222 queued=0
+[81842][I][BLE] enrichment rx chunk cipher=222 queued=1
+[81843][I][BLE] enrichment rx chunk cipher=222 queued=0
+[81994][I][BLE] enrichment rx chunk cipher=222 queued=1
+[81995][I][BLE] enrichment rx chunk cipher=68 queued=0
+[81996][I][BLE] enrich_xfer_perf count=18 sendMs=47 waitMs=558 rxBytes=846
+[81996][I][BLE] enrichment batch received count=18 bytes=846
+[81997][I][BLE] enrichment batch consumed count=18
+[81997][I][BLE] Enrich batch queued count=18 queueSize=1
+[81997][I][BLE] Enrichment batch received count=18 claimed=13 queued=1
+[81997][I][BLE] Enrich drain begin count=18 queueSize=1 ageMs=0
+[82217][I][STORAGE] Spool enrich_batch applied=13 failed=0 batchFirstEventId=25007 batchLastEventId=24958 firstRecord=26128 lastRecord=26140 ms=117
+[82218][I][BLE] enrich_perf count=18 applied=13 failed=0 deferred=5 storageMs=156 pendingUpload=4476
+[82218][I][BLE] Enrich drain done applied=13 failed=0 deferred=5 queueSize=0
+[82219][I][BLE] Enrich torrent done drained=1 remaining=0 tookLease=0 preempt=0 elapsedMs=221
+[82230][I][STORAGE] RAMSpool worker paused inflight=0 lastInflight=0
+[82230][I][STORAGE] Exclusive window begin kind=enrichment reason=manual_enrich_window workerPaused=1 displaySuspended=1
+[82231][I][BLE] Manual enrichment window batch count=18 active=1 noData=0 budgetExhausted=0 timeHit=0
+[82231][I][STORAGE] RAMSpool worker resumed
+[82231][I][STORAGE] Exclusive window end kind=enrichment result=manual_batch_built reason=manual_enrich_window
+[82232][I][BLE] enrichment request queued count=18 bytes=180
+[82232][I][BLE] Requested enrichment batch count=18 queued=0
+[82385][I][BLE] enrichment batch acknowledged by phone
+[82386][I][BLE] enrichment send mtu=247 attPayload=244 bytes=180 count=18
+[82428][I][BLE] enrichment batch sent plain=180 sealed=202 count=18 writeOk=1
+[82686][I][BLE] enrichment rx chunk cipher=222 queued=1
+[82687][I][BLE] enrichment rx chunk cipher=222 queued=0
+[82838][I][BLE] enrichment rx chunk cipher=222 queued=0
+[82990][I][BLE] enrichment rx chunk cipher=222 queued=1
+[82991][I][BLE] enrichment rx chunk cipher=68 queued=0
+[82992][I][BLE] enrich_xfer_perf count=18 sendMs=42 waitMs=564 rxBytes=846
+[82992][I][BLE] enrichment batch received count=18 bytes=846
+[82993][I][BLE] enrichment batch consumed count=18
+[82993][I][BLE] Enrich batch queued count=18 queueSize=1
+[82993][I][BLE] Enrichment batch received count=18 claimed=10 queued=1
+[82993][I][BLE] Enrich drain begin count=18 queueSize=1 ageMs=0
+[83221][I][STORAGE] Spool enrich_batch applied=10 failed=0 batchFirstEventId=25010 batchLastEventId=24961 firstRecord=26141 lastRecord=26150 ms=125
+[83222][I][BLE] enrich_perf count=18 applied=10 failed=0 deferred=8 storageMs=164 pendingUpload=4476
+[83222][I][BLE] Enrich drain done applied=10 failed=0 deferred=8 queueSize=0
+[83222][I][BLE] Enrich torrent done drained=1 remaining=0 tookLease=0 preempt=0 elapsedMs=229
+[83232][I][STORAGE] RAMSpool worker paused inflight=0 lastInflight=0
+[83233][I][STORAGE] Exclusive window begin kind=enrichment reason=manual_enrich_window workerPaused=1 displaySuspended=1
+[83233][I][BLE] Manual enrichment window batch count=18 active=1 noData=0 budgetExhausted=0 timeHit=0
+[83234][I][STORAGE] RAMSpool worker resumed
+[83234][I][STORAGE] Exclusive window end kind=enrichment result=manual_batch_built reason=manual_enrich_window
+[83234][I][BLE] enrichment request queued count=18 bytes=180
+[83234][I][BLE] Requested enrichment batch count=18 queued=0
+[83387][I][BLE] enrichment send mtu=247 attPayload=244 bytes=180 count=18
+[83448][I][BLE] enrichment batch sent plain=180 sealed=202 count=18 writeOk=1
+[83687][I][BLE] enrichment rx chunk cipher=222 queued=0
+[83838][I][BLE] enrichment rx chunk cipher=222 queued=1
+[83839][I][BLE] enrichment rx chunk cipher=222 queued=0
+[83990][I][BLE] enrichment rx chunk cipher=222 queued=1
+[83991][I][BLE] enrichment rx chunk cipher=68 queued=0
+[83992][I][BLE] enrich_xfer_perf count=18 sendMs=61 waitMs=544 rxBytes=846
+[83992][I][BLE] enrichment batch received count=18 bytes=846
+[83993][I][BLE] enrichment batch consumed count=18
+[83993][I][BLE] Enrich batch queued count=18 queueSize=1
+[83993][I][BLE] Enrichment batch received count=18 claimed=12 queued=1
+[83993][I][BLE] Enrich drain begin count=18 queueSize=1 ageMs=0
+[84225][I][STORAGE] Spool enrich_batch applied=12 failed=0 batchFirstEventId=25017 batchLastEventId=24965 firstRecord=26151 lastRecord=26162 ms=126
+[84226][I][BLE] enrich_perf count=18 applied=12 failed=0 deferred=6 storageMs=166 pendingUpload=4476
+[84227][I][BLE] Enrich drain done applied=12 failed=0 deferred=6 queueSize=0
+[84227][I][BLE] Enrich torrent done drained=1 remaining=0 tookLease=0 preempt=0 elapsedMs=234
+[84238][I][STORAGE] RAMSpool worker paused inflight=0 lastInflight=0
+[84238][I][STORAGE] Exclusive window begin kind=enrichment reason=manual_enrich_window workerPaused=1 displaySuspended=1
+[84239][I][BLE] Manual enrichment window batch count=18 active=1 noData=0 budgetExhausted=0 timeHit=0
+[84239][I][STORAGE] RAMSpool worker resumed
+[84239][I][STORAGE] Exclusive window end kind=enrichment result=manual_batch_built reason=manual_enrich_window
+[84240][I][BLE] enrichment request queued count=18 bytes=180
+[84240][I][BLE] Requested enrichment batch count=18 queued=0
+[84348][I][BLE] storage snapshot sent pendingUp=0/4476 pendingEnrich=0/4479 usedPct=18
+[84388][I][BLE] enrichment batch acknowledged by phone
+[84389][I][BLE] enrichment send mtu=247 attPayload=244 bytes=180 count=18
+[84438][I][BLE] enrichment batch sent plain=180 sealed=202 count=18 writeOk=1
+[84689][I][BLE] enrichment rx chunk cipher=222 queued=0
+[84840][I][BLE] enrichment rx chunk cipher=222 queued=1
+[84841][I][BLE] enrichment rx chunk cipher=222 queued=0
+[84992][I][BLE] enrichment rx chunk cipher=222 queued=1
+[84993][I][BLE] enrichment rx chunk cipher=68 queued=0
+[84994][I][BLE] enrich_xfer_perf count=18 sendMs=49 waitMs=556 rxBytes=846
+[84994][I][BLE] enrichment batch received count=18 bytes=846
+[84995][I][BLE] enrichment batch consumed count=18
+[84995][I][BLE] Enrich batch queued count=18 queueSize=1
+[84995][I][BLE] Enrichment batch received count=18 claimed=8 queued=1
+[84995][I][BLE] Enrich drain begin count=18 queueSize=1 ageMs=0
+[85236][I][STORAGE] Spool enrich_batch applied=8 failed=0 batchFirstEventId=24941 batchLastEventId=24969 firstRecord=26163 lastRecord=26170 ms=134
+[85236][I][BLE] enrich_perf count=18 applied=8 failed=0 deferred=10 storageMs=174 pendingUpload=4476
+[85237][I][BLE] Enrich drain done applied=8 failed=0 deferred=10 queueSize=0
+[85237][I][BLE] Enrich torrent done drained=1 remaining=0 tookLease=0 preempt=0 elapsedMs=242
+[85248][I][STORAGE] RAMSpool worker paused inflight=0 lastInflight=0
+[85248][I][STORAGE] Exclusive window begin kind=enrichment reason=manual_enrich_window workerPaused=1 displaySuspended=1
+[85249][I][BLE] Manual enrichment window batch count=18 active=1 noData=0 budgetExhausted=0 timeHit=0
+[85249][I][STORAGE] RAMSpool worker resumed
+[85249][I][STORAGE] Exclusive window end kind=enrichment result=manual_batch_built reason=manual_enrich_window
+[85250][I][BLE] enrichment request queued count=18 bytes=180
+[85250][I][BLE] Requested enrichment batch count=18 queued=0
+[85403][W][BLE] gps decrypt failed: secure decrypt replay/stale counter
+[85404][I][BLE] enrichment send mtu=247 attPayload=244 bytes=180 count=18
+[85458][I][BLE] enrichment batch sent plain=180 sealed=202 count=18 writeOk=1
+[85704][I][BLE] enrichment rx chunk cipher=222 queued=0
+[85855][I][BLE] enrichment rx chunk cipher=222 queued=1
+[85856][I][BLE] enrichment rx chunk cipher=222 queued=0
+[86007][I][BLE] enrichment rx chunk cipher=222 queued=1
+[86008][I][BLE] enrichment rx chunk cipher=68 queued=0
+[86009][I][BLE] enrich_xfer_perf count=18 sendMs=54 waitMs=551 rxBytes=846
+[86009][I][BLE] enrichment batch received count=18 bytes=846
+[86010][I][BLE] enrichment batch consumed count=18
+[86010][I][BLE] Enrich batch queued count=18 queueSize=1
+[86010][I][BLE] Enrichment batch received count=18 claimed=12 queued=1
+[86010][I][BLE] Enrich drain begin count=18 queueSize=1 ageMs=0
+[86257][I][STORAGE] Spool enrich_batch applied=12 failed=0 batchFirstEventId=24970 batchLastEventId=25032 firstRecord=26171 lastRecord=26182 ms=138
+[86257][I][BLE] enrich_perf count=18 applied=12 failed=0 deferred=6 storageMs=179 pendingUpload=4476
+[86258][I][BLE] Enrich drain done applied=12 failed=0 deferred=6 queueSize=0
+[86258][I][BLE] Enrich torrent done drained=1 remaining=0 tookLease=0 preempt=0 elapsedMs=248
+[86271][I][STORAGE] RAMSpool worker paused inflight=0 lastInflight=0
+[86272][I][STORAGE] Exclusive window begin kind=enrichment reason=manual_enrich_window workerPaused=1 displaySuspended=1
+[86273][I][BLE] Manual enrichment window batch count=18 active=1 noData=0 budgetExhausted=0 timeHit=0
+[86273][I][STORAGE] RAMSpool worker resumed
+[86273][I][STORAGE] Exclusive window end kind=enrichment result=manual_batch_built reason=manual_enrich_window
+[86273][I][BLE] enrichment request queued count=18 bytes=180
+[86274][I][BLE] Requested enrichment batch count=18 queued=0
+[86424][I][BLE] enrichment batch acknowledged by phone
+[86425][I][BLE] enrichment send mtu=247 attPayload=244 bytes=180 count=18
+[86478][I][BLE] enrichment batch sent plain=180 sealed=202 count=18 writeOk=1
+[86725][I][BLE] enrichment rx chunk cipher=222 queued=0
+[86876][I][BLE] enrichment rx chunk cipher=222 queued=1
+[86877][I][BLE] enrichment rx chunk cipher=222 queued=0
+[87028][I][BLE] enrichment rx chunk cipher=222 queued=1
+[87029][I][BLE] enrichment rx chunk cipher=68 queued=0
+[87030][I][BLE] enrich_xfer_perf count=18 sendMs=53 waitMs=552 rxBytes=846
+[87030][I][BLE] enrichment batch received count=18 bytes=846
+[87031][I][BLE] enrichment batch consumed count=18
+[87031][I][BLE] Enrich batch queued count=18 queueSize=1
+[87031][I][BLE] Enrichment batch received count=18 claimed=11 queued=1
+[87031][I][BLE] Enrich drain begin count=18 queueSize=1 ageMs=0
+[87282][I][STORAGE] Spool enrich_batch applied=11 failed=0 batchFirstEventId=25033 batchLastEventId=24979 firstRecord=26183 lastRecord=26193 ms=142
+[87283][I][BLE] enrich_perf count=18 applied=11 failed=0 deferred=7 storageMs=184 pendingUpload=4476
+[87283][I][BLE] Enrich drain done applied=11 failed=0 deferred=7 queueSize=0
+[87284][I][BLE] Enrich torrent done drained=1 remaining=0 tookLease=0 preempt=0 elapsedMs=252
+[87294][W][CORE] TaskHardware loop gap=266ms owner=BLE_GPS pendingUpload=4476 maintPending=1 suppressed=5
+[87298][I][STORAGE] RAMSpool worker paused inflight=0 lastInflight=0
+[87298][I][STORAGE] Exclusive window begin kind=enrichment reason=manual_enrich_window workerPaused=1 displaySuspended=1
+[87299][I][BLE] Manual enrichment window batch count=18 active=1 noData=0 budgetExhausted=0 timeHit=0
+[87299][I][STORAGE] RAMSpool worker resumed
+[87299][I][STORAGE] Exclusive window end kind=enrichment result=manual_batch_built reason=manual_enrich_window
+[87299][I][BLE] enrichment request queued count=18 bytes=180
+[87299][I][BLE] Requested enrichment batch count=18 queued=0
+[87449][I][BLE] enrichment send mtu=247 attPayload=244 bytes=180 count=18
+[87498][I][BLE] enrichment batch sent plain=180 sealed=202 count=18 writeOk=1
+[87749][I][BLE] enrichment rx chunk cipher=222 queued=0
+[87900][I][BLE] enrichment rx chunk cipher=222 queued=1
+[87901][I][BLE] enrichment rx chunk cipher=222 queued=0
+[88052][I][BLE] enrichment rx chunk cipher=222 queued=1
+[88053][I][BLE] enrichment rx chunk cipher=68 queued=0
+[88054][I][BLE] enrich_xfer_perf count=18 sendMs=49 waitMs=556 rxBytes=846
+[88054][I][BLE] enrichment batch received count=18 bytes=846
+[88055][I][BLE] enrichment batch consumed count=18
+[88055][I][BLE] Enrich batch queued count=18 queueSize=1
+[88055][I][BLE] Enrichment batch received count=18 claimed=8 queued=1
+[88055][I][BLE] Enrich drain begin count=18 queueSize=1 ageMs=0
+[88056][I][STORAGE] Spool enrich preflight rotate seg=313 bytes=3497 records=88 enrich=88 expected=18
+[89230][I][STORAGE] Spool rotate newSeg=314 format=bin_v2
+[89231][I][STORAGE] Spool diag[rotate] validSegments=83 untrustedSegments=0 invalidSegments=0 activeSegment=314 totalRecords=5002 storedEvents=4488 pendingUpload=4476 nextEventId=26194
+[89349][I][STORAGE] Spool enrich_batch applied=8 failed=0 batchFirstEventId=24980 batchLastEventId=24985 firstRecord=26194 lastRecord=26201 ms=4
+[89349][I][BLE] enrich_perf count=18 applied=8 failed=0 deferred=10 storageMs=46 pendingUpload=4476
+[89350][I][BLE] Enrich drain done applied=8 failed=0 deferred=10 queueSize=0
+[89350][I][BLE] Enrich torrent done drained=1 remaining=0 tookLease=0 preempt=0 elapsedMs=1295
+[89364][I][STORAGE] RAMSpool worker paused inflight=0 lastInflight=0
+[89364][I][STORAGE] Exclusive window begin kind=enrichment reason=manual_enrich_window workerPaused=1 displaySuspended=1
+[89365][I][BLE] Manual enrichment window batch count=18 active=1 noData=0 budgetExhausted=0 timeHit=0
+[89365][I][STORAGE] RAMSpool worker resumed
+[89365][I][STORAGE] Exclusive window end kind=enrichment result=manual_batch_built reason=manual_enrich_window
+[89366][I][BLE] enrichment request queued count=18 bytes=180
+[89366][I][BLE] Requested enrichment batch count=18 queued=0
+[89516][I][BLE] enrichment batch acknowledged by phone
+[89517][I][BLE] enrichment send mtu=247 attPayload=244 bytes=180 count=18
+[89568][I][BLE] enrichment batch sent plain=180 sealed=202 count=18 writeOk=1
+[89817][I][BLE] enrichment rx chunk cipher=222 queued=0
+[89968][I][BLE] enrichment rx chunk cipher=222 queued=1
+[89969][I][BLE] enrichment rx chunk cipher=222 queued=0
+[90120][I][BLE] enrichment rx chunk cipher=222 queued=1
+[90121][I][BLE] enrichment rx chunk cipher=68 queued=0
+[90122][I][BLE] enrich_xfer_perf count=18 sendMs=51 waitMs=554 rxBytes=846
+[90122][I][BLE] enrichment batch received count=18 bytes=846
+[90123][I][BLE] enrichment batch consumed count=18
+[90123][I][BLE] Enrich batch queued count=18 queueSize=1
+[90123][I][BLE] Enrichment batch received count=18 claimed=11 queued=1
+[90123][I][BLE] Enrich drain begin count=18 queueSize=1 ageMs=0
+[90578][I][STORAGE] Spool enrich_batch applied=11 failed=0 batchFirstEventId=24986 batchLastEventId=25043 firstRecord=26202 lastRecord=26212 ms=337
+[90579][I][BLE] enrich_perf count=18 applied=11 failed=0 deferred=7 storageMs=384 pendingUpload=4476
+[90579][I][BLE] Enrich drain done applied=11 failed=0 deferred=7 queueSize=0
+[90579][I][BLE] Enrich torrent done drained=1 remaining=0 tookLease=0 preempt=0 elapsedMs=456
+[90581][I][HEAP] heap free=7622KB min=7544KB largest=7552KB frag=0% internalFree=15KB internalLargest=7KB psramFree=7607KB core=12/0% owner=BLE_GPS nets=6 pendingUpload=4476 pendingEnrich=4479
+[HEALTH] time=2026-08-07 13:28:23 src=ntp
+[HEALTH] heap used=802/8424KB free=7622KB min=7544KB largest=7552KB frag=0%
+[HEALTH] internal used=217/232KB free=15KB min=0KB largest=7KB
+[HEALTH] psram used=585/8192KB free=7607KB largest=7552KB
+[HEALTH] stack free_min: core0=15KB/22KB core1=13KB/18KB
+[HEALTH] core usage: core0=12% core1=0%
+[HEALTH] power=usb state=usb batt=100% 4733mV trend=56mV/min runtime=0min cap=1100mAh charging=1
+[HEALTH] radio=BLE_GPS wifi=0 ble=1 gps=0 nets=6 pendingUpload=4476 pendingEnrich=4479
+[HEALTH] subghz=NONE mode=OFF pkts=0 nodes=0
+[90583][I][STORAGE] RAMSpool enq=3 cons=3 inflight=0/1024 high=3 pressure=0 drop[full=0 big=0 noise=0 p3Evict=0 p3Drop=0 p2Drop=0 p1Fail=0] free=1024
+[90584][I][STORAGE] RAMSpool enqueue probe[ok=2 drop=0] device[ok=1 drop=0]
+[90584][I][STORAGE] RAMSpool worker probe[ok=1 sup=1 drop=0 fail=0 slow=0] device[ok=1 sup=0 drop=0 fail=0 slow=0] slowTotal=0 maxMs=0
+[90584][I][STORAGE] RAMSpool prioEnq p0=0 p1=0 p2=3 p3=0
+[90585][I][STORAGE] RAMSpool lanes p1=0/0 p2=0/2 p3=0/0
+[90599][I][STORAGE] RAMSpool worker paused inflight=0 lastInflight=0
+[90599][I][STORAGE] Exclusive window begin kind=enrichment reason=manual_enrich_window workerPaused=1 displaySuspended=1
+[90600][I][BLE] Manual enrichment window batch count=18 active=1 noData=0 budgetExhausted=0 timeHit=0
+[90600][I][STORAGE] RAMSpool worker resumed
+[90600][I][STORAGE] Exclusive window end kind=enrichment result=manual_batch_built reason=manual_enrich_window
+[90600][I][BLE] enrichment request queued count=18 bytes=180
+[90600][I][BLE] Requested enrichment batch count=18 queued=0
+[90750][W][BLE] gps decrypt failed: secure decrypt replay/stale counter
+[90751][I][BLE] enrichment send mtu=247 attPayload=244 bytes=180 count=18
+[90798][I][BLE] enrichment batch sent plain=180 sealed=202 count=18 writeOk=1
+[91051][I][BLE] enrichment rx chunk cipher=222 queued=1
+[91052][I][BLE] enrichment rx chunk cipher=222 queued=0
+[91203][I][BLE] enrichment rx chunk cipher=222 queued=1
+[91204][I][BLE] enrichment rx chunk cipher=222 queued=0
+[91336][I][STACK] TaskHardware watermark=15836B min=15836B
+[91356][I][BLE] enrichment rx chunk cipher=68 queued=0
+[91357][I][BLE] enrich_xfer_perf count=18 sendMs=47 waitMs=559 rxBytes=846
+[91357][I][BLE] enrichment batch received count=18 bytes=846
+[91358][I][BLE] enrichment batch consumed count=18
+[91358][I][BLE] Enrich batch queued count=18 queueSize=1
+[91358][I][BLE] Enrichment batch received count=18 claimed=14 queued=1
+[91358][I][BLE] Enrich drain begin count=18 queueSize=1 ageMs=0
+[91588][I][STORAGE] Spool enrich_batch applied=14 failed=0 batchFirstEventId=24994 batchLastEventId=25049 firstRecord=26213 lastRecord=26226 ms=117
+[91588][I][BLE] enrich_perf count=18 applied=14 failed=0 deferred=4 storageMs=156 pendingUpload=4476
+[91589][I][BLE] Enrich drain done applied=14 failed=0 deferred=4 queueSize=0
+[91589][I][BLE] Enrich torrent done drained=1 remaining=0 tookLease=0 preempt=0 elapsedMs=231
+[91603][I][STORAGE] RAMSpool worker paused inflight=0 lastInflight=0
+[91603][I][STORAGE] Exclusive window begin kind=enrichment reason=manual_enrich_window workerPaused=1 displaySuspended=1
+[91604][I][BLE] Manual enrichment window batch count=18 active=1 noData=0 budgetExhausted=0 timeHit=0
+[91604][I][STORAGE] RAMSpool worker resumed
+[91604][I][STORAGE] Exclusive window end kind=enrichment result=manual_batch_built reason=manual_enrich_window
+[91604][I][BLE] enrichment request queued count=18 bytes=180
+[91605][I][BLE] Requested enrichment batch count=18 queued=0
+[91755][I][BLE] enrichment batch acknowledged by phone
+[91756][I][BLE] enrichment send mtu=247 attPayload=244 bytes=180 count=18
+[91818][I][BLE] enrichment batch sent plain=180 sealed=202 count=18 writeOk=1
+[92056][I][BLE] enrichment rx chunk cipher=222 queued=0
+[92207][I][BLE] enrichment rx chunk cipher=222 queued=1
+[92208][I][BLE] enrichment rx chunk cipher=222 queued=0
+[92359][I][BLE] enrichment rx chunk cipher=222 queued=1
+[92360][I][BLE] enrichment rx chunk cipher=68 queued=0
+[92361][I][BLE] enrich_xfer_perf count=18 sendMs=62 waitMs=543 rxBytes=846
+[92361][I][BLE] enrichment batch received count=18 bytes=846
+[92362][I][BLE] enrichment batch consumed count=18
+[92362][I][BLE] Enrich batch queued count=18 queueSize=1
+[92362][I][BLE] Enrichment batch received count=18 claimed=17 queued=1
+[92362][I][BLE] Enrich drain begin count=18 queueSize=1 ageMs=0
+[92598][I][STORAGE] Spool enrich_batch applied=17 failed=0 batchFirstEventId=25050 batchLastEventId=25055 firstRecord=26227 lastRecord=26243 ms=123
+[92599][I][BLE] enrich_perf count=18 applied=17 failed=0 deferred=1 storageMs=164 pendingUpload=4476
+[92599][I][BLE] Enrich drain done applied=17 failed=0 deferred=1 queueSize=0
+[92599][I][BLE] Enrich torrent done drained=1 remaining=0 tookLease=0 preempt=0 elapsedMs=237
+[92612][I][STORAGE] RAMSpool worker paused inflight=0 lastInflight=0
+[92613][I][STORAGE] Exclusive window begin kind=enrichment reason=manual_enrich_window workerPaused=1 displaySuspended=1
+[92613][I][BLE] Manual enrichment window batch count=18 active=1 noData=0 budgetExhausted=0 timeHit=0
+[92613][I][STORAGE] RAMSpool worker resumed
+[92614][I][STORAGE] Exclusive window end kind=enrichment result=manual_batch_built reason=manual_enrich_window
+[92614][I][BLE] enrichment request queued count=18 bytes=180
+[92614][I][BLE] Requested enrichment batch count=18 queued=0
+[92764][I][BLE] enrichment send mtu=247 attPayload=244 bytes=180 count=18
+[92808][I][BLE] enrichment batch sent plain=180 sealed=202 count=18 writeOk=1
+[93064][I][BLE] enrichment rx chunk cipher=222 queued=0
+[93215][I][BLE] enrichment rx chunk cipher=222 queued=1
+[93216][I][BLE] enrichment rx chunk cipher=222 queued=0
+[93367][I][BLE] enrichment rx chunk cipher=222 queued=1
+[93368][I][BLE] enrichment rx chunk cipher=68 queued=0
+[93369][I][BLE] enrich_xfer_perf count=18 sendMs=44 waitMs=561 rxBytes=846
+[93369][I][BLE] enrichment batch received count=18 bytes=846
+[93370][I][BLE] enrichment batch consumed count=18
+[93370][I][BLE] Enrich batch queued count=18 queueSize=1
+[93370][I][BLE] Enrichment batch received count=18 claimed=9 queued=1
+[93370][I][BLE] Enrich drain begin count=18 queueSize=1 ageMs=0
+[93616][I][STORAGE] Spool enrich_batch applied=9 failed=0 batchFirstEventId=25011 batchLastEventId=25060 firstRecord=26244 lastRecord=26252 ms=131
+[93616][I][BLE] enrich_perf count=18 applied=9 failed=0 deferred=9 storageMs=171 pendingUpload=4476
+[93617][I][BLE] Enrich drain done applied=9 failed=0 deferred=9 queueSize=0
+[93617][I][BLE] Enrich torrent done drained=1 remaining=0 tookLease=0 preempt=0 elapsedMs=247
+[93631][I][STORAGE] RAMSpool worker paused inflight=0 lastInflight=0
+[93631][I][STORAGE] Exclusive window begin kind=enrichment reason=manual_enrich_window workerPaused=1 displaySuspended=1
+[93632][I][STORAGE] Enrichment window released reason=manual_cursor_done
+[93632][I][BLE] Manual enrichment window batch count=16 active=0 noData=0 budgetExhausted=0 timeHit=0
+[93632][I][STORAGE] RAMSpool worker resumed
+[93632][I][STORAGE] Exclusive window end kind=enrichment result=manual_batch_built reason=manual_enrich_window
+[93633][I][BLE] enrichment request queued count=16 bytes=160
+[93633][I][BLE] Requested enrichment batch count=16 queued=0
+[93783][I][BLE] enrichment batch acknowledged by phone
+[93784][I][BLE] enrichment send mtu=247 attPayload=244 bytes=160 count=16
+[93828][I][BLE] enrichment batch sent plain=160 sealed=182 count=16 writeOk=1
+[94084][I][BLE] enrichment rx chunk cipher=222 queued=0
+[94235][I][BLE] enrichment rx chunk cipher=222 queued=1
+[94236][I][BLE] enrichment rx chunk cipher=222 queued=0
+[94387][I][BLE] enrichment rx chunk cipher=174 queued=0
+[94388][I][BLE] enrich_xfer_perf count=16 sendMs=44 waitMs=560 rxBytes=752
+[94388][I][BLE] enrichment batch received count=16 bytes=752
+[94389][I][BLE] enrichment batch consumed count=16
+[94389][I][BLE] Enrich batch queued count=16 queueSize=1
+[94389][I][BLE] Enrichment batch received count=16 claimed=7 queued=1
+[94389][I][BLE] Enrich drain begin count=16 queueSize=1 ageMs=0
+[94642][I][STORAGE] Spool enrich_batch applied=7 failed=0 batchFirstEventId=25015 batchLastEventId=25063 firstRecord=26253 lastRecord=26259 ms=137
+[94643][I][BLE] enrich_perf count=16 applied=7 failed=0 deferred=9 storageMs=178 pendingUpload=4476
+[94643][I][BLE] Enrich drain done applied=7 failed=0 deferred=9 queueSize=0
+[94643][I][BLE] Enrich torrent done drained=1 remaining=0 tookLease=0 preempt=0 elapsedMs=254
+[94656][I][STORAGE] RAMSpool worker paused inflight=0 lastInflight=0
+[94657][I][STORAGE] Exclusive window begin kind=enrichment reason=manual_enrich_window workerPaused=1 displaySuspended=1
+[94658][I][STORAGE] prepare_assigned records=1024 freeInternal=15492 freePsram=7789272
+[94658][I][STORAGE] batch_load_ids_enter freeInternal=15492 segments=83
+[94659][I][STORAGE] load_ids_reserve count=572 freeInternal=15492 largest=7156
+[94659][I][STORAGE] load_ids_reserved freeInternal=15492
+[94659][I][STORAGE] load_ids_scan seg=308 enrichDeltas=78 freeInternal=15492 largest=7156
+[94727][I][STORAGE] load_ids_scan seg=309 enrichDeltas=86 freeInternal=15492 largest=7156
+[94796][I][STORAGE] load_ids_scan seg=310 enrichDeltas=88 freeInternal=15492 largest=7156
+[94863][I][STORAGE] load_ids_scan seg=311 enrichDeltas=85 freeInternal=15492 largest=7156
+[94931][I][STORAGE] load_ids_scan seg=312 enrichDeltas=81 freeInternal=15492 largest=7156
+[94998][I][STORAGE] load_ids_scan seg=313 enrichDeltas=88 freeInternal=15492 largest=7156
+[95064][I][STORAGE] load_ids_scan seg=314 enrichDeltas=66 freeInternal=15492 largest=7156
+[95125][I][STORAGE] load_ids_loop_done scanned=7 skipped=76 idsCollected=572 freeInternal=15492
+[95126][I][STORAGE] batch_load_ids_done count=191 capacity=572 freeInternal=15492
+[95126][I][STORAGE] batch_pending_loop_enter segments=83 maxCount=1024 streaming=0 freeInternal=15492
+[95126][I][STORAGE] batch_pending_scan seg=207 pending=10 events=10 freeInternal=15492 largest=7156 outCount=0
+[95170][I][STORAGE] batch_pending_scan seg=210 pending=13 events=13 freeInternal=15492 largest=7156 outCount=10
+[95214][I][STORAGE] batch_pending_scan seg=211 pending=8 events=8 freeInternal=15492 largest=7156 outCount=23
+[95258][I][STORAGE] batch_pending_scan seg=214 pending=5 events=5 freeInternal=15492 largest=7156 outCount=31
+[95301][I][STORAGE] batch_pending_scan seg=219 pending=51 events=51 freeInternal=15492 largest=7156 outCount=36
+[95349][I][STORAGE] batch_pending_scan seg=220 pending=138 events=138 freeInternal=15492 largest=7156 outCount=87
+[95410][I][STORAGE] batch_pending_scan seg=221 pending=154 events=154 freeInternal=15492 largest=7156 outCount=225
+[95483][I][STORAGE] batch_pending_scan seg=222 pending=8 events=8 freeInternal=15492 largest=7156 outCount=379
+[95526][I][STORAGE] batch_pending_scan seg=223 pending=9 events=9 freeInternal=15492 largest=7156 outCount=387
+[95570][I][STORAGE] batch_pending_scan seg=226 pending=13 events=13 freeInternal=15492 largest=7156 outCount=396
+[95614][I][STORAGE] batch_pending_scan seg=227 pending=3 events=3 freeInternal=15492 largest=7156 outCount=409
+[95654][I][STORAGE] batch_pending_scan seg=228 pending=15 events=15 freeInternal=15492 largest=7156 outCount=412
+[95699][I][STORAGE] batch_pending_scan seg=229 pending=11 events=11 freeInternal=15492 largest=7156 outCount=427
+[95741][I][STORAGE] batch_pending_scan seg=230 pending=10 events=10 freeInternal=15492 largest=7156 outCount=438
+[95784][I][STORAGE] batch_pending_scan seg=232 pending=200 events=200 freeInternal=15492 largest=7156 outCount=448
+[95868][I][STORAGE] batch_pending_scan seg=233 pending=197 events=197 freeInternal=15492 largest=7156 outCount=648
+[95947][I][STORAGE] batch_pending_scan seg=234 pending=194 events=194 freeInternal=15492 largest=7156 outCount=845
+[96020][I][STORAGE] batch_pending_scan seg=235 pending=198 events=198 freeInternal=15492 largest=7156 outCount=1024
+[96090][I][STORAGE] batch_pending_scan seg=236 pending=147 events=147 freeInternal=15492 largest=7156 outCount=1024
+[96153][I][STORAGE] batch_pending_scan seg=240 pending=397 events=397 freeInternal=15492 largest=7156 outCount=1024
+[96250][I][STORAGE] batch_pending_scan seg=241 pending=436 events=436 freeInternal=15492 largest=7156 outCount=1024
+[96402][I][STORAGE] batch_pending_scan seg=243 pending=2 events=2 freeInternal=15492 largest=7156 outCount=1024
+[96445][I][STORAGE] batch_pending_scan seg=244 pending=53 events=53 freeInternal=15492 largest=7156 outCount=1024
+[96493][I][STORAGE] batch_pending_scan seg=245 pending=436 events=436 freeInternal=15492 largest=7156 outCount=1024
+[96635][I][STORAGE] batch_pending_scan seg=246 pending=101 events=101 freeInternal=15492 largest=7156 outCount=1024
+[96689][I][STORAGE] batch_pending_scan seg=247 pending=9 events=9 freeInternal=15492 largest=7156 outCount=1024
+[96731][I][STORAGE] batch_pending_scan seg=253 pending=191 events=191 freeInternal=15492 largest=7156 outCount=1024
+[96796][I][STORAGE] batch_pending_scan seg=255 pending=3 events=3 freeInternal=15492 largest=7156 outCount=1024
+[96836][I][STORAGE] batch_pending_scan seg=256 pending=435 events=435 freeInternal=15492 largest=7156 outCount=1024
+[96938][I][STORAGE] batch_pending_scan seg=257 pending=85 events=85 freeInternal=15492 largest=7156 outCount=1024
+[96988][I][STORAGE] batch_pending_scan seg=258 pending=226 events=226 freeInternal=15492 largest=7156 outCount=1024
+[97055][I][STORAGE] batch_pending_scan seg=259 pending=38 events=47 freeInternal=15492 largest=7156 outCount=1024
+[97106][I][STORAGE] batch_pending_scan seg=260 pending=15 events=15 freeInternal=15492 largest=7156 outCount=1024
+[97153][I][STORAGE] batch_pending_scan seg=261 pending=13 events=13 freeInternal=15492 largest=7156 outCount=1024
+[97208][I][STORAGE] batch_pending_scan seg=264 pending=5 events=5 freeInternal=15492 largest=7156 outCount=1024
+[97259][I][STORAGE] batch_pending_scan seg=265 pending=6 events=6 freeInternal=15492 largest=7156 outCount=1024
+[97310][I][STORAGE] batch_pending_scan seg=266 pending=9 events=9 freeInternal=15492 largest=7156 outCount=1024
+[97362][I][STORAGE] batch_pending_scan seg=267 pending=14 events=14 freeInternal=15492 largest=7156 outCount=1024
+[97417][I][STORAGE] batch_pending_scan seg=268 pending=11 events=11 freeInternal=15492 largest=7156 outCount=1024
+[97471][I][STORAGE] batch_pending_scan seg=272 pending=13 events=13 freeInternal=15492 largest=7156 outCount=1024
+[97524][I][STORAGE] batch_pending_scan seg=274 pending=10 events=10 freeInternal=15492 largest=7156 outCount=1024
+[97575][I][STORAGE] batch_pending_scan seg=277 pending=22 events=22 freeInternal=15492 largest=7156 outCount=1024
+[97631][I][STORAGE] batch_pending_loop_done scanned=42 skipped=4 outCount=1024 timeHit=1 elapsedMs=2505 freeInternal=15492
+[97632][I][STORAGE] prepare_batch_done ok=1 outCount=1024 freeInternal=15492
+[97632][I][STORAGE] Enrichment window ready records=1024 truncated=1 ms=2975
+[97633][I][BLE] Manual enrichment window batch count=18 active=1 noData=0 budgetExhausted=0 timeHit=0
+[97633][I][STORAGE] RAMSpool worker resumed
+[97633][I][STORAGE] Exclusive window end kind=enrichment result=manual_batch_built reason=manual_enrich_window
+[97633][I][BLE] enrichment request queued count=18 bytes=180
+[97634][I][BLE] Requested enrichment batch count=18 queued=0
+[97644][W][CORE] TaskHardware loop gap=2991ms owner=BLE_GPS pendingUpload=4476 maintPending=1 suppressed=5
+[97758][I][BLE] enrichment send mtu=247 attPayload=244 bytes=180 count=18
+[97799][W][BLE] gps decrypt failed: secure decrypt replay/stale counter
+[97800][I][BLE] enrichment batch acknowledged by phone
+[97801][I][BLE] enrichment batch sent plain=180 sealed=202 count=18 writeOk=1

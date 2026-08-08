@@ -1,0 +1,10 @@
+﻿=== portcheck opened 2026-07-03T10:05:15.4341583-05:00 port=COM8 baud=115200 dtr=true rts=false ===
+ESP-ROM:esp32s3-20210327
+Build:Mar 27 2021
+rst:0x15 (USB_UART_CHIP_RESET),boot:0x23 (DOWNLOAD(USB/UART0))
+Saved PC:0x40041a79
+waiting for download
+
+=== send: time ===
+
+=== portcheck closing 2026-07-03T10:05:21.5835472-05:00 ===

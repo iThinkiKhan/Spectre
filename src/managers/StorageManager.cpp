@@ -13,6 +13,7 @@
 #include "SpoolBinaryCodec.h"
 #include "FsAudit.h"
 #include "KnownLocationsStore.h"
+#include "EntityManager.h"
 #include "BadUsbVault.h"
 #include "StorageFsUtil.h"
 #include "SpoolPaths.h"
@@ -1299,6 +1300,10 @@ static constexpr size_t   SPOOL_SEGMENT_CAPTURE_HARD_BYTES       = 96UL * 1024UL
 static constexpr uint32_t SPOOL_ENRICH_PREFLIGHT_ROTATE_BYTES   = 64U * 1024U;
 static constexpr uint32_t SPOOL_ENRICH_PREFLIGHT_ROTATE_RECORDS = 1024U;
 static constexpr uint32_t SPOOL_ENRICH_PREFLIGHT_ROTATE_DELTAS  = 1024U;
+static constexpr size_t   STORAGE_METADATA_RESERVE_BYTES         = 256UL * 1024UL;
+static constexpr size_t   STORAGE_HARD_FLOOR_BYTES               = 64UL * 1024UL;
+static constexpr size_t   ENRICH_DELTA_BUDGET_BYTES              = 96UL;
+static constexpr size_t   ENRICH_BATCH_OVERHEAD_BYTES            = 4096UL;
 static constexpr uint32_t STORAGE_MAINT_UI_MIN_FREE_INTERNAL       = 48UL * 1024UL;
 static constexpr uint32_t STORAGE_MAINT_UI_MIN_LARGEST_BLOCK       = 20UL * 1024UL;
 // NimBLE stays initialized after phone work because full deinit is unsafe on
@@ -2204,6 +2209,10 @@ AppendEventResult StorageManager::_appendEventDetailedInternal(
         if (timing) {
             timing->counterMs += millis() - counterStartMs;
         }
+
+        // A record becomes an Entity observation only after the spool append
+        // and its authoritative counters have succeeded.
+        ENTITY_MGR.observeStoredEvent(eventId, event);
     }
 
     const uint32_t uiStartMs = timing ? millis() : 0U;
@@ -3448,6 +3457,15 @@ bool StorageManager::forEachEventForSession(const char* sessionIdOverride,
     return _forEachResolvedEventForSession(sessionId, 0, -1, cb);
 }
 
+bool StorageManager::forEachStoredRecord(
+    const std::function<bool(const DecodedSpoolRecord&)>& cb) const {
+    if (!_ready || !cb) return false;
+    for (const auto& seg : _spoolIndex.segments) {
+        if (!_scanSegmentRecords(seg.segmentId, cb)) return false;
+    }
+    return true;
+}
+
 bool StorageManager::markEventUploaded(uint32_t eventId,
                                        const char* sessionIdOverride,
                                        uint8_t laneHint) {
@@ -3513,11 +3531,12 @@ bool StorageManager::markEventUploaded(uint32_t eventId,
                     if (laneCounter && *laneCounter > 0 && _pendingEventCount > 0) {
                         (*laneCounter)--;
                         _refreshSegmentLifecycle(*seg);
-                        _pendingEventCount--;
-                        _spoolIndex.pendingTotal = _pendingEventCount;
+                        _applyCounterDelta(
+                            "upload_batch_exact_single", -1, 0, 0, 0,
+                            static_cast<StorageLane>(selected.lane),
+                            static_cast<StoragePriority>(selected.priority));
                         _pendingCountDirty = false;
                         _spoolAuditRepairRequired = false;
-                        _bumpStorageMetaGeneration();
                         _setUploadedWatermarkForSession(sessionId, eventId);
                         DLOG_UPLOAD_TRACE("STORAGE",
                                    "Counter trust=trusted reason=upload_batch_exact_single gen=%lu pending=%lu nextEventId=%lu",
@@ -3536,8 +3555,10 @@ bool StorageManager::markEventUploaded(uint32_t eventId,
                     // records until it fails with a maintenance-only remainder.
                     _setUploadedWatermarkForSession(sessionId, eventId);
                     if (_pendingEventCount > 0) {
-                        _pendingEventCount--;
-                        _spoolIndex.pendingTotal = _pendingEventCount;
+                        _applyCounterDelta(
+                            "upload_mark_counter_underflow", -1, 0, 0, 0,
+                            static_cast<StorageLane>(selected.lane),
+                            static_cast<StoragePriority>(selected.priority));
                         _spoolSummaryRebuildPending = true;
                         requestMaintenance(STORAGE_MAINT_DIRTY_SUMMARY,
                                            "upload_mark_counter_underflow");
@@ -3552,7 +3573,6 @@ bool StorageManager::markEventUploaded(uint32_t eventId,
                         requestMaintenance(STORAGE_MAINT_COUNTER_UNTRUSTED,
                                            "upload_mark_global_underflow");
                     }
-                    _bumpStorageMetaGeneration();
                     _uploadBatchDirty = true;
                     DLOG_WARN("STORAGE",
                               "markEventUploaded tolerated lane underflow session=%s event=%lu seg=%lu lane=%u pending=%lu",
@@ -3587,8 +3607,13 @@ bool StorageManager::markEventUploaded(uint32_t eventId,
                                                  "mark_uploaded_batch")) {
                 _setUploadedWatermarkForSession(sessionId, eventId);
                 if (_pendingEventCount > 0) {
-                    _pendingEventCount--;
-                    _spoolIndex.pendingTotal = _pendingEventCount;
+                    _applyCounterDelta(
+                        "upload_stream_mark_summary_lag", -1, 0, 0, 0,
+                        static_cast<StorageLane>(
+                            laneHint == static_cast<uint8_t>(STORAGE_LANE_MISSION)
+                                ? STORAGE_LANE_MISSION
+                                : STORAGE_LANE_NOISE),
+                        STORAGE_PRIO_P3);
                     _spoolSummaryRebuildPending = true;
                     requestMaintenance(STORAGE_MAINT_DIRTY_SUMMARY,
                                        "upload_stream_mark_summary_lag");
@@ -5835,6 +5860,7 @@ bool StorageManager::findEventSessions(const uint32_t* eventIds,
 
 bool StorageManager::beginSession() {
     SESS.newSession();
+    ENTITY_MGR.startSession(SESS.getId().c_str());
     DLOG_INFO("STORAGE", "Session started: %s", SESS.getId().c_str());
     return true;
 }
@@ -5953,6 +5979,8 @@ void StorageManager::_setCounterTrustState(StorageCounterTrustState state,
         return;
     }
 
+    const StorageCounterTrustState prevState = _counterTrustState;
+
     _counterTrustState = state;
     _counterTrustSinceMs = millis();
     if (reason && reason[0]) {
@@ -5960,11 +5988,36 @@ void StorageManager::_setCounterTrustState(StorageCounterTrustState state,
     } else {
         _counterTrustReason = "";
     }
-    DLOG_WARN("STORAGE",
-              "Counter trust=%s reason=%s since=%lu",
-              _counterTrustText(),
-              _counterTrustReason.length() ? _counterTrustReason.c_str() : "-",
-              static_cast<unsigned long>(_counterTrustSinceMs));
+
+    // Trusted <-> TrustedSnapshotLagged is the ordinary lifecycle: the metadata
+    // write gets deferred, then the next flush catches it up.  Logging that at
+    // WARN produced ~29 warnings per 3.5 h of idle capture, which buries the
+    // transitions that actually matter.  Warn only when a genuinely degraded
+    // state is entered or recovered from; keep the routine cycle at debug.
+    auto isConcerning = [](StorageCounterTrustState s) {
+        switch (s) {
+            case CounterTrust::Degraded:
+            case CounterTrust::RepairRequired:
+            case CounterTrust::EmergencyOnly:
+                return true;
+            default:
+                return false;
+        }
+    };
+
+    if (isConcerning(state) || isConcerning(prevState)) {
+        DLOG_WARN("STORAGE",
+                  "Counter trust=%s reason=%s since=%lu",
+                  _counterTrustText(),
+                  _counterTrustReason.length() ? _counterTrustReason.c_str() : "-",
+                  static_cast<unsigned long>(_counterTrustSinceMs));
+    } else {
+        DLOG_DEBUG("STORAGE",
+                   "Counter trust=%s reason=%s since=%lu",
+                   _counterTrustText(),
+                   _counterTrustReason.length() ? _counterTrustReason.c_str() : "-",
+                   static_cast<unsigned long>(_counterTrustSinceMs));
+    }
 
     switch (state) {
         case CounterTrust::Trusted:
@@ -6101,6 +6154,14 @@ void StorageManager::_applyPendingEventCountDelta(int32_t delta,
 }
 
 bool StorageManager::shouldStoreByPriority(StoragePriority priority) const {
+    if (_cachedTotalBytes != 0 && _cachedFreeBytes <= STORAGE_HARD_FLOOR_BYTES) {
+        return false;
+    }
+    if (_cachedTotalBytes != 0 &&
+        _cachedFreeBytes <= STORAGE_METADATA_RESERVE_BYTES &&
+        priority > STORAGE_PRIO_P1) {
+        return false;
+    }
     switch (_retentionPolicy) {
         case STORAGE_POLICY_NORMAL:
             return true;
@@ -6378,8 +6439,11 @@ bool StorageManager::_applyExactUploadedMarks(
         }
     }
 
-    _pendingEventCount -= decrement;
-    _spoolIndex.pendingTotal = _pendingEventCount;
+    _applyCounterDelta("bulk_mark_uploaded",
+                       -static_cast<int32_t>(decrement),
+                       0, 0, 0,
+                       STORAGE_LANE_NOISE,
+                       STORAGE_PRIO_P3);
 
     for (const auto& entry : deltas) {
         SpoolSegmentInfo* seg = _findSegmentInfo(entry.first);
@@ -6396,7 +6460,6 @@ bool StorageManager::_applyExactUploadedMarks(
 
     _pendingCountDirty = false;
     _spoolAuditRepairRequired = false;
-    _bumpStorageMetaGeneration();
     return true;
 }
 
@@ -8315,6 +8378,30 @@ bool StorageManager::runCaptureMaintenanceSlice(uint32_t budgetMs,
                                         STORAGE_MAINT_SNAPSHOT_LAGGED |
                                         STORAGE_MAINT_BOOT_SAFE_DEFERRED_PERSIST |
                                         STORAGE_MAINT_UPLOAD_ENRICH_CURSOR_DIRTY)))) {
+        // flushWorkerMetadataBatch() does two independently expensive things
+        // back to back: it flushes the append file, then persists the counter
+        // and metadata.  Each is a LittleFS write costing 300-900 ms, and
+        // neither is budget-checked internally, so together they overran this
+        // slice's budget by ~11x (measured 1391 ms worst case) and stalled
+        // TaskHardware for over a second.
+        //
+        // Run the append flush as its own budgeted step and re-check before
+        // committing to the metadata write.  The append flush inside the
+        // batch call then costs only a seek (header already clean), so a slice
+        // now pays at most one of the two latencies instead of both.  A
+        // deferred metadata write simply lands on the next slice, which is how
+        // this work is already scheduled — no durability change.
+        _flushWorkerAppendFile(sliceReason, false);
+
+        if (!budgetLeft()) {
+            skipped |= STORAGE_MAINT_BOOT_SAFE_DEFERRED_PERSIST |
+                       STORAGE_MAINT_SNAPSHOT_LAGGED |
+                       STORAGE_MAINT_UPLOAD_ENRICH_CURSOR_DIRTY |
+                       STORAGE_MAINT_DIRTY_SPOOL_INDEX;
+            return finish(actions != STORAGE_MAINT_NONE ||
+                          maintenanceFlags() != startFlags);
+        }
+
         const bool ok = flushWorkerMetadataBatch(sliceReason, true, true);
         if (ok || !_workerMetadataDirtyPending) {
             if (!_spoolIndexDirty && !_pendingCountDirty && !_eventCounterDirty) {
@@ -9094,6 +9181,11 @@ void StorageManager::_publishStorageEventIfNeeded(StoragePressureMode oldMode,
 void StorageManager::_maybeCompactForPressure(StoragePressureMode oldMode,
                                               StoragePressureMode newMode) {
     if (!_ready) return;
+
+    if (oldMode < STORAGE_MODE_WATCH && newMode >= STORAGE_MODE_WATCH) {
+        requestMaintenance(STORAGE_MAINT_DELETE_DRAINED,
+                           "storage_watch_reclaim");
+    }
 
     // Only react when pressure rises into FULL/OVERRUN or worsens.
     const bool enteredFull =
@@ -12772,6 +12864,28 @@ bool StorageManager::_resyncSpoolIndexFromFilesystem() {
 
 bool StorageManager::prepareForEnrichmentAppend(size_t expectedDeltaCount) {
     if (!_ready) return false;
+    _refreshFsStats(true);
+    const size_t deltaBudget =
+        expectedDeltaCount > (SIZE_MAX - ENRICH_BATCH_OVERHEAD_BYTES) /
+                                 ENRICH_DELTA_BUDGET_BYTES
+            ? SIZE_MAX
+            : expectedDeltaCount * ENRICH_DELTA_BUDGET_BYTES +
+                  ENRICH_BATCH_OVERHEAD_BYTES;
+    const size_t requiredFree =
+        deltaBudget > SIZE_MAX - STORAGE_METADATA_RESERVE_BYTES
+            ? SIZE_MAX
+            : deltaBudget + STORAGE_METADATA_RESERVE_BYTES;
+    if (_cachedFreeBytes < requiredFree) {
+        requestMaintenance(STORAGE_MAINT_DELETE_DRAINED,
+                           "enrich_storage_reserve");
+        DLOG_WARN("STORAGE",
+                  "Enrich preflight blocked free=%lu required=%lu count=%u reserve=%lu",
+                  static_cast<unsigned long>(_cachedFreeBytes),
+                  static_cast<unsigned long>(requiredFree),
+                  static_cast<unsigned>(expectedDeltaCount),
+                  static_cast<unsigned long>(STORAGE_METADATA_RESERVE_BYTES));
+        return false;
+    }
     if (_spoolIndex.activeSegmentId == 0) return _openNewSpoolSegment();
 
     SpoolSegmentInfo* active = _findSegmentInfo(_spoolIndex.activeSegmentId);
@@ -12828,6 +12942,8 @@ bool StorageManager::appendEnrichDeltasBatch(const SpoolEnrichBatchEntry* entrie
     uint32_t tStart         = 0;
     bool ok                 = false;
     String lastSession;
+    std::vector<size_t> appliedEntryIndexes;
+    appliedEntryIndexes.reserve(count);
 
     ScopedSemaphoreLock appendLock(_appendMutex);
     {
@@ -12927,6 +13043,7 @@ bool StorageManager::appendEnrichDeltasBatch(const SpoolEnrichBatchEntry* entrie
         if (firstEvent == 0) firstEvent = e.eventId;
         lastEvent = e.eventId;
         applied++;
+        appliedEntryIndexes.push_back(i);
         _decrementPendingEnrichmentForEvent(e.eventId);
     }
 
@@ -12990,6 +13107,21 @@ bool StorageManager::appendEnrichDeltasBatch(const SpoolEnrichBatchEntry* entrie
 
     if (appliedOut) *appliedOut = applied;
     if (failedOut)  *failedOut  = failed;
+    }
+
+    if (ok) {
+        for (size_t index : appliedEntryIndexes) {
+            const SpoolEnrichBatchEntry& e = entries[index];
+            ENTITY_MGR.applyEnrichment(e.eventId, e.lat, e.lon, e.alt, e.acc,
+                                       e.noData);
+        }
+        _refreshFsStats(true);
+        updateStoragePressure(false);
+        if (_pressureMode >= STORAGE_MODE_WATCH) {
+            requestMaintenance(STORAGE_MAINT_DELETE_DRAINED,
+                               "enrich_pressure_reclaim");
+        }
+        _queueStorageUiRefresh(true);
     }
 
     DLOG_INFO("STORAGE",
@@ -13511,6 +13643,14 @@ bool StorageManager::_appendSpoolEnrichmentDelta(const String& sessionId,
               static_cast<unsigned long>(eventId),
               static_cast<unsigned long>(recordId));
 #endif
+    ENTITY_MGR.applyEnrichment(eventId, lat, lon, alt, accuracy, noData);
+    _refreshFsStats(true);
+    updateStoragePressure(false);
+    if (_pressureMode >= STORAGE_MODE_WATCH) {
+        requestMaintenance(STORAGE_MAINT_DELETE_DRAINED,
+                           "enrich_pressure_reclaim");
+    }
+    _queueStorageUiRefresh(true);
     return true;
 }
 

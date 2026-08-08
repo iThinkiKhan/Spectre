@@ -1,0 +1,260 @@
+=== session opened 2026-08-07T12:54:10.5452705-05:00 ===
+[10679][I][STORAGE] Spool repair checkpoint seg=221 off=33738 records=149 events=149 enrich=0
+[11303][I][STORAGE] Maintenance skip action=counter_recount reason=repair_in_progress flags=counter_untrusted|segment_audit|fs_audit
+=== send: companion status ===
+[12840][I][FSAUDIT] pass done files=90 dirs=14 valid=90 invalid=0 legacy=0 forensic=0 tmp=0 unknown=0 vaulted=0 missing=0 skipped=0 actions del=0 quar=0 rebuild=0 salv=0 evict=0 skip=0 fail=0 spool_seg=70 maxSeg
+[12937][I][STORAGE] fs_audit done mode=1 complete=1 files=90 invalid=0 tmp=0 missing=0 del=0 quar=0 rebuild=0 salv=0 evict=0 skip=0 fail=0 drift=0 ms=1537
+[13032][I][STORAGE] Maintenance done reason=radio_owner_window actions=dirty_spool_index|dirty_summary|boot_safe_deferred_persist|snapshot_lagged|upload_enrich_cursor_dirty|segment_audit|fs_audit skipped=counter
+[13033][I][STORAGE] RAMSpool worker resumed
+[13033][I][STORAGE] Exclusive window end kind=maintenance result=pending reason=radio_owner_window
+[13033][I][STORAGE] maintenance owner window ms=5566 captureSafe=0 remaining=counter_untrusted|segment_audit
+[13192][I][WIFI] Radio suspended
+[13193][W][CORE] TaskHardware loop gap=6311ms owner=STORAGE_MAINT pendingUpload=4431 maintPending=1 suppressed=0
+companion status
+[COMP] enabled=0
+[COMP] external accessory=0 bleProxy=0 phoneConnected=0 phone=unknown rssi=0 ageMs=0
+[COMP] wio link=n/a sx1262=0 textInput=0
+[COMP] phone=UNKNOWN work=IDLE
+[COMP] bleBegun=0 bleRadio=0 bleState=IDLE
+[COMP] ready link=0 gps=0 freshGps=0 ctrl=0 enrich=0
+[COMP] bleInitAgeMs=0 scanStartAgeMs=0 disconnReason=0
+[COMP] pendingEnrichMission=0 pendingEnrichNoise=0 pendingEnrichTotal=0
+[COMP] lastProbeAgeMs=0 lastEnrichAgeMs=0
+[COMP] radioOwner=none
+[13299][I][STORAGE] RAMSpool worker paused inflight=0 lastInflight=0
+[13300][I][STORAGE] Exclusive window begin kind=maintenance reason=radio_owner_window workerPaused=1 displaySuspended=1
+[13300][I][STORAGE] Maintenance start reason=radio_owner_window budgetMs=30000 flags=counter_untrusted|segment_audit captureSafe=0
+[13403][I][STORAGE] Spool repair checkpoint seg=232 off=35513 records=169 events=169 enrich=0
+[13568][I][STORAGE] Spool repair checkpoint seg=233 off=40872 records=194 events=194 enrich=0
+[13673][I][STORAGE] Spool repair checkpoint seg=234 off=40971 records=194 events=194 enrich=0
+[13771][I][STORAGE] Spool repair checkpoint seg=235 off=40836 records=194 events=194 enrich=0
+[13875][I][STORAGE] Spool repair checkpoint seg=236 off=27158 records=128 events=128 enrich=0
+[14042][I][STORAGE] Spool repair checkpoint seg=238 off=98399 records=443 events=443 enrich=0
+[14502][I][STORAGE] Maintenance skip action=counter_recount reason=repair_in_progress flags=counter_untrusted|segment_audit
+[14597][I][STORAGE] Maintenance done reason=radio_owner_window actions=segment_audit skipped=counter_untrusted|segment_audit remaining=counter_untrusted|segment_audit elapsedMs=1297 captureSafe=0
+[14598][I][STORAGE] RAMSpool worker resumed
+[14598][I][STORAGE] Exclusive window end kind=maintenance result=pending reason=radio_owner_window
+[14598][I][STORAGE] maintenance owner window ms=1299 captureSafe=0 remaining=counter_untrusted|segment_audit
+=== send: companion enrich ===
+[14757][I][WIFI] Radio suspended
+[14761][I][STORAGE] RAMSpool worker paused inflight=0 lastInflight=0
+[14761][I][STORAGE] Exclusive window begin kind=maintenance reason=radio_owner_window workerPaused=1 displaySuspended=1
+[14762][I][STORAGE] Maintenance start reason=radio_owner_window budgetMs=30000 flags=counter_untrusted|segment_audit captureSafe=0
+[15542][I][STORAGE] Spool repair checkpoint seg=241 off=98546 records=436 events=436 enrich=0
+[15949][I][STORAGE] Spool repair checkpoint seg=245 off=98519 records=436 events=436 enrich=0
+[15978][I][STORAGE] Maintenance skip action=counter_recount reason=repair_in_progress flags=counter_untrusted|segment_audit
+[16073][I][STORAGE] Maintenance done reason=radio_owner_window actions=segment_audit skipped=counter_untrusted|segment_audit remaining=counter_untrusted|segment_audit elapsedMs=1312 captureSafe=0
+[16074][I][STORAGE] RAMSpool worker resumed
+[16074][I][STORAGE] Exclusive window end kind=maintenance result=pending reason=radio_owner_window
+[16075][I][STORAGE] maintenance owner window ms=1314 captureSafe=0 remaining=counter_untrusted|segment_audit
+[16234][I][WIFI] Radio suspended
+companion enrich
+[COMP] manual enrich queued
+[16239][I][STORAGE] RAMSpool worker paused inflight=0 lastInflight=0
+[16240][I][STORAGE] Exclusive window begin kind=maintenance reason=radio_owner_window workerPaused=1 displaySuspended=1
+[16240][I][STORAGE] Maintenance start reason=radio_owner_window budgetMs=30000 flags=counter_untrusted|segment_audit captureSafe=0
+[17392][I][STORAGE] Spool repair checkpoint seg=256 off=98557 records=435 events=435 enrich=0
+[17499][I][STORAGE] Maintenance skip action=counter_recount reason=repair_in_progress flags=counter_untrusted|segment_audit
+[17594][I][STORAGE] Maintenance done reason=radio_owner_window actions=segment_audit skipped=counter_untrusted|segment_audit remaining=counter_untrusted|segment_audit elapsedMs=1353 captureSafe=0
+[17594][I][STORAGE] RAMSpool worker resumed
+[17595][I][STORAGE] Exclusive window end kind=maintenance result=pending reason=radio_owner_window
+[17596][I][STORAGE] maintenance owner window ms=1356 captureSafe=0 remaining=counter_untrusted|segment_audit
+[17755][I][WIFI] Radio suspended
+[17759][I][STORAGE] RAMSpool worker paused inflight=0 lastInflight=0
+[17759][I][STORAGE] Exclusive window begin kind=maintenance reason=radio_owner_window workerPaused=1 displaySuspended=1
+[17760][I][STORAGE] Maintenance start reason=radio_owner_window budgetMs=30000 flags=counter_untrusted|segment_audit captureSafe=0
+[18690][I][STORAGE] Spool repair checkpoint seg=259 off=11305 records=51 events=43 enrich=0
+[19037][I][STORAGE] Maintenance skip action=counter_recount reason=repair_in_progress flags=counter_untrusted|segment_audit
+[19132][I][STORAGE] Maintenance done reason=radio_owner_window actions=segment_audit skipped=counter_untrusted|segment_audit remaining=counter_untrusted|segment_audit elapsedMs=1373 captureSafe=0
+[19132][I][STORAGE] RAMSpool worker resumed
+[19133][I][STORAGE] Exclusive window end kind=maintenance result=pending reason=radio_owner_window
+[19134][I][STORAGE] maintenance owner window ms=1375 captureSafe=0 remaining=counter_untrusted|segment_audit
+[19293][I][WIFI] Radio suspended
+[19297][I][STORAGE] RAMSpool worker paused inflight=0 lastInflight=0
+[19297][I][STORAGE] Exclusive window begin kind=maintenance reason=radio_owner_window workerPaused=1 displaySuspended=1
+[19297][I][STORAGE] Maintenance start reason=radio_owner_window budgetMs=30000 flags=counter_untrusted|segment_audit captureSafe=0
+[20535][I][STORAGE] Maintenance skip action=counter_recount reason=repair_in_progress flags=counter_untrusted|segment_audit
+[20631][I][STORAGE] Maintenance done reason=radio_owner_window actions=segment_audit skipped=counter_untrusted|segment_audit remaining=counter_untrusted|segment_audit elapsedMs=1333 captureSafe=0
+[20631][I][STORAGE] RAMSpool worker resumed
+[20632][I][STORAGE] Exclusive window end kind=maintenance result=pending reason=radio_owner_window
+[20632][I][STORAGE] maintenance owner window ms=1336 captureSafe=0 remaining=counter_untrusted|segment_audit
+[20792][I][WIFI] Radio suspended
+[20796][I][STORAGE] RAMSpool worker paused inflight=0 lastInflight=0
+[20796][I][STORAGE] Exclusive window begin kind=maintenance reason=radio_owner_window workerPaused=1 displaySuspended=1
+[20797][I][STORAGE] Maintenance start reason=radio_owner_window budgetMs=30000 flags=counter_untrusted|segment_audit captureSafe=0
+[22091][I][STORAGE] Maintenance skip action=counter_recount reason=repair_in_progress flags=counter_untrusted|segment_audit
+[22186][I][STORAGE] Maintenance done reason=radio_owner_window actions=segment_audit skipped=counter_untrusted|segment_audit remaining=counter_untrusted|segment_audit elapsedMs=1390 captureSafe=0
+[22187][I][STORAGE] RAMSpool worker resumed
+[22187][I][STORAGE] Exclusive window end kind=maintenance result=pending reason=radio_owner_window
+[22188][I][STORAGE] maintenance owner window ms=1393 captureSafe=0 remaining=counter_untrusted|segment_audit
+[22347][I][WIFI] Radio suspended
+[22351][I][STORAGE] RAMSpool worker paused inflight=0 lastInflight=0
+[22351][I][STORAGE] Exclusive window begin kind=maintenance reason=radio_owner_window workerPaused=1 displaySuspended=1
+[22352][I][STORAGE] Maintenance start reason=radio_owner_window budgetMs=30000 flags=counter_untrusted|segment_audit captureSafe=0
+[23599][I][STORAGE] Maintenance skip action=counter_recount reason=repair_in_progress flags=counter_untrusted|segment_audit
+[23694][I][STORAGE] Maintenance done reason=radio_owner_window actions=segment_audit skipped=counter_untrusted|segment_audit remaining=counter_untrusted|segment_audit elapsedMs=1343 captureSafe=0
+[23695][I][STORAGE] RAMSpool worker resumed
+[23695][I][STORAGE] Exclusive window end kind=maintenance result=pending reason=radio_owner_window
+[23696][I][STORAGE] maintenance owner window ms=1345 captureSafe=0 remaining=counter_untrusted|segment_audit
+[23855][I][WIFI] Radio suspended
+[23856][W][CORE] TaskHardware loop gap=1508ms owner=STORAGE_MAINT pendingUpload=4431 maintPending=1 suppressed=6
+[23859][I][STORAGE] RAMSpool worker paused inflight=0 lastInflight=0
+[23859][I][STORAGE] Exclusive window begin kind=maintenance reason=radio_owner_window workerPaused=1 displaySuspended=1
+[23860][I][STORAGE] Maintenance start reason=radio_owner_window budgetMs=30000 flags=counter_untrusted|segment_audit captureSafe=0
+[25045][W][STORAGE] Counter trust=trusted reason=repair_complete since=25045
+[25045][W][STORAGE] Spool repair slow reason=maintenance_repair segs=69 recs=1447 ms=14987
+[25045][I][STORAGE] Spool audit[maintenance_repair] scannedSegs=69 scannedRecords=1447 validEvents=1447 uploadedRetained=0 validEnrichDeltas=0 invalidRecords=0 skippedRecords=0 quarantined=0 unreadable=0 pending
+[26030][I][STORAGE] Maintenance continuity log wrote clean=1 reason=radio_owner_window completed=segment_audit remaining=none gen=47367
+[26031][I][STORAGE] Maintenance done reason=radio_owner_window actions=segment_audit|continuity_pass skipped=none remaining=none elapsedMs=2170 captureSafe=1
+[26031][I][STORAGE] RAMSpool worker resumed
+[26031][I][STORAGE] Exclusive window end kind=maintenance result=capture_safe reason=radio_owner_window
+[26032][I][STORAGE] maintenance owner window ms=2173 captureSafe=1 remaining=none
+[26287][I][WIFI] Promiscuous: YES
+[26288][I][WIFI] Promiscuous mode started data=0
+[26352][I][COMP] Manual enrich request received; probe backoff bypassed
+[26353][I][WIFI] Radio paused
+[26514][I][WIFI] Radio suspended
+[26590][I][BLE] begin phase=nimble_pre bt=idle/0 heap=78836 largest=31732 stack=10912 devLen=14
+[26591][I][BLE] begin phase=nimble_init
+[26602][I][BLE] begin phase=nimble_init_ok bt=enabled/2 heap=15820 largest=7924 stack=10912
+[26602][I][BLE] BLE SM disabled; app-layer P-256/AES-GCM required
+[26604][I][BLE] begin phase=server_ok
+[26604][I][BLE] scanner configured legacy=1 active=0 interval=30 window=30 srTimeout=200
+[26604][I][BLE] begin phase=scanner_ok
+[26605][I][BLE] begin phase=worker_ok
+[26605][I][BLE] begin ready
+[26605][I][BLE] radio enabled settle=500ms
+[26606][I][BLE] companion link requested reason=manual_probe mode=fresh_scan timeout=15s settle=500ms cacheAge=0ms rssi=0
+[26610][I][BLE] Phone probe lease granted reason=manual_probe cachedFirst=0 hold=60000ms
+[27243][I][BLE] scan start
+[27244][I][BLE] scan start diag=1 deliverDuplicates=1 diagLeft=44361 state=1 window=8000ms weakRecent=0 lastRssi=0
+[27246][I][BLE] adv check addr=77:46:1a:67:72:1f addrType=1 targetSvc=1 matchedBy=service rssi=-67
+[27247][I][BLE] adv raw name='' addr=77:46:1a:67:72:1f addrType=1 rssi=-67 hasName=0 hasSvc=1 targetSvc=1 rawTargetSvc=1 svcCount=1 matchedBy=service
+[27248][I][BLE] adv raw payload len=21 hex=02 01 02 11 07 01 00 3A 6F 2D 6B 64 9A 4D 4D 7B 6D 80 3A F0 84
+[27250][I][BLE] adv svc=84f03a80-6d7b-4d4d-9a64-6b2d6f3a0001
+[27250][I][BLE] target found matchedBy=service cachePeer=0 addr=77:46:1a:67:72:1f name=SpectrePhone rssi=-67
+[27251][I][BLE] adv check addr=77:46:1a:67:72:1f addrType=1 targetSvc=1 matchedBy=service rssi=-67
+[27252][I][BLE] adv raw name='' addr=77:46:1a:67:72:1f addrType=1 rssi=-67 hasName=0 hasSvc=1 targetSvc=1 rawTargetSvc=1 svcCount=1 matchedBy=service
+[27252][I][BLE] adv raw payload len=21 hex=02 01 02 11 07 01 00 3A 6F 2D 6B 64 9A 4D 4D 7B 6D 80 3A F0 84
+[27252][I][BLE] adv svc=84f03a80-6d7b-4d4d-9a64-6b2d6f3a0001
+[27253][I][BLE] target found matchedBy=service cachePeer=0 addr=77:46:1a:67:72:1f name=SpectrePhone rssi=-67
+[27254][I][BLE] adv check addr=58:d0:ba:b8:a6:69 addrType=1 targetSvc=0 matchedBy=none rssi=-54
+[27254][I][BLE] adv raw name='' addr=58:d0:ba:b8:a6:69 addrType=1 rssi=-54 hasName=0 hasSvc=1 targetSvc=0 rawTargetSvc=0 svcCount=2 matchedBy=none
+[27255][I][BLE] adv raw payload len=30 hex=02 01 1A 05 03 0A 18 F3 FE 14 16 F3 FE 51 A2 00 00 10 02 00 00 03 00 90...
+[27256][I][BLE] adv svc=0x180a
+[27258][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-80
+[27259][I][BLE] adv raw name='' addr=6c:0b:5e:94:c7:92 addrType=0 rssi=-80 hasName=0 hasSvc=0 targetSvc=0 rawTargetSvc=0 svcCount=0 matchedBy=none
+[27260][I][BLE] adv raw payload len=29 hex=02 01 06 19 16 F7 FD 01 93 53 B3 79 C7 2C 41 E9 95 11 7C AC 46 7C 95 2E...
+[27277][I][BLE] adv check addr=15:05:e3:76:c7:59 addrType=1 targetSvc=0 matchedBy=none rssi=-81
+[27278][I][BLE] adv raw name='' addr=15:05:e3:76:c7:59 addrType=1 rssi=-81 hasName=0 hasSvc=0 targetSvc=0 rawTargetSvc=0 svcCount=0 matchedBy=none
+[27278][I][BLE] adv raw payload len=31 hex=1E FF 06 00 01 09 20 22 4A E3 B7 AB 6F 72 AF 4F 30 C7 81 B5 23 55 3A 2F...
+[27281][I][BLE] adv check addr=06:1a:f4:d9:3f:aa addrType=1 targetSvc=0 matchedBy=none rssi=-87
+[27283][I][BLE] adv raw name='' addr=06:1a:f4:d9:3f:aa addrType=1 rssi=-87 hasName=0 hasSvc=0 targetSvc=0 rawTargetSvc=0 svcCount=0 matchedBy=none
+[27284][I][BLE] adv raw payload len=31 hex=1E FF 06 00 01 09 20 02 B5 CD 2A 9F 0E 94 DF 12 21 3E F9 B3 E7 7E F0 A1...
+[27302][I][BLE] adv check addr=27:e5:04:98:4c:3a addrType=1 targetSvc=0 matchedBy=none rssi=-65
+[27303][I][BLE] adv raw name='' addr=27:e5:04:98:4c:3a addrType=1 rssi=-65 hasName=0 hasSvc=0 targetSvc=0 rawTargetSvc=0 svcCount=0 matchedBy=none
+[27303][I][BLE] adv raw payload len=31 hex=1E 16 F3 FE 4A 17 23 58 30 45 4E 11 32 C5 E1 53 9A 0C AC CD 21 D1 28 72...
+[27352][I][BLE] adv check addr=58:d0:ba:b8:a6:69 addrType=1 targetSvc=0 matchedBy=none rssi=-54
+[27353][I][BLE] adv raw name='' addr=58:d0:ba:b8:a6:69 addrType=1 rssi=-54 hasName=0 hasSvc=1 targetSvc=0 rawTargetSvc=0 svcCount=2 matchedBy=none
+[27353][I][BLE] adv raw payload len=30 hex=02 01 1A 05 03 0A 18 F3 FE 14 16 F3 FE 51 A2 00 00 10 02 00 00 03 00 90...
+[27354][I][BLE] adv svc=0x180a
+[27354][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-79
+[27355][I][BLE] adv raw name='' addr=6c:0b:5e:94:c7:92 addrType=0 rssi=-79 hasName=0 hasSvc=0 targetSvc=0 rawTargetSvc=0 svcCount=0 matchedBy=none
+[27356][I][BLE] adv raw payload len=29 hex=02 01 06 19 16 F7 FD 01 93 53 B3 79 C7 2C 41 E9 95 11 7C AC 46 7C 95 2E...
+[27383][I][BLE] adv check addr=15:05:e3:76:c7:59 addrType=1 targetSvc=0 matchedBy=none rssi=-56
+[27383][I][BLE] adv raw name='' addr=15:05:e3:76:c7:59 addrType=1 rssi=-56 hasName=0 hasSvc=0 targetSvc=0 rawTargetSvc=0 svcCount=0 matchedBy=none
+[27384][I][BLE] adv raw payload len=31 hex=1E FF 06 00 01 09 20 22 4A E3 B7 AB 6F 72 AF 4F 30 C7 81 B5 23 55 3A 2F...
+[27385][I][BLE] adv check addr=77:46:1a:67:72:1f addrType=1 targetSvc=1 matchedBy=service rssi=-65
+[27386][I][BLE] adv raw name='' addr=77:46:1a:67:72:1f addrType=1 rssi=-65 hasName=0 hasSvc=1 targetSvc=1 rawTargetSvc=1 svcCount=1 matchedBy=service
+[27386][I][BLE] adv raw payload len=21 hex=02 01 02 11 07 01 00 3A 6F 2D 6B 64 9A 4D 4D 7B 6D 80 3A F0 84
+[27387][I][BLE] adv svc=84f03a80-6d7b-4d4d-9a64-6b2d6f3a0001
+[27387][I][BLE] target found matchedBy=service cachePeer=0 addr=77:46:1a:67:72:1f name=SpectrePhone rssi=-65
+[27388][I][BLE] adv check addr=77:46:1a:67:72:1f addrType=1 targetSvc=1 matchedBy=service rssi=-65
+[27388][I][BLE] adv raw name='' addr=77:46:1a:67:72:1f addrType=1 rssi=-65 hasName=0 hasSvc=1 targetSvc=1 rawTargetSvc=1 svcCount=1 matchedBy=service
+[27389][I][BLE] adv raw payload len=21 hex=02 01 02 11 07 01 00 3A 6F 2D 6B 64 9A 4D 4D 7B 6D 80 3A F0 84
+[27389][I][BLE] adv svc=84f03a80-6d7b-4d4d-9a64-6b2d6f3a0001
+[27389][I][BLE] target found matchedBy=service cachePeer=0 addr=77:46:1a:67:72:1f name=SpectrePhone rssi=-65
+[27401][I][BLE] scan stop; connect pending addr=77:46:1a:67:72:1f
+[27701][I][BLE] connect pending settled addr=77:46:1a:67:72:1f
+[27702][I][BLE] connect attempt addr=77:46:1a:67:72:1f name=SpectrePhone
+[27702][I][BLE] connect params timeoutMs=45000 scanItvl=16 scanWin=16 addrType=1
+[28604][I][BLE] connect result ok=1 err=0 addr=77:46:1a:67:72:1f
+[28605][I][BLE] BLE link connected; starting app-layer auth watchdog=50000ms
+[28605][I][BLE] remote service lookup begin core=1 internalFree=14288 largest=7156
+[28693][I][BLE] remote service lookup end found=1 err=0
+[28693][I][BLE] remote characteristic discovery begin
+[28872][I][BLE] remote characteristic discovery end count=13 err=0
+[28933][I][BLE] remote descriptor discovery char=auth count=2 err=0
+[28933][I][BLE] auth notify subscribe begin
+[28934][I][BLE] auth notify subscribe end ok=1 err=0
+[29302][I][BLE] auth challenge write bytes=163 mtu=247 attPayload=244 mode=response
+[30002][I][HEAP] heap free=7692KB min=7689KB largest=7680KB frag=0% internalFree=10KB internalLargest=7KB psramFree=7682KB core=0/0% owner=BLE_GPS nets=0 pendingUpload=4431 pendingEnrich=4434
+[HEALTH] time=2026-08-07 12:54:10 src=ntp
+[HEALTH] heap used=726/8418KB free=7692KB min=7689KB largest=7680KB frag=0%
+[HEALTH] internal used=216/226KB free=10KB min=8KB largest=7KB
+[HEALTH] psram used=510/8192KB free=7682KB largest=7680KB
+[HEALTH] stack free_min: core0=11KB/22KB core1=13KB/18KB
+[HEALTH] core usage: core0=0% core1=0%
+[HEALTH] power=usb state=usb batt=100% 4654mV trend=0mV/min runtime=0min cap=1100mAh charging=0
+[HEALTH] radio=BLE_GPS wifi=0 ble=1 gps=0 nets=0 pendingUpload=4431 pendingEnrich=4434
+[HEALTH] subghz=NONE mode=OFF pkts=0 nodes=0
+[30005][I][STORAGE] RAMSpool enq=0 cons=0 inflight=0/1024 high=0 pressure=0 drop[full=0 big=0 noise=0 p3Evict=0 p3Drop=0 p2Drop=0 p1Fail=0] free=1024
+[30006][I][STORAGE] RAMSpool enqueue probe[ok=0 drop=0] device[ok=0 drop=0]
+[30006][I][STORAGE] RAMSpool worker probe[ok=0 sup=0 drop=0 fail=0 slow=0] device[ok=0 sup=0 drop=0 fail=0 slow=0] slowTotal=0 maxMs=0
+[30007][I][STORAGE] RAMSpool prioEnq p0=0 p1=0 p2=0 p3=0
+[30007][I][STORAGE] RAMSpool lanes p1=0/0 p2=0/0 p3=0/0
+[30272][I][BLE] app secure session ready alg=P-256+ECDH+AES-256-GCM
+[30273][I][BLE] phone auth confirmed; caching peer addr=77:46:1a:67:72:1f ttl=300000ms rssi=-65
+[30313][I][BLE] remote descriptor discovery char=enrichment count=2 err=0
+[30493][I][BLE] remote bound gps=1 ctrl=1 meta=1 batch=1 enrich=1 auth=1 authReq=1 storage=1 cmdReq=1 cmdResp=1 logStream=1 dashStream=1 notification=1 notify(gps=0 ctrl=0 enrich=1 auth=1 cmdReq=0) mtu=247 a
+[30493][I][BLE] probe_summary seen=1 matchedBy=service rssi=-65 scanMs=3031
+[30493][I][BLE] phone_session_summary auth=ok mtu=247 gps=1 ctrl=1 enrich=1 storage=1
+[30552][I][BLE] storage snapshot sent pendingUp=0/4431 pendingEnrich=0/4434 usedPct=17
+[30557][I][BLE] Phone probe succeeded ??? backoff reset
+[30561][I][BLE] Phone probe promoted to enrichment pendingEnrich=4434 maxBatch=18
+[30561][W][BLE] Manual enrichment window unavailable owner=BLE_GPS
+[30561][W][BLE] Failed to build enrichment batch
+[30562][W][BLE] Phone enrichment failed
+[30562][I][BLE] probe resource release
+[30562][I][BLE] client soft drop reason=radio_disabled
+[30563][I][BLE] radio disabled
+[30563][I][BLE] probe_release phase=worker_delete
+[30582][I][BLE] peer disconnect ignored after radio release reason=534
+[30722][I][WIFI] Radio suspended
+[30733][I][STORAGE] RAMSpool worker paused inflight=0 lastInflight=0
+[30734][I][STORAGE] Exclusive window begin kind=maintenance reason=radio_owner_window workerPaused=1 displaySuspended=1
+[30734][I][STORAGE] Maintenance start reason=radio_owner_window budgetMs=5000 flags=none captureSafe=1
+[31172][I][STORAGE] Maintenance done reason=radio_owner_window actions=none skipped=none remaining=none elapsedMs=438 captureSafe=1
+[31173][I][STORAGE] RAMSpool worker resumed
+[31173][I][STORAGE] Exclusive window end kind=maintenance result=capture_safe reason=radio_owner_window
+[31174][I][STORAGE] maintenance owner window ms=441 captureSafe=1 remaining=none
+[31508][E][WIFI] Radio init failed: modeOk=0 setMode=ESP_ERR_WIFI_NOT_INIT start=ESP_ERR_WIFI_NOT_INIT promOff=ESP_ERR_WIFI_NOT_INIT country=ESP_ERR_WIFI_NOT_INIT getMode=ESP_ERR_WIFI_NOT_INIT current=0
+[31513][I][STACK] TaskHardware watermark=10912B min=10912B
+[32579][I][STACK] TaskDisplay watermark=13228B min=13228B
+=== send: spool enrich ===
+spool enrich
+[33825][I][WIFI] Radio suspended
+[33826][I][STORAGE] RAMSpool worker paused inflight=0 lastInflight=0
+[33826][I][STORAGE] Exclusive window begin kind=maintenance reason=manual_spool_enrich workerPaused=1 displaySuspended=1
+[SPOOL] enrich starting...
+[SPOOL] pendingEnrich mission=0 noise=4434 total=4434
+[SPOOL] enriched=0 trackedTotal=4434 summaryValid=1
+[SPOOL] exact enrichment scan deferred reason=heap_guard freeInternal=11412 largestInternal=7156
+[SPOOL] used=1456KB / 8128KB auditRepairReq=0 summaryRebuildPending=0
+[34164][I][STORAGE] RAMSpool worker resumed
+[34165][I][STORAGE] Exclusive window end kind=maintenance result=done reason=manual_spool_enrich
+[34498][E][WIFI] Radio init failed: modeOk=0 setMode=ESP_ERR_WIFI_NOT_INIT start=ESP_ERR_WIFI_NOT_INIT promOff=ESP_ERR_WIFI_NOT_INIT country=ESP_ERR_WIFI_NOT_INIT getMode=ESP_ERR_WIFI_NOT_INIT current=0
+[34509][W][CORE] TaskHardware loop gap=843ms owner=NONE pendingUpload=4431 maintPending=0 suppressed=3
+=== send: companion status ===
+companion status
+[COMP] enabled=1
+[COMP] external accessory=0 bleProxy=0 phoneConnected=0 phone=unknown rssi=0 ageMs=0
+[COMP] wio link=idle sx1262=0 textInput=0
+[COMP] phone=UNAVAILABLE work=IDLE
+[COMP] bleBegun=1 bleRadio=0 bleState=IDLE
+[COMP] ready link=0 gps=0 freshGps=0 ctrl=0 enrich=0
+[COMP] bleInitAgeMs=22116 scanStartAgeMs=21478 disconnReason=534
+[COMP] pendingEnrichMission=0 pendingEnrichNoise=4434 pendingEnrichTotal=4434
+[COMP] lastProbeAgeMs=22104 lastEnrichAgeMs=18148
+[COMP] radioOwner=none
+=== session closing 2026-08-07T12:54:53.6533997-05:00 ===

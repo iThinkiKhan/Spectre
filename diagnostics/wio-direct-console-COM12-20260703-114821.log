@@ -1,0 +1,109 @@
+# opened COM12 2026-07-03T11:48:21.4434678-05:00
+
+Spectre WIO nRF relay console
+version=0.4.0 baud=115200
+type 'help' for commands; typed characters echo here
+>>> help
+nrf> help
+Commands:
+  help              show this help
+  status            print nRF/BLE/UART counters
+  caps              send relay CAPS to S3 UART
+  wio-status        send relay STATUS to S3 UART
+  probe [ms]        BLE probe for phone peripheral
+  drop              disconnect phone BLE link
+  ble start         initialize Bluefruit BLE stack
+  echo <text>       loop typed text back over USB
+  uart <line>       send raw line to S3 UART
+  led auto|red|blue|off set status LED mode
+  sx [status]       print SX1262 modem state
+  sx rx|standby     arm SX1262 receive / standby
+  sx tx <text>      transmit a raw LoRa test frame
+  reboot            software reset the nRF
+>>> caps
+nrf> caps
+[tx] WIO/1 CAPS BLE_PROXY UART BLE_WRITE_BIN UART_FLOWCTRL SX1262_PRESENT ver=0.4.0
+USB/1 OK caps sent to S3 UART
+>>> status
+nrf> status
+USB/1 STATUS
+  version=0.4.0
+  uptime_ms=51402
+  phone=idle
+  connected=0
+  services_ready=0
+  text_ready=0
+  conn_handle=65535
+  rssi=0
+  probe_active=0
+  probe_seen=0
+  probe_uuid_seen=0
+  probe_err=none
+  uart_rx_lines=0
+  uart_tx_lines=2
+  ble_rx=0
+  ble_write=0
+  usb_commands=3
+  led_mode=auto
+  led_color=off
+  ble_init_started=1
+  ble_ready=1
+  ble_init_blocked=0
+>>> ble start
+nrf> ble start
+USB/1 BLE_READY 1
+>>> status
+nrf> status
+USB/1 STATUS
+  version=0.4.0
+  uptime_ms=54601
+  phone=idle
+  connected=0
+  services_ready=0
+  text_ready=0
+  conn_handle=65535
+  rssi=0
+  probe_active=0
+  probe_seen=0
+  probe_uuid_seen=0
+  probe_err=none
+  uart_rx_lines=0
+  uart_tx_lines=2
+  ble_rx=0
+  ble_write=0
+  usb_commands=5
+  led_mode=auto
+  led_color=off
+  ble_init_started=1
+  ble_ready=1
+  ble_init_blocked=0
+>>> probe 15000
+nrf> probe 15000
+USB/1 OK probe id=900001 timeout=15000
+nrf> [tx] WIO/1 BLE_PROBE id=900001 result=miss connected=0 rssi=-43 seen=11 uuid=3 conn=3 fail=3 text=0 best=-43 disc=0x3E err=conn_failed_0x3E source=scan
+>>> status
+status
+USB/1 STATUS
+  version=0.4.0
+  uptime_ms=72820
+  phone=idle
+  connected=0
+  services_ready=0
+  text_ready=0
+  conn_handle=65535
+  rssi=-43
+  probe_active=0
+  probe_seen=11
+  probe_uuid_seen=3
+  probe_err=conn_failed_0x3E
+  uart_rx_lines=0
+  uart_tx_lines=3
+  ble_rx=0
+  ble_write=0
+  usb_commands=7
+  led_mode=auto
+  led_color=off
+  ble_init_started=1
+  ble_ready=1
+  ble_init_blocked=0
+# closing 2026-07-03T11:48:50.3174374-05:00

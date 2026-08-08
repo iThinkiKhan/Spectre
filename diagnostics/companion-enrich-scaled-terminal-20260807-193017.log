@@ -1,0 +1,2026 @@
+=== session opened 2026-08-07T14:30:19.3296335-05:00 ===
+=== send: companion status ===
+companion status
+[COMP] enabled=1
+[COMP] external accessory=0 bleProxy=0 phoneConnected=0 phone=unknown rssi=0 ageMs=0
+[COMP] wio link=idle sx1262=0 textInput=0
+[COMP] phone=UNKNOWN work=IDLE
+[COMP] bleBegun=0 bleRadio=0 bleState=IDLE
+[COMP] ready link=0 gps=0 freshGps=0 ctrl=0 enrich=0
+[COMP] bleInitAgeMs=0 scanStartAgeMs=0 disconnReason=0
+[COMP] pendingEnrichMission=0 pendingEnrichNoise=4019 pendingEnrichTotal=4019
+[COMP] lastProbeAgeMs=0 lastEnrichAgeMs=0
+[COMP] radioOwner=wifi_capture
+[35294][I][STORAGE] worker ui refresh serviced uiRefreshServiceCount=6 uiDeferred=12 uiFlush=6 pressure=0 usedPct=21 pending=4552
+=== send: companion enrich ===
+companion enrich
+[COMP] manual enrich queued
+[37189][I][COMP] Manual enrich request received; probe backoff bypassed
+[37190][I][WIFI] Radio paused
+[37417][I][WIFI] Radio suspended
+[37418][I][BLE] BLE payload buffers in PSRAM bytes=6276
+[37494][I][BLE] begin phase=nimble_pre bt=idle/0 heap=78592 largest=31732 stack=17100 devLen=14
+[37494][I][BLE] begin phase=nimble_init
+[37504][I][BLE] begin phase=nimble_init_ok bt=enabled/2 heap=15580 largest=7412 stack=17100
+[37505][I][BLE] BLE SM disabled; app-layer P-256/AES-GCM required
+[37507][I][BLE] begin phase=server_ok
+[37508][I][BLE] scanner configured legacy=1 active=0 interval=30 window=30 srTimeout=200
+[37509][I][BLE] begin phase=scanner_ok
+[37510][I][BLE] begin phase=worker_ok
+[37510][I][BLE] begin ready
+[37511][I][BLE] radio enabled settle=500ms
+[37511][I][BLE] companion link requested reason=manual_probe mode=fresh_scan timeout=15s settle=500ms cacheAge=0ms rssi=0
+[37517][I][BLE] Phone probe lease granted reason=manual_probe cachedFirst=0 hold=60000ms
+[37528][W][CORE] TaskHardware loop gap=340ms owner=BLE_GPS pendingUpload=4552 maintPending=1 suppressed=1
+[38122][I][BLE] scan start
+[38123][I][BLE] scan start diag=1 deliverDuplicates=1 diagLeft=44389 state=1 window=8000ms weakRecent=0 lastRssi=0
+[38162][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-64
+[38163][I][BLE] adv raw name='' addr=0a:e2:c6:bf:c6:c7 addrType=1 rssi=-64 hasName=0 hasSvc=0 targetSvc=0 rawTargetSvc=0 svcCount=0 matchedBy=none
+[38163][I][BLE] adv raw payload len=31 hex=1E FF 06 00 01 09 20 22 7D A7 65 3C 84 13 A3 9E 40 B5 C4 C8 10 0D 7C 46...
+[38206][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-84
+[38207][I][BLE] adv raw name='' addr=6c:0b:5e:94:c7:92 addrType=0 rssi=-84 hasName=0 hasSvc=0 targetSvc=0 rawTargetSvc=0 svcCount=0 matchedBy=none
+[38207][I][BLE] adv raw payload len=29 hex=02 01 06 19 16 F7 FD 01 93 53 B3 79 C7 2C 41 E9 95 11 7C AC 46 7C 95 2E...
+[38208][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-67
+[38209][I][BLE] adv raw name='' addr=7a:d2:d0:65:28:67 addrType=1 rssi=-67 hasName=0 hasSvc=1 targetSvc=0 rawTargetSvc=0 svcCount=2 matchedBy=none
+[38209][I][BLE] adv raw payload len=30 hex=02 01 1A 05 03 0A 18 F3 FE 14 16 F3 FE 51 20 00 00 30 06 20 04 23 00 00...
+[38209][I][BLE] adv svc=0x180a
+[38225][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-93
+[38226][I][BLE] adv raw name='' addr=35:9d:ba:01:46:f1 addrType=1 rssi=-93 hasName=0 hasSvc=0 targetSvc=0 rawTargetSvc=0 svcCount=0 matchedBy=none
+[38226][I][BLE] adv raw payload len=31 hex=1E FF 06 00 01 09 20 02 0E C5 1A B3 1D EA E1 C3 71 66 A0 A4 71 1C 5C 78...
+[38265][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-64
+[38266][I][BLE] adv raw name='' addr=0a:e2:c6:bf:c6:c7 addrType=1 rssi=-64 hasName=0 hasSvc=0 targetSvc=0 rawTargetSvc=0 svcCount=0 matchedBy=none
+[38266][I][BLE] adv raw payload len=31 hex=1E FF 06 00 01 09 20 22 7D A7 65 3C 84 13 A3 9E 40 B5 C4 C8 10 0D 7C 46...
+[38307][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-70
+[38308][I][BLE] adv raw name='' addr=7a:d2:d0:65:28:67 addrType=1 rssi=-70 hasName=0 hasSvc=1 targetSvc=0 rawTargetSvc=0 svcCount=2 matchedBy=none
+[38308][I][BLE] adv raw payload len=30 hex=02 01 1A 05 03 0A 18 F3 FE 14 16 F3 FE 51 20 00 00 30 06 20 04 23 00 00...
+[38308][I][BLE] adv svc=0x180a
+[38309][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-89
+[38310][I][BLE] adv raw name='' addr=6c:0b:5e:94:c7:92 addrType=0 rssi=-89 hasName=0 hasSvc=0 targetSvc=0 rawTargetSvc=0 svcCount=0 matchedBy=none
+[38310][I][BLE] adv raw payload len=29 hex=02 01 06 19 16 F7 FD 01 93 53 B3 79 C7 2C 41 E9 95 11 7C AC 46 7C 95 2E...
+[38330][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-98
+[38331][I][BLE] adv raw name='' addr=35:9d:ba:01:46:f1 addrType=1 rssi=-98 hasName=0 hasSvc=0 targetSvc=0 rawTargetSvc=0 svcCount=0 matchedBy=none
+[38331][I][BLE] adv raw payload len=31 hex=1E FF 06 00 01 09 20 02 0E C5 1A B3 1D EA E1 C3 71 66 A0 A4 71 1C 5C 78...
+[38346][I][BLE] adv check addr=2f:ba:b6:46:ae:5f addrType=1 targetSvc=0 matchedBy=none rssi=-53
+[38347][I][BLE] adv raw name='' addr=2f:ba:b6:46:ae:5f addrType=1 rssi=-53 hasName=0 hasSvc=0 targetSvc=0 rawTargetSvc=0 svcCount=0 matchedBy=none
+[38347][I][BLE] adv raw payload len=31 hex=1E 16 F3 FE 4A 17 23 49 49 58 59 11 32 31 03 A4 8A 68 E5 E5 38 CC 58 C7...
+[38371][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-65
+[38371][I][BLE] adv raw name='' addr=0a:e2:c6:bf:c6:c7 addrType=1 rssi=-65 hasName=0 hasSvc=0 targetSvc=0 rawTargetSvc=0 svcCount=0 matchedBy=none
+[38372][I][BLE] adv raw payload len=31 hex=1E FF 06 00 01 09 20 22 7D A7 65 3C 84 13 A3 9E 40 B5 C4 C8 10 0D 7C 46...
+[38410][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-63
+[38411][I][BLE] adv raw name='' addr=7a:d2:d0:65:28:67 addrType=1 rssi=-63 hasName=0 hasSvc=1 targetSvc=0 rawTargetSvc=0 svcCount=2 matchedBy=none
+[38411][I][BLE] adv raw payload len=30 hex=02 01 1A 05 03 0A 18 F3 FE 14 16 F3 FE 51 20 00 00 30 06 20 04 23 00 00...
+[38412][I][BLE] adv svc=0x180a
+[38413][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-84
+[38414][I][BLE] adv raw name='' addr=6c:0b:5e:94:c7:92 addrType=0 rssi=-84 hasName=0 hasSvc=0 targetSvc=0 rawTargetSvc=0 svcCount=0 matchedBy=none
+[38414][I][BLE] adv raw payload len=29 hex=02 01 06 19 16 F7 FD 01 93 53 B3 79 C7 2C 41 E9 95 11 7C AC 46 7C 95 2E...
+[38480][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-66
+[38481][I][BLE] adv raw name='' addr=0a:e2:c6:bf:c6:c7 addrType=1 rssi=-66 hasName=0 hasSvc=0 targetSvc=0 rawTargetSvc=0 svcCount=0 matchedBy=none
+[38481][I][BLE] adv raw payload len=31 hex=1E FF 06 00 01 09 20 22 7D A7 65 3C 84 13 A3 9E 40 B5 C4 C8 10 0D 7C 46...
+[38517][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-79
+[38518][I][BLE] adv raw name='' addr=6c:0b:5e:94:c7:92 addrType=0 rssi=-79 hasName=0 hasSvc=0 targetSvc=0 rawTargetSvc=0 svcCount=0 matchedBy=none
+[38518][I][BLE] adv raw payload len=29 hex=02 01 06 19 16 F7 FD 01 93 53 B3 79 C7 2C 41 E9 95 11 7C AC 46 7C 95 2E...
+[38520][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-65
+[38520][I][BLE] adv raw name='' addr=7a:d2:d0:65:28:67 addrType=1 rssi=-65 hasName=0 hasSvc=1 targetSvc=0 rawTargetSvc=0 svcCount=2 matchedBy=none
+[38521][I][BLE] adv raw payload len=30 hex=02 01 1A 05 03 0A 18 F3 FE 14 16 F3 FE 51 20 00 00 30 06 20 04 23 00 00...
+[38521][I][BLE] adv svc=0x180a
+[38546][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-89
+[38547][I][BLE] adv raw name='' addr=35:9d:ba:01:46:f1 addrType=1 rssi=-89 hasName=0 hasSvc=0 targetSvc=0 rawTargetSvc=0 svcCount=0 matchedBy=none
+[38547][I][BLE] adv raw payload len=31 hex=1E FF 06 00 01 09 20 02 0E C5 1A B3 1D EA E1 C3 71 66 A0 A4 71 1C 5C 78...
+[38589][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-68
+[38590][I][BLE] adv raw name='' addr=0a:e2:c6:bf:c6:c7 addrType=1 rssi=-68 hasName=0 hasSvc=0 targetSvc=0 rawTargetSvc=0 svcCount=0 matchedBy=none
+[38591][I][BLE] adv raw payload len=31 hex=1E FF 06 00 01 09 20 22 7D A7 65 3C 84 13 A3 9E 40 B5 C4 C8 10 0D 7C 46...
+[38620][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-79
+[38621][I][BLE] adv raw name='' addr=6c:0b:5e:94:c7:92 addrType=0 rssi=-79 hasName=0 hasSvc=0 targetSvc=0 rawTargetSvc=0 svcCount=0 matchedBy=none
+[38621][I][BLE] adv raw payload len=29 hex=02 01 06 19 16 F7 FD 01 93 53 B3 79 C7 2C 41 E9 95 11 7C AC 46 7C 95 2E...
+[38622][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-63
+[38623][I][BLE] adv raw name='' addr=7a:d2:d0:65:28:67 addrType=1 rssi=-63 hasName=0 hasSvc=1 targetSvc=0 rawTargetSvc=0 svcCount=2 matchedBy=none
+[38624][I][BLE] adv raw payload len=30 hex=02 01 1A 05 03 0A 18 F3 FE 14 16 F3 FE 51 20 00 00 30 06 20 04 23 00 00...
+[38624][I][BLE] adv svc=0x180a
+[38636][I][BLE] adv check addr=2f:ba:b6:46:ae:5f addrType=1 targetSvc=0 matchedBy=none rssi=-54
+[38637][I][BLE] adv raw name='' addr=2f:ba:b6:46:ae:5f addrType=1 rssi=-54 hasName=0 hasSvc=0 targetSvc=0 rawTargetSvc=0 svcCount=0 matchedBy=none
+[38637][I][BLE] adv raw payload len=31 hex=1E 16 F3 FE 4A 17 23 49 49 58 59 11 32 31 03 A4 8A 68 E5 E5 38 CC 58 C7...
+[38648][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-89
+[38690][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-74
+[38721][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-83
+[38725][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-66
+[38796][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-63
+[38821][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-89
+[38835][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-70
+[38902][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-64
+[38932][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-87
+[39011][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-68
+[39036][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-84
+[39037][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-70
+[39046][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-73
+[39114][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-67
+[39141][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-83
+[39151][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-70
+[39170][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-94
+[39211][I][BLE] adv check addr=2f:ba:b6:46:ae:5f addrType=1 targetSvc=0 matchedBy=none rssi=-55
+[39214][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-67
+[39245][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-89
+[39254][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-67
+[39270][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-92
+[39318][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-70
+[39346][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-89
+[39358][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-66
+[39378][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-94
+[39425][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-66
+[39450][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-80
+[39464][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-67
+[39478][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-96
+[39500][I][BLE] adv check addr=2f:ba:b6:46:ae:5f addrType=1 targetSvc=0 matchedBy=none rssi=-57
+[39528][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-66
+[39557][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-79
+[39565][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-68
+[39579][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-89
+[39664][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-78
+[39680][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-89
+[39745][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-67
+[39766][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-68
+[39778][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-72
+[39783][I][BLE] adv check addr=2f:ba:b6:46:ae:5f addrType=1 targetSvc=0 matchedBy=none rssi=-56
+[39785][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-89
+[39852][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-67
+[39863][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-78
+[39870][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-84
+[39879][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-72
+[39885][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-88
+[39961][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-72
+[39979][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-71
+[39982][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-84
+[39990][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-93
+[40066][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-71
+[40070][I][BLE] adv check addr=2f:ba:b6:46:ae:5f addrType=1 targetSvc=0 matchedBy=none rssi=-56
+[40084][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-66
+[40087][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-87
+[40097][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-93
+[40166][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-70
+[40186][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-66
+[40195][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-87
+[40204][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-95
+[40294][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-66
+[40303][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-97
+[40352][I][BLE] adv check addr=2f:ba:b6:46:ae:5f addrType=1 targetSvc=0 matchedBy=none rssi=-55
+[40371][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-66
+[40395][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-87
+[40400][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-67
+[40409][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-79
+[40410][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-97
+[40473][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-65
+[40505][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-68
+[40507][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-80
+[40517][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-100
+[40575][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-66
+[40609][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-68
+[40618][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-88
+[40678][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-66
+[40707][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-80
+[40709][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-68
+[40786][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-68
+[40819][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-71
+[40821][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-86
+[40824][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-88
+[40892][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-68
+[40921][I][BLE] adv check addr=2f:ba:b6:46:ae:5f addrType=1 targetSvc=0 matchedBy=none rssi=-56
+[40927][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-72
+[40931][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-86
+[41034][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-66
+[41101][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-72
+[41131][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-86
+[41139][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-65
+[41142][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-88
+[41202][I][BLE] adv check addr=2f:ba:b6:46:ae:5f addrType=1 targetSvc=0 matchedBy=none rssi=-55
+[41209][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-71
+[41239][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-66
+[41243][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-85
+[41247][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-94
+[41318][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-66
+[41341][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-66
+[41342][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-86
+[41352][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-99
+[41425][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-66
+[41444][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-67
+[41446][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-81
+[41454][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-97
+[41487][I][BLE] adv check addr=2f:ba:b6:46:ae:5f addrType=1 targetSvc=0 matchedBy=none rssi=-55
+[41554][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-67
+[41555][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-79
+[41557][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-97
+[41637][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-67
+[41656][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-81
+[41662][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-87
+[41663][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-71
+[41738][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-68
+[41764][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-86
+[41765][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-71
+[41769][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-88
+[41772][I][BLE] adv check addr=2f:ba:b6:46:ae:5f addrType=1 targetSvc=0 matchedBy=none rssi=-56
+[41841][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-67
+[41873][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-88
+[41874][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-85
+[41875][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-71
+[41980][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-86
+[41983][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-66
+[42050][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-71
+[42058][I][BLE] adv check addr=2f:ba:b6:46:ae:5f addrType=1 targetSvc=0 matchedBy=none rssi=-56
+[42077][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-92
+[42080][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-86
+[42086][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-66
+[42154][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-71
+[42179][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-85
+[42181][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-93
+[42192][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-66
+[42254][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-72
+[42281][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-87
+[42285][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-94
+[42291][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-68
+[42361][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-66
+[42390][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-80
+[42393][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-68
+[42468][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-66
+[42494][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-98
+[42496][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-81
+[42498][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-67
+[42594][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-94
+[42599][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-67
+[42601][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-81
+[42626][I][BLE] adv check addr=2f:ba:b6:46:ae:5f addrType=1 targetSvc=0 matchedBy=none rssi=-57
+[42680][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-67
+[42707][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-70
+[42789][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-67
+[42801][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-81
+[42809][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-87
+[42810][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-87
+[42813][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-71
+[42895][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-71
+[42914][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-88
+[42915][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-71
+[43001][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-71
+[43011][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-87
+[43019][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-67
+[43026][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-86
+[43103][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-71
+[43124][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-68
+[43125][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-94
+[43135][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-85
+[43211][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-67
+[43227][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-68
+[43230][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-95
+[43241][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-82
+[43315][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-68
+[43329][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-68
+[43350][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-82
+[43419][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-68
+[43429][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-66
+[43452][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-81
+[43486][I][BLE] adv check addr=2f:ba:b6:46:ae:5f addrType=1 targetSvc=0 matchedBy=none rssi=-55
+[43532][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-66
+[43554][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-87
+[43623][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-66
+[43635][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-98
+[43637][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-66
+[43660][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-88
+[43728][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-66
+[43736][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-97
+[43744][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-73
+[43760][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-87
+[43784][I][BLE] adv check addr=2f:ba:b6:46:ae:5f addrType=1 targetSvc=0 matchedBy=none rssi=-60
+[43832][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-66
+[43845][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-87
+[43854][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-73
+[43865][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-88
+[43938][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-73
+[43949][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-88
+[43957][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-73
+[44047][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-73
+[44059][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-94
+[44060][I][BLE] adv check addr=2f:ba:b6:46:ae:5f addrType=1 targetSvc=0 matchedBy=none rssi=-59
+[44065][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-68
+[44066][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-88
+[44075][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-84
+[44157][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-68
+[44165][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-68
+[44168][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-97
+[44175][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-87
+[44266][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-69
+[44270][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-68
+[44280][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-82
+[44347][I][BLE] adv check addr=2f:ba:b6:46:ae:5f addrType=1 targetSvc=0 matchedBy=none rssi=-59
+[44374][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-99
+[44377][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-66
+[44387][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-83
+[44481][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-66
+[44485][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-66
+[44488][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-83
+[44583][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-96
+[44585][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-66
+[44587][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-66
+[44596][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-87
+[44645][I][BLE] adv check addr=2f:ba:b6:46:ae:5f addrType=1 targetSvc=0 matchedBy=none rssi=-59
+[44685][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-66
+[44691][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-88
+[44694][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-74
+[44703][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-88
+[44794][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-73
+[44799][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-88
+[44801][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-73
+[44804][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-85
+[44902][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-71
+[44908][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-88
+[44911][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-65
+[44912][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-86
+[44919][I][BLE] adv check addr=2f:ba:b6:46:ae:5f addrType=1 targetSvc=0 matchedBy=none rssi=-59
+[45006][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-65
+[45013][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-85
+[45014][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-64
+[45017][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-95
+[45113][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-64
+[45118][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-64
+[45121][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-85
+[45204][I][BLE] adv check addr=2f:ba:b6:46:ae:5f addrType=1 targetSvc=0 matchedBy=none rssi=-59
+[45218][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-64
+[45229][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-81
+[45318][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-64
+[45324][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-95
+[45325][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-73
+[45332][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-72
+[45334][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-79
+[45431][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-71
+[45432][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-98
+[45434][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-81
+[45437][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-71
+[45490][I][BLE] adv check addr=2f:ba:b6:46:ae:5f addrType=1 targetSvc=0 matchedBy=none rssi=-59
+[45544][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-71
+[45634][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-81
+[45637][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-71
+[45638][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-84
+[45645][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-71
+[45648][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-71
+[45743][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-84
+[45752][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-89
+[45754][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-70
+[45758][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-70
+[45777][I][BLE] adv check addr=2f:ba:b6:46:ae:5f addrType=1 targetSvc=0 matchedBy=none rssi=-59
+[45846][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-85
+[45860][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-64
+[45861][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-95
+[45863][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-79
+[45955][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-84
+[45962][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-64
+[45972][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-64
+[46055][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-87
+[46058][I][BLE] adv check addr=2f:ba:b6:46:ae:5f addrType=1 targetSvc=0 matchedBy=none rssi=-59
+[46063][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-94
+[46070][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-64
+[46072][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-64
+[46122][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-87
+[46123][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-64
+[46124][I][BLE] scan window ended window=8000ms weakRecent=0 lastRssi=0
+[46426][I][BLE] scan start
+[46426][I][BLE] scan start diag=1 deliverDuplicates=1 diagLeft=36085 state=1 window=8000ms weakRecent=0 lastRssi=0
+[46480][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-89
+[46482][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-85
+[46486][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-70
+[46492][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-64
+[46598][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-64
+[46629][I][BLE] adv check addr=2f:ba:b6:46:ae:5f addrType=1 targetSvc=0 matchedBy=none rssi=-56
+[46687][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-85
+[46707][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-64
+[46792][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-64
+[46798][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-94
+[46812][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-71
+[46898][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-64
+[46913][I][BLE] adv check addr=2f:ba:b6:46:ae:5f addrType=1 targetSvc=0 matchedBy=none rssi=-57
+[46921][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-72
+[47004][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-71
+[47006][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-99
+[47012][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-83
+[47024][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-72
+[47113][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-71
+[47115][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-83
+[47127][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-71
+[47203][I][BLE] adv check addr=2f:ba:b6:46:ae:5f addrType=1 targetSvc=0 matchedBy=none rssi=-69
+[47215][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-72
+[47220][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-89
+[47236][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-71
+[47315][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-83
+[47320][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-70
+[47324][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-88
+[47325][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-84
+[47340][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-70
+[47420][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-70
+[47426][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-89
+[47429][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-86
+[47449][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-64
+[47493][I][BLE] adv check addr=2f:ba:b6:46:ae:5f addrType=1 targetSvc=0 matchedBy=none rssi=-68
+[47524][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-69
+[47527][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-89
+[47555][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-63
+[47629][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-86
+[47631][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-63
+[47637][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-89
+[47657][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-64
+[47733][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-95
+[47736][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-63
+[47757][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-71
+[47778][I][BLE] adv check addr=2f:ba:b6:46:ae:5f addrType=1 targetSvc=0 matchedBy=none rssi=-56
+[47837][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-89
+[47845][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-63
+[47862][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-70
+[47952][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-71
+[47966][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-70
+[48047][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-80
+[48059][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-70
+[48062][I][BLE] adv check addr=2f:ba:b6:46:ae:5f addrType=1 targetSvc=0 matchedBy=none rssi=-56
+[48072][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-68
+[48147][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-83
+[48165][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-70
+[48172][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-70
+[48248][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-79
+[48261][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-89
+[48271][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-72
+[48276][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-73
+[48349][I][BLE] adv check addr=2f:ba:b6:46:ae:5f addrType=1 targetSvc=0 matchedBy=none rssi=-54
+[48363][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-87
+[48377][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-64
+[48380][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-64
+[48448][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-79
+[48458][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-88
+[48467][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-87
+[48478][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-67
+[48482][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-70
+[48561][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-85
+[48570][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-86
+[48583][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-71
+[48585][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-71
+[48630][I][BLE] adv check addr=2f:ba:b6:46:ae:5f addrType=1 targetSvc=0 matchedBy=none rssi=-55
+[48667][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-86
+[48686][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-79
+[48691][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-78
+[48766][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-90
+[48790][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-74
+[48797][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-63
+[48870][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-86
+[48898][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-63
+[48980][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-88
+[48997][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-91
+[49000][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-64
+[49006][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-64
+[49102][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-91
+[49109][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-65
+[49114][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-70
+[49180][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-88
+[49194][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-76
+[49210][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-89
+[49214][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-72
+[49218][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-72
+[49295][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-76
+[49315][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-72
+[49316][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-88
+[49325][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-72
+[49403][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-77
+[49420][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-72
+[49420][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-87
+[49435][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-68
+[49487][I][BLE] adv check addr=2f:ba:b6:46:ae:5f addrType=1 targetSvc=0 matchedBy=none rssi=-55
+[49506][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-77
+[49525][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-68
+[49540][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-68
+[49612][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-77
+[49725][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-68
+[49733][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-71
+[49734][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-94
+[49752][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-65
+[49777][I][BLE] adv check addr=2f:ba:b6:46:ae:5f addrType=1 targetSvc=0 matchedBy=none rssi=-54
+[49812][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-77
+[49817][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-93
+[49835][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-94
+[49837][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-66
+[49861][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-67
+[49925][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-85
+[49935][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-94
+[49942][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-65
+[49968][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-71
+[50026][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-80
+[50042][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-92
+[50049][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-65
+[50067][I][BLE] adv check addr=2f:ba:b6:46:ae:5f addrType=1 targetSvc=0 matchedBy=none rssi=-55
+[50072][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-71
+[50132][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-76
+[50146][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-93
+[50150][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-65
+[50180][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-67
+[50236][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-76
+[50251][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-88
+[50252][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-66
+[50287][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-75
+[50338][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-78
+[50357][I][BLE] adv check addr=2f:ba:b6:46:ae:5f addrType=1 targetSvc=0 matchedBy=none rssi=-54
+[50362][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-67
+[50392][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-75
+[50462][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-67
+[50496][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-74
+[50538][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-78
+[50546][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-87
+[50568][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-72
+[50604][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-64
+[50646][I][BLE] adv check addr=2f:ba:b6:46:ae:5f addrType=1 targetSvc=0 matchedBy=none rssi=-53
+[50674][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-72
+[50711][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-65
+[50746][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-87
+[50821][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-71
+[50860][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-90
+[50874][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-72
+[50881][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-94
+[50884][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-66
+[50923][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-71
+[50937][I][BLE] adv check addr=2f:ba:b6:46:ae:5f addrType=1 targetSvc=0 matchedBy=none rssi=-53
+[50966][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-87
+[50984][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-65
+[50989][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-94
+[51032][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-71
+[51065][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-85
+[51135][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-80
+[51168][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-84
+[51184][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-65
+[51234][I][BLE] adv check addr=2f:ba:b6:46:ae:5f addrType=1 targetSvc=0 matchedBy=none rssi=-58
+[51235][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-80
+[51277][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-78
+[51296][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-70
+[51299][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-86
+[51335][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-80
+[51386][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-79
+[51402][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-68
+[51406][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-87
+[51442][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-77
+[51495][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-77
+[51506][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-71
+[51517][I][BLE] adv check addr=2f:ba:b6:46:ae:5f addrType=1 targetSvc=0 matchedBy=none rssi=-60
+[51544][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-67
+[51595][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-82
+[51614][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-67
+[51645][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-67
+[51715][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-68
+[51754][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-63
+[51794][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-82
+[51802][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-83
+[51809][I][BLE] adv check addr=2f:ba:b6:46:ae:5f addrType=1 targetSvc=0 matchedBy=none rssi=-58
+[51826][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-98
+[51910][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-82
+[51915][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-68
+[51929][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-63
+[51962][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-64
+[52031][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-62
+[52040][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-98
+[52064][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-64
+[52086][I][BLE] adv check addr=2f:ba:b6:46:ae:5f addrType=1 targetSvc=0 matchedBy=none rssi=-58
+[52111][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-82
+[52124][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-77
+[52131][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-63
+[52148][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-88
+[52173][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-81
+[52224][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-76
+[52232][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-62
+[52256][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-89
+[52280][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-71
+[52335][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-72
+[52336][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-81
+[52437][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-66
+[52441][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-82
+[52543][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-66
+[52544][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-83
+[52589][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-65
+[52651][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-70
+[52655][I][BLE] adv check addr=2f:ba:b6:46:ae:5f addrType=1 targetSvc=0 matchedBy=none rssi=-58
+[52695][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-64
+[52744][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-83
+[52752][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-85
+[52753][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-70
+[52779][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-97
+[52802][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-63
+[52857][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-72
+[52860][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-92
+[52879][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-95
+[52908][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-66
+[52947][I][BLE] adv check addr=2f:ba:b6:46:ae:5f addrType=1 targetSvc=0 matchedBy=none rssi=-58
+[52957][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-73
+[52958][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-90
+[52985][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-95
+[53010][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-66
+[53063][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-63
+[53065][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-77
+[53090][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-90
+[53165][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-63
+[53173][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-76
+[53194][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-89
+[53225][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-73
+[53233][I][BLE] adv check addr=2f:ba:b6:46:ae:5f addrType=1 targetSvc=0 matchedBy=none rssi=-58
+[53267][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-63
+[53301][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-90
+[53335][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-72
+[53372][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-76
+[53375][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-84
+[53376][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-67
+[53440][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-63
+[53478][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-67
+[53508][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-94
+[53519][I][BLE] adv check addr=2f:ba:b6:46:ae:5f addrType=1 targetSvc=0 matchedBy=none rssi=-58
+[53542][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-63
+[53575][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-84
+[53577][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-88
+[53579][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-67
+[53616][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-94
+[53648][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-62
+[53680][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-67
+[53683][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-86
+[53720][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-95
+[53758][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-67
+[53784][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-73
+[53790][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-89
+[53807][I][BLE] adv check addr=2f:ba:b6:46:ae:5f addrType=1 targetSvc=0 matchedBy=none rssi=-58
+[53826][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-96
+[53865][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-67
+[53891][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-73
+[53893][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-91
+[53930][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-95
+[53973][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-71
+[53991][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-68
+[53997][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-86
+[54031][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-96
+[54082][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-66
+[54095][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-67
+[54103][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-79
+[54134][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-89
+[54190][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-73
+[54198][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-62
+[54210][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-78
+[54242][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-88
+[54296][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-62
+[54300][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-63
+[54319][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-86
+[54344][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-88
+[54386][I][BLE] adv check addr=2f:ba:b6:46:ae:5f addrType=1 targetSvc=0 matchedBy=none rssi=-55
+[54399][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-62
+[54409][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-62
+[54419][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-85
+[54427][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-62
+[54428][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-85
+[54574][I][BLE] scan window ended window=8000ms weakRecent=0 lastRssi=0
+[54878][I][BLE] scan start
+[54878][I][BLE] scan start diag=1 deliverDuplicates=1 diagLeft=27633 state=1 window=8000ms weakRecent=0 lastRssi=0
+[54935][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-66
+[54949][I][BLE] adv check addr=2f:ba:b6:46:ae:5f addrType=1 targetSvc=0 matchedBy=none rssi=-58
+[55044][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-75
+[55048][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-75
+[55144][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-75
+[55148][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-82
+[55152][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-75
+[55241][I][BLE] adv check addr=2f:ba:b6:46:ae:5f addrType=1 targetSvc=0 matchedBy=none rssi=-58
+[55245][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-76
+[55255][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-76
+[55355][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-62
+[55365][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-78
+[55397][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-88
+[55452][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-62
+[55455][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-62
+[55465][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-77
+[55504][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-88
+[55527][I][BLE] adv check addr=2f:ba:b6:46:ae:5f addrType=1 targetSvc=0 matchedBy=none rssi=-59
+[55555][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-63
+[55564][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-62
+[55612][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-97
+[55659][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-62
+[55664][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-62
+[55665][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-77
+[55679][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-84
+[55717][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-99
+[55779][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-66
+[55785][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-66
+[55809][I][BLE] adv check addr=2f:ba:b6:46:ae:5f addrType=1 targetSvc=0 matchedBy=none rssi=-59
+[55879][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-84
+[55886][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-66
+[55892][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-77
+[55990][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-76
+[55993][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-81
+[55996][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-77
+[56036][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-99
+[56092][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-77
+[56096][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-80
+[56098][I][BLE] adv check addr=2f:ba:b6:46:ae:5f addrType=1 targetSvc=0 matchedBy=none rssi=-59
+[56101][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-77
+[56193][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-78
+[56200][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-82
+[56209][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-62
+[56244][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-88
+[56293][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-77
+[56310][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-78
+[56315][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-62
+[56352][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-88
+[56388][I][BLE] adv check addr=2f:ba:b6:46:ae:5f addrType=1 targetSvc=0 matchedBy=none rssi=-61
+[56396][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-62
+[56415][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-78
+[56422][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-62
+[56500][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-63
+[56517][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-78
+[56523][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-66
+[56606][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-63
+[56625][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-66
+[56626][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-85
+[56667][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-99
+[56673][I][BLE] adv check addr=2f:ba:b6:46:ae:5f addrType=1 targetSvc=0 matchedBy=none rssi=-60
+[56707][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-63
+[56730][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-84
+[56733][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-67
+[56816][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-66
+[56834][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-66
+[56918][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-66
+[56930][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-84
+[56937][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-75
+[56938][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-81
+[56961][I][BLE] adv check addr=2f:ba:b6:46:ae:5f addrType=1 targetSvc=0 matchedBy=none rssi=-60
+[57023][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-67
+[57039][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-74
+[57043][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-84
+[57084][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-97
+[57123][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-74
+[57143][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-74
+[57150][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-83
+[57187][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-90
+[57226][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-74
+[57248][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-63
+[57249][I][BLE] adv check addr=2f:ba:b6:46:ae:5f addrType=1 targetSvc=0 matchedBy=none rssi=-54
+[57254][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-77
+[57292][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-88
+[57328][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-75
+[57354][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-63
+[57360][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-76
+[57392][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-88
+[57432][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-77
+[57456][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-63
+[57465][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-77
+[57532][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-63
+[57535][I][BLE] adv check addr=2f:ba:b6:46:ae:5f addrType=1 targetSvc=0 matchedBy=none rssi=-55
+[57566][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-66
+[57569][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-82
+[57636][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-63
+[57673][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-66
+[57678][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-81
+[57736][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-63
+[57788][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-83
+[57826][I][BLE] adv check addr=2f:ba:b6:46:ae:5f addrType=1 targetSvc=0 matchedBy=none rssi=-55
+[57839][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-63
+[57887][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-76
+[57888][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-82
+[57945][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-66
+[57988][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-77
+[57995][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-82
+[58048][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-66
+[58095][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-82
+[58111][I][BLE] adv check addr=2f:ba:b6:46:ae:5f addrType=1 targetSvc=0 matchedBy=none rssi=-55
+[58137][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-89
+[58154][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-66
+[58197][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-77
+[58202][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-63
+[58242][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-88
+[58259][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-76
+[58300][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-77
+[58305][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-63
+[58367][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-76
+[58397][I][BLE] adv check addr=2f:ba:b6:46:ae:5f addrType=1 targetSvc=0 matchedBy=none rssi=-55
+[58406][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-76
+[58453][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-97
+[58473][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-76
+[58511][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-81
+[58512][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-67
+[58556][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-100
+[58616][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-82
+[58617][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-67
+[58656][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-96
+[58673][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-76
+[58677][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-63
+[58682][I][BLE] adv check addr=2f:ba:b6:46:ae:5f addrType=1 targetSvc=0 matchedBy=none rssi=-55
+[58718][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-66
+[58725][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-83
+[58784][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-63
+[58821][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-66
+[58832][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-80
+[58892][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-66
+[58930][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-80
+[58932][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-82
+[58969][I][BLE] adv check addr=2f:ba:b6:46:ae:5f addrType=1 targetSvc=0 matchedBy=none rssi=-55
+[59001][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-66
+[59036][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-81
+[59078][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-89
+[59107][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-66
+[59136][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-80
+[59184][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-89
+[59213][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-80
+[59242][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-63
+[59245][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-77
+[59258][I][BLE] adv check addr=2f:ba:b6:46:ae:5f addrType=1 targetSvc=0 matchedBy=none rssi=-55
+[59288][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-88
+[59322][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-81
+[59347][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-62
+[59354][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-77
+[59395][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-97
+[59423][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-80
+[59452][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-63
+[59460][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-83
+[59499][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-95
+[59525][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-63
+[59543][I][BLE] adv check addr=2f:ba:b6:46:ae:5f addrType=1 targetSvc=0 matchedBy=none rssi=-54
+[59562][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-66
+[59566][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-84
+[59634][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-62
+[59664][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-66
+[59673][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-85
+[59745][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-65
+[59773][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-88
+[59780][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-82
+[59818][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-95
+[59851][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-65
+[59880][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-94
+[59882][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-83
+[59982][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-91
+[60010][I][HEAP] heap free=7640KB min=7640KB largest=7552KB frag=1% internalFree=13KB internalLargest=7KB psramFree=7627KB core=0/0% owner=BLE_GPS nets=6 pendingUpload=4552 pendingEnrich=4019
+[HEALTH] time=2026-08-07 14:30:15 src=ntp
+[HEALTH] heap used=783/8424KB free=7640KB min=7640KB largest=7552KB frag=1%
+[HEALTH] internal used=219/232KB free=13KB min=13KB largest=7KB
+[HEALTH] psram used=565/8192KB free=7627KB largest=7552KB
+[HEALTH] stack free_min: core0=17KB/22KB core1=13KB/18KB
+[HEALTH] core usage: core0=0% core1=0%
+[HEALTH] power=usb state=usb batt=100% 4713mV trend=69mV/min runtime=0min cap=1100mAh charging=1
+[HEALTH] radio=BLE_GPS wifi=0 ble=0 gps=0 nets=6 pendingUpload=4552 pendingEnrich=4019
+[HEALTH] subghz=NONE mode=OFF pkts=0 nodes=0
+[60012][I][STORAGE] RAMSpool enq=12 cons=12 inflight=0/1024 high=3 pressure=0 drop[full=0 big=0 noise=0 p3Evict=0 p3Drop=0 p2Drop=0 p1Fail=0] free=1024
+[60013][I][STORAGE] RAMSpool enqueue probe[ok=11 drop=0] device[ok=1 drop=0]
+[60013][I][STORAGE] RAMSpool worker probe[ok=2 sup=9 drop=0 fail=0 slow=0] device[ok=1 sup=0 drop=0 fail=0 slow=0] slowTotal=0 maxMs=0
+[60014][I][STORAGE] RAMSpool prioEnq p0=0 p1=0 p2=12 p3=0
+[60014][I][STORAGE] RAMSpool lanes p1=0/0 p2=0/2 p3=0/0
+[60034][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-88
+[60051][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-65
+[60083][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-83
+[60100][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-76
+[60117][I][BLE] adv check addr=2f:ba:b6:46:ae:5f addrType=1 targetSvc=0 matchedBy=none rssi=-55
+[60138][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-88
+[60170][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-85
+[60194][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-62
+[60211][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-76
+[60246][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-95
+[60278][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-62
+[60300][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-62
+[60315][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-84
+[60354][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-97
+[60382][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-63
+[60400][I][BLE] adv check addr=2f:ba:b6:46:ae:5f addrType=1 targetSvc=0 matchedBy=none rssi=-55
+[60403][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-65
+[60416][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-84
+[60485][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-63
+[60511][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-65
+[60515][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-85
+[60619][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-65
+[60622][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-85
+[60674][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-97
+[60685][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-63
+[60690][I][BLE] adv check addr=2f:ba:b6:46:ae:5f addrType=1 targetSvc=0 matchedBy=none rssi=-54
+[60695][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-65
+[60725][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-78
+[60730][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-80
+[60783][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-88
+[60805][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-65
+[60827][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-73
+[60839][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-82
+[60885][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-88
+[60913][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-70
+[60933][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-68
+[60947][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-79
+[60991][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-87
+[61021][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-67
+[61030][I][STACK] TaskHardware watermark=17100B min=17100B
+[61041][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-70
+[61057][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-80
+[61096][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-88
+[61123][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-70
+[61150][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-67
+[61227][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-67
+[61253][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-67
+[61257][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-80
+[61266][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-91
+[61334][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-67
+[61355][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-73
+[61409][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-97
+[61439][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-66
+[61458][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-71
+[61466][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-91
+[61483][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-86
+[61511][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-95
+[61541][I][BLE] adv check addr=2f:ba:b6:46:ae:5f addrType=1 targetSvc=0 matchedBy=none rssi=-66
+[61544][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-67
+[61564][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-67
+[61581][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-85
+[61614][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-96
+[61645][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-65
+[61668][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-88
+[61686][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-87
+[61718][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-97
+[61753][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-64
+[61775][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-80
+[61831][I][BLE] adv check addr=2f:ba:b6:46:ae:5f addrType=1 targetSvc=0 matchedBy=none rssi=-53
+[61858][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-77
+[61880][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-76
+[61886][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-87
+[61898][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-79
+[61930][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-87
+[61957][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-72
+[61987][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-61
+[62003][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-78
+[62030][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-88
+[62066][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-70
+[62093][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-61
+[62105][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-78
+[62120][I][BLE] adv check addr=2f:ba:b6:46:ae:5f addrType=1 targetSvc=0 matchedBy=none rssi=-53
+[62176][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-61
+[62197][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-61
+[62208][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-85
+[62283][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-62
+[62298][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-64
+[62312][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-84
+[62386][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-60
+[62399][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-64
+[62405][I][BLE] adv check addr=2f:ba:b6:46:ae:5f addrType=1 targetSvc=0 matchedBy=none rssi=-54
+[62419][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-86
+[62494][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-64
+[62504][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-64
+[62530][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-83
+[62598][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-65
+[62608][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-64
+[62630][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-83
+[62651][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-99
+[62691][I][BLE] adv check addr=2f:ba:b6:46:ae:5f addrType=1 targetSvc=0 matchedBy=none rssi=-52
+[62701][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-65
+[62709][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-80
+[62806][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-80
+[62810][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-80
+[62829][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-83
+[62844][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-78
+[62858][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-97
+[62879][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-80
+[62880][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-78
+[63017][I][BLE] scan window ended window=8000ms weakRecent=0 lastRssi=0
+[63319][I][BLE] scan start
+[63319][I][BLE] scan start diag=1 deliverDuplicates=1 diagLeft=19192 state=1 window=8000ms weakRecent=0 lastRssi=0
+[63326][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-62
+[63336][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-62
+[63365][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-88
+[63436][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-62
+[63441][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-62
+[63461][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-85
+[63467][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-87
+[63544][I][BLE] adv check addr=2f:ba:b6:46:ae:5f addrType=1 targetSvc=0 matchedBy=none rssi=-53
+[63548][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-66
+[63569][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-85
+[63648][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-66
+[63651][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-66
+[63669][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-83
+[63755][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-66
+[63759][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-66
+[63778][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-82
+[63831][I][BLE] adv check addr=2f:ba:b6:46:ae:5f addrType=1 targetSvc=0 matchedBy=none rssi=-53
+[63862][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-74
+[63869][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-74
+[63896][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-94
+[63965][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-75
+[63970][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-74
+[63978][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-82
+[63995][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-78
+[64000][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-94
+[64068][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-73
+[64094][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-79
+[64121][I][BLE] adv check addr=2f:ba:b6:46:ae:5f addrType=1 targetSvc=0 matchedBy=none rssi=-53
+[64170][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-74
+[64176][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-63
+[64182][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-63
+[64202][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-79
+[64209][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-88
+[64278][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-63
+[64286][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-63
+[64305][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-84
+[64311][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-87
+[64378][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-63
+[64386][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-63
+[64403][I][BLE] adv check addr=2f:ba:b6:46:ae:5f addrType=1 targetSvc=0 matchedBy=none rssi=-54
+[64408][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-83
+[64414][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-88
+[64494][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-67
+[64589][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-66
+[64603][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-67
+[64608][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-83
+[64622][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-83
+[64690][I][BLE] adv check addr=2f:ba:b6:46:ae:5f addrType=1 targetSvc=0 matchedBy=none rssi=-53
+[64693][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-67
+[64710][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-73
+[64726][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-86
+[64800][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-66
+[64812][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-74
+[64831][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-84
+[64839][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-95
+[64902][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-73
+[64921][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-73
+[64933][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-78
+[64946][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-95
+[64974][I][BLE] adv check addr=2f:ba:b6:46:ae:5f addrType=1 targetSvc=0 matchedBy=none rssi=-54
+[65010][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-73
+[65021][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-73
+[65038][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-78
+[65054][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-94
+[65115][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-74
+[65128][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-63
+[65145][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-78
+[65161][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-88
+[65222][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-64
+[65228][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-64
+[65246][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-84
+[65258][I][BLE] adv check addr=2f:ba:b6:46:ae:5f addrType=1 targetSvc=0 matchedBy=none rssi=-53
+[65271][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-88
+[65328][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-64
+[65331][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-64
+[65350][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-84
+[65437][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-66
+[65441][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-66
+[65450][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-83
+[65540][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-66
+[65545][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-67
+[65547][I][BLE] adv check addr=2f:ba:b6:46:ae:5f addrType=1 targetSvc=0 matchedBy=none rssi=-53
+[65552][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-82
+[65641][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-67
+[65652][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-67
+[65658][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-83
+[65694][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-92
+[65743][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-67
+[65761][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-71
+[65764][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-85
+[65795][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-94
+[65830][I][BLE] adv check addr=2f:ba:b6:46:ae:5f addrType=1 targetSvc=0 matchedBy=none rssi=-54
+[65853][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-72
+[65864][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-72
+[65870][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-85
+[65902][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-92
+[65956][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-71
+[65976][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-78
+[66005][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-88
+[66057][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-71
+[66064][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-72
+[66071][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-64
+[66084][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-78
+[66114][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-87
+[66119][I][BLE] adv check addr=2f:ba:b6:46:ae:5f addrType=1 targetSvc=0 matchedBy=none rssi=-53
+[66157][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-70
+[66177][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-64
+[66190][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-81
+[66216][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-88
+[66265][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-64
+[66284][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-63
+[66291][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-83
+[66372][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-64
+[66391][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-67
+[66393][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-84
+[66403][I][BLE] adv check addr=2f:ba:b6:46:ae:5f addrType=1 targetSvc=0 matchedBy=none rssi=-54
+[66480][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-67
+[66497][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-66
+[66501][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-83
+[66602][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-84
+[66606][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-71
+[66714][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-71
+[66733][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-92
+[66795][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-70
+[66802][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-84
+[66803][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-84
+[66816][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-71
+[66837][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-92
+[66900][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-71
+[66909][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-86
+[66915][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-71
+[66945][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-93
+[66983][I][BLE] adv check addr=2f:ba:b6:46:ae:5f addrType=1 targetSvc=0 matchedBy=none rssi=-59
+[67009][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-71
+[67014][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-64
+[67048][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-88
+[67109][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-86
+[67111][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-64
+[67116][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-64
+[67120][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-78
+[67153][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-88
+[67213][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-64
+[67219][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-64
+[67225][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-79
+[67255][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-87
+[67274][I][BLE] adv check addr=2f:ba:b6:46:ae:5f addrType=1 targetSvc=0 matchedBy=none rssi=-59
+[67320][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-64
+[67326][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-64
+[67356][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-87
+[67424][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-67
+[67425][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-79
+[67431][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-84
+[67433][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-66
+[67526][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-67
+[67533][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-85
+[67542][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-67
+[67544][I][BLE] worker stack free=9440B min=9440B
+[67563][I][BLE] adv check addr=2f:ba:b6:46:ae:5f addrType=1 targetSvc=0 matchedBy=none rssi=-59
+[67631][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-66
+[67633][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-83
+[67642][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-66
+[67734][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-83
+[67749][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-72
+[67776][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-94
+[67840][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-72
+[67843][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-84
+[67844][I][BLE] adv check addr=2f:ba:b6:46:ae:5f addrType=1 targetSvc=0 matchedBy=none rssi=-58
+[67852][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-72
+[67880][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-92
+[67940][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-71
+[67951][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-83
+[67985][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-93
+[68044][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-71
+[68052][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-86
+[68053][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-72
+[68063][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-64
+[68095][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-88
+[68130][I][BLE] adv check addr=2f:ba:b6:46:ae:5f addrType=1 targetSvc=0 matchedBy=none rssi=-58
+[68151][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-64
+[68161][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-82
+[68164][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-64
+[68196][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-88
+[68259][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-64
+[68266][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-64
+[68298][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-88
+[68360][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-82
+[68363][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-64
+[68373][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-67
+[68399][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-88
+[68413][I][BLE] adv check addr=2f:ba:b6:46:ae:5f addrType=1 targetSvc=0 matchedBy=none rssi=-58
+[68477][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-66
+[68481][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-84
+[68575][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-67
+[68578][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-66
+[68589][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-84
+[68683][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-66
+[68694][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-83
+[68701][I][BLE] adv check addr=2f:ba:b6:46:ae:5f addrType=1 targetSvc=0 matchedBy=none rssi=-59
+[68791][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-71
+[68796][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-71
+[68801][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-84
+[68817][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-93
+[68897][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-71
+[68901][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-85
+[68904][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-71
+[68917][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-93
+[68984][I][BLE] adv check addr=2f:ba:b6:46:ae:5f addrType=1 targetSvc=0 matchedBy=none rssi=-59
+[69003][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-64
+[69009][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-64
+[69011][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-79
+[69019][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-92
+[69111][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-63
+[69113][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-79
+[69117][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-64
+[69122][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-93
+[69218][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-63
+[69224][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-67
+[69230][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-88
+[69272][I][BLE] adv check addr=2f:ba:b6:46:ae:5f addrType=1 targetSvc=0 matchedBy=none rssi=-59
+[69314][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-79
+[69325][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-67
+[69326][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-83
+[69329][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-67
+[69334][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-89
+[69458][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-66
+[69459][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-67
+[69460][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-83
+[69532][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-67
+[69540][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-71
+[69544][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-83
+[69554][I][BLE] adv check addr=2f:ba:b6:46:ae:5f addrType=1 targetSvc=0 matchedBy=none rssi=-58
+[69637][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-71
+[69645][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-87
+[69646][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-71
+[69740][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-72
+[69749][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-84
+[69750][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-71
+[69761][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-92
+[69841][I][BLE] adv check addr=2f:ba:b6:46:ae:5f addrType=1 targetSvc=0 matchedBy=none rssi=-58
+[69848][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-71
+[69850][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-83
+[69851][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-71
+[69861][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-93
+[69953][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-64
+[69957][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-64
+[69958][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-79
+[69970][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-94
+[70061][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-64
+[70064][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-64
+[70068][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-78
+[70079][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-89
+[70128][I][BLE] adv check addr=2f:ba:b6:46:ae:5f addrType=1 targetSvc=0 matchedBy=none rssi=-58
+[70167][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-64
+[70172][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-67
+[70175][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-84
+[70180][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-88
+[70270][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-67
+[70278][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-84
+[70279][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-67
+[70281][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-88
+[70377][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-66
+[70383][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-66
+[70384][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-83
+[70418][I][BLE] adv check addr=2f:ba:b6:46:ae:5f addrType=1 targetSvc=0 matchedBy=none rssi=-59
+[70479][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-67
+[70488][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-84
+[70492][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-71
+[70583][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-71
+[70591][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-83
+[70595][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-71
+[70692][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-70
+[70693][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-83
+[70703][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-70
+[70796][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-71
+[70810][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-93
+[70893][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-83
+[70904][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-70
+[70905][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-63
+[70910][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-78
+[70911][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-92
+[71000][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-64
+[71011][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-64
+[71015][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-93
+[71100][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-64
+[71111][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-78
+[71112][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-65
+[71122][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-88
+[71127][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-83
+[71209][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-64
+[71216][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-67
+[71222][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-88
+[71235][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-84
+[71277][I][BLE] adv check addr=2f:ba:b6:46:ae:5f addrType=1 targetSvc=0 matchedBy=none rssi=-56
+[71314][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-67
+[71318][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-67
+[71320][I][BLE] scan window ended window=8000ms weakRecent=0 lastRssi=0
+[71621][I][BLE] scan start
+[71621][I][BLE] scan start diag=1 deliverDuplicates=1 diagLeft=10890 state=1 window=8000ms weakRecent=0 lastRssi=0
+[71626][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-64
+[71629][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-63
+[71670][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-84
+[71729][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-64
+[71730][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-93
+[71734][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-63
+[71775][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-84
+[71832][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-65
+[71835][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-64
+[71837][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-93
+[71848][I][BLE] adv check addr=2f:ba:b6:46:ae:5f addrType=1 targetSvc=0 matchedBy=none rssi=-53
+[71883][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-84
+[71936][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-63
+[71940][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-66
+[71989][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-84
+[72042][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-66
+[72046][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-67
+[72136][I][BLE] adv check addr=2f:ba:b6:46:ae:5f addrType=1 targetSvc=0 matchedBy=none rssi=-54
+[72147][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-66
+[72150][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-67
+[72189][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-84
+[72200][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-80
+[72252][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-66
+[72256][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-75
+[72301][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-80
+[72354][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-76
+[72363][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-76
+[72405][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-79
+[72419][I][BLE] adv check addr=2f:ba:b6:46:ae:5f addrType=1 targetSvc=0 matchedBy=none rssi=-55
+[72457][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-73
+[72464][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-73
+[72512][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-82
+[72562][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-71
+[72575][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-99
+[72620][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-82
+[72664][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-73
+[72666][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-64
+[72675][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-64
+[72684][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-98
+[72706][I][BLE] adv check addr=2f:ba:b6:46:ae:5f addrType=1 targetSvc=0 matchedBy=none rssi=-70
+[72723][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-81
+[72771][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-64
+[72783][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-64
+[72784][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-98
+[72829][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-88
+[72871][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-65
+[72888][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-88
+[72928][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-85
+[72974][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-65
+[72983][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-64
+[72988][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-67
+[72991][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-88
+[72993][I][BLE] adv check addr=2f:ba:b6:46:ae:5f addrType=1 targetSvc=0 matchedBy=none rssi=-56
+[73038][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-85
+[73079][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-66
+[73093][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-88
+[73096][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-66
+[73145][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-80
+[73179][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-66
+[73196][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-88
+[73205][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-75
+[73244][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-80
+[73274][I][BLE] adv check addr=2f:ba:b6:46:ae:5f addrType=1 targetSvc=0 matchedBy=none rssi=-54
+[73281][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-66
+[73310][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-74
+[73347][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-80
+[73385][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-66
+[73410][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-74
+[73455][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-87
+[73494][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-74
+[73508][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-96
+[73514][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-75
+[73556][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-86
+[73558][I][BLE] adv check addr=2f:ba:b6:46:ae:5f addrType=1 targetSvc=0 matchedBy=none rssi=-53
+[73594][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-75
+[73620][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-64
+[73665][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-85
+[73700][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-76
+[73723][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-64
+[73774][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-90
+[73828][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-64
+[73843][I][BLE] adv check addr=2f:ba:b6:46:ae:5f addrType=1 targetSvc=0 matchedBy=none rssi=-54
+[73875][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-88
+[73904][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-64
+[73932][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-88
+[73935][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-66
+[73983][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-90
+[74006][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-65
+[74035][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-66
+[74040][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-89
+[74092][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-78
+[74114][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-64
+[74129][I][BLE] adv check addr=2f:ba:b6:46:ae:5f addrType=1 targetSvc=0 matchedBy=none rssi=-55
+[74143][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-89
+[74144][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-66
+[74195][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-79
+[74217][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-66
+[74249][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-75
+[74253][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-99
+[74295][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-79
+[74321][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-66
+[74349][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-74
+[74357][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-95
+[74402][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-86
+[74416][I][BLE] adv check addr=2f:ba:b6:46:ae:5f addrType=1 targetSvc=0 matchedBy=none rssi=-54
+[74422][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-66
+[74452][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-74
+[74460][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-97
+[74508][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-87
+[74531][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-74
+[74615][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-87
+[74636][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-73
+[74652][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-74
+[74659][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-63
+[74704][I][BLE] adv check addr=2f:ba:b6:46:ae:5f addrType=1 targetSvc=0 matchedBy=none rssi=-56
+[74746][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-72
+[74762][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-64
+[74815][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-87
+[74825][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-92
+[74844][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-64
+[74866][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-64
+[74887][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-88
+[74949][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-63
+[74970][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-66
+[74993][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-88
+[75024][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-92
+[75033][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-78
+[75053][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-64
+[75073][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-66
+[75139][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-77
+[75154][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-64
+[75182][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-65
+[75207][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-99
+[75242][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-78
+[75259][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-65
+[75288][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-74
+[75351][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-87
+[75361][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-65
+[75396][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-75
+[75460][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-85
+[75467][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-65
+[75564][I][BLE] adv check addr=2f:ba:b6:46:ae:5f addrType=1 targetSvc=0 matchedBy=none rssi=-53
+[75566][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-87
+[75572][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-76
+[75596][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-75
+[75616][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-63
+[75672][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-101
+[75682][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-77
+[75785][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-74
+[75815][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-63
+[75828][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-64
+[75833][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-88
+[75846][I][BLE] adv check addr=2f:ba:b6:46:ae:5f addrType=1 targetSvc=0 matchedBy=none rssi=-54
+[75872][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-101
+[75890][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-78
+[75892][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-63
+[75930][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-64
+[75935][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-88
+[75999][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-62
+[76031][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-64
+[76091][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-78
+[76102][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-79
+[76107][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-64
+[76131][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-64
+[76134][I][BLE] adv check addr=2f:ba:b6:46:ae:5f addrType=1 targetSvc=0 matchedBy=none rssi=-55
+[76207][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-90
+[76211][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-64
+[76239][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-76
+[76258][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-100
+[76311][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-64
+[76314][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-89
+[76340][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-75
+[76412][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-64
+[76418][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-88
+[76421][I][BLE] adv check addr=2f:ba:b6:46:ae:5f addrType=1 targetSvc=0 matchedBy=none rssi=-58
+[76442][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-75
+[76521][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-76
+[76542][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-77
+[76618][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-88
+[76629][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-77
+[76650][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-62
+[76682][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-87
+[76706][I][BLE] adv check addr=2f:ba:b6:46:ae:5f addrType=1 targetSvc=0 matchedBy=none rssi=-58
+[76755][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-62
+[76787][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-87
+[76833][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-79
+[76842][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-62
+[76856][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-62
+[76887][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-88
+[76933][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-79
+[76944][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-63
+[76961][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-65
+[77002][I][BLE] adv check addr=2f:ba:b6:46:ae:5f addrType=1 targetSvc=0 matchedBy=none rssi=-58
+[77039][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-79
+[77044][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-63
+[77067][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-66
+[77141][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-79
+[77151][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-66
+[77172][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-66
+[77250][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-93
+[77256][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-66
+[77279][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-76
+[77282][I][BLE] adv check addr=2f:ba:b6:46:ae:5f addrType=1 targetSvc=0 matchedBy=none rssi=-58
+[77356][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-66
+[77358][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-89
+[77385][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-75
+[77466][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-75
+[77491][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-75
+[77558][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-89
+[77570][I][BLE] adv check addr=2f:ba:b6:46:ae:5f addrType=1 targetSvc=0 matchedBy=none rssi=-60
+[77573][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-76
+[77597][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-63
+[77631][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-88
+[77672][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-91
+[77678][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-75
+[77697][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-62
+[77737][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-89
+[77775][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-97
+[77783][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-63
+[77797][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-62
+[77856][I][BLE] adv check addr=2f:ba:b6:46:ae:5f addrType=1 targetSvc=0 matchedBy=none rssi=-58
+[77884][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-79
+[77887][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-64
+[77900][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-63
+[77990][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-80
+[77994][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-63
+[78009][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-66
+[78102][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-66
+[78111][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-66
+[78141][I][BLE] adv check addr=2f:ba:b6:46:ae:5f addrType=1 targetSvc=0 matchedBy=none rssi=-79
+[78190][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-80
+[78202][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-66
+[78209][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-88
+[78218][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-66
+[78308][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-66
+[78328][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-72
+[78409][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-88
+[78411][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-72
+[78426][I][BLE] adv check addr=2f:ba:b6:46:ae:5f addrType=1 targetSvc=0 matchedBy=none rssi=-60
+[78434][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-73
+[78477][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-89
+[78517][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-72
+[78540][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-64
+[78587][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-88
+[78622][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-72
+[78643][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-64
+[78715][I][BLE] adv check addr=2f:ba:b6:46:ae:5f addrType=1 targetSvc=0 matchedBy=none rssi=-58
+[78738][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-79
+[78746][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-64
+[78826][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-64
+[78838][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-81
+[78847][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-63
+[78934][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-64
+[78954][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-66
+[79006][I][BLE] adv check addr=2f:ba:b6:46:ae:5f addrType=1 targetSvc=0 matchedBy=none rssi=-58
+[79010][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-96
+[79035][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-63
+[79038][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-81
+[79049][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-88
+[79056][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-65
+[79114][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-96
+[79137][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-65
+[79153][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-91
+[79164][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-65
+[79214][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-98
+[79245][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-65
+[79258][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-89
+[79272][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-72
+[79320][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-96
+[79351][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-65
+[79359][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-91
+[79376][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-72
+[79421][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-89
+[79459][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-73
+[79462][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-94
+[79483][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-63
+[79522][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-88
+[79565][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-90
+[79567][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-72
+[79577][I][BLE] adv check addr=2f:ba:b6:46:ae:5f addrType=1 targetSvc=0 matchedBy=none rssi=-67
+[79584][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-63
+[79622][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-90
+[79623][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-63
+[79635][I][BLE] scan window ended window=8000ms weakRecent=0 lastRssi=0
+[79939][I][BLE] scan start
+[79939][I][BLE] scan start diag=1 deliverDuplicates=1 diagLeft=2572 state=1 window=8000ms weakRecent=0 lastRssi=0
+[79949][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-97
+[79977][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-85
+[79984][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-65
+[80000][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-65
+[80057][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-94
+[80077][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-86
+[80099][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-71
+[80105][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-71
+[80151][I][BLE] adv check addr=2f:ba:b6:46:ae:5f addrType=1 targetSvc=0 matchedBy=none rssi=-67
+[80167][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-88
+[80188][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-86
+[80199][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-71
+[80206][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-71
+[80273][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-88
+[80296][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-87
+[80301][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-70
+[80309][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-70
+[80403][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-71
+[80408][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-71
+[80440][I][BLE] adv check addr=2f:ba:b6:46:ae:5f addrType=1 targetSvc=0 matchedBy=none rssi=-55
+[80495][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-87
+[80504][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-89
+[80513][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-63
+[80613][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-79
+[80614][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-63
+[80616][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-63
+[80700][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-95
+[80714][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-63
+[80720][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-80
+[80725][I][BLE] adv check addr=2f:ba:b6:46:ae:5f addrType=1 targetSvc=0 matchedBy=none rssi=-55
+[80726][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-63
+[80809][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-96
+[80818][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-63
+[80835][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-65
+[80911][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-94
+[80920][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-80
+[80928][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-65
+[80932][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-84
+[80942][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-64
+[81016][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-89
+[81051][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-72
+[81122][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-88
+[81133][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-84
+[81135][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-84
+[81141][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-72
+[81160][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-72
+[81228][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-89
+[81241][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-73
+[81242][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-92
+[81299][I][BLE] adv check addr=2f:ba:b6:46:ae:5f addrType=1 targetSvc=0 matchedBy=none rssi=-54
+[81349][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-91
+[81350][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-73
+[81360][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-72
+[81374][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-63
+[81450][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-89
+[81453][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-73
+[81479][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-63
+[81556][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-63
+[81557][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-79
+[81584][I][BLE] adv check addr=2f:ba:b6:46:ae:5f addrType=1 targetSvc=0 matchedBy=none rssi=-71
+[81658][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-79
+[81663][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-63
+[81679][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-63
+[81682][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-65
+[81748][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-96
+[81758][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-79
+[81786][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-65
+[81857][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-95
+[81862][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-79
+[81875][I][BLE] adv check addr=2f:ba:b6:46:ae:5f addrType=1 targetSvc=0 matchedBy=none rssi=-54
+[81876][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-65
+[81894][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-65
+[81962][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-89
+[81970][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-85
+[81986][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-64
+[82002][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-72
+[82064][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-89
+[82072][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-85
+[82092][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-73
+[82106][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-73
+[82163][I][BLE] adv check addr=2f:ba:b6:46:ae:5f addrType=1 targetSvc=0 matchedBy=none rssi=-54
+[82165][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-89
+[82174][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-87
+[82196][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-72
+[82269][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-88
+[82304][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-72
+[82306][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-73
+[82313][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-63
+[82374][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-87
+[82381][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-91
+[82411][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-63
+[82418][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-63
+[82447][I][BLE] adv check addr=2f:ba:b6:46:ae:5f addrType=1 targetSvc=0 matchedBy=none rssi=-53
+[82492][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-90
+[88071][I][BLE] scan window ended window=8000ms weakRecent=0 lastRssi=0
+[88372][W][BLE] probe timeout: phone not seen in 45000ms ??? releasing radio
+[88373][I][BLE] probe resource release
+[88373][I][BLE] client soft drop reason=radio_disabled
+[88373][I][BLE] radio disabled
+[88373][I][BLE] probe_release phase=worker_delete
+=== retry companion enrich 1 ===
+[88709][E][WIFI] Radio init failed: modeOk=0 setMode=ESP_ERR_WIFI_NOT_INIT start=ESP_ERR_WIFI_NOT_INIT promOff=ESP_ERR_WIFI_NOT_INIT country=ESP_ERR_WIFI_NOT_INIT getMode=ESP_ERR_WIFI_NOT_INIT current=0
+[88710][W][CORE] TaskHardware slow section=ble_tick ms=338 owner=NONE pendingUpload=4552 maintPending=1
+[88714][W][BLE] probe_summary seen=0 result=not_seen stage=1 miss=0 nextIn=60s
+[88725][W][CORE] TaskHardware loop gap=353ms owner=NONE pendingUpload=4552 maintPending=1 suppressed=0
+companion enrich
+[COMP] manual enrich queued
+[89619][I][COMP] Manual enrich request received; probe backoff bypassed
+[89778][I][WIFI] Radio suspended
+[89778][I][BLE] begin phase=worker_ok
+[89778][I][BLE] radio enabled settle=500ms
+[89779][I][BLE] companion link requested reason=manual_probe mode=fresh_scan timeout=15s settle=500ms cacheAge=0ms rssi=0
+[89784][I][BLE] Phone probe lease granted reason=manual_probe cachedFirst=0 hold=60000ms
+[90019][I][HEAP] heap free=7640KB min=7628KB largest=7552KB frag=1% internalFree=13KB internalLargest=7KB psramFree=7627KB core=0/0% owner=BLE_GPS nets=6 pendingUpload=4552 pendingEnrich=4019
+[HEALTH] time=2026-08-07 14:30:45 src=ntp
+[HEALTH] heap used=783/8424KB free=7640KB min=7628KB largest=7552KB frag=1%
+[HEALTH] internal used=219/232KB free=13KB min=1KB largest=7KB
+[HEALTH] psram used=565/8192KB free=7627KB largest=7552KB
+[HEALTH] stack free_min: core0=17KB/22KB core1=13KB/18KB
+[HEALTH] core usage: core0=0% core1=0%
+[HEALTH] power=usb state=usb batt=100% 4724mV trend=51mV/min runtime=0min cap=1100mAh charging=1
+[HEALTH] radio=BLE_GPS wifi=0 ble=0 gps=0 nets=6 pendingUpload=4552 pendingEnrich=4019
+[HEALTH] subghz=NONE mode=OFF pkts=0 nodes=0
+[90021][I][STORAGE] RAMSpool enq=12 cons=12 inflight=0/1024 high=3 pressure=0 drop[full=0 big=0 noise=0 p3Evict=0 p3Drop=0 p2Drop=0 p1Fail=0] free=1024
+[90022][I][STORAGE] RAMSpool enqueue probe[ok=11 drop=0] device[ok=1 drop=0]
+[90022][I][STORAGE] RAMSpool worker probe[ok=2 sup=9 drop=0 fail=0 slow=0] device[ok=1 sup=0 drop=0 fail=0 slow=0] slowTotal=0 maxMs=0
+[90022][I][STORAGE] RAMSpool prioEnq p0=0 p1=0 p2=12 p3=0
+[90022][I][STORAGE] RAMSpool lanes p1=0/0 p2=0/2 p3=0/0
+[90393][I][BLE] scan start
+[90393][I][BLE] scan start diag=1 deliverDuplicates=1 diagLeft=44386 state=1 window=8000ms weakRecent=0 lastRssi=0
+[90431][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-87
+[90431][I][BLE] adv raw name='' addr=6c:0b:5e:94:c7:92 addrType=0 rssi=-87 hasName=0 hasSvc=0 targetSvc=0 rawTargetSvc=0 svcCount=0 matchedBy=none
+[90432][I][BLE] adv raw payload len=29 hex=02 01 06 19 16 F7 FD 01 93 53 B3 79 C7 2C 41 E9 95 11 7C AC 46 7C 95 2E...
+[90456][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-66
+[90457][I][BLE] adv raw name='' addr=7a:d2:d0:65:28:67 addrType=1 rssi=-66 hasName=0 hasSvc=1 targetSvc=0 rawTargetSvc=0 svcCount=2 matchedBy=none
+[90457][I][BLE] adv raw payload len=30 hex=02 01 1A 05 03 0A 18 F3 FE 14 16 F3 FE 51 20 00 00 30 06 20 04 23 00 00...
+[90458][I][BLE] adv svc=0x180a
+[90478][I][BLE] adv check addr=2f:ba:b6:46:ae:5f addrType=1 targetSvc=0 matchedBy=none rssi=-60
+[90479][I][BLE] adv raw name='' addr=2f:ba:b6:46:ae:5f addrType=1 rssi=-60 hasName=0 hasSvc=0 targetSvc=0 rawTargetSvc=0 svcCount=0 matchedBy=none
+[90479][I][BLE] adv raw payload len=31 hex=1E 16 F3 FE 4A 17 23 49 49 58 59 11 32 31 03 A4 8A 68 E5 E5 38 CC 58 C7...
+[90496][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-63
+[90497][I][BLE] adv raw name='' addr=0a:e2:c6:bf:c6:c7 addrType=1 rssi=-63 hasName=0 hasSvc=0 targetSvc=0 rawTargetSvc=0 svcCount=0 matchedBy=none
+[90497][I][BLE] adv raw payload len=31 hex=1E FF 06 00 01 09 20 22 7D A7 65 3C 84 13 A3 9E 40 B5 C4 C8 10 0D 7C 46...
+[90567][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-71
+[90568][I][BLE] adv raw name='' addr=7a:d2:d0:65:28:67 addrType=1 rssi=-71 hasName=0 hasSvc=1 targetSvc=0 rawTargetSvc=0 svcCount=2 matchedBy=none
+[90568][I][BLE] adv raw payload len=30 hex=02 01 1A 05 03 0A 18 F3 FE 14 16 F3 FE 51 20 00 00 30 06 20 04 23 00 00...
+[90569][I][BLE] adv svc=0x180a
+[90599][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-64
+[90600][I][BLE] adv raw name='' addr=0a:e2:c6:bf:c6:c7 addrType=1 rssi=-64 hasName=0 hasSvc=0 targetSvc=0 rawTargetSvc=0 svcCount=0 matchedBy=none
+[90600][I][BLE] adv raw payload len=31 hex=1E FF 06 00 01 09 20 22 7D A7 65 3C 84 13 A3 9E 40 B5 C4 C8 10 0D 7C 46...
+[90631][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-87
+[90632][I][BLE] adv raw name='' addr=6c:0b:5e:94:c7:92 addrType=0 rssi=-87 hasName=0 hasSvc=0 targetSvc=0 rawTargetSvc=0 svcCount=0 matchedBy=none
+[90632][I][BLE] adv raw payload len=29 hex=02 01 06 19 16 F7 FD 01 93 53 B3 79 C7 2C 41 E9 95 11 7C AC 46 7C 95 2E...
+[90677][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-72
+[90678][I][BLE] adv raw name='' addr=7a:d2:d0:65:28:67 addrType=1 rssi=-72 hasName=0 hasSvc=1 targetSvc=0 rawTargetSvc=0 svcCount=2 matchedBy=none
+[90678][I][BLE] adv raw payload len=30 hex=02 01 1A 05 03 0A 18 F3 FE 14 16 F3 FE 51 20 00 00 30 06 20 04 23 00 00...
+[90678][I][BLE] adv svc=0x180a
+[90707][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-64
+[90708][I][BLE] adv raw name='' addr=0a:e2:c6:bf:c6:c7 addrType=1 rssi=-64 hasName=0 hasSvc=0 targetSvc=0 rawTargetSvc=0 svcCount=0 matchedBy=none
+[90708][I][BLE] adv raw payload len=31 hex=1E FF 06 00 01 09 20 22 7D A7 65 3C 84 13 A3 9E 40 B5 C4 C8 10 0D 7C 46...
+[90756][I][BLE] adv check addr=2f:ba:b6:46:ae:5f addrType=1 targetSvc=0 matchedBy=none rssi=-58
+[90757][I][BLE] adv raw name='' addr=2f:ba:b6:46:ae:5f addrType=1 rssi=-58 hasName=0 hasSvc=0 targetSvc=0 rawTargetSvc=0 svcCount=0 matchedBy=none
+[90757][I][BLE] adv raw payload len=31 hex=1E 16 F3 FE 4A 17 23 49 49 58 59 11 32 31 03 A4 8A 68 E5 E5 38 CC 58 C7...
+[90775][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-64
+[90775][I][BLE] adv raw name='' addr=7a:d2:d0:65:28:67 addrType=1 rssi=-64 hasName=0 hasSvc=1 targetSvc=0 rawTargetSvc=0 svcCount=2 matchedBy=none
+[90776][I][BLE] adv raw payload len=30 hex=02 01 1A 05 03 0A 18 F3 FE 14 16 F3 FE 51 20 00 00 30 06 20 04 23 00 00...
+[90776][I][BLE] adv svc=0x180a
+[90784][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-93
+[90785][I][BLE] adv raw name='' addr=35:9d:ba:01:46:f1 addrType=1 rssi=-93 hasName=0 hasSvc=0 targetSvc=0 rawTargetSvc=0 svcCount=0 matchedBy=none
+[90785][I][BLE] adv raw payload len=31 hex=1E FF 06 00 01 09 20 02 0E C5 1A B3 1D EA E1 C3 71 66 A0 A4 71 1C 5C 78...
+[90811][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-65
+[90812][I][BLE] adv raw name='' addr=0a:e2:c6:bf:c6:c7 addrType=1 rssi=-65 hasName=0 hasSvc=0 targetSvc=0 rawTargetSvc=0 svcCount=0 matchedBy=none
+[90812][I][BLE] adv raw payload len=31 hex=1E FF 06 00 01 09 20 22 7D A7 65 3C 84 13 A3 9E 40 B5 C4 C8 10 0D 7C 46...
+[90832][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-87
+[90832][I][BLE] adv raw name='' addr=6c:0b:5e:94:c7:92 addrType=0 rssi=-87 hasName=0 hasSvc=0 targetSvc=0 rawTargetSvc=0 svcCount=0 matchedBy=none
+[90833][I][BLE] adv raw payload len=29 hex=02 01 06 19 16 F7 FD 01 93 53 B3 79 C7 2C 41 E9 95 11 7C AC 46 7C 95 2E...
+[90877][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-64
+[90877][I][BLE] adv raw name='' addr=7a:d2:d0:65:28:67 addrType=1 rssi=-64 hasName=0 hasSvc=1 targetSvc=0 rawTargetSvc=0 svcCount=2 matchedBy=none
+[90878][I][BLE] adv raw payload len=30 hex=02 01 1A 05 03 0A 18 F3 FE 14 16 F3 FE 51 20 00 00 30 06 20 04 23 00 00...
+[90878][I][BLE] adv svc=0x180a
+[90886][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-95
+[90887][I][BLE] adv raw name='' addr=35:9d:ba:01:46:f1 addrType=1 rssi=-95 hasName=0 hasSvc=0 targetSvc=0 rawTargetSvc=0 svcCount=0 matchedBy=none
+[90887][I][BLE] adv raw payload len=31 hex=1E FF 06 00 01 09 20 02 0E C5 1A B3 1D EA E1 C3 71 66 A0 A4 71 1C 5C 78...
+[90916][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-66
+[90916][I][BLE] adv raw name='' addr=0a:e2:c6:bf:c6:c7 addrType=1 rssi=-66 hasName=0 hasSvc=0 targetSvc=0 rawTargetSvc=0 svcCount=0 matchedBy=none
+[90917][I][BLE] adv raw payload len=31 hex=1E FF 06 00 01 09 20 22 7D A7 65 3C 84 13 A3 9E 40 B5 C4 C8 10 0D 7C 46...
+[90980][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-64
+[90980][I][BLE] adv raw name='' addr=7a:d2:d0:65:28:67 addrType=1 rssi=-64 hasName=0 hasSvc=1 targetSvc=0 rawTargetSvc=0 svcCount=2 matchedBy=none
+[90981][I][BLE] adv raw payload len=30 hex=02 01 1A 05 03 0A 18 F3 FE 14 16 F3 FE 51 20 00 00 30 06 20 04 23 00 00...
+[90981][I][BLE] adv svc=0x180a
+[90989][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-95
+[90990][I][BLE] adv raw name='' addr=35:9d:ba:01:46:f1 addrType=1 rssi=-95 hasName=0 hasSvc=0 targetSvc=0 rawTargetSvc=0 svcCount=0 matchedBy=none
+[90991][I][BLE] adv raw payload len=31 hex=1E FF 06 00 01 09 20 02 0E C5 1A B3 1D EA E1 C3 71 66 A0 A4 71 1C 5C 78...
+[91016][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-65
+[91017][I][BLE] adv raw name='' addr=0a:e2:c6:bf:c6:c7 addrType=1 rssi=-65 hasName=0 hasSvc=0 targetSvc=0 rawTargetSvc=0 svcCount=0 matchedBy=none
+[91017][I][BLE] adv raw payload len=31 hex=1E FF 06 00 01 09 20 22 7D A7 65 3C 84 13 A3 9E 40 B5 C4 C8 10 0D 7C 46...
+[91033][I][STACK] TaskHardware watermark=17100B min=17100B
+[91039][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-87
+[91042][I][BLE] adv check addr=2f:ba:b6:46:ae:5f addrType=1 targetSvc=0 matchedBy=none rssi=-58
+[91087][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-63
+[91099][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-89
+[91149][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-88
+[91194][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-66
+[91206][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-88
+[91223][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-71
+[91252][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-81
+[91300][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-65
+[91326][I][BLE] adv check addr=2f:ba:b6:46:ae:5f addrType=1 targetSvc=0 matchedBy=none rssi=-58
+[91329][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-71
+[91360][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-82
+[91409][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-71
+[91431][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-70
+[91459][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-84
+[91516][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-71
+[91613][I][BLE] adv check addr=2f:ba:b6:46:ae:5f addrType=1 targetSvc=0 matchedBy=none rssi=-60
+[91619][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-71
+[91631][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-97
+[91640][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-64
+[91659][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-84
+[91669][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-89
+[91735][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-99
+[91748][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-64
+[91780][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-89
+[91819][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-71
+[91823][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-64
+[91839][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-99
+[91850][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-66
+[91886][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-88
+[91896][I][BLE] adv check addr=2f:ba:b6:46:ae:5f addrType=1 targetSvc=0 matchedBy=none rssi=-60
+[91933][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-64
+[91949][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-89
+[91954][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-66
+[91996][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-91
+[92043][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-66
+[92049][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-89
+[92066][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-66
+[92096][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-90
+[92148][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-66
+[92158][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-89
+[92168][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-70
+[92179][I][BLE] adv check addr=2f:ba:b6:46:ae:5f addrType=1 targetSvc=0 matchedBy=none rssi=-58
+[92206][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-83
+[92259][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-70
+[92277][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-70
+[92309][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-83
+[92366][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-71
+[92380][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-71
+[92411][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-81
+[92465][I][BLE] adv check addr=2f:ba:b6:46:ae:5f addrType=1 targetSvc=0 matchedBy=none rssi=-58
+[92471][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-70
+[92484][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-64
+[92521][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-87
+[92576][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-64
+[92589][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-65
+[92627][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-92
+[92680][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-95
+[92681][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-64
+[92694][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-64
+[92733][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-89
+[92749][I][BLE] adv check addr=2f:ba:b6:46:ae:5f addrType=1 targetSvc=0 matchedBy=none rssi=-58
+[92787][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-96
+[92789][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-65
+[92799][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-66
+[92841][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-88
+[92892][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-66
+[92896][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-89
+[92908][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-66
+[92948][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-88
+[92996][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-66
+[93003][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-89
+[93008][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-66
+[93036][I][BLE] adv check addr=2f:ba:b6:46:ae:5f addrType=1 targetSvc=0 matchedBy=none rssi=-58
+[93051][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-85
+[93105][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-67
+[93111][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-70
+[93153][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-83
+[93212][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-69
+[93215][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-70
+[93259][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-82
+[93317][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-69
+[93319][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-69
+[93327][I][BLE] adv check addr=2f:ba:b6:46:ae:5f addrType=1 targetSvc=0 matchedBy=none rssi=-58
+[93428][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-65
+[93460][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-82
+[93469][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-91
+[93517][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-69
+[93525][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-65
+[93527][I][BLE] adv check addr=35:9d:ba:01:46:f1 addrType=1 targetSvc=0 matchedBy=none rssi=-97
+[93528][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-65
+[93578][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-90
+[93617][I][BLE] adv check addr=2f:ba:b6:46:ae:5f addrType=1 targetSvc=0 matchedBy=none rssi=-66
+[93619][I][BLE] adv check addr=5d:59:05:92:fc:8a addrType=1 targetSvc=1 matchedBy=service rssi=-56
+[93620][I][BLE] adv raw name='' addr=5d:59:05:92:fc:8a addrType=1 rssi=-56 hasName=0 hasSvc=1 targetSvc=1 rawTargetSvc=1 svcCount=1 matchedBy=service
+[93620][I][BLE] adv raw payload len=21 hex=02 01 02 11 07 01 00 3A 6F 2D 6B 64 9A 4D 4D 7B 6D 80 3A F0 84
+[93621][I][BLE] adv svc=84f03a80-6d7b-4d4d-9a64-6b2d6f3a0001
+[93621][I][BLE] target found matchedBy=service cachePeer=0 addr=5d:59:05:92:fc:8a name=SpectrePhone rssi=-56
+[93622][I][BLE] adv check addr=5d:59:05:92:fc:8a addrType=1 targetSvc=1 matchedBy=service rssi=-56
+[93623][I][BLE] adv raw name='' addr=5d:59:05:92:fc:8a addrType=1 rssi=-56 hasName=0 hasSvc=1 targetSvc=1 rawTargetSvc=1 svcCount=1 matchedBy=service
+[93623][I][BLE] adv raw payload len=21 hex=02 01 02 11 07 01 00 3A 6F 2D 6B 64 9A 4D 4D 7B 6D 80 3A F0 84
+[93623][I][BLE] adv svc=84f03a80-6d7b-4d4d-9a64-6b2d6f3a0001
+[93624][I][BLE] target found matchedBy=service cachePeer=0 addr=5d:59:05:92:fc:8a name=SpectrePhone rssi=-56
+[93634][I][BLE] adv check addr=7a:d2:d0:65:28:67 addrType=1 targetSvc=0 matchedBy=none rssi=-65
+[93637][I][BLE] adv check addr=0a:e2:c6:bf:c6:c7 addrType=1 targetSvc=0 matchedBy=none rssi=-64
+[93717][I][BLE] scan stop; connect pending addr=5d:59:05:92:fc:8a
+[94019][I][BLE] connect pending settled addr=5d:59:05:92:fc:8a
+[94020][I][BLE] connect attempt addr=5d:59:05:92:fc:8a name=SpectrePhone
+[94020][I][BLE] connect params timeoutMs=45000 scanItvl=16 scanWin=16 addrType=1
+[94137][I][BLE] connect result ok=1 err=0 addr=5d:59:05:92:fc:8a
+[94137][I][BLE] BLE link connected; starting app-layer auth watchdog=50000ms
+[94138][I][BLE] remote service lookup begin core=1 internalFree=13440 largest=7156
+[94226][I][BLE] remote service lookup end found=1 err=0
+[94226][I][BLE] remote characteristic discovery begin
+[94406][I][BLE] remote characteristic discovery end count=13 err=0
+[94466][I][BLE] remote descriptor discovery char=auth count=2 err=0
+[94466][I][BLE] auth notify subscribe begin
+[94526][I][BLE] auth notify subscribe end ok=1 err=0
+[94805][I][BLE] auth challenge write bytes=163 mtu=247 attPayload=244 mode=response
+[95784][I][BLE] app secure session ready alg=P-256+ECDH+AES-256-GCM
+[95785][I][BLE] phone auth confirmed; caching peer addr=5d:59:05:92:fc:8a ttl=300000ms rssi=-56
+[95846][I][BLE] remote descriptor discovery char=enrichment count=2 err=0
+[96086][I][BLE] remote bound gps=1 ctrl=1 meta=1 batch=1 enrich=1 auth=1 authReq=1 storage=1 cmdReq=1 cmdResp=1 logStream=1 dashStream=1 notification=1 notify(gps=0 ctrl=0 enrich=1 auth=1 cmdReq=0) mtu=247 a
+[96086][I][BLE] probe_summary seen=1 matchedBy=service rssi=-56 scanMs=5393
+[96087][I][BLE] phone_session_summary auth=ok mtu=247 gps=1 ctrl=1 enrich=1 storage=1
+[96145][I][BLE] storage snapshot sent pendingUp=0/4552 pendingEnrich=0/4019 usedPct=21
+[96150][I][BLE] Phone probe succeeded ??? backoff reset
+[96154][I][BLE] Phone probe promoted to enrichment pendingEnrich=4019 maxBatch=18
+[96155][I][STORAGE] RAMSpool worker paused inflight=0 lastInflight=0
+[96155][I][STORAGE] Exclusive window begin kind=enrichment reason=manual_enrich_window workerPaused=1 displaySuspended=1
+[96158][I][STORAGE] prepare_assigned records=4019 freeInternal=10204 freePsram=7728228
+[96158][I][STORAGE] batch_load_ids_enter freeInternal=10204 segments=101
+[96159][I][STORAGE] load_ids_reserve count=2408 freeInternal=10204 largest=7156
+[96159][I][STORAGE] load_ids_reserved freeInternal=10204
+[96159][I][STORAGE] load_ids_scan seg=308 enrichDeltas=78 freeInternal=10204 largest=7156
+[96232][I][STORAGE] load_ids_scan seg=314 enrichDeltas=66 freeInternal=10204 largest=7156
+[96304][I][STORAGE] load_ids_scan seg=315 enrichDeltas=64 freeInternal=10204 largest=7156
+[96378][I][STORAGE] load_ids_scan seg=316 enrichDeltas=64 freeInternal=10204 largest=7156
+[96449][I][STORAGE] load_ids_scan seg=317 enrichDeltas=64 freeInternal=10204 largest=7156
+[96521][I][STORAGE] load_ids_scan seg=318 enrichDeltas=64 freeInternal=10204 largest=7156
+[96591][I][STORAGE] load_ids_scan seg=319 enrichDeltas=64 freeInternal=10204 largest=7156
+[96662][I][STORAGE] load_ids_scan seg=320 enrichDeltas=64 freeInternal=10204 largest=7156
+[96732][I][STORAGE] load_ids_scan seg=321 enrichDeltas=64 freeInternal=10204 largest=7156
+[96802][I][STORAGE] load_ids_scan seg=322 enrichDeltas=64 freeInternal=10204 largest=7156
+[96872][I][STORAGE] load_ids_scan seg=323 enrichDeltas=64 freeInternal=10204 largest=7156
+[96941][I][STORAGE] load_ids_scan seg=324 enrichDeltas=64 freeInternal=10204 largest=7156
+[97010][I][STORAGE] load_ids_scan seg=325 enrichDeltas=64 freeInternal=10204 largest=7156
+[97079][I][STORAGE] load_ids_scan seg=326 enrichDeltas=64 freeInternal=10204 largest=7156
+[97147][I][STORAGE] load_ids_scan seg=327 enrichDeltas=64 freeInternal=10204 largest=7156
+[97215][I][STORAGE] load_ids_scan seg=335 enrichDeltas=64 freeInternal=10204 largest=7156
+[97312][I][STORAGE] load_ids_scan seg=336 enrichDeltas=64 freeInternal=10204 largest=7156
+[97409][I][STORAGE] load_ids_scan seg=337 enrichDeltas=64 freeInternal=10204 largest=7156
+[97504][I][STORAGE] load_ids_scan seg=338 enrichDeltas=64 freeInternal=10204 largest=7156
+[97600][I][STORAGE] load_ids_scan seg=339 enrichDeltas=64 freeInternal=10204 largest=7156
+[97694][I][STORAGE] load_ids_scan seg=340 enrichDeltas=64 freeInternal=10204 largest=7156
+[97788][I][STORAGE] load_ids_scan seg=341 enrichDeltas=64 freeInternal=10204 largest=7156
+[97884][I][STORAGE] load_ids_scan seg=342 enrichDeltas=64 freeInternal=10204 largest=7156
+[97979][I][STORAGE] load_ids_scan seg=343 enrichDeltas=64 freeInternal=10204 largest=7156
+[98074][I][STORAGE] load_ids_scan seg=344 enrichDeltas=64 freeInternal=10204 largest=7156
+[98169][I][STORAGE] load_ids_scan seg=345 enrichDeltas=64 freeInternal=10204 largest=7156
+[98262][I][STORAGE] load_ids_scan seg=346 enrichDeltas=64 freeInternal=10204 largest=7156
+[98355][I][STORAGE] load_ids_scan seg=347 enrichDeltas=64 freeInternal=10204 largest=7156
+[98448][I][STORAGE] load_ids_scan seg=348 enrichDeltas=64 freeInternal=10204 largest=7156
+[98541][I][STORAGE] load_ids_scan seg=352 enrichDeltas=64 freeInternal=10204 largest=7156
+[98634][I][STORAGE] load_ids_scan seg=353 enrichDeltas=64 freeInternal=10204 largest=7156
+[98725][I][STORAGE] load_ids_scan seg=354 enrichDeltas=64 freeInternal=10204 largest=7156
+[98815][I][STORAGE] load_ids_scan seg=355 enrichDeltas=64 freeInternal=10204 largest=7156
+[98906][I][STORAGE] load_ids_scan seg=356 enrichDeltas=64 freeInternal=10204 largest=7156
+[98995][I][STORAGE] load_ids_scan seg=357 enrichDeltas=64 freeInternal=10204 largest=7156
+[99085][I][STORAGE] load_ids_scan seg=358 enrichDeltas=64 freeInternal=10204 largest=7156
+[99174][I][STORAGE] load_ids_scan seg=359 enrichDeltas=88 freeInternal=10204 largest=7156
+[99258][I][STORAGE] load_ids_loop_done scanned=37 skipped=64 idsCollected=2408 freeInternal=10204
+[99261][I][STORAGE] batch_load_ids_done count=2259 capacity=2408 freeInternal=10204
+[99261][I][STORAGE] batch_pending_loop_enter segments=101 maxCount=4019 streaming=0 freeInternal=10204
+[99261][I][STORAGE] batch_pending_scan seg=207 pending=10 events=10 freeInternal=10204 largest=7156 outCount=0
+[99308][I][STORAGE] batch_pending_scan seg=210 pending=13 events=13 freeInternal=10204 largest=7156 outCount=0
+[99356][I][STORAGE] batch_pending_scan seg=211 pending=8 events=8 freeInternal=10204 largest=7156 outCount=0
+[99403][I][STORAGE] batch_pending_scan seg=214 pending=5 events=5 freeInternal=10204 largest=7156 outCount=0
+[99449][I][STORAGE] batch_pending_scan seg=219 pending=51 events=51 freeInternal=10204 largest=7156 outCount=0
+[99501][I][STORAGE] batch_pending_scan seg=220 pending=89 events=138 freeInternal=10204 largest=7156 outCount=0
+[99565][I][STORAGE] batch_pending_scan seg=221 pending=154 events=154 freeInternal=10204 largest=7156 outCount=0
+[99630][I][STORAGE] batch_pending_scan seg=222 pending=8 events=8 freeInternal=10204 largest=7156 outCount=0
+[99675][I][STORAGE] batch_pending_scan seg=223 pending=9 events=9 freeInternal=10204 largest=7156 outCount=0
+[99721][I][STORAGE] batch_pending_scan seg=226 pending=13 events=13 freeInternal=10204 largest=7156 outCount=0
+[99766][I][STORAGE] batch_pending_scan seg=227 pending=3 events=3 freeInternal=10204 largest=7156 outCount=0
+[99810][I][STORAGE] batch_pending_scan seg=228 pending=15 events=15 freeInternal=10204 largest=7156 outCount=0
+[99855][I][STORAGE] batch_pending_scan seg=229 pending=11 events=11 freeInternal=10204 largest=7156 outCount=0
+[99899][I][STORAGE] batch_pending_scan seg=230 pending=10 events=10 freeInternal=10204 largest=7156 outCount=0
+[99943][I][STORAGE] batch_pending_scan seg=232 pending=200 events=200 freeInternal=10204 largest=7156 outCount=0
+[100011][I][STORAGE] batch_pending_scan seg=233 pending=197 events=197 freeInternal=10204 largest=7156 outCount=0
+[100083][I][STORAGE] batch_pending_scan seg=234 pending=66 events=194 freeInternal=10204 largest=7156 outCount=0
+[100155][I][STORAGE] batch_pending_scan seg=235 pending=0 events=198 freeInternal=10204 largest=7156 outCount=0
+[100226][I][STORAGE] batch_pending_scan seg=236 pending=0 events=147 freeInternal=10204 largest=7156 outCount=0
+[100291][I][STORAGE] batch_pending_scan seg=238 pending=443 events=443 freeInternal=10204 largest=7156 outCount=0
+[100395][I][STORAGE] batch_pending_scan seg=240 pending=397 events=397 freeInternal=10204 largest=7156 outCount=0
+[100494][I][STORAGE] batch_pending_scan seg=241 pending=436 events=436 freeInternal=10204 largest=7156 outCount=0
+[100596][I][STORAGE] batch_pending_scan seg=243 pending=2 events=2 freeInternal=10204 largest=7156 outCount=0
+[100641][I][STORAGE] batch_pending_scan seg=244 pending=53 events=53 freeInternal=10204 largest=7156 outCount=0
+[100691][I][STORAGE] batch_pending_scan seg=245 pending=436 events=436 freeInternal=10204 largest=7156 outCount=0
+[100792][I][STORAGE] batch_pending_scan seg=246 pending=101 events=101 freeInternal=10204 largest=7156 outCount=0
+[100847][I][STORAGE] batch_pending_scan seg=247 pending=9 events=9 freeInternal=10204 largest=7156 outCount=0
+[100891][I][STORAGE] batch_pending_scan seg=253 pending=191 events=191 freeInternal=10204 largest=7156 outCount=0
+[100958][I][STORAGE] batch_pending_scan seg=255 pending=3 events=3 freeInternal=10204 largest=7156 outCount=0
+[101000][I][STORAGE] batch_pending_scan seg=256 pending=435 events=435 freeInternal=10204 largest=7156 outCount=0
+[101099][I][STORAGE] batch_pending_scan seg=257 pending=85 events=85 freeInternal=10204 largest=7156 outCount=0
+[101151][I][STORAGE] batch_pending_scan seg=258 pending=226 events=226 freeInternal=10204 largest=7156 outCount=0
+[101221][I][STORAGE] batch_pending_scan seg=259 pending=38 events=47 freeInternal=10204 largest=7156 outCount=0
+[101267][I][STORAGE] batch_pending_scan seg=260 pending=15 events=15 freeInternal=10204 largest=7156 outCount=0
+[101308][I][STORAGE] batch_pending_scan seg=261 pending=13 events=13 freeInternal=10204 largest=7156 outCount=0
+[101366][I][STORAGE] batch_pending_scan seg=264 pending=5 events=5 freeInternal=10204 largest=7156 outCount=0
+[101422][I][STORAGE] batch_pending_scan seg=265 pending=6 events=6 freeInternal=10204 largest=7156 outCount=0
+[101479][I][STORAGE] batch_pending_scan seg=266 pending=9 events=9 freeInternal=10204 largest=7156 outCount=0
+[101536][I][STORAGE] batch_pending_scan seg=267 pending=14 events=14 freeInternal=10204 largest=7156 outCount=0
+[101592][I][STORAGE] batch_pending_scan seg=268 pending=11 events=11 freeInternal=10204 largest=7156 outCount=0
+[101649][I][STORAGE] batch_pending_scan seg=272 pending=13 events=13 freeInternal=10204 largest=7156 outCount=0
+[101705][I][STORAGE] batch_pending_scan seg=274 pending=10 events=10 freeInternal=10204 largest=7156 outCount=0
+[101760][I][STORAGE] batch_pending_scan seg=277 pending=22 events=22 freeInternal=10204 largest=7156 outCount=0
+[101815][I][STORAGE] batch_pending_scan seg=279 pending=11 events=11 freeInternal=10204 largest=7156 outCount=0
+[101868][I][STORAGE] batch_pending_scan seg=291 pending=11 events=11 freeInternal=10204 largest=7156 outCount=0
+[101934][I][STORAGE] batch_pending_scan seg=293 pending=11 events=11 freeInternal=10204 largest=7156 outCount=0
+[102000][I][STORAGE] batch_pending_scan seg=296 pending=25 events=25 freeInternal=10204 largest=7156 outCount=0
+[102071][I][STORAGE] batch_pending_scan seg=298 pending=10 events=10 freeInternal=10204 largest=7156 outCount=0
+[102141][I][STORAGE] batch_pending_scan seg=300 pending=9 events=9 freeInternal=10204 largest=7156 outCount=0
+[102210][I][STORAGE] batch_pending_scan seg=303 pending=11 events=11 freeInternal=10204 largest=7156 outCount=0
+[102278][I][STORAGE] batch_pending_scan seg=304 pending=7 events=7 freeInternal=10204 largest=7156 outCount=0
+[102346][I][STORAGE] batch_pending_scan seg=305 pending=9 events=9 freeInternal=10204 largest=7156 outCount=0
+[102413][I][STORAGE] batch_pending_scan seg=307 pending=16 events=16 freeInternal=10204 largest=7156 outCount=0
+[102482][I][STORAGE] batch_pending_scan seg=308 pending=2 events=2 freeInternal=10204 largest=7156 outCount=0
+[102555][I][STORAGE] batch_pending_scan seg=314 pending=0 events=0 freeInternal=10204 largest=7156 outCount=0
+[102627][I][STORAGE] batch_pending_scan seg=315 pending=11 events=11 freeInternal=10204 largest=7156 outCount=0
+[102701][I][STORAGE] batch_pending_scan seg=316 pending=0 events=0 freeInternal=10204 largest=7156 outCount=0
+[102772][I][STORAGE] batch_pending_scan seg=317 pending=0 events=0 freeInternal=10204 largest=7156 outCount=0
+[102843][I][STORAGE] batch_pending_scan seg=318 pending=0 events=0 freeInternal=10204 largest=7156 outCount=0
+[102914][I][STORAGE] batch_pending_scan seg=319 pending=0 events=0 freeInternal=10204 largest=7156 outCount=0
+[102984][I][STORAGE] batch_pending_scan seg=320 pending=0 events=0 freeInternal=10204 largest=7156 outCount=0
+[103055][I][STORAGE] batch_pending_scan seg=321 pending=0 events=0 freeInternal=10204 largest=7156 outCount=0
+[103125][I][STORAGE] batch_pending_scan seg=322 pending=0 events=0 freeInternal=10204 largest=7156 outCount=0
+[103194][I][STORAGE] batch_pending_scan seg=323 pending=0 events=0 freeInternal=10204 largest=7156 outCount=0
+[103264][I][STORAGE] batch_pending_scan seg=324 pending=0 events=0 freeInternal=10204 largest=7156 outCount=0
+[103333][I][STORAGE] batch_pending_scan seg=325 pending=0 events=0 freeInternal=10204 largest=7156 outCount=0
+[103402][I][STORAGE] batch_pending_scan seg=326 pending=0 events=0 freeInternal=10204 largest=7156 outCount=0
+[103470][I][STORAGE] batch_pending_scan seg=327 pending=0 events=0 freeInternal=10204 largest=7156 outCount=0
+[103538][I][STORAGE] batch_pending_scan seg=328 pending=0 events=0 freeInternal=10204 largest=7156 outCount=0
+[103599][I][STORAGE] batch_pending_scan seg=329 pending=17 events=17 freeInternal=10204 largest=7156 outCount=0
+[103693][I][STORAGE] batch_pending_scan seg=330 pending=0 events=0 freeInternal=10204 largest=7156 outCount=0
+[103790][I][STORAGE] batch_pending_scan seg=331 pending=0 events=0 freeInternal=10204 largest=7156 outCount=0
+[103887][I][STORAGE] batch_pending_scan seg=332 pending=19 events=19 freeInternal=10204 largest=7156 outCount=0
+[103981][I][STORAGE] batch_pending_scan seg=333 pending=0 events=0 freeInternal=10204 largest=7156 outCount=0
+[104076][I][STORAGE] batch_pending_scan seg=334 pending=9 events=9 freeInternal=10204 largest=7156 outCount=0
+[104168][I][STORAGE] batch_pending_scan seg=335 pending=3 events=3 freeInternal=10204 largest=7156 outCount=0
+[104266][I][STORAGE] batch_pending_scan seg=336 pending=0 events=0 freeInternal=10204 largest=7156 outCount=0
+[104362][I][STORAGE] batch_pending_scan seg=337 pending=0 events=0 freeInternal=10204 largest=7156 outCount=0
+[104457][I][STORAGE] batch_pending_scan seg=338 pending=0 events=0 freeInternal=10204 largest=7156 outCount=0
+[104553][I][STORAGE] batch_pending_scan seg=339 pending=0 events=0 freeInternal=10204 largest=7156 outCount=0
+[104648][I][STORAGE] batch_pending_scan seg=340 pending=0 events=0 freeInternal=10204 largest=7156 outCount=0
+[104742][I][STORAGE] batch_pending_scan seg=341 pending=0 events=0 freeInternal=10204 largest=7156 outCount=0
+[104838][I][STORAGE] batch_pending_scan seg=342 pending=0 events=0 freeInternal=10204 largest=7156 outCount=0
+[104932][I][STORAGE] batch_pending_scan seg=343 pending=0 events=0 freeInternal=10204 largest=7156 outCount=0
+[105027][I][STORAGE] batch_pending_scan seg=344 pending=0 events=0 freeInternal=10204 largest=7156 outCount=0
+[105122][I][STORAGE] batch_pending_scan seg=345 pending=0 events=0 freeInternal=10204 largest=7156 outCount=0
+[105215][I][STORAGE] batch_pending_scan seg=346 pending=0 events=0 freeInternal=10204 largest=7156 outCount=0
+[105308][I][STORAGE] batch_pending_scan seg=347 pending=0 events=0 freeInternal=10204 largest=7156 outCount=0
+[105401][I][STORAGE] batch_pending_scan seg=348 pending=0 events=0 freeInternal=10204 largest=7156 outCount=0
+[105494][I][STORAGE] batch_pending_scan seg=349 pending=0 events=0 freeInternal=10204 largest=7156 outCount=0
+[105587][I][STORAGE] batch_pending_scan seg=350 pending=0 events=0 freeInternal=10204 largest=7156 outCount=0
+[105676][I][STORAGE] batch_pending_scan seg=351 pending=0 events=5 freeInternal=10204 largest=7156 outCount=0
+[105763][I][STORAGE] batch_pending_scan seg=352 pending=0 events=9 freeInternal=10204 largest=7156 outCount=0
+[105856][I][STORAGE] batch_pending_scan seg=353 pending=0 events=0 freeInternal=10204 largest=7156 outCount=0
+[105946][I][STORAGE] batch_pending_scan seg=354 pending=0 events=0 freeInternal=10204 largest=7156 outCount=0
+[106038][I][STORAGE] batch_pending_scan seg=355 pending=0 events=0 freeInternal=10204 largest=7156 outCount=0
+[106128][I][STORAGE] batch_pending_scan seg=356 pending=0 events=0 freeInternal=10204 largest=7156 outCount=0
+=== serial read failed 2026-08-07T14:31:33.1530414-05:00: Exception calling "ReadExisting" with "0" argument(s): "The port is closed." ===

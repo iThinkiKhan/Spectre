@@ -1,0 +1,26 @@
+SERIAL_OPENED COM13
+[2846][I][CORE] Storage begin done ok=1 ready=1 pending=209 heapFree=121352 largest=69620
+[2846][W][CORE] Boot maintenance deferred until runtime pending=209 flags=dirty_summary|counter_untrusted|segment_audit
+[2859][I][STORAGE] RAMSpool ready slots=1024 slotBytes=368 total=368KB core=1
+[2859][I][STORAGE] RAMSpool worker started on core 1
+[2860][W][CORE] Deferring optional boot init pending=209 freeInternal=105612 largestInternal=61428
+[2871][W][MQTT] Backlog unknown: repair required
+[2994][I][BADUSB] Loaded 0 scripts
+[2994][I][BADUSB] IDLE
+[2995][I][WIO] UART1 begin tx=1 rx=2 baud=115200
+[3007][I][WIO] CAPS BLE_PROXY UART BLE_WRITE_BIN ver=0.1.0
+[3007][I][WIO] BLE proxy capability present
+[3007][I][WIO] Accessory detected bleProxy=1 sx1262=0 uart=1
+[3008][I][XPORT] transport=wio_ble previous=wio_ble reason=initial wio.available=1 wio.proxy=1 ble.begun=0 ble.state=0 transitions=0
+[3608][I][WIO_SX] Stub registered (waits on WIO SUBGHZ_* verbs)
+[3621][I][PWNY] PMKID capture index loaded count=0
+[3621][I][WIFI] WiFiManager initialized
+[3621][I][WIFI] Allocation: OK
+[3780][I][WIFI] Radio suspended
+[3780][I][CORE] Hardware ready
+[3783][I][STORAGE] RAMSpool worker paused inflight=0 lastInflight=0
+[3784][I][STORAGE] Exclusive window begin kind=maintenance reason=radio_owner_window workerPaused=1 displaySuspended=1
+[3784][I][STORAGE] Maintenance start reason=radio_owner_window budgetMs=30000 flags=dirty_summary|counter_untrusted|segment_audit captureSafe=0
+[4100][I][STORAGE] Segment lifecycle seg=76 drained->indexed trust=trusted pending=7
+[7014][W][STORAGE] Counter trust=trusted_snapshot_lagged reason=pending_enrich_counter_clamp since=7014
+SERIAL_READ_ERROR SerialException("ClearCommError failed (PermissionError(13, 'The device does not recognize the command.', None, 22))")

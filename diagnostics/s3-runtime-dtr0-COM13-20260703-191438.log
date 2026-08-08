@@ -1,0 +1,6 @@
+# opened COM13 DTR=0 RTS=0 2026-07-03T19:14:38.4878078-05:00
+>>> wio status
+>>> wio ble status
+>>> companion status
+>>> spool enrich
+# closing 2026-07-03T19:14:51.7506877-05:00

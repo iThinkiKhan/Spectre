@@ -1,0 +1,21 @@
+=== Entity session opened 2026-08-08T14:59:37.6278404-05:00 ===
+[8712][I][WIFI] Allocation: OK
+[8813][I][WIFI] Promiscuous: YES
+[8814][I][WIFI] Promiscuous mode started data=0
+[8818][I][CORE] Hardware ready
+[14452][I][STORAGE] Spool rotate index deferred owner=WIFI_CAPTURE reason=capture seg=412 format=bin_v2
+[14475][I][STORAGE] Routine maintenance requests coalesced count=1 latest=snapshot_lagged source=append_metadata_deferred flags=dirty_spool_index|snapshot_lagged
+[14738][I][STORAGE] worker ui refresh serviced uiRefreshServiceCount=1 uiDeferred=2 uiFlush=1 pressure=0 usedPct=6 pending=756
+[19745][I][STORAGE] worker ui refresh serviced uiRefreshServiceCount=2 uiDeferred=4 uiFlush=2 pressure=0 usedPct=6 pending=758
+=== send: entity status ===
+entity status
+[ENTITY] total=26 nearby=2 observations=758 located=0 locationUpdates=0 dropped=0 linkDrops=0 capacity=8192 links=98304 psram=3088KB
+[ENTITY] ap=0 clients=26 drones=0 subghz=0 ble=0 closest=B8:F7:75:69:05:B4 name=- rssi=-77 channel=4 located=0
+[ENTITY] session networks=0 devices=2 probes=2 pmkids=0 drones=0
+=== send: heap status ===
+heap status
+[HEAP] 8bit total=8435KB free=4555KB largest=4480KB
+[HEAP] internal total=243KB free=61KB largest=31KB
+[HEAP] psram total=8192KB free=4495KB largest=4480KB
+[HEAP] uploadIndex=0 enrichWindow=0 maint=dirty_spool_index|snapshot_lagged owner=WIFI_CAPTURE
+=== Entity session closing 2026-08-08T14:59:55.8147017-05:00 ===

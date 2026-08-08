@@ -1,0 +1,57 @@
+=== session opened 2026-08-07T11:48:18.7760518-05:00 ===
+=== send: companion status ===
+[60018][I][HEAP] heap free=7686KB min=7680KB largest=7552KB frag=1% internalFree=42KB internalLargest=27KB psramFree=7645KB core=0/0% owner=WIFI_CAPTURE nets=6 pendingUpload=4376 pendingEnrich=4378
+[HEALTH] time=2026-08-07 11:48:14 src=ntp
+[HEALTH] heap used=732/8418KB free=7686KB min=7680KB largest=7552KB frag=1%
+[HEALTH] internal used=184/226KB free=42KB min=36KB largest=27KB
+[HEALTH] psram used=547/8192KB free=7645KB largest=7552KB
+[HEALTH] stack free_min: core0=11KB/22KB core1=13KB/18KB
+[HEALTH] core usage: core0=0% core1=0%
+[HEALTH] power=usb state=usb batt=100% 4882mV trend=57mV/min runtime=0min cap=1100mAh charging=1
+[HEALTH] radio=WIFI_CAPTURE wifi=0 ble=0 gps=0 nets=6 pendingUpload=4376 pendingEnrich=4378
+[HEALTH] subghz=NONE mode=OFF pkts=0 nodes=0
+[60020][I][STORAGE] RAMSpool enq=39 cons=39 inflight=0/1024 high=3 pressure=0 drop[full=0 big=0 noise=0 p3Evict=0 p3Drop=0 p2Drop=0 p1Fail=0] free=1024
+[60021][I][STORAGE] RAMSpool enqueue probe[ok=36 drop=0] device[ok=3 drop=0]
+[60021][I][STORAGE] RAMSpool worker probe[ok=8 sup=28 drop=0 fail=0 slow=0] device[ok=3 sup=0 drop=0 fail=0 slow=0] slowTotal=0 maxMs=0
+[60021][I][STORAGE] RAMSpool prioEnq p0=0 p1=0 p2=39 p3=0
+[60021][I][STORAGE] RAMSpool lanes p1=0/0 p2=0/2 p3=0/0
+companion status
+[COMP] enabled=1
+[COMP] external accessory=0 bleProxy=0 phoneConnected=0 phone=unknown rssi=0 ageMs=0
+[COMP] wio link=idle sx1262=0 textInput=0
+[COMP] phone=UNKNOWN work=IDLE
+[COMP] bleBegun=0 bleRadio=0 bleState=IDLE
+[COMP] ready link=0 gps=0 freshGps=0 ctrl=0 enrich=0
+[COMP] bleInitAgeMs=0 scanStartAgeMs=0 disconnReason=0
+[COMP] pendingEnrichMission=0 pendingEnrichNoise=4376 pendingEnrichTotal=4376
+[COMP] lastProbeAgeMs=0 lastEnrichAgeMs=0
+[COMP] radioOwner=wifi_capture
+[61022][I][STACK] TaskHardware watermark=10912B min=10912B
+[61563][I][STORAGE] worker ui refresh serviced uiRefreshServiceCount=9 uiDeferred=43 uiFlush=9 pressure=0 usedPct=17 pending=4376
+=== send: companion enrich ===
+companion enrich
+[COMP] manual enrich queued
+[63044][I][COMP] Manual enrich request received; probe backoff bypassed
+[63045][I][WIFI] Radio paused
+[63206][I][WIFI] Radio suspended
+[63281][I][BLE] begin phase=nimble_pre bt=idle/0 heap=73008 largest=27636 stack=10912 devLen=14
+[63282][I][BLE] begin phase=nimble_init
+[63292][I][BLE] begin phase=nimble_init_ok bt=enabled/2 heap=10012 largest=7156 stack=10912
+[63292][I][BLE] BLE SM disabled; app-layer P-256/AES-GCM required
+[63294][I][BLE] begin phase=server_ok
+[63294][I][BLE] scanner configured legacy=1 active=0 interval=30 window=30 srTimeout=200
+[63294][I][BLE] begin phase=scanner_ok
+[63295][I][BLE] begin phase=worker_ok
+[63295][I][BLE] begin ready
+[63295][I][BLE] radio enabled settle=500ms
+[63296][I][BLE] companion link requested reason=manual_probe mode=fresh_scan timeout=15s settle=500ms cacheAge=0ms rssi=0
+[63300][I][BLE] Phone probe lease granted reason=manual_probe cachedFirst=0 hold=60000ms
+[63311][W][CORE] TaskHardware loop gap=268ms owner=BLE_GPS pendingUpload=4376 maintPending=1 suppressed=0
+[63905][I][BLE] scan start
+[63905][I][BLE] scan start diag=1 deliverDuplicates=1 diagLeft=44391 state=1 window=8000ms weakRecent=0 lastRssi=0
+[63941][I][BLE] adv check addr=49:66:52:32:23:10 addrType=1 targetSvc=1 matchedBy=service rssi=-58
+[63941][I][BLE] adv raw name='' addr=49:66:52:32:23:10 addrType=1 rssi=-58 hasName=0 hasSvc=1 targetSvc=1 rawTargetSvc=1 svcCount=1 matchedBy=service
+[63942][I][BLE] adv raw payload len=21 hex=02 01 02 11 07 01 00 3A 6F 2D 6B 64 9A 4D 4D 7B 6D 80 3A F0 84
+[63942][I][BLE] adv svc=84f03a80-6d7b-4d4d-9a64-6b2d6f3a0001
+[63943][I][BLE] target found matchedBy=service cachePeer=0 addr=49:66:52:32:23:10 name=SpectrePhone rssi=-58
+[63943][I][BLE] scan stop; connect pending addr=49:66:52:32:23:10

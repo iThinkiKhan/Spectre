@@ -1,0 +1,62 @@
+[02:03:02] === Spectre overnight run: soak=3.5h sample=5min ===
+[02:03:02] output: C:\PlatformIO\Projects\Spectre\diagnostics\overnight-20260808-020302
+[02:03:03] app port: COM13
+[02:03:03] Phase 0: power-on reset via 1200bps touch + esptool hard-reset
+[02:03:03] touch threw (expected): Exception calling "Open" with "0" argument(s): "A device attached to the system is not functioning.
+"
+[02:03:08] download port: COM8 - issuing hard reset back into app
+[02:03:09]   esptool: MAC:                64:e8:33:4b:7a:38
+[02:03:09]   esptool: 
+[02:03:09]   esptool: Hard resetting via RTS pin...
+[02:03:15] app port back: COM13
+[02:03:15] Phase 0b: capturing 120s of boot/early-run serial
+[02:05:17] Phase 1: console diagnostic sweep
+[02:07:01] Phase 2: soak 3.5h, sampling every 5min
+[02:08:16] sample 1 done; 209min remaining
+[02:13:16] sample 2 done; 204min remaining
+[02:18:18] sample 3 done; 199min remaining
+[02:23:19] sample 4 done; 194min remaining
+[02:28:20] sample 5 done; 189min remaining
+[02:33:21] sample 6 done; 184min remaining
+[02:38:21] sample 7 done; 179min remaining
+[02:43:22] sample 8 done; 174min remaining
+[02:48:23] sample 9 done; 169min remaining
+[02:53:24] sample 10 done; 164min remaining
+[02:58:26] sample 11 done; 159min remaining
+[03:03:26] sample 12 done; 154min remaining
+[03:08:28] sample 13 done; 149min remaining
+[03:13:29] sample 14 done; 144min remaining
+[03:18:29] sample 15 done; 139min remaining
+[03:23:29] sample 16 done; 134min remaining
+[03:28:30] sample 17 done; 129min remaining
+[03:33:31] sample 18 done; 124min remaining
+[03:38:33] sample 19 done; 118min remaining
+[03:43:33] sample 20 done; 113min remaining
+[03:48:34] sample 21 done; 108min remaining
+[03:53:34] sample 22 done; 103min remaining
+[03:58:35] sample 23 done; 98min remaining
+[04:03:36] sample 24 done; 93min remaining
+[04:08:38] sample 25 done; 88min remaining
+[04:13:38] sample 26 done; 83min remaining
+[04:18:38] sample 27 done; 78min remaining
+[04:23:39] sample 28 done; 73min remaining
+[04:28:41] sample 29 done; 68min remaining
+[04:33:41] sample 30 done; 63min remaining
+[04:38:42] sample 31 done; 58min remaining
+[04:43:42] sample 32 done; 53min remaining
+[04:48:42] sample 33 done; 48min remaining
+[04:53:42] sample 34 done; 43min remaining
+[04:58:42] sample 35 done; 38min remaining
+[05:03:42] sample 36 done; 33min remaining
+[05:08:42] sample 37 done; 28min remaining
+[05:13:42] sample 38 done; 23min remaining
+[05:18:43] sample 39 done; 18min remaining
+[05:23:43] sample 40 done; 13min remaining
+[05:28:43] sample 41 done; 8min remaining
+[05:33:43] sample 42 done; 3min remaining
+[05:34:58] sample 43 done; 2min remaining
+[05:36:13] sample 44 done; 1min remaining
+[05:37:29] sample 45 done; 0min remaining
+[05:37:29] Phase 3: post-soak diagnostic sweep
+[05:39:13] Phase 4: analyzing
+[05:39:13] === complete -> C:\PlatformIO\Projects\Spectre\diagnostics\overnight-20260808-020302\04-summary.txt ===

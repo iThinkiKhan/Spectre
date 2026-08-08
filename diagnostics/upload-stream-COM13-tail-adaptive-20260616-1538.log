@@ -1,0 +1,16 @@
+# adaptive tail start 2026-06-16 15:39:42
+# SENT upload now
+upload now
+[45654][I][WIFI] Radio paused
+[45714][I][STORAGE] RAMSpool worker paused inflight=0 lastInflight=0
+[45714][I][STORAGE] Exclusive window begin kind=upload reason=upload_index workerPaused=1 displaySuspended=1
+[45774][I][STORAGE] Upload index rebuild begin pending=216 window=216 heapFree=7876224 largest=7733236
+[57906][I][STORAGE] Upload index rebuild progress segs=25 indexed=23 window=216 heapFree=7784304 largest=7733236
+[61156][I][STORAGE] Upload index rebuild progress segs=50 indexed=36 window=216 heapFree=7621536 largest=7602164
+[65228][I][STORAGE] Upload index rebuild progress segs=75 indexed=209 window=216 heapFree=7465396 largest=7340020
+[65273][I][STORAGE] Upload window rebuild accepted indexed=216 window=216 pending=216 sessions=11 skipped=0 failedSegs=0 sidecarLoaded=0 sidecarStale=75 truncated=0 heapFree=7462844 largest=7340020
+[65274][I][STORAGE] Upload index prepare rebuilt=1 indexed=216 sessions=11 skipped=0 failedSegs=0 ms=19560 fallback=0
+[65279][I][MQTT] Dump start — pendingUpload=216 lease=149s leaseMaxEvents=216
+[65280][I][MQTT] Upload stream fill begin bucket=1 max=4 requested=64 internalFree=656 indexWindow=216 indexed=216 truncated=0 sessions=11 sessionIndex=0 radioQuiet=1
+[65280][I][MQTT] Upload bucket session start idx=0 sess=33e864-3480-e0163c81 bucket=0
+[65281][I][MQTT] First event batch fetch session=33e864-3480-e0163c81 since=4448 radioQuiet=1

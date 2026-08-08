@@ -311,9 +311,9 @@ void DisplayManager::begin() {
     _buildRadarSweep();
 
     // Panel borders: fixed at full brightness (amber)
-    _setPanelBorderColor(_statusBar,   0xD09000);
-    _setPanelBorderColor(_actionBar,   0xD09000);
-    _setPanelBorderColor(_mascotPanel, 0xD09000);
+    _setPanelBorderColor(_statusBar,   CLR_BORDER);
+    _setPanelBorderColor(_actionBar,   CLR_BORDER);
+    _setPanelBorderColor(_mascotPanel, CLR_BORDER);
 
     setScreen(SCREEN_LORA);
     drawLora("NONE", "OFF", 0, 0, "--", 0, 0, 0);
@@ -633,6 +633,12 @@ void DisplayManager::_buildStatusBar() {
     _lblLora = _makeLabel(_statusBar, "LORA", CLR_YELLOW, FONT_SMALL,
                           LV_ALIGN_LEFT_MID, 194, 0);
 
+    // Sleep-chord hint. Sits in the gap between the LoRa indicator (ends ~226)
+    // and the right-aligned screen tag (starts ~292), so it costs no existing
+    // element any room. Kept dim on purpose: it is a reminder, not a status.
+    _lblSleepHint = _makeLabel(_statusBar, "AB=SLP", CLR_DIM, FONT_SMALL,
+                               LV_ALIGN_LEFT_MID, 236, 0);
+
     _lblScreen = _makeLabel(_statusBar, "LRA", CLR_CYAN, FONT_SMALL,
                             LV_ALIGN_RIGHT_MID, -4, 0);
 
@@ -767,6 +773,23 @@ void DisplayManager::_buildDivider() {
     lv_obj_set_style_radius(_divArcR, 0, 0);
     lv_obj_clear_flag(_divArcR, LV_OBJ_FLAG_SCROLLABLE);
 
+    // Secondary spark arcs: created once and reused every fire. The original
+    // code created+deleted two objects (plus delete-animations) on each spark
+    // ~1-2x/sec, churning the PSRAM allocator on the render core. Persistent
+    // objects that just get repositioned and re-faded cost nothing to keep.
+    auto makeSpark = [&](uint32_t color) -> lv_obj_t* {
+        lv_obj_t* s = lv_obj_create(lv_screen_active());
+        lv_obj_set_size(s, 14, 2);
+        lv_obj_set_style_bg_color(s, lv_color_hex(color), 0);
+        lv_obj_set_style_bg_opa(s, LV_OPA_TRANSP, 0);
+        lv_obj_set_style_border_width(s, 0, 0);
+        lv_obj_set_style_radius(s, 0, 0);
+        lv_obj_clear_flag(s, LV_OBJ_FLAG_SCROLLABLE);
+        return s;
+    };
+    _sparkL2 = makeSpark(CLR_YELLOW);
+    _sparkR2 = makeSpark(CLR_CYAN);
+
     _sparkTimer = lv_timer_create([](lv_timer_t* t) {
         DisplayManager* dm = (DisplayManager*)lv_timer_get_user_data(t);
         dm->_fireSpark();
@@ -850,25 +873,17 @@ void DisplayManager::_fireSpark() {
     if (sy < top) sy = top;
     if (sy > bot - 4) sy = bot - 4;
 
-    lv_obj_t* arcL2 = lv_obj_create(lv_screen_active());
-    lv_obj_set_size(arcL2, 14, 2);
-    lv_obj_set_pos(arcL2, x - 14, sy);
-    lv_obj_set_style_bg_color(arcL2, lv_color_hex(CLR_YELLOW), 0);
-    lv_obj_set_style_bg_opa(arcL2, LV_OPA_COVER, 0);
-    lv_obj_set_style_border_width(arcL2, 0, 0);
-    lv_obj_set_style_radius(arcL2, 0, 0);
-    lv_obj_clear_flag(arcL2, LV_OBJ_FLAG_SCROLLABLE);
-
-    lv_obj_t* arcR2 = lv_obj_create(lv_screen_active());
-    lv_obj_set_size(arcR2, 14, 2);
-    lv_obj_set_pos(arcR2, x + 4, sy);
-    lv_obj_set_style_bg_color(arcR2, lv_color_hex(CLR_CYAN), 0);
-    lv_obj_set_style_bg_opa(arcR2, LV_OPA_COVER, 0);
-    lv_obj_set_style_border_width(arcR2, 0, 0);
-    lv_obj_set_style_radius(arcR2, 0, 0);
-    lv_obj_clear_flag(arcR2, LV_OBJ_FLAG_SCROLLABLE);
+    if (_sparkL2) {
+        lv_obj_set_pos(_sparkL2, x - 14, sy);
+        lv_obj_set_style_bg_opa(_sparkL2, LV_OPA_COVER, 0);
+    }
+    if (_sparkR2) {
+        lv_obj_set_pos(_sparkR2, x + 4, sy);
+        lv_obj_set_style_bg_opa(_sparkR2, LV_OPA_COVER, 0);
+    }
 
     auto fadeOut = [&](lv_obj_t* obj, int dur) {
+        if (!obj) return;
         lv_anim_t a;
         lv_anim_init(&a);
         lv_anim_set_var(&a, obj);
@@ -882,23 +897,8 @@ void DisplayManager::_fireSpark() {
 
     fadeOut(_divArcL, 150);
     fadeOut(_divArcR, 150);
-    fadeOut(arcL2, 200);
-    fadeOut(arcR2, 200);
-
-    auto delayDelete = [&](lv_obj_t* obj) {
-        lv_anim_t d;
-        lv_anim_init(&d);
-        lv_anim_set_var(&d, obj);
-        lv_anim_set_exec_cb(&d, [](void* o, int32_t v) {});
-        lv_anim_set_duration(&d, 220);
-        lv_anim_set_deleted_cb(&d, [](lv_anim_t* a){
-            lv_obj_delete((lv_obj_t*)a->var);
-        });
-        lv_anim_start(&d);
-    };
-
-    delayDelete(arcL2);
-    delayDelete(arcR2);
+    fadeOut(_sparkL2, 200);
+    fadeOut(_sparkR2, 200);
 
     lv_timer_set_period(_sparkTimer, 550 + random(0, 650));
 }
@@ -923,13 +923,13 @@ void DisplayManager::_setCriticalPowerFx(bool active) {
 
     _criticalPowerFxActive = active;
     if (active) {
-        _setPanelBorderColor(_statusBar,   0xC02020);
-        _setPanelBorderColor(_actionBar,   0xC02020);
-        _setPanelBorderColor(_mascotPanel, 0xC02020);
+        _setPanelBorderColor(_statusBar,   CLR_BORDER_WARN);
+        _setPanelBorderColor(_actionBar,   CLR_BORDER_WARN);
+        _setPanelBorderColor(_mascotPanel, CLR_BORDER_WARN);
     } else {
-        _setPanelBorderColor(_statusBar,   0xD09000);
-        _setPanelBorderColor(_actionBar,   0xD09000);
-        _setPanelBorderColor(_mascotPanel, 0xD09000);
+        _setPanelBorderColor(_statusBar,   CLR_BORDER);
+        _setPanelBorderColor(_actionBar,   CLR_BORDER);
+        _setPanelBorderColor(_mascotPanel, CLR_BORDER);
     }
 }
 
@@ -1176,7 +1176,7 @@ void DisplayManager::_buildScreenWifi() {
     lv_obj_set_style_line_color(line, lv_color_hex(accent), 0);
     lv_obj_set_style_line_width(line, 1, 0);
 
-    _makeLabel(_wifiContent, "ENTITIES", CLR_GREY, FONT_SMALL,
+    _makeLabel(_wifiContent, "TOTAL", CLR_GREY, FONT_SMALL,
                LV_ALIGN_TOP_LEFT, 4, 32);
     _makeLabel(_wifiContent, "NEARBY", CLR_GREY, FONT_SMALL,
                LV_ALIGN_TOP_LEFT, 100, 32);
@@ -1206,6 +1206,12 @@ void DisplayManager::_buildScreenPwny() {
     _pwnyTitleValue = makeClippedLabel(_pwnyContent,
         "RECON", accent, FONT_HEADER,
         110, 4, THEME_CONTENT_W - 114, LV_TEXT_ALIGN_RIGHT);
+
+    static lv_point_precise_t sep[] = {{0,26},{THEME_CONTENT_W,26}};
+    lv_obj_t* line = lv_line_create(_pwnyContent);
+    lv_line_set_points(line, sep, 2);
+    lv_obj_set_style_line_color(line, lv_color_hex(accent), 0);
+    lv_obj_set_style_line_width(line, 1, 0);
 
     _pwnyStatusValue = makeClippedLabel(_pwnyContent,
         "IDLE", CLR_CYAN, FONT_BODY,
@@ -1285,6 +1291,12 @@ void DisplayManager::_buildScreenBadUsb() {
         "READY", accent, FONT_SMALL,
         168, 8, THEME_CONTENT_W - 172, LV_TEXT_ALIGN_RIGHT);
 
+    static lv_point_precise_t sep[] = {{0,26},{THEME_CONTENT_W,26}};
+    lv_obj_t* line = lv_line_create(_badUsbContent);
+    lv_line_set_points(line, sep, 2);
+    lv_obj_set_style_line_color(line, lv_color_hex(accent), 0);
+    lv_obj_set_style_line_width(line, 1, 0);
+
     _makeLabel(_badUsbContent, "PAYLOAD", CLR_GREY, FONT_SMALL,
                LV_ALIGN_TOP_LEFT, 4, 28);
     _badUsbScriptValue = makeClippedLabel(_badUsbContent, "--", CLR_WHITE, FONT_BODY,
@@ -1312,23 +1324,26 @@ void DisplayManager::_buildScreenRecon() {
     _makeLabel(_reconContent, "MISSION LAUNCH", accent, FONT_HEADER,
                LV_ALIGN_TOP_LEFT, 4, 4);
 
+    // Tightened vertical rhythm so the tactical posture line fits inside the
+    // 128px area (it was clipped at y≈118). The old redundant "detail" filler
+    // line is hidden in drawRecon(), leaving posture as the last row.
     _makeLabel(_reconContent, "PROFILE", CLR_GREY, FONT_SMALL,
-               LV_ALIGN_TOP_LEFT, 4, 24);
-    _reconModeValue = makeClippedLabel(_reconContent, "IDLE", accent, FONT_BODY, 4, 38, THEME_CONTENT_W - 8);
+               LV_ALIGN_TOP_LEFT, 4, 22);
+    _reconModeValue = makeClippedLabel(_reconContent, "IDLE", accent, FONT_BODY, 4, 34, THEME_CONTENT_W - 8);
 
     _reconScriptLabel = _makeLabel(_reconContent, "OBJECTIVE", CLR_GREY, FONT_SMALL,
-                                   LV_ALIGN_TOP_LEFT, 4, 58);
+                                   LV_ALIGN_TOP_LEFT, 4, 52);
     _reconScriptValue = makeClippedLabel(_reconContent, "--", CLR_WHITE, FONT_BODY,
-                                         4, 72, THEME_CONTENT_W - 8);
+                                         4, 64, THEME_CONTENT_W - 8);
 
     _reconStatusValue = makeClippedLabel(_reconContent, "READY", CLR_CYAN, FONT_BODY,
-                                         4, 90, THEME_CONTENT_W - 8);
+                                         4, 84, THEME_CONTENT_W - 8);
     _reconDetailValue = makeClippedLabel(_reconContent, "--", CLR_GREY, FONT_SMALL,
-                                         4, 106, THEME_CONTENT_W - 8);
+                                         4, 104, THEME_CONTENT_W - 8);
 
     for (int i = 0; i < 4; i++) {
         _reconOpLabels[i] = makeClippedLabel(_reconContent, "", CLR_GREY, FONT_SMALL,
-                                             4, 118 + i * 8, THEME_CONTENT_W - 8);
+                                             4, 104 + i * 8, THEME_CONTENT_W - 8);
     }
     lv_obj_add_flag(_reconContent, LV_OBJ_FLAG_HIDDEN);
 }
@@ -1368,25 +1383,30 @@ void DisplayManager::_buildScreenSystem() {
     lv_obj_set_style_line_color(sysLine, lv_color_hex(accent), 0);
     lv_obj_set_style_line_width(sysLine, 1, 0);
 
+    // Single-line rows (label + value on one baseline). Five stacked
+    // label-above-value rows can't fit the 128px content area without
+    // clipping the bottom row, so pack each field onto one line: label in
+    // the left ~46px of each column, value in the remainder. Pitch 18 keeps
+    // a clean gap between rows and lands the last row at y≈116, well inside.
     auto makeSystemRow = [&](int y, const char* leftLabel, lv_obj_t** leftValue,
                              const char* rightLabel, lv_obj_t** rightValue) {
-        makeClippedLabel(_sysLivePanel, leftLabel, CLR_GREY, FONT_SMALL, 4, y, 100);
-        *leftValue = makeClippedLabel(_sysLivePanel, "--", CLR_WHITE, FONT_SMALL, 4, y + 12, 100);
-        makeClippedLabel(_sysLivePanel, rightLabel, CLR_GREY, FONT_SMALL, 140, y, 100);
-        *rightValue = makeClippedLabel(_sysLivePanel, "--", CLR_WHITE, FONT_SMALL, 140, y + 12, 100);
+        makeClippedLabel(_sysLivePanel, leftLabel, CLR_GREY, FONT_SMALL, 4, y, 42);
+        *leftValue = makeClippedLabel(_sysLivePanel, "--", CLR_WHITE, FONT_SMALL, 48, y, 78);
+        makeClippedLabel(_sysLivePanel, rightLabel, CLR_GREY, FONT_SMALL, 128, y, 42);
+        *rightValue = makeClippedLabel(_sysLivePanel, "--", CLR_WHITE, FONT_SMALL, 172, y, 72);
     };
 
-    makeSystemRow(30, "STORAGE", &_sysStorageValue, "FREE", &_sysFreeValue);
-    makeSystemRow(54, "ENTITIES", &_sysPendingValue, "DEDUPE", &_sysDedupeValue);
-    makeSystemRow(78, "MAINT", &_sysModeValue, "WORK", &_sysPolicyValue);
-    _sysTimeLabel = makeClippedLabel(_sysLivePanel, "UPTIME", CLR_GREY, FONT_SMALL, 4, 102, 100);
-    _sysTimeValue = makeClippedLabel(_sysLivePanel, "--", CLR_CYAN, FONT_SMALL, 4, 114, 100);
-    makeClippedLabel(_sysLivePanel, "LAST", CLR_GREY, FONT_SMALL, 140, 102, 100);
-    _sysDumpValue = makeClippedLabel(_sysLivePanel, "READY", CLR_GREEN, FONT_SMALL, 140, 114, 100);
-    makeClippedLabel(_sysLivePanel, "RADIO", CLR_GREY, FONT_SMALL, 4, 126, 100);
-    _sysRadioValue = makeClippedLabel(_sysLivePanel, "IDLE", CLR_CYAN, FONT_SMALL, 4, 138, 100);
-    makeClippedLabel(_sysLivePanel, "CFG", CLR_GREY, FONT_SMALL, 140, 126, 100);
-    _sysCfgValue = makeClippedLabel(_sysLivePanel, "SET ?", CLR_WHITE, FONT_SMALL, 140, 138, 100);
+    makeSystemRow(30, "STORE", &_sysStorageValue, "FREE", &_sysFreeValue);
+    makeSystemRow(48, "ENT", &_sysPendingValue, "DEDUP", &_sysDedupeValue);
+    makeSystemRow(66, "MAINT", &_sysModeValue, "WORK", &_sysPolicyValue);
+    _sysTimeLabel = makeClippedLabel(_sysLivePanel, "UPTIME", CLR_GREY, FONT_SMALL, 4, 84, 42);
+    _sysTimeValue = makeClippedLabel(_sysLivePanel, "--", CLR_CYAN, FONT_SMALL, 48, 84, 78);
+    makeClippedLabel(_sysLivePanel, "LAST", CLR_GREY, FONT_SMALL, 128, 84, 42);
+    _sysDumpValue = makeClippedLabel(_sysLivePanel, "READY", CLR_GREEN, FONT_SMALL, 172, 84, 72);
+    makeClippedLabel(_sysLivePanel, "RADIO", CLR_GREY, FONT_SMALL, 4, 102, 42);
+    _sysRadioValue = makeClippedLabel(_sysLivePanel, "IDLE", CLR_CYAN, FONT_SMALL, 48, 102, 78);
+    makeClippedLabel(_sysLivePanel, "PWR", CLR_GREY, FONT_SMALL, 128, 102, 42);
+    _sysCfgValue = makeClippedLabel(_sysLivePanel, "SET ?", CLR_WHITE, FONT_SMALL, 172, 102, 72);
 
     _makeLabel(_debriefPanel, "SESSION DEBRIEF",
                accent, FONT_HEADER, LV_ALIGN_TOP_LEFT, 4, 4);
@@ -1395,20 +1415,26 @@ void DisplayManager::_buildScreenSystem() {
     lv_obj_set_style_line_color(debriefLine, lv_color_hex(accent), 0);
     lv_obj_set_style_line_width(debriefLine, 1, 0);
 
+    // Single-line rows (short label + emphasized value on one baseline) so the
+    // bottom pair isn't clipped by the 128px area. Left column x=4, right x=128;
+    // value sits 42px right of the label. Label nudged +3px to sit centered
+    // against the taller FONT_BODY value.
     auto makeDebriefPair = [&](int x, int y, const char* label, lv_obj_t** value) {
-        makeClippedLabel(_debriefPanel, label, CLR_GREY, FONT_SMALL, x, y, 100);
-        *value = makeClippedLabel(_debriefPanel, "0", CLR_WHITE, FONT_BODY, x, y + 14, 100);
+        const int valueX = x + 42;
+        const int valueW = (x < 100) ? 78 : 72;
+        makeClippedLabel(_debriefPanel, label, CLR_GREY, FONT_SMALL, x, y + 3, 40);
+        *value = makeClippedLabel(_debriefPanel, "0", CLR_WHITE, FONT_BODY, valueX, y, valueW);
     };
 
-    makeDebriefPair(4, 32, "DURATION", &_debriefDurationValue);
-    makeDebriefPair(4, 64, "ACCESS POINTS", &_debriefNetworksValue);
-    makeDebriefPair(4, 96, "ENTITIES", &_debriefDevicesValue);
-    makeDebriefPair(4, 128, "OBSERVATIONS", &_debriefProbesValue);
-    makeDebriefPair(140, 32, "PMKIDs", &_debriefPMKIDsValue);
-    makeDebriefPair(140, 64, "DRONES", &_debriefDronesValue);
-    makeDebriefPair(140, 96, "EXPORT", &_debriefExportValue);
-    _debriefLowerLabel = makeClippedLabel(_debriefPanel, "TAG", CLR_GREY, FONT_SMALL, 140, 128, 100);
-    _debriefLowerValue = makeClippedLabel(_debriefPanel, "NONE", CLR_GREY, FONT_BODY, 140, 142, 100);
+    makeDebriefPair(4,   30, "DUR",   &_debriefDurationValue);
+    makeDebriefPair(4,   52, "AP",    &_debriefNetworksValue);
+    makeDebriefPair(4,   74, "ENT",   &_debriefDevicesValue);
+    makeDebriefPair(4,   96, "OBS",   &_debriefProbesValue);
+    makeDebriefPair(128, 30, "PMKID", &_debriefPMKIDsValue);
+    makeDebriefPair(128, 52, "DRONE", &_debriefDronesValue);
+    makeDebriefPair(128, 74, "EXP",   &_debriefExportValue);
+    _debriefLowerLabel = makeClippedLabel(_debriefPanel, "TAG", CLR_GREY, FONT_SMALL, 128, 96 + 3, 40);
+    _debriefLowerValue = makeClippedLabel(_debriefPanel, "NONE", CLR_GREY, FONT_BODY, 170, 96, 72);
 }
 
 // ─── Screen data updates ──────────────────────────────────────
@@ -2797,9 +2823,9 @@ void DisplayManager::drawRecon(MissionProfile selectedProfile) {
         lv_obj_remove_flag(_reconStatusValue, LV_OBJ_FLAG_HIDDEN);
     }
     if (_reconDetailValue) {
-        lv_label_set_text(_reconDetailValue, "Chosen mission owns the screen and controls");
-        lv_obj_set_style_text_color(_reconDetailValue, lv_color_hex(CLR_GREY), 0);
-        lv_obj_remove_flag(_reconDetailValue, LV_OBJ_FLAG_HIDDEN);
+        // Redundant filler line removed to make room for the posture row inside
+        // the 128px content area; the posture line below carries the useful bias.
+        lv_obj_add_flag(_reconDetailValue, LV_OBJ_FLAG_HIDDEN);
     }
 
     char posture[56] = {};
@@ -2927,29 +2953,29 @@ void DisplayManager::drawSystem(float battV, unsigned long uptimeMs,
     }
 
     char usedLine[24];
-    snprintf(usedLine, sizeof(usedLine), "%u%% USED", storageUsedPct);
+    snprintf(usedLine, sizeof(usedLine), "%u%%", storageUsedPct);
 
     char freeLine[24];
     if (storageFreeBytes >= (1024UL * 1024UL)) {
-        snprintf(freeLine, sizeof(freeLine), "%luMB FREE",
+        snprintf(freeLine, sizeof(freeLine), "%luMB",
                  static_cast<unsigned long>(storageFreeBytes / (1024UL * 1024UL)));
     } else {
-        snprintf(freeLine, sizeof(freeLine), "%luKB FREE",
+        snprintf(freeLine, sizeof(freeLine), "%luKB",
                  static_cast<unsigned long>(storageFreeBytes / 1024UL));
     }
 
     char pendingLine[24];
     const bool showRepairRequired = storageRepairRequired;
     if (showRepairRequired) {
-        snprintf(pendingLine, sizeof(pendingLine), "REPAIR REQUIRED");
+        snprintf(pendingLine, sizeof(pendingLine), "REPAIR");
     } else {
-        snprintf(pendingLine, sizeof(pendingLine), "%lu / %lu NEAR",
+        snprintf(pendingLine, sizeof(pendingLine), "%lu/%lu",
                  static_cast<unsigned long>(entityTotal),
                  static_cast<unsigned long>(entityNearby));
     }
 
     char dedupeLine[24];
-    snprintf(dedupeLine, sizeof(dedupeLine), "%lu DD %lu DR",
+    snprintf(dedupeLine, sizeof(dedupeLine), "%lu/%lu",
              static_cast<unsigned long>(storageDeduped),
              static_cast<unsigned long>(storageDropped));
 
@@ -2969,7 +2995,7 @@ void DisplayManager::drawSystem(float battV, unsigned long uptimeMs,
             maintColor = CLR_CYAN;
             break;
         case STORAGE_MAINT_UI_INCOMPLETE:
-            maintStateText = "INCOMPLETE";
+            maintStateText = "INCMP";
             maintColor = CLR_YELLOW;
             break;
         case STORAGE_MAINT_UI_OFFLINE:
@@ -2984,9 +3010,12 @@ void DisplayManager::drawSystem(float battV, unsigned long uptimeMs,
     char maintLine[24];
     snprintf(maintLine, sizeof(maintLine), "%s", maintStateText);
 
+    // Bounded work indicator — the full maintenance text overran the cell, and
+    // the MAINT column already carries the state word. "busy" = actively
+    // working, "queued" = flags pending, "none" = idle.
     char maintWorkLine[32];
     if (storageMaintenanceText[0]) {
-        snprintf(maintWorkLine, sizeof(maintWorkLine), "%.31s", storageMaintenanceText);
+        snprintf(maintWorkLine, sizeof(maintWorkLine), "busy");
     } else if (storageMaintenanceFlags == 0) {
         snprintf(maintWorkLine, sizeof(maintWorkLine), "none");
     } else {
@@ -2999,7 +3028,10 @@ void DisplayManager::drawSystem(float battV, unsigned long uptimeMs,
 
     char timeLine[24];
     if (timeValid && timeLocal[0]) {
-        snprintf(timeLine, sizeof(timeLine), "%.23s", timeLocal);
+        // Show clock only (drop the YYYY-MM-DD date) so it fits the cell.
+        const char* clock = strchr(timeLocal, ' ');
+        clock = clock ? clock + 1 : timeLocal;
+        snprintf(timeLine, sizeof(timeLine), "%.11s", clock);
     } else {
         snprintf(timeLine, sizeof(timeLine), "UP %luh %lum",
                  static_cast<unsigned long>(h),
@@ -3008,45 +3040,30 @@ void DisplayManager::drawSystem(float battV, unsigned long uptimeMs,
 
     const char* linkState = "IDLE";
     switch ((RadioOwner)radioOwner) {
-        case RADIO_WIFI_CAPTURE: linkState = "WIFI RX"; break;
-        case RADIO_WIFI_UPLOAD:  linkState = "WIFI UP"; break;
-        case RADIO_WIFI_SCAN:    linkState = "WIFI SCN"; break;
-        case RADIO_WIFI_PMKID:   linkState = "PMKID";   break;
-        case RADIO_BLE_GPS:      linkState = "BLE GPS"; break;
-        case RADIO_BLE_TEXT:     linkState = "BLE TXT"; break;
+        case RADIO_WIFI_CAPTURE: linkState = "W-RX";  break;
+        case RADIO_WIFI_UPLOAD:  linkState = "W-UP";  break;
+        case RADIO_WIFI_SCAN:    linkState = "W-SCN"; break;
+        case RADIO_WIFI_PMKID:   linkState = "PMKID"; break;
+        case RADIO_BLE_GPS:      linkState = "B-GPS"; break;
+        case RADIO_BLE_TEXT:     linkState = "B-TXT"; break;
         default: break;
     }
 
     char radioLine[24];
-    snprintf(radioLine, sizeof(radioLine), "%s %s", linkState, ext ? "EXT" : "INT");
+    snprintf(radioLine, sizeof(radioLine), "%s %s", linkState, ext ? "EX" : "IN");
 
+    // Compact power readout: state tag + voltage. Battery %, charge state,
+    // and runtime are already surfaced in the status bar, so this cell carries
+    // the diagnostic voltage that isn't shown elsewhere.
     char cfgLine[24];
     if (powerSource == POWER_SOURCE_USB) {
-        snprintf(cfgLine, sizeof(cfgLine), "USB %s %.2fV",
-                 charging ? "CHG" : "EXT",
+        snprintf(cfgLine, sizeof(cfgLine), "USB %.1fV",
                  battVoltageMv > 0 ? (static_cast<float>(battVoltageMv) / 1000.0f) : battV);
-    } else if (battRuntimeMin > 0 && battVoltageMv > 0) {
-        const unsigned rtHours = battRuntimeMin / 60U;
-        const unsigned rtMins = battRuntimeMin % 60U;
+    } else if (battVoltageMv > 0) {
         const char* label = powerState == POWER_STATE_BATTERY_CRITICAL ? "CRT" :
                             powerState == POWER_STATE_BATTERY_ECONOMY ? "ECO" : "BAT";
-        if (rtHours > 0) {
-            snprintf(cfgLine, sizeof(cfgLine), "%s %d%% %uh%02u %.2fV",
-                     label,
-                     battPercent,
-                     rtHours,
-                     rtMins,
-                     static_cast<float>(battVoltageMv) / 1000.0f);
-        } else {
-            snprintf(cfgLine, sizeof(cfgLine), "%s %d%% %um %.2fV",
-                     label,
-                     battPercent,
-                     rtMins,
-                     static_cast<float>(battVoltageMv) / 1000.0f);
-        }
-    } else if (battVoltageMv > 0) {
-        snprintf(cfgLine, sizeof(cfgLine), "BAT %d%% %.2fV",
-                 battPercent,
+        snprintf(cfgLine, sizeof(cfgLine), "%s %.1fV",
+                 label,
                  static_cast<float>(battVoltageMv) / 1000.0f);
     } else if (settingsReady) {
         snprintf(cfgLine, sizeof(cfgLine), "%u AP %lus",
@@ -3066,13 +3083,13 @@ void DisplayManager::drawSystem(float battV, unsigned long uptimeMs,
 
     char maintLastLine[24];
     if (storageMaintenanceLastRunMs == 0) {
-        snprintf(maintLastLine, sizeof(maintLastLine), "NO WINDOW");
+        snprintf(maintLastLine, sizeof(maintLastLine), "NONE");
     } else if (storageMaintenanceLastDurationMs >= 1000UL) {
-        snprintf(maintLastLine, sizeof(maintLastLine), "%lus AGO %lus",
+        snprintf(maintLastLine, sizeof(maintLastLine), "%lus/%lus",
                  static_cast<unsigned long>((millis() - storageMaintenanceLastRunMs) / 1000UL),
                  static_cast<unsigned long>(storageMaintenanceLastDurationMs / 1000UL));
     } else {
-        snprintf(maintLastLine, sizeof(maintLastLine), "%lus AGO %lums",
+        snprintf(maintLastLine, sizeof(maintLastLine), "%lus/%lums",
                  static_cast<unsigned long>((millis() - storageMaintenanceLastRunMs) / 1000UL),
                  static_cast<unsigned long>(storageMaintenanceLastDurationMs));
     }
@@ -3162,7 +3179,8 @@ void DisplayManager::drawDebrief() {
 
     char buf[32];
 
-    snprintf(buf, sizeof(buf), "%luh %lum %lus", h, m, s);
+    snprintf(buf, sizeof(buf), "%luh%02lum", h, m);
+    (void)s;
     lv_label_set_text(_debriefDurationValue, buf);
     lv_obj_set_style_text_color(_debriefDurationValue, lv_color_hex(CLR_CYAN), 0);
 
@@ -3200,7 +3218,7 @@ void DisplayManager::drawDebrief() {
                      static_cast<unsigned long>(exportKb));
         }
     } else {
-        snprintf(buf, sizeof(buf), "%d pending", files);
+        snprintf(buf, sizeof(buf), "%dpd", files);
     }
     lv_label_set_text(_debriefExportValue, buf);
     lv_obj_set_style_text_color(_debriefExportValue,
@@ -3263,23 +3281,26 @@ void DisplayManager::_buildScreenMissionSummary() {
     lv_obj_set_style_line_color(line, lv_color_hex(accent), 0);
     lv_obj_set_style_line_width(line, 1, 0);
 
+    // Single-line rows (label + value on one baseline) so all five rows fit
+    // the 128px content area — five stacked rows clipped the bottom "LAST RUN"
+    // line. Label in the left ~46px of each column, value in the remainder.
     auto makeSummaryPair = [&](int x, int y, const char* label, lv_obj_t** value) {
-        makeClippedLabel(_missionSummaryContent, label, CLR_GREY, FONT_SMALL, x, y, 110);
+        makeClippedLabel(_missionSummaryContent, label, CLR_GREY, FONT_SMALL, x, y, 46);
         *value = makeClippedLabel(_missionSummaryContent, "--", CLR_WHITE,
-                                  FONT_SMALL, x, y + 12, 110);
+                                  FONT_SMALL, x + 48, y, 70);
     };
 
     // Top band = this-boot health; bottom band = previous-run recap. The member
     // pointers keep their original names but are repurposed for boot metrics.
-    makeSummaryPair(4,   30, "UPTIME", &_missionSummaryDurationValue);
-    makeSummaryPair(126, 30, "BOOTS", &_missionSummaryRecordValue);
-    makeSummaryPair(4,   54, "FREE HEAP", &_missionSummaryCaptureValue);
-    makeSummaryPair(126, 54, "STORAGE", &_missionSummaryUniqueValue);
-    makeSummaryPair(4,   78, "TIME", &_missionSummaryPendingValue);
-    makeSummaryPair(126, 78, "FW VER", &_missionSummaryEnrichValue);
-    makeSummaryPair(4,  102, "LAST REC", &_missionSummaryGpsValue);
-    makeSummaryPair(126,102, "LAST UPL", &_missionSummaryContextValue);
-    makeSummaryPair(4,  126, "LAST RUN", &_missionSummaryTagValue);
+    makeSummaryPair(4,    30, "UP", &_missionSummaryDurationValue);
+    makeSummaryPair(126,  30, "BOOT", &_missionSummaryRecordValue);
+    makeSummaryPair(4,    48, "HEAP", &_missionSummaryCaptureValue);
+    makeSummaryPair(126,  48, "STORE", &_missionSummaryUniqueValue);
+    makeSummaryPair(4,    66, "TIME", &_missionSummaryPendingValue);
+    makeSummaryPair(126,  66, "FW", &_missionSummaryEnrichValue);
+    makeSummaryPair(4,    84, "REC", &_missionSummaryGpsValue);
+    makeSummaryPair(126,  84, "UPL", &_missionSummaryContextValue);
+    makeSummaryPair(4,   102, "RUN", &_missionSummaryTagValue);
 }
 
 void DisplayManager::drawMissionSummary(unsigned long uptimeMs) {

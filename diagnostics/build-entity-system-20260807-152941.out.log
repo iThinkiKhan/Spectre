@@ -1,0 +1,272 @@
+Processing esp32-s3-devkitc1-n16r8 (platform: https://github.com/pioarduino/platform-espressif32/releases/download/stable/platform-espressif32.zip; board: esp32-s3-devkitc1-n16r8; framework: arduino)
+--------------------------------------------------------------------------------
+Verbose mode can be enabled via `-v, --verbose` option
+CONFIGURATION: https://docs.platformio.org/page/boards/espressif32/esp32-s3-devkitc1-n16r8.html
+PLATFORM: Espressif 32 (55.3.39) > Espressif ESP32-S3-DevKitC-1-N16R8V (16 MB Flash Quad, 8 MB PSRAM Octal)
+HARDWARE: ESP32S3 240MHz, 320KB RAM, 16MB Flash
+DEBUG: Current (esp-builtin) On-board (esp-builtin) External (cmsis-dap, esp-bridge, esp-prog, esp-prog-2, iot-bus-jtag, jlink, minimodule, olimex-arm-usb-ocd, olimex-arm-usb-ocd-h, olimex-arm-usb-tiny-h, olimex-jtag-tiny, tumpa)
+PACKAGES: 
+ - contrib-piohome @ 3.4.4 
+ - framework-arduinoespressif32 @ 3.3.9 
+ - framework-arduinoespressif32-libs @ 5.5.4+sha.735507283d 
+ - tool-esptoolpy @ 5.3.0 
+ - tool-xtensa-esp-elf-gdb @ 17.1.0+20260402 
+ - toolchain-xtensa-esp-elf @ 14.2.0+20260121
+*** WARNING: Windows Long Path Support is disabled ***
+*** Enable it for better performance: ***
+*** 1. Run as Administrator: gpedit.msc ***
+*** 2. Navigate to: Computer Configuration > Administrative Templates > System > Filesystem ***
+*** 3. Enable 'Enable Win32 long paths' ***
+*** OR run PowerShell as Admin: ***
+*** New-ItemProperty -Path 'HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem' -Name 'LongPathsEnabled' -Value 1 -PropertyType DWORD -Force ***
+*** Restart required after enabling ***
+LDF: Library Dependency Finder -> https://bit.ly/configure-pio-ldf
+LDF Modes: Finder ~ chain, Compatibility ~ soft
+Found 49 compatible libraries
+Scanning dependencies...
+Dependency Graph
+|-- TFT_eSPI @ 2.5.43
+|-- ArduinoJson @ 7.4.3
+|-- PubSubClient @ 2.8.0
+|-- NimBLE-Arduino @ 2.5.0
+|-- lvgl @ 9.5.0
+|-- Preferences @ 3.3.9
+|-- LittleFS @ 3.3.9
+|-- WiFi @ 3.3.9
+|-- USB @ 3.3.9
+|-- opendroneid-core-c @ 0.0.0-local
+Building in release mode
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\src\core\BootInfo.cpp.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\src\core\CrashBreadcrumb.cpp.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\src\core\DebugLog.cpp.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\src\core\MissionRuntime.cpp.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\src\core\RuntimeContracts.cpp.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\src\core\Session.cpp.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\src\core\SpectreState.cpp.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\src\core\StorageExclusiveWindow.cpp.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\src\core\StorageUiMirror.cpp.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\src\data\FieldVault.cpp.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\src\fonts\orbitron_bold_16.c.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\src\fonts\orbitron_bold_32.c.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\src\fonts\orbitron_bold_uncompressed_16.c.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\src\fonts\orbitron_bold_uncompressed_32.c.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\src\fonts\sharetech_14.c.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\src\fonts\sharetech_16.c.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\src\fonts\sharetech_uncompressed_14.c.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\src\fonts\sharetech_uncompressed_16.c.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\src\fonts\spacemono_bold_14.c.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\src\fonts\spacemono_bold_16.c.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\src\main.cpp.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\src\managers\AntennaManager.cpp.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\src\managers\BLEManager.cpp.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\src\managers\BadUsbManager.cpp.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\src\managers\BadUsbVault.cpp.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\src\managers\ButtonHandler.cpp.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\src\managers\CommandDispatcher.cpp.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\src\managers\CounterTrust.cpp.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\src\managers\DashboardStreamer.cpp.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\src\managers\DedupFilter.cpp.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\src\managers\DisplayManager.cpp.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\src\managers\EntityManager.cpp.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\src\managers\ExportManager.cpp.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\src\managers\FsAudit.cpp.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\src\managers\KnownLocationsStore.cpp.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\src\managers\LoRaManager.cpp.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\src\managers\LogStreamer.cpp.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\src\managers\MQTTManager.cpp.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\src\managers\MaintenanceContinuity.cpp.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\src\managers\MeshtasticManager.cpp.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\src\managers\NotificationCenter.cpp.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\src\managers\PhoneTransportRouter.cpp.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\src\managers\PowerManager.cpp.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\src\managers\RAMSpool.cpp.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\src\managers\RadioArbiter.cpp.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\src\managers\ReyaxBackend.cpp.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\src\managers\SettingsManager.cpp.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\src\managers\SpoolBinaryCodec.cpp.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\src\managers\SpoolPaths.cpp.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\src\managers\StorageFsUtil.cpp.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\src\managers\StorageManager.cpp.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\src\managers\SubGhzManager.cpp.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\src\managers\SubGhzRecordWriter.cpp.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\src\managers\TimeService.cpp.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\src\managers\WiFiManager.cpp.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\src\managers\WioNrfAccessory.cpp.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\src\managers\WioSx1262Backend.cpp.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\src\security\BleSecureSession.cpp.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\src\ui\BootSequence.cpp.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\src\ui\LVGLDriver.cpp.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\src\ui\Mascot.cpp.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\src\ui\Mascot_LVGL.cpp.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\src\ui\PrebootFallback.cpp.o
+Building C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\bootloader.bin
+esptool v5.3.0
+Creating ESP32-S3 image...
+Merged 2 ELF sections.
+Successfully created ESP32-S3 image.
+Generating partitions C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\partitions.bin
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\lib1dd\SPI\SPI.cpp.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\lib962\FS\FS.cpp.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\lib962\FS\vfs_api.cpp.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\lib601\SPIFFS\SPIFFS.cpp.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\lib3a5\LittleFS\LittleFS.cpp.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\lib87e\TFT_eSPI\TFT_eSPI.cpp.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\lib143\PubSubClient\PubSubClient.cpp.o
+Archiving C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\lib1dd\libSPI.a
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\lib054\NimBLE-Arduino\NimBLE2904.cpp.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\lib054\NimBLE-Arduino\NimBLEAddress.cpp.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\lib054\NimBLE-Arduino\NimBLEAdvertisedDevice.cpp.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\lib054\NimBLE-Arduino\NimBLEAdvertisementData.cpp.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\lib054\NimBLE-Arduino\NimBLEAdvertising.cpp.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\lib054\NimBLE-Arduino\NimBLEAttValue.cpp.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\lib054\NimBLE-Arduino\NimBLEBeacon.cpp.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\lib054\NimBLE-Arduino\NimBLECharacteristic.cpp.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\lib054\NimBLE-Arduino\NimBLEClient.cpp.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\lib054\NimBLE-Arduino\NimBLEDescriptor.cpp.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\lib054\NimBLE-Arduino\NimBLEDevice.cpp.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\lib054\NimBLE-Arduino\NimBLEEddystoneTLM.cpp.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\lib054\NimBLE-Arduino\NimBLEExtAdvertising.cpp.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\lib054\NimBLE-Arduino\NimBLEHIDDevice.cpp.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\lib054\NimBLE-Arduino\NimBLEL2CAPChannel.cpp.o
+Archiving C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\lib601\libSPIFFS.a
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\lib054\NimBLE-Arduino\NimBLEL2CAPServer.cpp.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\lib054\NimBLE-Arduino\NimBLERemoteCharacteristic.cpp.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\lib054\NimBLE-Arduino\NimBLERemoteDescriptor.cpp.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\lib054\NimBLE-Arduino\NimBLERemoteService.cpp.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\lib054\NimBLE-Arduino\NimBLERemoteValueAttribute.cpp.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\lib054\NimBLE-Arduino\NimBLEScan.cpp.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\lib054\NimBLE-Arduino\NimBLEServer.cpp.o
+Archiving C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\lib962\libFS.a
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\lib054\NimBLE-Arduino\NimBLEService.cpp.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\lib054\NimBLE-Arduino\NimBLEStream.cpp.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\lib054\NimBLE-Arduino\NimBLEUUID.cpp.o
+Archiving C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\lib3a5\libLittleFS.a
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\lib054\NimBLE-Arduino\NimBLEUtils.cpp.o
+Archiving C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\lib143\libPubSubClient.a
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\lib054\NimBLE-Arduino\nimble\esp_port\esp-hci\src\esp_nimble_hci.c.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\lib054\NimBLE-Arduino\nimble\esp_port\esp-hci\src\na_hci_driver.c.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\lib054\NimBLE-Arduino\nimble\esp_port\esp-hci\src\na_hci_transport.c.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\lib054\NimBLE-Arduino\nimble\esp_port\port\src\exp_nimble_mem.c.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\lib054\NimBLE-Arduino\nimble\ext\tinycrypt\src\aes_decrypt.c.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\lib054\NimBLE-Arduino\nimble\ext\tinycrypt\src\aes_encrypt.c.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\lib054\NimBLE-Arduino\nimble\ext\tinycrypt\src\cbc_mode.c.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\lib054\NimBLE-Arduino\nimble\ext\tinycrypt\src\ccm_mode.c.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\lib054\NimBLE-Arduino\nimble\ext\tinycrypt\src\cmac_mode.c.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\lib054\NimBLE-Arduino\nimble\ext\tinycrypt\src\ctr_mode.c.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\lib054\NimBLE-Arduino\nimble\ext\tinycrypt\src\ctr_prng.c.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\lib054\NimBLE-Arduino\nimble\ext\tinycrypt\src\ecc.c.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\lib054\NimBLE-Arduino\nimble\ext\tinycrypt\src\ecc_dh.c.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\lib054\NimBLE-Arduino\nimble\ext\tinycrypt\src\ecc_dsa.c.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\lib054\NimBLE-Arduino\nimble\ext\tinycrypt\src\ecc_platform_specific.c.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\lib054\NimBLE-Arduino\nimble\ext\tinycrypt\src\hmac.c.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\lib054\NimBLE-Arduino\nimble\ext\tinycrypt\src\hmac_prng.c.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\lib054\NimBLE-Arduino\nimble\ext\tinycrypt\src\sha256.c.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\lib054\NimBLE-Arduino\nimble\ext\tinycrypt\src\utils.c.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\lib054\NimBLE-Arduino\nimble\nimble\controller\src\ble_ll.c.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\lib054\NimBLE-Arduino\nimble\nimble\controller\src\ble_ll_adv.c.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\lib054\NimBLE-Arduino\nimble\nimble\controller\src\ble_ll_conn.c.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\lib054\NimBLE-Arduino\nimble\nimble\controller\src\ble_ll_conn_hci.c.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\lib054\NimBLE-Arduino\nimble\nimble\controller\src\ble_ll_crypto.c.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\lib054\NimBLE-Arduino\nimble\nimble\controller\src\ble_ll_ctrl.c.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\lib054\NimBLE-Arduino\nimble\nimble\controller\src\ble_ll_dtm.c.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\lib054\NimBLE-Arduino\nimble\nimble\controller\src\ble_ll_hci.c.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\lib054\NimBLE-Arduino\nimble\nimble\controller\src\ble_ll_hci_ev.c.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\lib054\NimBLE-Arduino\nimble\nimble\controller\src\ble_ll_hci_supp_cmd.c.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\lib054\NimBLE-Arduino\nimble\nimble\controller\src\ble_ll_hci_vs.c.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\lib054\NimBLE-Arduino\nimble\nimble\controller\src\ble_ll_iso.c.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\lib054\NimBLE-Arduino\nimble\nimble\controller\src\ble_ll_iso_big.c.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\lib054\NimBLE-Arduino\nimble\nimble\controller\src\ble_ll_isoal.c.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\lib054\NimBLE-Arduino\nimble\nimble\controller\src\ble_ll_pdu.c.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\lib054\NimBLE-Arduino\nimble\nimble\controller\src\ble_ll_rand.c.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\lib054\NimBLE-Arduino\nimble\nimble\controller\src\ble_ll_resolv.c.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\lib054\NimBLE-Arduino\nimble\nimble\controller\src\ble_ll_rfmgmt.c.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\lib054\NimBLE-Arduino\nimble\nimble\controller\src\ble_ll_scan.c.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\lib054\NimBLE-Arduino\nimble\nimble\controller\src\ble_ll_scan_aux.c.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\lib054\NimBLE-Arduino\nimble\nimble\controller\src\ble_ll_sched.c.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\lib054\NimBLE-Arduino\nimble\nimble\controller\src\ble_ll_sync.c.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\lib054\NimBLE-Arduino\nimble\nimble\controller\src\ble_ll_trace.c.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\lib054\NimBLE-Arduino\nimble\nimble\controller\src\ble_ll_utils.c.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\lib054\NimBLE-Arduino\nimble\nimble\controller\src\ble_ll_whitelist.c.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\lib054\NimBLE-Arduino\nimble\nimble\drivers\nrf51\src\ble_hw.c.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\lib054\NimBLE-Arduino\nimble\nimble\drivers\nrf51\src\ble_phy.c.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\lib054\NimBLE-Arduino\nimble\nimble\drivers\nrf5x\src\ble_hw.c.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\lib054\NimBLE-Arduino\nimble\nimble\drivers\nrf5x\src\ble_phy.c.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\lib054\NimBLE-Arduino\nimble\nimble\drivers\nrf5x\src\ble_phy_trace.c.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\lib054\NimBLE-Arduino\nimble\nimble\drivers\nrf5x\src\nrf52\phy.c.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\lib054\NimBLE-Arduino\nimble\nimble\drivers\nrf5x\src\nrf53\phy.c.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\lib054\NimBLE-Arduino\nimble\nimble\host\mesh\src\access.c.o
+Archiving C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\lib87e\libTFT_eSPI.a
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\lib054\NimBLE-Arduino\nimble\nimble\host\mesh\src\adv.c.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\lib054\NimBLE-Arduino\nimble\nimble\host\mesh\src\adv_ext.c.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\lib054\NimBLE-Arduino\nimble\nimble\host\mesh\src\adv_legacy.c.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\lib054\NimBLE-Arduino\nimble\nimble\host\mesh\src\aes-ccm.c.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\lib054\NimBLE-Arduino\nimble\nimble\host\mesh\src\app_keys.c.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\lib054\NimBLE-Arduino\nimble\nimble\host\mesh\src\beacon.c.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\lib054\NimBLE-Arduino\nimble\nimble\host\mesh\src\cdb.c.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\lib054\NimBLE-Arduino\nimble\nimble\host\mesh\src\cfg.c.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\lib054\NimBLE-Arduino\nimble\nimble\host\mesh\src\cfg_cli.c.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\lib054\NimBLE-Arduino\nimble\nimble\host\mesh\src\cfg_srv.c.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\lib054\NimBLE-Arduino\nimble\nimble\host\mesh\src\crypto.c.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\lib054\NimBLE-Arduino\nimble\nimble\host\mesh\src\friend.c.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\lib054\NimBLE-Arduino\nimble\nimble\host\mesh\src\glue.c.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\lib054\NimBLE-Arduino\nimble\nimble\host\mesh\src\health_cli.c.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\lib054\NimBLE-Arduino\nimble\nimble\host\mesh\src\health_srv.c.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\lib054\NimBLE-Arduino\nimble\nimble\host\mesh\src\heartbeat.c.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\lib054\NimBLE-Arduino\nimble\nimble\host\mesh\src\light_model.c.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\lib054\NimBLE-Arduino\nimble\nimble\host\mesh\src\lpn.c.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\lib054\NimBLE-Arduino\nimble\nimble\host\mesh\src\mesh.c.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\lib054\NimBLE-Arduino\nimble\nimble\host\mesh\src\model_cli.c.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\lib054\NimBLE-Arduino\nimble\nimble\host\mesh\src\model_srv.c.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\lib054\NimBLE-Arduino\nimble\nimble\host\mesh\src\msg.c.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\lib054\NimBLE-Arduino\nimble\nimble\host\mesh\src\net.c.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\lib054\NimBLE-Arduino\nimble\nimble\host\mesh\src\pb_adv.c.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\lib054\NimBLE-Arduino\nimble\nimble\host\mesh\src\pb_gatt.c.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\lib054\NimBLE-Arduino\nimble\nimble\host\mesh\src\pb_gatt_srv.c.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\lib054\NimBLE-Arduino\nimble\nimble\host\mesh\src\prov.c.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\lib054\NimBLE-Arduino\nimble\nimble\host\mesh\src\prov_device.c.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\lib054\NimBLE-Arduino\nimble\nimble\host\mesh\src\provisioner.c.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\lib054\NimBLE-Arduino\nimble\nimble\host\mesh\src\proxy.c.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\lib054\NimBLE-Arduino\nimble\nimble\host\mesh\src\proxy_msg.c.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\lib054\NimBLE-Arduino\nimble\nimble\host\mesh\src\proxy_srv.c.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\lib054\NimBLE-Arduino\nimble\nimble\host\mesh\src\rpl.c.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\lib054\NimBLE-Arduino\nimble\nimble\host\mesh\src\settings.c.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\lib054\NimBLE-Arduino\nimble\nimble\host\mesh\src\shell.c.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\lib054\NimBLE-Arduino\nimble\nimble\host\mesh\src\subnet.c.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\lib054\NimBLE-Arduino\nimble\nimble\host\mesh\src\testing.c.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\lib054\NimBLE-Arduino\nimble\nimble\host\mesh\src\transport.c.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\lib054\NimBLE-Arduino\nimble\nimble\host\services\gap\src\ble_svc_gap.c.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\lib054\NimBLE-Arduino\nimble\nimble\host\services\gatt\src\ble_svc_gatt.c.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\lib054\NimBLE-Arduino\nimble\nimble\host\src\ble_aes_ccm.c.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\lib054\NimBLE-Arduino\nimble\nimble\host\src\ble_att.c.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\lib054\NimBLE-Arduino\nimble\nimble\host\src\ble_att_clt.c.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\lib054\NimBLE-Arduino\nimble\nimble\host\src\ble_att_cmd.c.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\lib054\NimBLE-Arduino\nimble\nimble\host\src\ble_att_svr.c.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\lib054\NimBLE-Arduino\nimble\nimble\host\src\ble_dtm.c.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\lib054\NimBLE-Arduino\nimble\nimble\host\src\ble_ead.c.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\lib054\NimBLE-Arduino\nimble\nimble\host\src\ble_eatt.c.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\lib054\NimBLE-Arduino\nimble\nimble\host\src\ble_eddystone.c.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\lib054\NimBLE-Arduino\nimble\nimble\host\src\ble_gap.c.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\lib054\NimBLE-Arduino\nimble\nimble\host\src\ble_gattc.c.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\lib054\NimBLE-Arduino\nimble\nimble\host\src\ble_gattc_cache.c.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\lib054\NimBLE-Arduino\nimble\nimble\host\src\ble_gattc_cache_conn.c.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\lib054\NimBLE-Arduino\nimble\nimble\host\src\ble_gatts.c.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\lib054\NimBLE-Arduino\nimble\nimble\host\src\ble_gatts_lcl.c.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\lib054\NimBLE-Arduino\nimble\nimble\host\src\ble_hs.c.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\lib054\NimBLE-Arduino\nimble\nimble\host\src\ble_hs_adv.c.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\lib054\NimBLE-Arduino\nimble\nimble\host\src\ble_hs_atomic.c.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\lib054\NimBLE-Arduino\nimble\nimble\host\src\ble_hs_cfg.c.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\lib054\NimBLE-Arduino\nimble\nimble\host\src\ble_hs_conn.c.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\lib054\NimBLE-Arduino\nimble\nimble\host\src\ble_hs_flow.c.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\lib054\NimBLE-Arduino\nimble\nimble\host\src\ble_hs_hci.c.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\lib054\NimBLE-Arduino\nimble\nimble\host\src\ble_hs_hci_cmd.c.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\lib054\NimBLE-Arduino\nimble\nimble\host\src\ble_hs_hci_evt.c.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\lib054\NimBLE-Arduino\nimble\nimble\host\src\ble_hs_hci_util.c.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\lib054\NimBLE-Arduino\nimble\nimble\host\src\ble_hs_id.c.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\lib054\NimBLE-Arduino\nimble\nimble\host\src\ble_hs_log.c.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\lib054\NimBLE-Arduino\nimble\nimble\host\src\ble_hs_mbuf.c.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\lib054\NimBLE-Arduino\nimble\nimble\host\src\ble_hs_misc.c.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\lib054\NimBLE-Arduino\nimble\nimble\host\src\ble_hs_mqueue.c.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\lib054\NimBLE-Arduino\nimble\nimble\host\src\ble_hs_periodic_sync.c.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\lib054\NimBLE-Arduino\nimble\nimble\host\src\ble_hs_pvcy.c.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\lib054\NimBLE-Arduino\nimble\nimble\host\src\ble_hs_resolv.c.o
+Compiling C:\PlatformIO\_build\Spectre\esp32-s3-devkitc1-n16r8\lib054\NimBLE-Arduino\nimble\nimble\host\src\ble_hs_shutdown.c.o

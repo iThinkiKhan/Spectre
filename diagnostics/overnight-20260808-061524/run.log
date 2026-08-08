@@ -1,0 +1,14 @@
+[06:15:24] === Spectre overnight run: soak=1.6h sample=3min ===
+[06:15:24] output: C:\PlatformIO\Projects\Spectre\diagnostics\overnight-20260808-061524
+[06:15:25] app port: COM13
+[06:15:25] Phase 0b: capturing 120s of boot/early-run serial
+[06:17:27] Phase 1: console diagnostic sweep
+[06:19:11] Phase 2: soak 1.6h, sampling every 3min
+[06:20:27] sample 1 done; 95min remaining
+[06:23:27] sample 2 done; 92min remaining
+[06:26:28] sample 3 done; 89min remaining
+[06:29:28] sample 4 done; 86min remaining
+[06:32:29] sample 5 done; 83min remaining
+[06:35:30] sample 6 done; 80min remaining
+[06:38:31] sample 7 done; 77min remaining
+[06:41:33] sample 8 done; 74min remaining

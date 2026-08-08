@@ -1,0 +1,158 @@
+﻿# Spectre WIO link split 2026-07-03T11:01:22.2766747-05:00
+# port=COM13 baud=115200 dtr=true rts=false
+
+>>> 
+
+>>> time
+time
+[TIME] valid=1 accurate=1 source=ntp utc=2026-07-03T16:01:25Z
+[TIME] lastNtpAttempt=ok age=1089s
+
+>>> wio status
+wio status
+[WIO] available=1 bleProxy=1 sx1262=0 link=idle lastSeenAgeMs=244156
+[WIO] phoneConnected=0 phone=unknown rssi=0
+[WIO] gpsFresh=0 lat=0.000000 lon=0.000000 acc=0.0 timeTrusted=0 epoch=0
+[WIO] textPending=0 textReady=0 prompt=
+[XPORT] active=wio_ble previous=internal_ble ageMs=244155 transitions=1
+
+>>> wio hello
+wio hello
+[WIO] HELLO sent
+
+>>> wio ble status
+wio ble status
+[WIO] BLE_STATUS requested
+
+>>> wio ble start
+wio ble start
+[1109562][I][WIO] External BLE start requested
+[WIO] BLE_START requested
+[1110157][I][HEAP] heap free=7691KB min=7672KB largest=7552KB frag=1% internalFree=41KB internalLargest=27KB psramFree=7650KB core=0/0% owner=WIFI_CAPTURE nets=8 pendingUpload=424 pendingEnrich=427
+[HEALTH] time=2026-07-03 11:01:32 src=ntp
+[HEALTH] heap used=727/8418KB free=7691KB min=7672KB largest=7552KB frag=1%
+[HEALTH] internal used=185/226KB free=41KB min=22KB largest=27KB
+[HEALTH] psram used=542/8192KB free=7650KB largest=7552KB
+[HEALTH] stack free_min: core0=16KB/22KB core1=13KB/18KB
+[HEALTH] core usage: core0=0% core1=0%
+[HEALTH] power=usb state=usb batt=100% 5000mV trend=0mV/min runtime=0min cap=1100mAh charging=0
+[HEALTH] radio=WIFI_CAPTURE wifi=0 ble=0 gps=0 nets=8 pendingUpload=424 pendingEnrich=427
+[HEALTH] subghz=NONE mode=OFF pkts=0 nodes=0
+[1110159][I][STORAGE] RAMSpool enq=324 cons=324 inflight=0/1024 high=4 pressure=0 drop[full=0 big=0 noise=0 p3Evict=0 p3Drop=0 p2Drop=0 p1Fail=0] free=1024
+[1110160][I][STORAGE] RAMSpool enqueue probe[ok=319 drop=0] device[ok=5 drop=0]
+[1110160][I][STORAGE] RAMSpool worker probe[ok=10 sup=309 drop=0 fail=0 slow=0] device[ok=5 sup=0 drop=0 fail=0 slow=0] slowTotal=0 maxMs=0
+[1110160][I][STORAGE] RAMSpool prioEnq p0=0 p1=0 p2=324 p3=0
+[1110161][I][STORAGE] RAMSpool lanes p1=0/0 p2=0/3 p3=0/0
+[1111189][I][STACK] TaskHardware watermark=16336B min=16336B
+
+>>> wio ble status
+wio ble status
+[WIO] BLE_STATUS requested
+
+>>> wio status
+wio status
+[WIO] available=1 bleProxy=1 sx1262=0 link=idle lastSeenAgeMs=258445
+[WIO] phoneConnected=0 phone=unknown rssi=0
+[WIO] gpsFresh=0 lat=0.000000 lon=0.000000 acc=0.0 timeTrusted=0 epoch=0
+[WIO] textPending=0 textReady=0 prompt=
+[XPORT] active=wio_ble previous=internal_ble ageMs=258444 transitions=1
+
+>>> wio raw SPECTRE/1 SUBGHZ_STATUS
+wio raw SPECTRE/1 SUBGHZ_STATUS
+[WIO] raw line sent
+
+>>> wio probe
+wio probe
+[1121701][I][WIO] External BLE probe start reason=serial_wio_probe seq=3 timeoutMs=12000 phone=unknown rssi=0
+[WIO] probe requested
+[1133704][W][WIO] External BLE failed reason=probe_timeout state=probing seq=3 ageMs=12003 phone=unknown rssi=0
+[1133705][I][WIO] External BLE recovery to idle reason=failed_idle_recovery state=failed phone=unknown rssi=0
+
+>>> wio status
+wio status
+[WIO] available=1 bleProxy=1 sx1262=0 link=idle lastSeenAgeMs=281605
+[WIO] phoneConnected=0 phone=unknown rssi=0
+[WIO] gpsFresh=0 lat=0.000000 lon=0.000000 acc=0.0 timeTrusted=0 epoch=0
+[WIO] textPending=0 textReady=0 prompt=
+[XPORT] active=wio_ble previous=internal_ble ageMs=281604 transitions=1
+[1140165][I][HEAP] heap free=7691KB min=7672KB largest=7552KB frag=1% internalFree=41KB internalLargest=27KB psramFree=7650KB core=0/0% owner=WIFI_CAPTURE nets=8 pendingUpload=424 pendingEnrich=427
+[HEALTH] time=2026-07-03 11:02:03 src=ntp
+[HEALTH] heap used=727/8418KB free=7691KB min=7672KB largest=7552KB frag=1%
+[HEALTH] internal used=185/226KB free=41KB min=22KB largest=27KB
+[HEALTH] psram used=542/8192KB free=7650KB largest=7552KB
+[HEALTH] stack free_min: core0=16KB/22KB core1=13KB/18KB
+[HEALTH] core usage: core0=0% core1=0%
+[HEALTH] power=usb state=usb batt=100% 5000mV trend=0mV/min runtime=0min cap=1100mAh charging=0
+[HEALTH] radio=WIFI_CAPTURE wifi=0 ble=0 gps=0 nets=8 pendingUpload=424 pendingEnrich=427
+[HEALTH] subghz=NONE mode=OFF pkts=0 nodes=0
+[1140167][I][STORAGE] RAMSpool enq=328 cons=328 inflight=0/1024 high=4 pressure=0 drop[full=0 big=0 noise=0 p3Evict=0 p3Drop=0 p2Drop=0 p1Fail=0] free=1024
+[1140168][I][STORAGE] RAMSpool enqueue probe[ok=323 drop=0] device[ok=5 drop=0]
+[1140168][I][STORAGE] RAMSpool worker probe[ok=10 sup=313 drop=0 fail=0 slow=0] device[ok=5 sup=0 drop=0 fail=0 slow=0] slowTotal=0 maxMs=0
+[1140168][I][STORAGE] RAMSpool prioEnq p0=0 p1=0 p2=328 p3=0
+[1140168][I][STORAGE] RAMSpool lanes p1=0/0 p2=0/3 p3=0/0
+[1141197][I][STACK] TaskHardware watermark=16336B min=16336B
+
+>>> wio ble status
+wio ble status
+[WIO] BLE_STATUS requested
+
+>>> companion status
+companion status
+[COMP] enabled=1
+[COMP] external accessory=1 bleProxy=1 phoneConnected=0 phone=unknown rssi=0 ageMs=285725
+[COMP] wio link=idle sx1262=0 textInput=0
+[COMP] phone=UNKNOWN work=PROBING
+[COMP] bleBegun=0 bleRadio=0 bleState=IDLE
+[COMP] ready link=0 gps=0 freshGps=0 ctrl=0 enrich=0
+[COMP] bleInitAgeMs=0 scanStartAgeMs=0 disconnReason=0
+[COMP] pendingEnrichMission=0 pendingEnrichNoise=427 pendingEnrichTotal=427
+[COMP] lastProbeAgeMs=258961 lastEnrichAgeMs=0
+[COMP] radioOwner=wifi_capture
+
+>>> wio enrich
+wio enrich
+[WIO] manual enrich queued
+[1145952][I][COMP] Manual enrich request received; probe backoff bypassed
+
+>>> companion status
+companion status
+[COMP] enabled=1
+[COMP] external accessory=1 bleProxy=1 phoneConnected=0 phone=unknown rssi=0 ageMs=307846
+[COMP] wio link=idle sx1262=0 textInput=0
+[COMP] phone=UNKNOWN work=PROBING
+[COMP] bleBegun=0 bleRadio=0 bleState=IDLE
+[COMP] ready link=0 gps=0 freshGps=0 ctrl=0 enrich=0
+[COMP] bleInitAgeMs=0 scanStartAgeMs=0 disconnReason=0
+[COMP] pendingEnrichMission=0 pendingEnrichNoise=427 pendingEnrichTotal=427
+[COMP] lastProbeAgeMs=281082 lastEnrichAgeMs=0
+[COMP] radioOwner=wifi_capture
+
+>>> spool enrich
+spool enrich
+[1168152][I][WIFI] Radio paused
+[1168308][I][WIFI] Radio suspended
+[1168385][I][STORAGE] RAMSpool worker paused inflight=0 lastInflight=0
+[1168386][I][STORAGE] Exclusive window begin kind=maintenance reason=manual_spool_enrich workerPaused=1 displaySuspended=1
+[SPOOL] enrich starting...
+[1168519][I][STORAGE] load_ids_reserve count=0 freeInternal=72672 largest=27636
+[1168519][I][STORAGE] load_ids_reserved freeInternal=72672
+[1168519][I][STORAGE] load_ids_loop_done scanned=0 skipped=12 idsCollected=0 freeInternal=72672
+[SPOOL] pendingEnrich mission=0 noise=427 total=427
+[SPOOL] enriched=0 trackedTotal=427 summaryValid=1
+[SPOOL] used=380KB / 8128KB auditRepairReq=1 summaryRebuildPending=1
+[1169868][I][STORAGE] RAMSpool worker resumed
+[1169868][I][STORAGE] Exclusive window end kind=maintenance result=done reason=manual_spool_enrich
+[1170026][I][WIFI] Radio suspended
+[1170027][I][STORAGE] RAMSpool worker paused inflight=0 lastInflight=0
+[1170027][I][STORAGE] Exclusive window begin kind=maintenance reason=radio_owner_window workerPaused=1 displaySuspended=1
+[1170028][I][STORAGE] Maintenance start reason=radio_owner_window budgetMs=5000 flags=dirty_summary|snapshot_lagged|segment_audit captureSafe=1
+[1170386][I][STORAGE] worker ui refresh serviced uiRefreshServiceCount=50 uiDeferred=338 uiFlush=50 pressure=0 usedPct=4 pending=424
+[1170386][W][STORAGE] worker metadata flush reason=radio_owner_window ms=358 ok=1 dirty=1
+[1170387][I][STORAGE] worker metadata flush metadataFlushCount=116 reason=radio_owner_window entryMetadataDirtyPending=1 entryUiRefreshPending=1 metadataDirtyPending=1 uiDeferred=338 uiFlush=50 uiRefreshServiceCou
+[1170388][I][STORAGE] Spool repair start reason=maintenance_repair segs=12
+[1170761][I][STORAGE] Spool repair checkpoint seg=214 off=1341 records=5 events=5 enrich=0
+[1170847][I][STORAGE] Spool repair checkpoint seg=219 off=7213 records=32 events=32 enrich=0
+[1170987][I][STORAGE] Spool repair checkpoint seg=220 off=28803 records=129 events=129 enrich=0
+[1171105][I][STORAGE] Spool repair checkpoint seg=221 off=33738 records=149 events=149 enrich=0
+
+# log=C:\PlatformIO\Projects\Spectre\diagnostics\wio-link-split-COM13-20260703-110122.log

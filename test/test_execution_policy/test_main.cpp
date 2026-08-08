@@ -5,6 +5,7 @@
 #include <unity.h>
 
 #include "../../src/core/ExecutionPolicy.h"
+#include "../../src/managers/StoragePressure.h"
 
 namespace {
 
@@ -62,6 +63,14 @@ static_assert(ExecutionPolicy::dueUiRefresh(SCREEN_SYSTEM,
                                             kZeroMarks,
                                             kSchedule) == ExecutionPolicy::UI_REFRESH_NONE,
               "system screen should wait until its interval elapses");
+static_assert(StoragePressure::classify(79).mode == STORAGE_MODE_NORMAL,
+              "79% must remain normal");
+static_assert(StoragePressure::classify(80).mode == STORAGE_MODE_WATCH,
+              "80% must enter watch");
+static_assert(StoragePressure::classify(92).policy == STORAGE_POLICY_REDUCED,
+              "92% must reject low-value capture");
+static_assert(StoragePressure::classify(97).policy == STORAGE_POLICY_CRITICAL_ONLY,
+              "97% must preserve only critical capture");
 
 }  // namespace
 

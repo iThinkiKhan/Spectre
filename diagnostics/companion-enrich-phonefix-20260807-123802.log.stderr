@@ -1,0 +1,5 @@
+[31;1mParentContainsErrorRecordException: [0mC:\PlatformIO\Projects\Spectre\diagnostics\companion_enrich_session.ps1:27[0m
+[31;1m[0m[36;1mLine |[0m
+[31;1m[0m[36;1m[36;1m  27 | [0m [36;1m$sp.Open()[0m
+[31;1m[0m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m ~~~~~~~~~~[0m
+[31;1m[0m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mException calling "Open" with "0" argument(s): "Could not find file 'COM13'."[0m

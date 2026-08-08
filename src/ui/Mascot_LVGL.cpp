@@ -161,6 +161,13 @@ void MascotLVGL::end() {
 
 void MascotLVGL::draw(int screenX, int screenY, MascotState state, int frame) {
     if (!_canvas) return;
+    _frame = frame;
+    // One-draw blink every ~26 redraws (≈6-7s at the mascot cadence).
+    _blink = (_blinkTick++ % 26) == 25;
+    // Idle glance: hold centre most of the cycle, then drift left/right for a
+    // few draws. Cheap, but it stops the stare and reads as "thinking".
+    const int gazeCycle = _blinkTick % 96;
+    _gaze = (gazeCycle < 62) ? 0 : (gazeCycle < 74) ? -2 : (gazeCycle < 86) ? 2 : 0;
     if (_canvasSm) lv_obj_add_flag(_canvasSm, LV_OBJ_FLAG_HIDDEN);
     lv_obj_remove_flag(_canvas, LV_OBJ_FLAG_HIDDEN);
     lv_obj_set_pos(_canvas, screenX, screenY);
@@ -180,6 +187,8 @@ void MascotLVGL::draw(int screenX, int screenY, MascotState state, int frame) {
         case MASCOT_HOMELAB_SYNC:   _drawHomelab   (&layer, frame); break;
         case MASCOT_ALERT:          _drawAlert     (&layer, frame); break;
         case MASCOT_TRANSMIT:       _drawTransmit  (&layer, frame); break;
+        case MASCOT_MESHTASTIC:     _drawMeshtastic(&layer, frame); break;
+        case MASCOT_UPLINK:         _drawUplink    (&layer, frame); break;
         case MASCOT_LOW_BATTERY:    _drawLowBattery(&layer, frame); break;
         case MASCOT_ERROR:          _drawError     (&layer, frame); break;
         case MASCOT_PREFLIGHT:      _drawPreflight (&layer, frame); break;
@@ -245,34 +254,123 @@ int MascotLVGL::_advancePhase(MascotState s, const uint16_t* dur, int nPhases) {
 
 // ── SHARED BODY PARTS ──
 
+// Idle bob: a slow 4-step triangle wave (0,+1,0,-1) rather than a 2-state
+// flip, so the float eases instead of ticking between two positions.
+int MascotLVGL::_bob() const {
+    switch ((_frame / 4) % 4) {
+        case 1:  return 1;
+        case 3:  return -1;
+        default: return 0;
+    }
+}
+
+// Soft contact shadow. Shrinks as the ghost rises, which sells the hover far
+// more cheaply than any change to the body itself.
+void MascotLVGL::_groundShadow(lv_layer_t* l, int cx, int bob) {
+    // Sits at +50 rather than +44: the longer hem now reaches ~+33, and the
+    // body's clearing mask extends below that, which was erasing the shadow.
+    const int rx = 15 - bob * 2;
+    FE(l, cx, MASCOT_CY + 50, rx, 3, C(0x101010));
+    FE(l, cx, MASCOT_CY + 50, rx - 5, 2, C(0x1C1C1C));
+}
+
+// Travelling wave. Amplitude is deliberately 1px and the phase advances every
+// fifth frame: at amplitude 2 with a faster phase the bands snaked far enough
+// out of alignment that the ghost looked like it was dancing rather than
+// drifting. Note the mascot only redraws every ~260ms while `frame` ticks with
+// the 70ms display loop, so `frame` jumps ~4 per redraw — the divisor has to
+// absorb that or the wave advances a full step every single draw.
+int MascotLVGL::_wave(int step) const {
+    static const int8_t kWave[8] = { 0, 0, 1, 1, 0, 0, -1, -1 };
+    return kWave[(unsigned)((_frame / 5) + step) & 7u];
+}
+
+// Elongation cycle: the ghost draws itself up and settles back, 0..3px.
+int MascotLVGL::_stretch() const {
+    static const int8_t kStretch[6] = { 0, 1, 2, 3, 2, 1 };
+    return kStretch[((unsigned)(_frame / 6)) % 6u];
+}
+
 void MascotLVGL::_ghostBody(lv_layer_t* l, int cx, int cy, lv_color_t color) {
-    FE(l, cx, cy, 22, 24, color);
-    FR(l, cx-22, cy, 44, 18, color);
-    for (int bx : {cx-14, cx, cx+14}) FC(l, bx, cy+18, 9, color);
-    FR(l, cx-22, cy+22, 44, 8, C(CLR_BLACK));
-    FC(l, cx-7, cy+24, 5, C(CLR_BLACK));
-    FC(l, cx+7, cy+24, 5, C(CLR_BLACK));
-    lv_color_t outline = C(CLR_DIM);
-    DE(l, cx, cy, 22, 24, outline);
+    const int rx = MASCOT_BODY_RX;   // 19 -> body spans 38px, fits 72 with margin
+    const int stretch = _stretch();
+    // Hem sits level with the head dome's lowest point (cy+21). Any higher and
+    // the dome's bottom arc pokes out past the torso bands, reading as a hard
+    // jawline and breaking the "sheet with no skeleton" illusion; this is the
+    // shortest the body can be while still burying that curve.
+    const int hemY = cy + 21 + stretch;
+
+    // Head rides the crest of the wave.
+    const int headOff = _wave(0);
+    FE(l, cx + headOff, cy, rx, 21, color);
+
+    // Torso drawn as stacked bands rather than one rectangle. Each band is
+    // offset by the next step of the wave, so the silhouette ripples down the
+    // whole body instead of only the hem. Band height 4 keeps this to ~4 draw
+    // calls — a per-scanline version was tried early on and swamped the ESP32
+    // draw pipeline, so the slicing stays deliberately coarse.
+    int step = 1;
+    for (int y = cy + 6; y < hemY; y += 4, ++step) {
+        const int h = LV_MIN(4, hemY - y);
+        FR(l, cx - rx + _wave(step), y, rx * 2, h, color);
+    }
+
+    // Hem scallops continue the same wave so the ripple resolves at the bottom.
+    // Radius 7 at 12px spacing means neighbours overlap by 2px, so the notches
+    // between bumps fall out of the geometry (~3.5px deep) on their own. The
+    // original design punched extra black circles in here to deepen those
+    // notches, but at this spacing they cut voids that read as holes rather
+    // than as hem — so the scallops are now left to form the edge themselves.
+    for (int i = 0; i < 3; ++i) {
+        FC(l, cx - 12 + i * 12 + _wave(step + i), hemY, 7, color);
+    }
+    FR(l, cx - rx - 3, hemY + 8, rx * 2 + 6, 8, C(CLR_BLACK));
+
+    // No outline on the head. The original full-ellipse stroke drew a jawline
+    // across the body, and replacing it with a top-only arc was no better:
+    // lv_draw_arc is strictly circular while the head is an ellipse (rx 19,
+    // ry 21), so any arc that matches at the sides sits inside the dome at the
+    // crown and paints a visible curve across the white. White-on-black is
+    // already high contrast, so the silhouette carries the shape by itself.
 }
 
 void MascotLVGL::_eyes(lv_layer_t* l, int cx, int cy,
                    bool wide, bool angry, bool halfClosed,
                    lv_color_t color, int shift) {
+    cx += _wave(0);   // ride the head band so the face stays attached
+    // Idle glance rides on top of any caller-supplied shift, so a state that
+    // deliberately looks at a prop keeps its direction and just drifts a little.
+    if (shift == 0) shift = _gaze;
+
+    // Natural blink: for one draw every ~6-7s, drop the eyes to lids so the
+    // ghost never reads as frozen. Skipped when the caller already draws a
+    // lidded/half-closed expression. Costs nothing — rides the redraw.
+    if (!halfClosed && _blink) {
+        DL(l, cx-11+shift, cy-4, cx-3+shift, cy-4, C(CLR_DIM), 2);
+        DL(l, cx+3+shift,  cy-4, cx+11+shift, cy-4, C(CLR_DIM), 2);
+        return;
+    }
     int r = wide ? 4 : 3;
-    FC(l, cx-8+shift, cy-4, r, color);
-    FC(l, cx+8+shift, cy-4, r, color);
+    FC(l, cx-7+shift, cy-4, r, color);
+    FC(l, cx+7+shift, cy-4, r, color);
+    // Specular catchlight — the single cheapest thing that makes eyes read as
+    // alive rather than as flat drilled holes.
+    if (!halfClosed) {
+        FC(l, cx-8+shift, cy-5, 1, C(CLR_WHITE));
+        FC(l, cx+6+shift, cy-5, 1, C(CLR_WHITE));
+    }
     if (halfClosed) {
-        FR(l, cx-13, cy-8, 11, 4, C(CLR_WHITE));
-        FR(l, cx+2,  cy-8, 11, 4, C(CLR_WHITE));
+        FR(l, cx-12, cy-8, 10, 4, C(CLR_WHITE));
+        FR(l, cx+2,  cy-8, 10, 4, C(CLR_WHITE));
     }
     if (angry) {
-        DL(l, cx-13, cy-9, cx-4, cy-7, C(CLR_BLACK));
-        DL(l, cx+4,  cy-7, cx+13, cy-9, C(CLR_BLACK));
+        DL(l, cx-12, cy-9, cx-3, cy-7, C(CLR_BLACK));
+        DL(l, cx+3,  cy-7, cx+12, cy-9, C(CLR_BLACK));
     }
 }
 
 void MascotLVGL::_mouth(lv_layer_t* l, int cx, int cy, int type) {
+    cx += _wave(0);   // ride the head band so the face stays attached
     lv_color_t dim = C(CLR_DIM);
     switch (type) {
         case 0: DL(l, cx-5, cy+8, cx+5, cy+8, dim); break;
@@ -293,6 +391,7 @@ void MascotLVGL::_mouth(lv_layer_t* l, int cx, int cy, int type) {
 }
 
 void MascotLVGL::_headphones(lv_layer_t* l, int cx, int cy, int frame) {
+    cx += _wave(0);   // ride the head band so the face stays attached
     lv_color_t cyan = C(CLR_CYAN), dcyan = C(CLR_DIMCYAN);
     DA(l, cx, cy-20, 22, 200, 340, cyan, 4);
     FC(l, cx-21, cy-10, 7, cyan);
@@ -309,38 +408,48 @@ void MascotLVGL::_headphones(lv_layer_t* l, int cx, int cy, int frame) {
     }
 }
 
+// Compact dish tucked into the right margin. Was at cx+32 with a 10px radius
+// (reaching canvas x=78) which the 72px panel cut in half.
 void MascotLVGL::_satDish(lv_layer_t* l, int cx, int cy, int frame) {
-    int dx = cx+32, dy = cy+8;
-    DL(l, dx, dy, dx, dy-16, C(CLR_DIM));
-    FE(l, dx, dy-18, 10, 5, C(CLR_DIM));
-    DL(l, dx, dy-23, dx-8, dy-30, C(CLR_DIM));
+    int dx = cx+23, dy = cy+6;
+    DL(l, dx, dy, dx, dy-13, C(CLR_DIM));
+    FE(l, dx, dy-15, 7, 4, C(CLR_DIM));
+    DL(l, dx, dy-19, dx-5, dy-24, C(CLR_DIM));
     int ph = frame % 8;
-    if (ph > 0) DC(l, dx-10, dy-32, 4,  C(CLR_YELLOW));
-    if (ph > 2) DC(l, dx-14, dy-36, 8,  C(CLR_DIMYELLOW));
-    if (ph > 4) DC(l, dx-18, dy-40, 12, C(CLR_CHROME));
+    if (ph > 0) DA(l, dx-6, dy-26, 4,  250, 20, C(CLR_YELLOW));
+    if (ph > 2) DA(l, dx-6, dy-26, 8,  250, 20, C(CLR_DIMYELLOW));
+    if (ph > 4) DA(l, dx-6, dy-26, 12, 250, 20, C(CLR_CHROME));
 }
 
+// Handheld scanner + emitted rings. The rings were full circles centred at
+// cx+38 with r=15 (canvas x up to 89) — almost entirely outside the panel.
+// They are now right-facing arcs anchored at the scanner so the whole sweep
+// stays inside the safe area.
 void MascotLVGL::_wifiRings(lv_layer_t* l, int cx, int cy, int frame) {
-    FR(l, cx+18, cy-14, 10, 14, C(CLR_CHROME));
+    const int sx = cx + 14;              // scanner body left edge
+    FR(l, sx, cy-13, 9, 13, C(CLR_CHROME));
     {   // scanner device outline
         lv_draw_rect_dsc_t rd; lv_draw_rect_dsc_init(&rd);
         rd.bg_opa = LV_OPA_TRANSP; rd.border_color = C(CLR_CYAN); rd.border_width = 1; rd.radius = 0;
-        lv_area_t a = {(int32_t)(cx+18),(int32_t)(cy-14),(int32_t)(cx+27),(int32_t)(cy)};
+        lv_area_t a = {(int32_t)sx,(int32_t)(cy-13),(int32_t)(sx+8),(int32_t)(cy)};
         lv_draw_rect(l, &rd, &a);
     }
-    FR(l, cx+20, cy-12, 6, 4, C(CLR_NAVY));
-    FE(l, cx+14, cy+2, 7, 4, C(CLR_WHITE));
+    FR(l, sx+2, cy-11, 5, 3, C(CLR_NAVY));
+    FE(l, cx+11, cy+2, 6, 4, C(CLR_WHITE));   // hand
     int ph = (frame % 8) + 1;
-    if (ph > 1) DC(l, cx+38, cy-8, 5,  C(CLR_CYAN));
-    if (ph > 3) DC(l, cx+38, cy-8, 10, C(CLR_DIMCYAN));
-    if (ph > 5) DC(l, cx+38, cy-8, 15, C(CLR_CHROME));
+    const int ax = sx + 5, ay = cy - 15;
+    if (ph > 1) DA(l, ax, ay, 5,  250, 20, C(CLR_CYAN));
+    if (ph > 3) DA(l, ax, ay, 10, 250, 20, C(CLR_DIMCYAN));
+    if (ph > 5) DA(l, ax, ay, 15, 250, 20, C(CLR_CHROME));
 }
 
 void MascotLVGL::_soundWaves(lv_layer_t* l, int cx, int cy, int frame) {
+    // Anchored at cx+18 with radii <= 14 so the outermost arc lands at x=68,
+    // inside the 70px safe edge (was cx+30 r20 -> x=86, clipped).
     int ph = frame % 6;
-    DA(l, cx+30, cy, 8,  315, 45, ph > 0 ? C(CLR_YELLOW) : C(CLR_DIMYELLOW));
-    DA(l, cx+30, cy, 14, 315, 45, ph > 2 ? C(CLR_YELLOW) : C(CLR_DIMYELLOW));
-    DA(l, cx+30, cy, 20, 315, 45, ph > 4 ? C(CLR_DIMYELLOW) : C(CLR_DIM));
+    DA(l, cx+18, cy, 6,  315, 45, ph > 0 ? C(CLR_YELLOW) : C(CLR_DIMYELLOW));
+    DA(l, cx+18, cy, 10, 315, 45, ph > 2 ? C(CLR_YELLOW) : C(CLR_DIMYELLOW));
+    DA(l, cx+18, cy, 14, 315, 45, ph > 4 ? C(CLR_DIMYELLOW) : C(CLR_DIM));
 }
 
 void MascotLVGL::_sparks(lv_layer_t* l, int cx, int cy, int frame) {
@@ -356,15 +465,19 @@ void MascotLVGL::_sparks(lv_layer_t* l, int cx, int cy, int frame) {
 }
 
 void MascotLVGL::_dataTrail(lv_layer_t* l, int cx, int cy, int frame) {
+    // Trail now runs cx-22 .. cx-property inside the left margin; the old
+    // spacing walked out to cx-57 (negative canvas x) and vanished.
     int ph = frame % 12;
     const uint32_t cols[] = { CLR_YELLOW, CLR_DIMYELLOW, CLR_DIM, 0x202020 };
     for (int i = 0; i < 4; i++) {
-        int dx = cx - 30 - (i * 9) - (ph < 6 ? 1 : 0);
+        int dx = cx - 22 - (i * 4) - (ph < 6 ? 1 : 0);
+        if (dx < MASCOT_SAFE_L) continue;
         FC(l, dx, cy+14, i < 2 ? 2 : 1, C(cols[i]));
     }
 }
 
 void MascotLVGL::_glasses(lv_layer_t* l, int cx, int cy) {
+    cx += _wave(0);   // ride the head band so the face stays attached
     lv_draw_rect_dsc_t rd; lv_draw_rect_dsc_init(&rd);
     rd.bg_opa = LV_OPA_TRANSP; rd.border_color = C(CLR_DIM); rd.border_width = 1; rd.radius = 0;
     lv_area_t a1 = {(int32_t)(cx-14),(int32_t)(cy-7),(int32_t)(cx-2), (int32_t)(cy)};
@@ -387,6 +500,7 @@ void MascotLVGL::_trenchcoat(lv_layer_t* l, int cx, int cy, int frame) {
 }
 
 void MascotLVGL::_helmet(lv_layer_t* l, int cx, int cy) {
+    cx += _wave(0);   // ride the head band so the face stays attached
     lv_color_t olive = C(0x5DC040), dark = C(0x3A8020);
     FE(l, cx+2, cy-26, 26, 10, olive);
     FR(l, cx-24, cy-28, 50, 8, olive);
@@ -399,19 +513,21 @@ void MascotLVGL::_helmet(lv_layer_t* l, int cx, int cy) {
 
 // ─── Viking props ─────────────────────────────────────────────────────────────
 
+// Horns curl to cx±30 instead of cx±44 — the old span was 88px wide on a 72px
+// canvas, so both horn tips were amputated by the panel edges.
 void MascotLVGL::_vikingHorn(lv_layer_t* l, int cx, int cy, int dir) {
+    cx += _wave(0);   // ride the head band so the face stays attached
     lv_color_t bone = C(CLR_BONE), shadow = C(CLR_BONE_SHD);
-    int bx = cx + dir*14;
-    FT(l, bx,         cy-16, bx,            cy-22, cx+dir*28, cy-26, bone);
-    FT(l, bx,         cy-22, cx+dir*28,     cy-26, cx+dir*36, cy-36, bone);
-    FT(l, cx+dir*28,  cy-26, cx+dir*36,     cy-36, cx+dir*42, cy-44, bone);
-    FT(l, cx+dir*36,  cy-36, cx+dir*42,     cy-44, cx+dir*44, cy-50, bone);
-    DL(l, bx+dir*2, cy-18, cx+dir*30, cy-26, shadow);
-    DL(l, cx+dir*30, cy-26, cx+dir*40, cy-40, shadow);
-    DL(l, cx+dir*40, cy-40, cx+dir*44, cy-50, shadow);
+    int bx = cx + dir*12;
+    FT(l, bx,         cy-16, bx,            cy-21, cx+dir*20, cy-24, bone);
+    FT(l, bx,         cy-21, cx+dir*20,     cy-24, cx+dir*26, cy-31, bone);
+    FT(l, cx+dir*20,  cy-24, cx+dir*26,     cy-31, cx+dir*30, cy-38, bone);
+    DL(l, bx+dir*2,  cy-18, cx+dir*22, cy-25, shadow);
+    DL(l, cx+dir*22, cy-25, cx+dir*30, cy-38, shadow);
 }
 
 void MascotLVGL::_vikingHelmet(lv_layer_t* l, int cx, int cy) {
+    cx += _wave(0);   // ride the head band so the face stays attached
     FE(l, cx, cy-26, 24, 12, C(CLR_STEEL));
     FR(l, cx-24, cy-28, 48, 8,  C(CLR_STEEL));
     FE(l, cx, cy-30, 18, 8,  C(CLR_STEEL_DK));
@@ -421,12 +537,13 @@ void MascotLVGL::_vikingHelmet(lv_layer_t* l, int cx, int cy) {
 
 void MascotLVGL::_furCloak(lv_layer_t* l, int cx, int cy) {
     lv_color_t fur = C(CLR_FUR), furDk = C(CLR_FUR_DK);
-    FT(l, cx-28, cy+8, cx-36, cy+42, cx+36, cy+42, fur);
-    FT(l, cx-28, cy+8, cx+28, cy+8,  cx+36, cy+42, fur);
-    for (int i = 0; i < 6; i++) FC(l, cx-22 + i*9, cy+42, 4, furDk);
+    FT(l, cx-24, cy+8, cx-31, cy+38, cx+31, cy+38, fur);
+    FT(l, cx-24, cy+8, cx+24, cy+8,  cx+31, cy+38, fur);
+    for (int i = 0; i < 6; i++) FC(l, cx-20 + i*8, cy+38, 3, furDk);
 }
 
 void MascotLVGL::_vikingBeard(lv_layer_t* l, int cx, int cy) {
+    cx += _wave(0);   // ride the head band so the face stays attached
     lv_color_t beard = C(CLR_BEARD), wood = C(CLR_WOOD);
     FR(l, cx-14, cy+6, 28, 18, beard);
     FT(l, cx-14, cy+24, cx+14, cy+24, cx, cy+36, beard);
@@ -435,22 +552,26 @@ void MascotLVGL::_vikingBeard(lv_layer_t* l, int cx, int cy) {
 }
 
 void MascotLVGL::_battleAxe(lv_layer_t* l, int cx, int cy, int yOff) {
-    FR(l, cx+28, cy-8+yOff, 4, 30, C(CLR_WOOD));
-    FT(l, cx+28, cy-8+yOff, cx+44, cy-14+yOff, cx+44, cy-4+yOff,  C(CLR_SILVER));
-    FT(l, cx+28, cy-8+yOff, cx+32, cy+2+yOff,  cx+44, cy-4+yOff,  C(CLR_SILVER));
-    DL(l, cx+44, cy-14+yOff, cx+44, cy-4+yOff, C(CLR_STEEL));
-    DL(l, cx+28, cy-8+yOff,  cx+44, cy-14+yOff, C(CLR_STEEL_DK));
+    // Head ends at cx+32 (canvas x=68) rather than cx+44 (x=80, off-panel).
+    FR(l, cx+21, cy-8+yOff, 3, 26, C(CLR_WOOD));
+    FT(l, cx+21, cy-8+yOff, cx+32, cy-13+yOff, cx+32, cy-4+yOff,  C(CLR_SILVER));
+    FT(l, cx+21, cy-8+yOff, cx+24, cy+1+yOff,  cx+32, cy-4+yOff,  C(CLR_SILVER));
+    DL(l, cx+32, cy-13+yOff, cx+32, cy-4+yOff, C(CLR_STEEL));
+    DL(l, cx+21, cy-8+yOff,  cx+32, cy-13+yOff, C(CLR_STEEL_DK));
 }
 
 void MascotLVGL::_roundShield(lv_layer_t* l, int cx, int cy) {
-    FC(l, cx-30, cy+4, 12, C(CLR_FUR));
-    DC(l, cx-30, cy+4, 12, C(CLR_WOOD), 2);
-    DL(l, cx-30, cy-8,  cx-30, cy+16, C(CLR_BEARD));
-    DL(l, cx-42, cy+4,  cx-18, cy+4,  C(CLR_BEARD));
-    FC(l, cx-30, cy+4, 3, C(CLR_BEARD));
+    // Centre pulled to cx-23 with r=10 so the rim sits at canvas x=3 instead of
+    // x=-6, where the left third of the shield was being cut away.
+    FC(l, cx-23, cy+4, 10, C(CLR_FUR));
+    DC(l, cx-23, cy+4, 10, C(CLR_WOOD), 2);
+    DL(l, cx-23, cy-5,  cx-23, cy+13, C(CLR_BEARD));
+    DL(l, cx-32, cy+4,  cx-14, cy+4,  C(CLR_BEARD));
+    FC(l, cx-23, cy+4, 3, C(CLR_BEARD));
 }
 
 void MascotLVGL::_mouthFangs(lv_layer_t* l, int cx, int cy) {
+    cx += _wave(0);   // ride the head band so the face stays attached
     FR(l, cx-9, cy+5, 18, 8, C(CLR_BLACK));
     FT(l, cx-8, cy+5, cx-4, cy+13, cx,   cy+5, C(CLR_WHITE));
     FT(l, cx+1, cy+5, cx+5, cy+13, cx+9, cy+5, C(CLR_WHITE));
@@ -458,34 +579,37 @@ void MascotLVGL::_mouthFangs(lv_layer_t* l, int cx, int cy) {
 }
 
 void MascotLVGL::_satDishLeft(lv_layer_t* l, int cx, int cy, int frame) {
-    int dx = cx-42, dy = cy+10;
-    DL(l, dx, dy, dx, dy-18, C(CLR_DIM));
-    FE(l, dx, dy-20, 12, 6, C(CLR_DARKGREY));
-    DC(l, dx, dy-20, 12, C(CLR_YELLOW));
-    DL(l, dx, dy-26, dx-6, dy-32, C(CLR_DIM));
+    // Mast at cx-25 (canvas x=11); the old cx-42 put it at x=-6, fully clipped.
+    int dx = cx-25, dy = cy+8;
+    DL(l, dx, dy, dx, dy-15, C(CLR_DIM));
+    FE(l, dx, dy-17, 9, 5, C(CLR_DARKGREY));
+    DC(l, dx, dy-17, 9, C(CLR_YELLOW));
+    DL(l, dx, dy-22, dx-4, dy-26, C(CLR_DIM));
     int ph = frame % 10;
-    if (ph > 2) DA(l, cx-20, cy-8, 8,  150, 210, C(CLR_YELLOW));
-    if (ph > 5) DA(l, cx-20, cy-8, 14, 150, 210, C(CLR_DIMYELLOW));
-    if (ph > 8) DA(l, cx-20, cy-8, 20, 150, 210, C(CLR_DARKGREY));
+    if (ph > 2) DA(l, dx, dy-19, 6,  150, 210, C(CLR_YELLOW));
+    if (ph > 5) DA(l, dx, dy-19, 9,  150, 210, C(CLR_DIMYELLOW));
+    if (ph > 8) DA(l, dx, dy-19, 12, 150, 210, C(CLR_DARKGREY));
 }
 
 void MascotLVGL::_notepad(lv_layer_t* l, int cx, int cy, int frame) {
-    FR(l, cx+16, cy-2, 18, 22, C(CLR_BONE));
+    // Pad spans cx+13..cx+30 (canvas 49..66) and the pen tip stops at cx+32,
+    // keeping the whole writing gesture inside the panel.
+    FR(l, cx+13, cy-2, 17, 21, C(CLR_BONE));
     {
         lv_draw_rect_dsc_t rd; lv_draw_rect_dsc_init(&rd);
         rd.bg_opa = LV_OPA_TRANSP; rd.border_color = C(CLR_BONE_SHD); rd.border_width = 1; rd.radius = 0;
-        lv_area_t a = {(int32_t)(cx+16),(int32_t)(cy-2),(int32_t)(cx+33),(int32_t)(cy+19)};
+        lv_area_t a = {(int32_t)(cx+13),(int32_t)(cy-2),(int32_t)(cx+29),(int32_t)(cy+18)};
         lv_draw_rect(l, &rd, &a);
     }
     for (int row = 0; row < 4; row++)
-        DL(l, cx+18, cy+3+row*5, cx+32, cy+3+row*5, C(CLR_BONE_SHD));
+        DL(l, cx+15, cy+3+row*5, cx+27, cy+3+row*5, C(CLR_BONE_SHD));
     int lineRow = (frame / 16) % 4;
-    int lineLen = LV_MIN(frame % 16, 14);
-    DL(l, cx+18, cy+3+lineRow*5, cx+18+lineLen, cy+3+lineRow*5, C(CLR_BLACK));
+    int lineLen = LV_MIN(frame % 16, 12);
+    DL(l, cx+15, cy+3+lineRow*5, cx+15+lineLen, cy+3+lineRow*5, C(CLR_BLACK));
     int tap = (frame % 8 < 4) ? 1 : 0;
-    FE(l, cx+28, cy+14+tap, 5, 4, C(CLR_WHITE));
-    DL(l, cx+30, cy+10+tap, cx+36, cy+4+tap, C(CLR_YELLOW), 2);
-    FC(l, cx+30, cy+10+tap, 2, C(CLR_YELLOW));
+    FE(l, cx+24, cy+13+tap, 5, 4, C(CLR_WHITE));
+    DL(l, cx+26, cy+9+tap, cx+31, cy+4+tap, C(CLR_YELLOW), 2);
+    FC(l, cx+26, cy+9+tap, 2, C(CLR_YELLOW));
 }
 
 void MascotLVGL::_smallGhostBody(lv_layer_t* l, int cx, int cy, lv_color_t color) {
@@ -507,7 +631,8 @@ void MascotLVGL::_smallEyes(lv_layer_t* l, int cx, int cy, lv_color_t color) {
 
 // ─── BOOT ─────────────────────────────────────────────────────────────────────
 void MascotLVGL::_drawBoot(lv_layer_t* l, int frame) {
-    int cx = 45, cy = 58;
+    int cx = MASCOT_CX, cy = MASCOT_CY;
+    _groundShadow(l, cx, 0);
     _ghostBody(l, cx, cy, C(CLR_WHITE));
     _helmet(l, cx, cy);
     _eyes(l, cx, cy, false, false, false, C(CLR_BLACK));
@@ -517,14 +642,26 @@ void MascotLVGL::_drawBoot(lv_layer_t* l, int frame) {
         int armY = cy+2  - frame*2;
         FE(l, armX, armY, 6, 5, C(CLR_WHITE));
     } else {
-        FE(l, cx+22, cy-16, 6, 5, C(CLR_WHITE));
-        DL(l, cx+14, cy+2, cx+20, cy-14, C(CLR_WHITE), 2);
+        FE(l, cx+20, cy-16, 6, 5, C(CLR_WHITE));
+        DL(l, cx+13, cy+2, cx+18, cy-14, C(CLR_WHITE), 2);
+    }
+
+    // Subsystem bring-up ticks, so boot reads as work happening rather than a
+    // ghost waving at nothing. Four blocks light in sequence and hold.
+    const int lit = LV_MIN(frame / 6, 4);
+    for (int i = 0; i < 4; ++i) {
+        const lv_color_t bc = (i < lit) ? C(CLR_GREEN) : C(0x1A1A1A);
+        FR(l, cx - 28 + i * 8, cy + 40, 6, 5, bc);
+    }
+    if (lit >= 4 && (frame / 3) % 2) {
+        DL(l, cx - 28, cy + 48, cx + 2, cy + 48, C(CLR_GREEN));
     }
 }
 
 // ─── STANDBY ──────────────────────────────────────────────────────────────────
 void MascotLVGL::_drawStandby(lv_layer_t* l, int frame) {
-    int cx = 45, cy = 58;
+    int cx = MASCOT_CX, cy = MASCOT_CY;
+    _groundShadow(l, cx, 0);
     int cycle = frame % 160;
 
     if (cycle < 90) {
@@ -556,11 +693,38 @@ void MascotLVGL::_drawStandby(lv_layer_t* l, int frame) {
         _eyes(l, cx, cy, true, false, false, C(CLR_BLACK));
         _mouth(l, cx, cy, 3);
     }
+
+    // Vitals monitor the ghost is idly watching. The SYSTEM page behind this
+    // state is all health readouts, so give the character something to actually
+    // be monitoring — a steady ECG blip reads as "everything nominal" and keeps
+    // the relaxed listening-post theme rather than replacing it.
+    const int mx = cx - 33, my = cy - 12;      // small screen, left margin
+    FR(l, mx, my, 21, 17, C(CLR_NAVY));
+    {
+        lv_draw_rect_dsc_t rd; lv_draw_rect_dsc_init(&rd);
+        rd.bg_opa = LV_OPA_TRANSP; rd.border_color = C(CLR_DIMCYAN);
+        rd.border_width = 1; rd.radius = 0;
+        lv_area_t a = {(int32_t)mx,(int32_t)my,(int32_t)(mx+20),(int32_t)(my+16)};
+        lv_draw_rect(l, &rd, &a);
+    }
+    const int baseline = my + 11;
+    DL(l, mx+2, baseline, mx+18, baseline, C(0x0F3A2A));
+    const int beat = (frame / 2) % 8;          // sweep position across the trace
+    for (int i = 0; i < 8; ++i) {
+        const int x = mx + 2 + i * 2;
+        int h = 0;
+        if (i == beat)          h = 6;         // R spike
+        else if (i == beat + 1) h = -3;        // S dip
+        else if (i == beat + 2) h = 2;         // T wave
+        if (h) DL(l, x, baseline, x, baseline - h, C(CLR_GREEN));
+    }
+    FC(l, mx + 17, my + 3, 1, (frame / 4) % 2 ? C(CLR_GREEN) : C(0x0F3A2A));
 }
 
 // ─── RECON (formerly ReconWalk) ───────────────────────────────────────────────
 void MascotLVGL::_drawReconWalk(lv_layer_t* l, int frame) {
-    int cx = 45, cy = 58;
+    int cx = MASCOT_CX, cy = MASCOT_CY;
+    _groundShadow(l, cx, 0);
     static const uint16_t PHASE_DUR[] = { 30 };
     int phase = _advancePhase(MASCOT_RECON_WALK, PHASE_DUR, 1);
 
@@ -592,35 +756,105 @@ void MascotLVGL::_drawReconWalk(lv_layer_t* l, int frame) {
 }
 
 // ─── WIFI RECON ───────────────────────────────────────────────────────────────
+// Matches the ENTITIES page (total / nearby / observations / closest entity):
+// a surveyor sweeping with a scanner while detected entities pop in around it
+// and a running tally ticks up on the left.
 void MascotLVGL::_drawWifiRecon(lv_layer_t* l, int frame) {
-    int cx = 40, cy = 58;
+    int cx = MASCOT_CX, cy = MASCOT_CY;
+    const int bob = _bob();
+    cy += bob;
+    _groundShadow(l, cx, bob);
+
+    // Detected entities: pips fading in at staggered ranges, brightest when
+    // freshly seen — the visual echo of "nearby" on the page.
+    for (int i = 0; i < 4; ++i) {
+        const int ph = (frame / 3 + i * 2) % 8;
+        if (ph > 5) continue;
+        const int ex = cx - 27 + (i % 2) * 6;
+        const int ey = cy - 26 + i * 9;
+        const lv_color_t ec = (ph < 2) ? C(CLR_GREEN)
+                            : (ph < 4) ? C(CLR_DIMCYAN) : C(0x123033);
+        FC(l, ex, ey, (ph < 2) ? 2 : 1, ec);
+    }
+
     _ghostBody(l, cx, cy, C(CLR_WHITE));
-    _eyes(l, cx, cy, false, false, false, C(CLR_BLACK));
-    DL(l, cx-12, cy-9, cx-5, cy-7, C(CLR_BLACK));
-    DL(l, cx+5,  cy-7, cx+12, cy-9, C(CLR_BLACK));
+    // Focused squint aimed at the scanner rather than a blank forward stare.
+    _eyes(l, cx, cy, false, false, false, C(CLR_BLACK), 2);
+    DL(l, cx-11, cy-9, cx-4, cy-7, C(CLR_BLACK));
+    DL(l, cx+4,  cy-7, cx+11, cy-9, C(CLR_BLACK));
     _mouth(l, cx, cy, 0);
     _wifiRings(l, cx, cy, frame);
+
+    // Tally marks: four strokes then a diagonal, cycling — the "observations"
+    // counter climbing.
+    const int tally = (frame / 8) % 6;
+    for (int i = 0; i < LV_MIN(tally, 4); ++i) {
+        DL(l, cx-33 + i*3, cy+16, cx-33 + i*3, cy+23, C(CLR_DIMYELLOW));
+    }
+    if (tally >= 5) DL(l, cx-35, cy+23, cx-22, cy+16, C(CLR_YELLOW));
 }
 
 // ─── LORA RECON ───────────────────────────────────────────────────────────────
+// Matches the SUB-GHZ RECON page (RSSI / SNR / PACKETS / last signal). Its own
+// visual language, distinct from the mesh peers and the entity pips: a
+// directional yagi sweeping the band, a live spectrum waterfall along the
+// bottom, and captured packets sliding down the boom into the ghost's hand.
 void MascotLVGL::_drawLoraRecon(lv_layer_t* l, int frame) {
-    int cx = 42, cy = 58;
+    int cx = MASCOT_CX, cy = MASCOT_CY;
+    const int bob = _bob();
+    cy += bob;
+    _groundShadow(l, cx, bob);
+
+    // Which spectrum bin is "hot" this cycle — the signal being tracked.
+    const int hot = (frame / 7) % 7;
+
+    // Incoming wavefront arriving at the antenna, strongest when a packet lands.
+    const int ph = frame % 8;
+    // Outer radius capped at 15 so the wavefront stops at x=69, clear of the
+    // divider (r17 put it at x=71, right on the panel edge).
+    if (ph > 0) DA(l, cx+18, cy-26, 6,  200, 340, C(CLR_YELLOW));
+    if (ph > 2) DA(l, cx+18, cy-26, 11, 200, 340, C(CLR_DIMYELLOW));
+    if (ph > 4) DA(l, cx+18, cy-26, 15, 200, 340, C(CLR_DIM));
+
     _ghostBody(l, cx, cy, C(CLR_WHITE));
-    FE(l, cx+26, cy-2, 9, 14, C(CLR_WHITE));
-    FE(l, cx+26, cy-2, 5,  9, C(CLR_DIM));
-    FE(l, cx+26, cy-2, 2,  4, C(CLR_BLACK));
-    _eyes(l, cx, cy, false, false, false, C(CLR_BLACK));
+    _eyes(l, cx, cy, false, false, false, C(CLR_BLACK), 2);
     _mouth(l, cx, cy, 0);
-    int ph = frame % 8;
-    if (ph > 0) DL(l, cx+40, cy-2, cx+37, cy-2, C(CLR_YELLOW));
-    if (ph > 2) DA(l, cx+44, cy-2, 6,  160, 200, C(CLR_YELLOW));
-    if (ph > 4) DA(l, cx+44, cy-2, 12, 160, 200, C(CLR_DIMYELLOW));
-    if (ph > 6) DA(l, cx+44, cy-2, 18, 160, 200, C(CLR_DIM));
+
+    // Yagi: angled boom with director elements, held up and to the right.
+    const int bx0 = cx+9,  by0 = cy+2;    // grip
+    const int bx1 = cx+22, by1 = cy-22;   // tip
+    DL(l, bx0, by0, bx1, by1, C(CLR_DIM), 2);
+    for (int i = 0; i < 4; ++i) {
+        const int t  = i + 1;
+        const int ex = bx0 + (bx1 - bx0) * t / 5;
+        const int ey = by0 + (by1 - by0) * t / 5;
+        const int halfLen = 7 - i;        // elements shorten toward the tip
+        DL(l, ex - halfLen, ey - 1, ex + halfLen, ey + 1, C(CLR_SILVER));
+    }
+    FE(l, cx+7, cy+4, 6, 4, C(CLR_WHITE));   // hand on the grip
+
+    // Captured packet sliding down the boom when the hot bin fires.
+    if (ph >= 4) {
+        const int t  = ph - 4;                       // 0..3
+        const int px = bx1 + (bx0 - bx1) * t / 3;
+        const int py = by1 + (by0 - by1) * t / 3;
+        FR(l, px-2, py-2, 4, 4, C(CLR_GREEN));
+    }
+
+    // Spectrum waterfall: 7 bins along the bottom, the hot one spiking.
+    const int baseY = cy + 43;   // below the lengthened hem
+    for (int i = 0; i < 7; ++i) {
+        int h = 2 + ((frame / 2 + i * 3) % 4);       // idle noise floor
+        lv_color_t bc = C(CLR_DIMCYAN);
+        if (i == hot) { h = 8 + (frame % 2); bc = C(CLR_YELLOW); }
+        FR(l, cx - 24 + i * 7, baseY - h, 4, h, bc);
+    }
+    DL(l, cx - 25, baseY + 1, cx + 25, baseY + 1, C(CLR_DIM));
 }
 
 // ─── PWNAGOTCHI — Full Viking ─────────────────────────────────────────────────
 void MascotLVGL::_drawPwny(lv_layer_t* l, int frame) {
-    int cx = 45, cy = 60;
+    int cx = MASCOT_CX, cy = MASCOT_CY;
     static const uint16_t PHASE_DUR[] = { 20, 35, 40 };
     int phase = _advancePhase(MASCOT_PWNAGOTCHI, PHASE_DUR, 3);
     int pf = _animPhaseFr[MASCOT_PWNAGOTCHI];
@@ -684,7 +918,8 @@ void MascotLVGL::_drawPwny(lv_layer_t* l, int frame) {
 
 // ─── HOMELAB ──────────────────────────────────────────────────────────────────
 void MascotLVGL::_drawHomelab(lv_layer_t* l, int frame) {
-    int cx = 44, cy = 62;
+    int cx = MASCOT_CX, cy = MASCOT_CY;
+    _groundShadow(l, cx, 0);
     int cycle = frame % 140;
 
     // Desk always present
@@ -699,14 +934,22 @@ void MascotLVGL::_drawHomelab(lv_layer_t* l, int frame) {
         FR(l, cx-12, cy-6, 9, 3, C(CLR_WHITE));
         FR(l, cx+3,  cy-6, 9, 3, C(CLR_WHITE));
         _mouth(l, cx, cy, 0);
-        // Monitor
+        // Monitor showing a boot report: a small bar chart building left to
+        // right instead of anonymous scrolling lines. The BOOT SUMMARY page is
+        // a report card, so the screen he's reading should look like one.
         FR(l, cx-16, cy-2, 20, 16, C(CLR_CHROME));
         FR(l, cx-14, cy,   16, 12, C(CLR_NAVY));
         FR(l, cx-4,  cy+14, 8,  8, C(CLR_CHROME));
-        int scroll = (frame/3) % 4;
-        DL(l, cx-12, cy+2+scroll,   cx-4, cy+2+scroll,   C(CLR_GREEN));
-        DL(l, cx-12, cy+5+scroll,   cx-8, cy+5+scroll,   C(CLR_DIMCYAN));
-        DL(l, cx-12, cy+4+scroll-3, cx-6, cy+4+scroll-3, C(CLR_YELLOW));
+        for (int i = 0; i < 5; ++i) {
+            const int grown = ((frame / 4) % 7);      // bars fill, then reset
+            const int h = (i < grown) ? (2 + ((i * 3 + 2) % 8)) : 0;
+            if (h > 0) {
+                const lv_color_t bc = (h >= 7) ? C(CLR_GREEN)
+                                    : (h >= 4) ? C(CLR_DIMCYAN) : C(CLR_YELLOW);
+                FR(l, cx-13 + i*3, cy+10 - h, 2, h, bc);
+            }
+        }
+        DL(l, cx-13, cy+11, cx-1, cy+11, C(CLR_DIM));   // chart baseline
         int tap = frame % 8 < 4 ? 1 : 0;
         FE(l, cx-28, cy+18+tap, 8, 5, C(CLR_WHITE));
         FE(l, cx+14, cy+18+tap, 8, 5, C(CLR_WHITE));
@@ -738,22 +981,25 @@ void MascotLVGL::_drawHomelab(lv_layer_t* l, int frame) {
         FR(l, cx+1, cy+5-pop, 4, 4, C(CLR_WHITE));
         // Lightbulb
         if (pf > 6) {
-            int bx = cx+32, by = cy-34-pop;
-            DC(l, bx, by, 7, C(CLR_YELLOW));
-            DL(l, bx-4, by+7, bx+4, by+7, C(CLR_YELLOW));
-            DL(l, bx-3, by+10, bx+3, by+10, C(CLR_YELLOW));
-            DL(l, bx,   by-10, bx,   by-13, C(CLR_YELLOW));
-            DL(l, bx+8, by-6,  bx+11, by-9, C(CLR_YELLOW));
-            DL(l, bx-8, by-6,  bx-11, by-9, C(CLR_YELLOW));
-            DL(l, bx+9, by+2,  bx+12, by+2, C(CLR_YELLOW));
-            DL(l, bx-9, by+2,  bx-12, by+2, C(CLR_YELLOW));
+            // Bulb pulled in from cx+32 r7 with 12px rays (reached canvas x=80)
+            // to cx+20 r6 with 8px rays, so the glow stops at x=64.
+            int bx = cx+20, by = cy-32-pop;
+            DC(l, bx, by, 6, C(CLR_YELLOW));
+            DL(l, bx-3, by+6, bx+3, by+6, C(CLR_YELLOW));
+            DL(l, bx-2, by+8, bx+2, by+8, C(CLR_YELLOW));
+            DL(l, bx,   by-8, bx,   by-11, C(CLR_YELLOW));
+            DL(l, bx+7, by-5, bx+9,  by-7, C(CLR_YELLOW));
+            DL(l, bx-7, by-5, bx-9,  by-7, C(CLR_YELLOW));
+            DL(l, bx+8, by+1, bx+10, by+1, C(CLR_YELLOW));
+            DL(l, bx-8, by+1, bx-10, by+1, C(CLR_YELLOW));
         }
     }
 }
 
 // ─── ALERT ────────────────────────────────────────────────────────────────────
 void MascotLVGL::_drawAlert(lv_layer_t* l, int frame) {
-    int cx = 45, cy = 60;
+    int cx = MASCOT_CX, cy = MASCOT_CY;
+    _groundShadow(l, cx, 0);
     static const uint16_t PHASE_DUR[] = { 15, 25, 35 };
     int phase = _advancePhase(MASCOT_ALERT, PHASE_DUR, 3);
     int pf = _animPhaseFr[MASCOT_ALERT];
@@ -799,31 +1045,34 @@ void MascotLVGL::_drawAlert(lv_layer_t* l, int frame) {
 
 // ─── BAD USB ──────────────────────────────────────────────────────────────────
 void MascotLVGL::_drawBadUSB(lv_layer_t* l, int frame) {
-    int cx = 44, cy = 58;
+    int cx = MASCOT_CX, cy = MASCOT_CY;
+    _groundShadow(l, cx, 0);
     static const uint16_t PHASE_DUR[] = { 20, 30, 30 };
     int phase = _advancePhase(MASCOT_BAD_USB, PHASE_DUR, 3);
     int pf = _animPhaseFr[MASCOT_BAD_USB];
 
-    // Wall socket always visible
-    FR(l, cx+38, cy-10, 8, 26, C(CLR_CHROME));
-    FR(l, cx+40, cy-2,  2,  5, C(CLR_BLACK));
-    FR(l, cx+43, cy-2,  2,  5, C(CLR_BLACK));
+    // Wall socket, pulled in to cx+26..cx+33 (canvas 62..69) — it used to sit
+    // at cx+38..cx+46, entirely past the panel edge.
+    FR(l, cx+26, cy-10, 7, 24, C(CLR_CHROME));
+    FR(l, cx+28, cy-2,  2,  5, C(CLR_BLACK));
+    FR(l, cx+31, cy-2,  2,  5, C(CLR_BLACK));
 
     if (phase == 0) {
         int shift = frame % 42 < 14 ? -3 : frame % 42 < 28 ? 3 : 0;
         _ghostBody(l, cx, cy, C(CLR_WHITE));
         _eyes(l, cx, cy, false, false, false, C(CLR_BLACK), shift);
         _mouth(l, cx, cy, 0);
-        FR(l, cx+14, cy+2, 12, 7, C(CLR_DIM));
-        FR(l, cx+20, cy+3,  6, 5, C(CLR_CHROME));
-        FR(l, cx+22, cy+4,  2, 3, C(CLR_BLACK));
-        FR(l, cx+25, cy+4,  2, 3, C(CLR_BLACK));
+        FR(l, cx+6,  cy+2, 12, 7, C(CLR_DIM));
+        FR(l, cx+12, cy+3,  6, 5, C(CLR_CHROME));
+        FR(l, cx+14, cy+4,  2, 3, C(CLR_BLACK));
+        FR(l, cx+17, cy+4,  2, 3, C(CLR_BLACK));
 
     } else if (phase == 1) {
         _ghostBody(l, cx, cy, C(CLR_WHITE));
         _eyes(l, cx, cy, false, false, false, C(CLR_BLACK), 3);
         _mouth(l, cx, cy, 0);
-        int usbX = LV_MIN(cx+14 + (int)(pf*1.2f), cx+26);
+        // Stick slides right until its tip meets the socket at cx+26.
+        int usbX = LV_MIN(cx+6 + (int)(pf*1.2f), cx+14);
         FR(l, usbX, cy+2, 12, 7, C(CLR_DIM));
         FR(l, usbX+6, cy+3, 6, 5, C(CLR_CHROME));
         FR(l, usbX+8, cy+4, 2, 3, C(CLR_BLACK));
@@ -833,7 +1082,7 @@ void MascotLVGL::_drawBadUSB(lv_layer_t* l, int frame) {
         _ghostBody(l, cx, cy, C(CLR_WHITE));
         _eyes(l, cx, cy, false, true, false, C(CLR_BLACK), 3);
         _mouth(l, cx, cy, 1);
-        FR(l, cx+26, cy+2, 12, 7, C(CLR_DIM));
+        FR(l, cx+14, cy+2, 12, 7, C(CLR_DIM));   // seated in the socket
         _sparks(l, cx, cy, frame);
         if (pf % 4 < 2) DC(l, cx, cy, 28, C(CLR_RED));
 
@@ -852,19 +1101,36 @@ void MascotLVGL::_drawBadUSB(lv_layer_t* l, int frame) {
 }
 
 // ─── TRANSMIT ─────────────────────────────────────────────────────────────────
+// Speaking out over the link: mouth open, hands raised, plus a live TX level
+// meter on the left so the state reads as "actively transmitting" rather than
+// just "ghost with arcs next to it".
 void MascotLVGL::_drawTransmit(lv_layer_t* l, int frame) {
-    int cx = 42, cy = 58;
+    int cx = MASCOT_CX, cy = MASCOT_CY;
+    const int bob = _bob();
+    cy += bob;
+    _groundShadow(l, cx, bob);
     _ghostBody(l, cx, cy, C(CLR_WHITE));
     _eyes(l, cx, cy, false, false, false, C(CLR_BLACK));
     _mouth(l, cx, cy, 3);
     FE(l, cx-22, cy+4, 7, 5, C(CLR_WHITE));
     FE(l, cx+22, cy+4, 7, 5, C(CLR_WHITE));
     _soundWaves(l, cx, cy, frame);
+
+    // TX level meter: five segments driven by a bouncing level.
+    const int lvl = 1 + ((frame / 2) % 5);
+    for (int i = 0; i < 5; ++i) {
+        const lv_color_t sc = (i >= lvl)      ? C(0x1A1A1A)
+                            : (i >= 4)        ? C(CLR_RED)
+                            : (i >= 3)        ? C(CLR_YELLOW)
+                                              : C(CLR_GREEN);
+        FR(l, cx - 30, cy + 12 - i * 5, 7, 4, sc);
+    }
 }
 
 // ─── LOW BATTERY ──────────────────────────────────────────────────────────────
 void MascotLVGL::_drawLowBattery(lv_layer_t* l, int frame) {
-    int cx = 45, cy = 58;
+    int cx = MASCOT_CX, cy = MASCOT_CY;
+    _groundShadow(l, cx, 0);
     lv_color_t bc = frame % 6 < 1 ? C(CLR_DIM) : C(CLR_WHITE);
     _ghostBody(l, cx, cy, bc);
     _eyes(l, cx, cy, false, false, true, C(CLR_DIM));
@@ -884,7 +1150,7 @@ void MascotLVGL::_drawLowBattery(lv_layer_t* l, int frame) {
 
 // ─── ERROR ────────────────────────────────────────────────────────────────────
 void MascotLVGL::_drawError(lv_layer_t* l, int frame) {
-    int cx = 45, cy = 58;
+    int cx = MASCOT_CX, cy = MASCOT_CY;
     _ghostBody(l, cx, cy, C(0xF00010));
     DL(l, cx-12, cy-8, cx-5,  cy-1, C(CLR_RED), 2);
     DL(l, cx-5,  cy-8, cx-12, cy-1, C(CLR_RED), 2);
@@ -896,9 +1162,95 @@ void MascotLVGL::_drawError(lv_layer_t* l, int frame) {
     FC(l, cx-27, cy-24, 3, C(CLR_RED));
 }
 
+// ─── MESHTASTIC ───────────────────────────────────────────────────────────────
+// Matches the MESHTASTIC page (node id, channel, RX/TX, last message): the
+// ghost is a relay operator holding a node radio, with peer nodes blinking in
+// and out around it and a chat bubble when traffic lands.
+void MascotLVGL::_drawMeshtastic(lv_layer_t* l, int frame) {
+    int cx = MASCOT_CX, cy = MASCOT_CY;
+    const int bob = _bob();
+    cy += bob;
+
+    _groundShadow(l, cx, bob);
+
+    // Peer mesh nodes orbiting the ghost's head, each on its own phase so the
+    // mesh looks like it is discovering/losing neighbours.
+    const int nodeX[3] = {cx-26, cx+26, cx-2};
+    const int nodeY[3] = {cy-30, cy-24, cy-40};
+    for (int i = 0; i < 3; ++i) {
+        const bool live = ((frame / 6) + i) % 3 != 0;
+        const lv_color_t nc = live ? C(CLR_GREEN) : C(CLR_DIMCYAN);
+        // Link line back to the node radio, drawn first so nodes sit on top.
+        DL(l, cx+12, cy-8, nodeX[i], nodeY[i], live ? C(CLR_DIMCYAN) : C(0x123033));
+        FC(l, nodeX[i], nodeY[i], live ? 3 : 2, nc);
+    }
+
+    _ghostBody(l, cx, cy, C(CLR_WHITE));
+    _eyes(l, cx, cy, false, false, false, C(CLR_BLACK));
+    _mouth(l, cx, cy, 0);
+
+    // Handheld node radio with a stubby antenna.
+    FR(l, cx+10, cy-6, 8, 14, C(CLR_CHROME));
+    FR(l, cx+12, cy-4, 4,  4, C(CLR_GREEN));
+    DL(l, cx+16, cy-6, cx+19, cy-16, C(CLR_DIM));
+    FC(l, cx+19, cy-17, 2, C(CLR_GREEN));
+    FE(l, cx+8, cy+6, 6, 4, C(CLR_WHITE));   // hand
+
+    // Incoming message bubble on a slow cycle — the page's "last message" row.
+    if ((frame / 10) % 4 == 3) {
+        FR(l, cx-30, cy-18, 18, 11, C(CLR_CYAN));
+        FT(l, cx-24, cy-7, cx-20, cy-7, cx-22, cy-3, C(CLR_CYAN));
+        FC(l, cx-25, cy-13, 1, C(CLR_BLACK));
+        FC(l, cx-21, cy-13, 1, C(CLR_BLACK));
+        FC(l, cx-17, cy-13, 1, C(CLR_BLACK));
+    }
+}
+
+// ─── UPLINK ───────────────────────────────────────────────────────────────────
+// Matches the uplink mission (sync pipeline, publish progress): records lift
+// off the ghost's hands into a cloud, with a fill bar that tracks the climb.
+void MascotLVGL::_drawUplink(lv_layer_t* l, int frame) {
+    int cx = MASCOT_CX, cy = MASCOT_CY;
+    const int bob = _bob();
+    cy += bob;
+
+    _groundShadow(l, cx, bob);
+    _ghostBody(l, cx, cy, C(CLR_WHITE));
+    _eyes(l, cx, cy, false, false, false, C(CLR_BLACK), -1);
+    _mouth(l, cx, cy, 0);
+
+    // Cloud endpoint above.
+    const int clx = cx + 6, cly = cy - 36;
+    FE(l, clx,    cly,    11, 6, C(CLR_DIMCYAN));
+    FE(l, clx-7,  cly+2,  6,  4, C(CLR_DIMCYAN));
+    FE(l, clx+7,  cly+2,  6,  4, C(CLR_DIMCYAN));
+
+    // Three packets climbing on staggered phases.
+    for (int i = 0; i < 3; ++i) {
+        const int ph = (frame + i * 5) % 15;
+        const int py = cy - 12 - ph * 2;
+        if (py < cly + 4) continue;
+        const lv_color_t pc = (ph > 10) ? C(CLR_DIMCYAN) : C(CLR_GREEN);
+        FR(l, cx + 2 + (i - 1) * 7, py, 5, 4, pc);
+    }
+
+    // Raised hands, sending.
+    FE(l, cx-17, cy-6, 6, 4, C(CLR_WHITE));
+    FE(l, cx+17, cy-6, 6, 4, C(CLR_WHITE));
+
+    // Progress bar under the ghost — mirrors the page's publish percentage.
+    const int barW = 34;
+    const int fill = 4 + ((frame / 2) % (barW - 6));
+    FR(l, cx - barW/2, cy + 40, barW, 5, C(0x1A1A1A));
+    FR(l, cx - barW/2 + 1, cy + 41, fill, 3, C(CLR_GREEN));
+}
+
 // ─── PREFLIGHT ────────────────────────────────────────────────────────────────
 void MascotLVGL::_drawPreflight(lv_layer_t* l, int frame) {
-    int cx = 44, cy = 58;
+    int cx = MASCOT_CX, cy = MASCOT_CY;
+    const int bob = _bob();
+    cy += bob;
+    _groundShadow(l, cx, bob);
     _ghostBody(l, cx, cy, C(CLR_WHITE));
     _eyes(l, cx, cy, false, false, false, C(CLR_BLACK));
     _mouth(l, cx, cy, 0);
@@ -913,6 +1265,22 @@ void MascotLVGL::_drawPreflight(lv_layer_t* l, int frame) {
     if (checks > 2) { DL(l, cx+10,cy+6,cx+13,cy+9,C(CLR_YELLOW)); DL(l, cx+13,cy+9,cx+16,cy+4,C(CLR_YELLOW)); }
     DL(l, cx+6, cy+12, cx+12, cy+5, C(CLR_YELLOW), 2);
     FC(l, cx+6, cy+13, 2, C(CLR_YELLOW));
+
+    // Launch-readiness lamps on the left, ticking green in step with the
+    // checklist. Same pre-flight theme, but the state now shows a GO condition
+    // building instead of only a pen moving — which is what MISSION LAUNCH is
+    // actually asking the operator to confirm.
+    const bool allGo = checks >= 3;
+    for (int i = 0; i < 3; ++i) {
+        const bool on = checks > i;
+        FC(l, cx-27, cy-9 + i*9, 3,
+           on ? (allGo ? C(CLR_GREEN) : C(CLR_YELLOW)) : C(0x1A1A1A));
+        DC(l, cx-27, cy-9 + i*9, 4, C(CLR_DIM));
+    }
+    // Armed strip pulses once every lamp is lit.
+    if (allGo && (frame / 3) % 2) {
+        FR(l, cx-33, cy+22, 16, 4, C(CLR_GREEN));
+    }
 }
 
 

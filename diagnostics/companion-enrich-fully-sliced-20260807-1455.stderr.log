@@ -1,0 +1,7 @@
+Exception calling "ReadExisting" with "0" argument(s): "The port is closed."
+At C:\PlatformIO\Projects\Spectre\diagnostics\companion_enrich_session.ps1:22 char:7
++       $chunk = $sp.ReadExisting()
++       ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [], ParentContainsErrorRecordException
+    + FullyQualifiedErrorId : InvalidOperationException
+ 

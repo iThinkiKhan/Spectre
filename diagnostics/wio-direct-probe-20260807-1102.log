@@ -1,0 +1,39 @@
+
+Spectre WIO nRF relay console
+version=0.4.0 baud=115200
+type 'help' for commands; typed characters echo here
+nrf> probe 30000
+USB/1 OK probe id=900001 timeout=30000
+nrf> [tx] WIO/1 BLE_PROBE id=900001 result=found connected=1 rssi=-61 seen=2 uuid=1 conn=1 fail=0 text=0 best=-61 disc=0x00 err=none source=scan
+[tx] WIO/1 STATUS phone=ready connected=1 rssi=-61 ble_ready=1 ble_init_started=1
+[tx] WIO/1 STATUS phone=ready connected=1 rssi=-61 ble_ready=1 ble_init_started=1
+[tx] WIO/1 STATUS phone=ready connected=1 rssi=-61 ble_ready=1 ble_init_started=1
+[tx] WIO/1 STATUS phone=ready connected=1 rssi=-61 ble_ready=1 ble_init_started=1
+[tx] WIO/1 STATUS phone=ready connected=1 rssi=-61 ble_ready=1 ble_init_started=1
+[tx] WIO/1 STATUS phone=ready connected=1 rssi=-61 ble_ready=1 ble_init_started=1
+[tx] WIO/1 STATUS phone=ready connected=1 rssi=-61 ble_ready=1 ble_init_started=1
+status
+USB/1 STATUS
+  version=0.4.0
+  uptime_ms=265789
+  phone=ready
+  connected=1
+  services_ready=1
+  text_ready=0
+  conn_handle=0
+  rssi=-61
+  probe_active=0
+  probe_seen=2
+  probe_uuid_seen=1
+  probe_err=none
+  uart_rx_lines=0
+  uart_tx_lines=10
+  ble_rx=0
+  ble_write=0
+  usb_commands=5
+  led_mode=auto
+  led_color=blue
+  ble_init_started=1
+  ble_ready=1
+  ble_init_blocked=0
+nrf> 

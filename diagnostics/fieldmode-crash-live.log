@@ -1,0 +1,1152 @@
+--------- beginning of main
+06-20 14:42:12.210 I/thermal_core( 2313): pivot(AP) : 286, skin : 289
+06-20 14:42:12.214 I/StatsHandler( 2306): [avcD_53] Stats: Pending(0) i/p-done(0) Works: Q: 341/Done 329|Work-Rate: Q(0.0/s Avg=0.0/s) Done(0.000/s Avg=0.020/s)| Stream: 30.00fps 65.3Kbps
+06-20 14:42:12.214 I/StatsHandler( 2306): [avcD_53] Mem-usage:  [In-1D: 21 bufs 168.000 MB] [1D-23: 35 bufs 0.547 MB] [2D-24: 19 bufs 15.141 MB] | Total: 183.688 MB
+06-20 14:42:12.214 I/StatsHandler( 2306): [vp9D_271] Stats: Pending(0) i/p-done(0) Works: Q: 672/Done 705|Work-Rate: Q(0.0/s Avg=1.6/s) Done(0.000/s Avg=1.728/s)| Stream: 29.97fps 1.4Mbps
+06-20 14:42:12.214 I/StatsHandler( 2306): [vp9D_271] Mem-usage:  [In-1D: 14 bufs 112.000 MB] [1D-347: 38 bufs 0.594 MB] [2D-348: 22 bufs 31.453 MB] | Total: 144.047 MB
+06-20 14:42:12.236 I/NSLocationMonitor( 3211): getGPSUsingApps() called
+06-20 14:42:12.237 I/NSLocationManager_FLP( 6181): getGPSUsingApps, No change
+06-20 14:42:12.239 D/AHAL_ModulePrimary_QTI( 2276): getVendorParameters: id count: 1
+06-20 14:42:12.240 I/PAL: ResourceManager( 2276): getActiveStream_l: 6587: no active streams found for device 3 ret -2
+06-20 14:42:12.240 D/AHAL_SecModulePrimary( 2276): onGetSECGenericParameters get temperature for g_hw_speaker_amp_temp_rcv: 0
+06-20 14:42:12.240 D/AHAL_ModulePrimary_QTI( 2276): getVendorParameters: id count: 1
+06-20 14:42:12.240 I/PAL: ResourceManager( 2276): getActiveStream_l: 6587: no active streams found for device 3 ret -2
+06-20 14:42:12.240 D/AHAL_SecModulePrimary( 2276): onGetSECGenericParameters get temperature for g_hw_speaker_amp_temp_spk: 0
+--------- beginning of system
+06-20 14:42:12.241 I/SDHMS:x ( 8460): SIOP:: AP:286 BAT:275 USB:273 CHG:289 PA:292 WIFI:283 CF:284 BLK:0 SUBBAT:0 LRPTHM:280 SKIN:289 SKINF:286 SKINB:289 LRP:289 LRF:286 LRB:289 APT:286 APR:289 RCV:281 SPK:273 CHGF:284 CHGR:287 MEMF:285 MEMR:288 WIFIF:285 WIFIR:289 FCAM:274 UPSPK:281 DNSPK:274 VAP:288 VWIFI:285 AMB2:249 HIGH:0 AVGCUR:377 AVGSYS:166 POWER:1511
+06-20 14:42:12.242 I/AudioManager( 8460): setParameters keyValuePairs = g_hw_speaker_amp_temp_spk=27
+06-20 14:42:12.243 D/AudioFlinger( 2333): setParameters: filtered dev setParameters keyvalue g_hw_speaker_amp_temp_spk=27
+06-20 14:42:12.243 D/AHAL_HFP_QTI( 2276): hfp_set_parameters enter
+06-20 14:42:12.243 D/AHAL_HFP_QTI( 2276): hfp_set_parameters Exit
+06-20 14:42:12.243 D/AHAL_SecModulePrimary( 2276): processSetVendorParameters: configured g_hw_speaker_amp_temp_spk
+06-20 14:42:12.243 D/AHAL_SecModulePrimary( 2276): processSetVendorParameters: handler set on Feature:0
+06-20 14:42:12.243 D/AHAL_SecModulePrimary( 2276): onSetSECGenericParameters set temperature for g_hw_speaker_amp_temp_spk: 27
+06-20 14:42:12.243 I/PAL: API( 2276): pal_set_param: 1377: Enter: param id 3002
+06-20 14:42:12.244 I/PAL: ResourceManager( 2276): getActiveStream_l: 6587: no active streams found for device 3 ret -2
+06-20 14:42:12.244 E/DeviceHalAidl( 2333): Function: parseAndSetVendorParameters Line: 414 Failed 
+06-20 14:42:12.244 E/DeviceHalAidl( 2333): Function: parseAndSetVendorParameters Line: 414 Failed 
+06-20 14:42:12.245 I/AudioManager( 8460): setParameters keyValuePairs = g_hw_speaker_amp_temp_rcv=28
+06-20 14:42:12.245 D/AudioFlinger( 2333): setParameters: filtered dev setParameters keyvalue g_hw_speaker_amp_temp_rcv=28
+06-20 14:42:12.245 D/AHAL_HFP_QTI( 2276): hfp_set_parameters enter
+06-20 14:42:12.245 D/AHAL_HFP_QTI( 2276): hfp_set_parameters Exit
+06-20 14:42:12.245 D/AHAL_SecModulePrimary( 2276): processSetVendorParameters: configured g_hw_speaker_amp_temp_rcv
+06-20 14:42:12.245 D/AHAL_SecModulePrimary( 2276): processSetVendorParameters: handler set on Feature:0
+06-20 14:42:12.245 D/AHAL_SecModulePrimary( 2276): onSetSECGenericParameters set temperature for g_hw_speaker_amp_temp_rcv: 28
+06-20 14:42:12.245 I/PAL: API( 2276): pal_set_param: 1377: Enter: param id 3001
+06-20 14:42:12.245 I/PAL: ResourceManager( 2276): getActiveStream_l: 6587: no active streams found for device 3 ret -2
+06-20 14:42:12.246 E/DeviceHalAidl( 2333): Function: parseAndSetVendorParameters Line: 414 Failed 
+06-20 14:42:12.246 E/DeviceHalAidl( 2333): Function: parseAndSetVendorParameters Line: 414 Failed 
+06-20 14:42:12.247 D/ActivityManager( 3211): FCA:process record failed for pid:11902
+06-20 14:42:12.247 D/ActivityManager( 3211): FCA:FCA recordedFileRss = 159564, and changeinRss = 73856
+06-20 14:42:12.247 D/FreecessController( 3211): FZ : com.facebook.katana(10382) [11902, 29027] reason: Bg
+06-20 14:42:12.247 D/FreecessHandler( 3211): freeze com.facebook.katana(10382)
+06-20 14:42:12.248 W/LocationManagerService( 3211): onFreezeStateChanged, uid[10382]=true
+06-20 14:42:12.248 I/PowerManagerService( 3211): [PWL] SetWakeLockEnableDisable uid = 10382 , disable= true
+06-20 14:42:12.248 I/PowerManagerService( 3211): [PWL] can not change uid =  10382
+06-20 14:42:12.289 D/BSOHChargingDataCollector( 3211):  BSOH Sys-servce ... 
+06-20 14:42:12.290 D/BSOHChargingDataCollector( 3211): performBatteryWork++
+06-20 14:42:12.290 D/BSOHChargingDataCollector( 3211): performBatteryWork battery com.android.server.bsoh.device.PrimeBattery@84d3e75
+06-20 14:42:12.290 D/BSOHChargingDataCollector( 3211): primeBatt readVoltage from sysFsBattVolt,  path : /sys/class/power_supply/battery/batt_voltage_now
+06-20 14:42:12.299 D/BSOHChargingDataCollector( 3211): 0 	 BattData addData data : BattData { voltage:4.044, current:0.421875, soc:0.65, temperature:27.5, status:2, timestamp:1781984532299, voltage_chg:null}
+06-20 14:42:12.299 D/BSOHChargingDataCollector( 3211): performBatteryWork--
+06-20 14:42:12.776 I/SurfaceFlinger( 2350): Current= 120, Period= 120, Distance= 0
+06-20 14:42:12.784 I/SurfaceFlinger( 2350): Current= 120, Period= 120, Distance= 120
+06-20 14:42:12.813 I/sensors-hal( 2273): handle_sns_std_sensor_event:409, [SSC_LIGHT] P: 107(107),c:15,b:13,m:13,cl:0,l:104,s:109,l0:18272,l1:1120,s0:17500,s1:0,acl:1,opr:0.35,f(r):90,u(bl):100,if:90,wi:0,si:0,0(N:0)
+06-20 14:42:12.813 I/sensors-hal( 2273): handle_sns_client_event:379, [0][92724] accel_sample [-0.227,  0.048,  9.717] 22414999870460
+06-20 14:42:12.845 I/sensors-hal( 2273): handle_sns_client_event:327, [0][10079] mag_sample_cal(magcal_available:1): ts=22415037961241 ns; cal = [-35.449001, -26.545540, -31.217377], uncal = [-22.849001, 97.294456, -254.897369], bias = [12.599999, 123.839996, -223.679993], status=3, cal_id=2
+06-20 14:42:12.879 I/sensors-hal( 2273): handle_sns_std_sensor_event:157, [6399] Pressure 988.786, cal 0.146, sw_offset 0.000 (lsb(bit) 0x54 0x93 0x60)
+06-20 14:42:13.043 D/SemWifiSwitchForIndividualAppsService( 3211): isSkipNetworkCondition - result:2
+06-20 14:42:13.290 D/BSOHChargingDataCollector( 3211):  BSOH Sys-servce ... 
+06-20 14:42:13.290 D/BSOHChargingDataCollector( 3211): performBatteryWork++
+06-20 14:42:13.290 D/BSOHChargingDataCollector( 3211): performBatteryWork battery com.android.server.bsoh.device.PrimeBattery@84d3e75
+06-20 14:42:13.290 D/BSOHChargingDataCollector( 3211): primeBatt readVoltage from sysFsBattVolt,  path : /sys/class/power_supply/battery/batt_voltage_now
+06-20 14:42:13.301 D/BSOHChargingDataCollector( 3211): 0 	 BattData addData data : BattData { voltage:4.043, current:0.421875, soc:0.65, temperature:27.5, status:2, timestamp:1781984533301, voltage_chg:null}
+06-20 14:42:13.301 D/BSOHChargingDataCollector( 3211): performBatteryWork--
+06-20 14:42:13.336 I/SemWifiEleStateTracker( 3211): Ele Parameters BD : 13 13 13 13 13 13 MD : -104 -104 -104 -104 -104 -104 WD : -65 -66 -65 -65 -66 -65 GC : false false false false false false SC : false false false false false false SH : false false false false false false TB : false false false false false false
+06-20 14:42:13.336 D/SemWifiEleStateTracker( 3211): Pressure Diff: 0.005126953
+06-20 14:42:13.336 D/SemWifiEleStateTracker( 3211): Barometer value: Prev 988.78375 Current 988.7889 mSmallBaroDetected : false
+06-20 14:42:13.728 D/ActivityManager( 3211): FCA:Reclamation for pid: 29027
+06-20 14:42:13.885 D/io_stats( 1424): !@ Read_top(KB): kworker/u17:14:/(4436) 256
+06-20 14:42:13.885 D/io_stats( 1424): !@ Write_top(KB): jbd2/sda7-8:/(1410) 12
+06-20 14:42:13.911 D/SemWifiUsabilityStatsMonitor( 3211): onWifiUsabilityStats - seqNum 2347, isSameBssidAndFreq true
+06-20 14:42:13.913 D/SGM:GameManager( 3211): identifyGamePackage. com.sec.android.app.launcher, mCurrentUserId: 0, callingMethodInfo: com.samsung.android.game.SemGameManager.isGamePackage(SemGameManager.java:106)
+06-20 14:42:13.913 D/SGM:SemGameManager( 3211): isGamePackage(), pkgName=com.sec.android.app.launcher, ret=false
+06-20 14:42:14.051 D/SemWifiSwitchForIndividualAppsService( 3211): isSkipNetworkCondition - result:2
+06-20 14:42:14.249 D/ActivityManager( 3211): FCA:Reclamation for pid: 29027
+06-20 14:42:14.291 D/BSOHChargingDataCollector( 3211):  BSOH Sys-servce ... 
+06-20 14:42:14.291 D/BSOHChargingDataCollector( 3211): performBatteryWork++
+06-20 14:42:14.291 D/BSOHChargingDataCollector( 3211): performBatteryWork battery com.android.server.bsoh.device.PrimeBattery@84d3e75
+06-20 14:42:14.291 D/BSOHChargingDataCollector( 3211): primeBatt readVoltage from sysFsBattVolt,  path : /sys/class/power_supply/battery/batt_voltage_now
+06-20 14:42:14.301 D/BSOHChargingDataCollector( 3211): 0 	 BattData addData data : BattData { voltage:4.043, current:0.40625, soc:0.65, temperature:27.5, status:2, timestamp:1781984534301, voltage_chg:null}
+06-20 14:42:14.301 D/BSOHChargingDataCollector( 3211): performBatteryWork--
+06-20 14:42:14.828 I/sensors-hal( 2273): handle_sns_client_event:379, [0][92744] accel_sample [-0.228,  0.047,  9.718] 22417014491919
+06-20 14:42:14.845 I/sensors-hal( 2273): handle_sns_client_event:327, [0][10099] mag_sample_cal(magcal_available:1): ts=22417037961241 ns; cal = [-35.472610, -26.644501, -30.809265], uncal = [-22.872612, 97.195496, -254.489258], bias = [12.599999, 123.839996, -223.679993], status=3, cal_id=2
+06-20 14:42:14.962 I/sensors-hal( 2273): handle_sns_std_sensor_event:157, [6412] Pressure 988.796, cal 0.146, sw_offset 0.000 (lsb(bit) 0x90 0x93 0x60)
+06-20 14:42:15.058 D/SemWifiSwitchForIndividualAppsService( 3211): isSkipNetworkCondition - result:2
+06-20 14:42:15.293 D/BSOHChargingDataCollector( 3211):  BSOH Sys-servce ... 
+06-20 14:42:15.293 D/BSOHChargingDataCollector( 3211): performBatteryWork++
+06-20 14:42:15.293 D/BSOHChargingDataCollector( 3211): performBatteryWork battery com.android.server.bsoh.device.PrimeBattery@84d3e75
+06-20 14:42:15.293 D/BSOHChargingDataCollector( 3211): primeBatt readVoltage from sysFsBattVolt,  path : /sys/class/power_supply/battery/batt_voltage_now
+06-20 14:42:15.304 D/BSOHChargingDataCollector( 3211): 0 	 BattData addData data : BattData { voltage:4.044, current:0.439843, soc:0.65, temperature:27.5, status:2, timestamp:1781984535304, voltage_chg:null}
+06-20 14:42:15.305 D/BSOHChargingDataCollector( 3211): performBatteryWork--
+06-20 14:42:15.391 D/SemWifiEleStateTracker( 3211): Pressure Diff: 0.008666992
+06-20 14:42:15.391 D/SemWifiEleStateTracker( 3211): Barometer value: Prev 988.7889 Current 988.79755 mSmallBaroDetected : false
+06-20 14:42:15.852 I/sensors-hal( 2273): handle_sns_std_sensor_event:127, [SSC_LIGHT] A: 115(115),c:15,b:13,m:13,cl:0,l:110,s:115,l0:19552,l1:1248,s0:18500,s1:0,acl:1,opr:0.35,f(r):90,u(bl):100,if:90,wi:0,si:0,0(N:0)
+06-20 14:42:15.853 I/sensors-hal( 2273): handle_sns_std_sensor_event:409, [SSC_LIGHT] P: 115(115),c:15,b:13,m:13,cl:0,l:110,s:115,l0:19552,l1:1248,s0:18500,s1:0,acl:1,opr:0.35,f(r):90,u(bl):100,if:90,wi:0,si:0,0(N:0)
+06-20 14:42:15.888 D/io_stats( 1424): !@   8,0 r 2754745 87090052 w 962822 43366280 d 138431 20035964 f 24801 95351 iot 263488 0 th 0 0 0 pt 0 inp 0 0 16905.612
+06-20 14:42:16.067 D/SemWifiSwitchForIndividualAppsService( 3211): isSkipNetworkCondition - result:2
+06-20 14:42:16.294 D/BSOHChargingDataCollector( 3211):  BSOH Sys-servce ... 
+06-20 14:42:16.295 D/BSOHChargingDataCollector( 3211): performBatteryWork++
+06-20 14:42:16.295 D/BSOHChargingDataCollector( 3211): performBatteryWork battery com.android.server.bsoh.device.PrimeBattery@84d3e75
+06-20 14:42:16.295 D/BSOHChargingDataCollector( 3211): primeBatt readVoltage from sysFsBattVolt,  path : /sys/class/power_supply/battery/batt_voltage_now
+06-20 14:42:16.305 D/BSOHChargingDataCollector( 3211): 0 	 BattData addData data : BattData { voltage:4.044, current:0.421875, soc:0.65, temperature:27.5, status:2, timestamp:1781984536305, voltage_chg:null}
+06-20 14:42:16.305 D/BSOHChargingDataCollector( 3211): performBatteryWork--
+06-20 14:42:16.683 I/ChimeraAlwaysRunningMemCollectTask( 3211): Native task finish and cost 223ms and native quota is 677451
+06-20 14:42:16.771 I/SurfaceFlinger( 2350): Current= 120, Period= 120, Distance= 0
+06-20 14:42:16.779 I/SurfaceFlinger( 2350): Current= 120, Period= 120, Distance= 120
+06-20 14:42:16.841 I/sensors-hal( 2273): handle_sns_client_event:379, [0][92764] accel_sample [-0.229,  0.057,  9.740] 22419029112804
+06-20 14:42:16.844 I/sensors-hal( 2273): handle_sns_client_event:327, [0][10119] mag_sample_cal(magcal_available:1): ts=22419037961241 ns; cal = [-33.146957, -25.144630, -34.908325], uncal = [-20.546959, 98.695366, -258.588318], bias = [12.599999, 123.839996, -223.679993], status=3, cal_id=2
+06-20 14:42:16.878 I/sensors-hal( 2273): handle_sns_std_sensor_event:157, [6424] Pressure 988.798, cal 0.146, sw_offset 0.000 (lsb(bit) 0x9c 0x93 0x60)
+06-20 14:42:16.940 D/SemWifiUsabilityStatsMonitor( 3211): onWifiUsabilityStats - seqNum 2348, isSameBssidAndFreq true
+06-20 14:42:16.940 I/EPDG-1 [WifiProfiler]( 5884): handleWifiRssiIntent, rssi=-67
+06-20 14:42:16.941 I/EPDG-1 [WifiProfiler]( 5884): isProfiling, hash=19493184, started=true
+06-20 14:42:16.941 D/SGM:GameManager( 3211): identifyGamePackage. com.sec.android.app.launcher, mCurrentUserId: 0, callingMethodInfo: com.samsung.android.game.SemGameManager.isGamePackage(SemGameManager.java:106)
+06-20 14:42:16.941 D/SGM:SemGameManager( 3211): isGamePackage(), pkgName=com.sec.android.app.launcher, ret=false
+06-20 14:42:16.941 I/EPDG-1 [LogMetrics]( 5884): set, type=WIFI_RSSI_LAST, value=-67
+06-20 14:42:16.941 I/EPDG-1 [WifiProfiler]( 5884): isProfiling, hash=19493184, started=true
+06-20 14:42:16.941 I/EPDG-1 [WifiProfiler]( 5884): Rssi : -67 highrange : -71 lowrange : -80 mIsRssiInHystersis : false
+06-20 14:42:16.941 I/EPDG-1 [WifiProfiler]( 5884): Rssi : -67 highrange : -71 lowrange : -80 mIsRssiInHystersis : false
+06-20 14:42:16.941 I/EPDG-1 [Subscription]( 5884): isEpdgAvailable, IwlanPsState=2/2
+06-20 14:42:16.941 I/EPDG-1 [WifiProfiler]( 5884): getHandoverThresholdMet: value is: false
+06-20 14:42:16.984 D/HeatmapThread( 2340): Updated plugType via uevent: 2
+06-20 14:42:16.987 E/BatteryDump( 2311): !@new_battery_dump : 4038,128,475,550,65,275,273,288,275,0,289,288,0,Charging,NO_CHARGING,Normal,Good,USB,1,Normal,0,0,9300,0x0,0x10000,0x0,0,0,162,v0002,0000,0000,00000000,0,0,0,0,106,4032,6443,985,0,
+06-20 14:42:16.987 I/seh_thermal_service( 2313): getTemperaturesWithType SehTemperatureType: 3
+06-20 14:42:16.987 I/sehhealth-service( 2311): updateLrpSysfs: write: 289
+06-20 14:42:16.988 V/[SS]SleepChargingTimeController( 3211): [isActivated]mSleepChargingStatus isNowSessionTime False => false
+06-20 14:42:17.069 I/ChimeraAlwaysRunningMemCollectTask( 3211): Task finish and cost 385ms and quota is 2703457
+06-20 14:42:17.070 D/SemWifiSwitchForIndividualAppsService( 3211): isSkipNetworkCondition - result:2
+06-20 14:42:17.214 I/StatsHandler( 2306): [avcD_53] Stats: Pending(0) i/p-done(0) Works: Q: 341/Done 329|Work-Rate: Q(0.0/s Avg=0.0/s) Done(0.000/s Avg=0.020/s)| Stream: 30.00fps 65.3Kbps
+06-20 14:42:17.214 I/StatsHandler( 2306): [avcD_53] Mem-usage:  [In-1D: 21 bufs 168.000 MB] [1D-23: 35 bufs 0.547 MB] [2D-24: 19 bufs 15.141 MB] | Total: 183.688 MB
+06-20 14:42:17.214 I/StatsHandler( 2306): [vp9D_271] Stats: Pending(0) i/p-done(0) Works: Q: 672/Done 705|Work-Rate: Q(0.0/s Avg=1.6/s) Done(0.000/s Avg=1.707/s)| Stream: 29.97fps 1.4Mbps
+06-20 14:42:17.215 I/StatsHandler( 2306): [vp9D_271] Mem-usage:  [In-1D: 14 bufs 112.000 MB] [1D-347: 38 bufs 0.594 MB] [2D-348: 22 bufs 31.453 MB] | Total: 144.047 MB
+06-20 14:42:17.237 D/PowerManagerService( 3211): [api] setMasterBrightnessLimit : lowerLimit : -1  upperLimit : 1275  mMasterBrightnessLimitPeriod : 200 (uid: 1000 pid: 8460)
+06-20 14:42:17.238 D/PowerManagerService( 3211): [api] BrightnessLimitRunnable done
+06-20 14:42:17.295 D/BSOHChargingDataCollector( 3211):  BSOH Sys-servce ... 
+06-20 14:42:17.295 D/BSOHChargingDataCollector( 3211): performBatteryWork++
+06-20 14:42:17.295 D/BSOHChargingDataCollector( 3211): performBatteryWork battery com.android.server.bsoh.device.PrimeBattery@84d3e75
+06-20 14:42:17.296 D/BSOHChargingDataCollector( 3211): primeBatt readVoltage from sysFsBattVolt,  path : /sys/class/power_supply/battery/batt_voltage_now
+06-20 14:42:17.305 D/BSOHChargingDataCollector( 3211): 0 	 BattData addData data : BattData { voltage:4.033, current:-0.122656, soc:0.65, temperature:27.5, status:2, timestamp:1781984537305, voltage_chg:null}
+06-20 14:42:17.305 D/BSOHChargingDataCollector( 3211): performBatteryWork--
+06-20 14:42:17.444 D/SemWifiEleStateTracker( 3211): Pressure Diff: 0.0010986328
+06-20 14:42:17.444 D/SemWifiEleStateTracker( 3211): Barometer value: Prev 988.79755 Current 988.79865 mSmallBaroDetected : false
+06-20 14:42:17.817 I/wpa_supplicant( 5272): Heartbeat 1952
+06-20 14:42:17.889 D/io_stats( 1424): !@ Write_top(KB): kworker/u17:14:/(4436) 104 soft.appmanager:low(7432) 16 kworker/2:2:/(4976) 16
+06-20 14:42:17.927 D/WifiConnectivityMonitor.NetworkStatsAnalyzer( 3211): Backhaul Disconnection due to RetransSeg
+06-20 14:42:17.928 D/WifiConnectivityMonitor.NetworkStatsAnalyzer( 3211): Backhaul result - RSSI:-66, CE:8, PE:8, TI:13, PTI:14, TW:2, PTW:2, Tx:0, Rx:0, TxS:0, RxS:0, RESULT:true, IC:0, ICT:5, WC:0, WCT:5, R:0, RC:24, IE:0, EC:0
+06-20 14:42:18.078 D/SemWifiSwitchForIndividualAppsService( 3211): isSkipNetworkCondition - result:2
+06-20 14:42:18.096 D/SemNativeCarrierFeature_vendor(10355): getInstance
+06-20 14:42:18.099 D/SemNativeCarrierFeature_vendor(10355): getInstance
+06-20 14:42:18.106 I/EPDG-1 [IwlanNetworkService]( 5884): requestNetworkRegistrationInfo for domain 2
+06-20 14:42:18.106 I/EPDG-1 [IwlanNetworkService]( 5884): Calling onRequestNetworkRegistrationInfoComplete.resultCode = 0, netState = NetworkRegistrationInfo{ domain=PS transportType=WLAN registrationState=HOME networkRegistrationState=HOME roamingType=NOT_ROAMING accessNetworkTechnology=IWLAN rejectCause=0 emergencyEnabled=false availableServices=[DATA] cellIdentity=null voiceSpecificInfo=null dataSpecificInfo=null nrState=**** rRplmn= isUsingCarrierAggregation=false isNonTerrestrialNetwork=TERRESTRIAL}
+06-20 14:42:18.109 I/EPDG-1 [IwlanNetworkService]( 5884): requestNetworkRegistrationInfo for domain 2
+06-20 14:42:18.109 I/EPDG-1 [IwlanNetworkService]( 5884): Calling onRequestNetworkRegistrationInfoComplete.resultCode = 0, netState = NetworkRegistrationInfo{ domain=PS transportType=WLAN registrationState=HOME networkRegistrationState=HOME roamingType=NOT_ROAMING accessNetworkTechnology=IWLAN rejectCause=0 emergencyEnabled=false availableServices=[DATA] cellIdentity=null voiceSpecificInfo=null dataSpecificInfo=null nrState=**** rRplmn= isUsingCarrierAggregation=false isNonTerrestrialNetwork=TERRESTRIAL}
+06-20 14:42:18.112 D/SemCellularStateManager( 3211): onCellInfoChanged: cellInfoList Number of cell: 1
+06-20 14:42:18.112 D/SemCellularStateManager( 3211): onCellInfoChanged: Registered = true, mCellularCellId = 3
+06-20 14:42:18.112 I/TelephonyCallbackForPdnController<1>( 5532): onCellInfoChanged: xxxxx
+06-20 14:42:18.113 I/ImsCallSessionManager( 5532): onCellInfoChanged, phoneId: 1
+06-20 14:42:18.113 I/RegiMgr-Handler( 5532): handleMessage: EVENT_CELL_INFO_CHANGED
+06-20 14:42:18.114 I/RegiMgr<1>( 5532): updatePani RegisterTask[1][mProfile=TMobile LTE/WiFi, mRegistrationRat=18, mPdnType=11, mState=REGISTERED, mObject=UserAgent - :
+06-20 14:42:18.114 I/RegiMgr<1>( 5532):  total records=1571
+06-20 14:42:18.114 I/RegiMgr<1>( 5532):  rec[0]: time=06-20 14:40:56.037 processed=ReadyState org=RegisteredState dest=<null> what=50(0x32)
+06-20 14:42:18.114 I/RegiMgr<1>( 5532):  rec[1]: time=06-20 14:40:56.059 processed=ReadyState org=RegisteredState dest=<null> what=34(0x22)
+06-20 14:42:18.114 I/RegiMgr<1>( 5532):  rec[2]: time=06-20 14:40:56.059 processed=RegisteredState org=RegisteredState dest=<null> what=2000(0x7d0)
+06-20 14:42:18.114 I/RegiMgr<1>( 5532):  rec[3]: time=06-20 14:40:58.764 processed=ReadyState org=RegisteredState dest=<null> what=34(0x22)
+06-20 14:42:18.114 I/RegiMgr<1>( 5532):  rec[4]: time=06-20 14:40:58.765 processed=RegisteredState org=RegisteredState dest=<null> what=2000(0x7d0)
+06-20 14:42:18.114 I/RegiMgr<1>( 5532):  rec[5]: time=06-20 14:40:58.775 processed=ReadyState org=RegisteredState dest=<null> what=34(0x22)
+06-20 14:42:18.114 I/RegiMgr<1>( 5532):  rec[6]: time=06-20 14:40:58.775 processed=RegisteredState org=RegisteredState dest=<null> what=2000(0x7d0)
+06-20 14:42:18.114 I/RegiMgr<1>( 5532):  rec[7]: time=06-20 14:40:58.777 processed=ReadyState org=RegisteredState dest=<null> what=50(0x32)
+06-20 14:42:18.114 I/RegiMgr<1>( 5532):  rec[8]: time=06-20 14:41:16.867 processed=ReadyState org=RegisteredState dest=<null> what=34(0x22)
+06-20 14:42:18.114 I/RegiMgr<1>( 5532):  rec[9]: time=06-20 14:41:16.867 processed=RegisteredState org=RegisteredState dest=<null> what=2000(0x7d0)
+06-20 14:42:18.114 I/RegiMgr<1>( 5532):  rec[10]: time=06-20 14:41:25.001 processed=ReadyState org=RegisteredState dest=<null> what=34(0x22)
+06-20 14:42:18.114 I/RegiMgr<1>( 5532):  rec[11]: time=06-20 14:41:25.002 processed=RegisteredState org=RegisteredState dest=<null> what=2000(0x7d0)
+06-20 14:42:18.114 I/RegiMgr<1>( 5532):  rec[12]: time=06-20 14:41:25.015 processed=ReadyState org=RegisteredState dest=<null> what=34(0x22)
+06-20 14:42:18.114 I/RegiMgr<1>( 5532):  rec[13]: time=06-20 14:41:25.015 processed=RegisteredState org=RegisteredState dest=<null> what=2000(0x7d0)
+06-20 14:42:18.114 I/RegiMgr<1>( 5532):  rec[14]: time=06-20 14:41:25.017 processed=ReadyState org=RegisteredState dest=<null> what=50(0x32)
+06-20 14:42:18.114 I/RegiMgr<1>( 5532):  rec[15]: time=06-20 14:41:34.622 processed=ReadyState org=RegisteredState dest=<null> what=34(0x22)
+06-20 14:42:18.114 I/RegiMgr<1>( 5532):  rec[16]: time=06-20 14:41:34.622 processed=RegisteredState org=RegisteredState dest=<null> what=2000(0x7d0)
+06-20 14:42:18.114 I/RegiMgr<1>( 5532):  rec[17]: time=06-20 14:41:34.634 processed=ReadyState org=RegisteredState dest=<null> what=34(0x22)
+06-20 14:42:18.114 I/RegiMgr<1>( 5532):  rec[18]: time=06-20 14:41:34.635 processed=RegisteredState org=RegisteredState dest=<null> what=2000(0x7d0)
+06-20 14:42:18.114 I/RegiMgr<1>( 5532):  rec[19]: time=06-20 14:41:34.638 processed=ReadyState org=RegisteredState dest=<null> what=50(0x32)
+06-20 14:42:18.114 I/RegiMgr<1>( 5532): curState=RegisteredState
+06-20 14:42:18.114 I/RegiMgr<1>( 5532): , mReason=, mPcscfHostname=null, mDeregiReason=41]
+06-20 14:42:18.115 I/PaniGenerator<1>( 5532): generate: subId=2, network=18, pdn=11
+06-20 14:42:18.115 I/PaniGenerator<1>( 5532): generate: network=18, fallbackPlmn=310260
+06-20 14:42:18.115 I/PaniGenerator<1>( 5532): generateWiFiPani: Format for generating PANI - <PREFIX>;<COUNTRY>;<NODE_ID>
+06-20 14:42:18.116 I/PaniGenerator<1>( 5532): generateWiFiPani: normalized PANI: IEEE-802.11;country=US;i-wlan-node-id=6083e70628bc
+06-20 14:42:18.117 I/PaniGenerator<1>( 5532): generate: network=20, fallbackPlmn=null
+06-20 14:42:18.117 I/PdnController<1>( 5532): getAllCellInfo mNeedCellLocationUpdate : false
+06-20 14:42:18.117 I/PaniGenerator( 5532): generate: change to NW PLMN(310260)
+06-20 14:42:18.117 I/PaniGenerator( 5532): NR Access Type TDD
+06-20 14:42:18.118 D/SatelliteController( 5463): getCarrierRoamingNtnAllSatellitePlmnSetFromStorage: [302723, 44026, 71688, 73029, 44055, 312190, 44025, 313130, 73031, 313210, 23402, 310830, 53004, 53013, 53002, 255707, 50511, 50559]
+06-20 14:42:18.118 D/SatelliteController( 5463): persistCarrierRoamingNtnAllSatellitePlmnSet
+06-20 14:42:18.118 D/SatelliteController( 5463): getAllPlmnList: [302723, 44026, 71688, 73029, 44055, 312190, 44025, 313130, 73031, 313210, 23402, 310210, 310830, 53004, 53013, 53002, 255707, 50511, 50559]
+06-20 14:42:18.118 D/SatelliteController( 5463): getAllPlmnSet after exclude : [302723, 44026, 71688, 73029, 44055, 312190, 44025, 313130, 73031, 313210, 23402, 310830, 53004, 53013, 53002, 255707, 50511, 50559]
+06-20 14:42:18.118 D/SatelliteController( 5463): getCarrierRoamingNtnAllSatellitePlmnSetFromStorage: [302723, 44026, 71688, 73029, 44055, 312190, 44025, 313130, 73031, 313210, 23402, 310830, 53004, 53013, 53002, 255707, 50511, 50559]
+06-20 14:42:18.118 D/SatelliteController( 5463): persistCarrierRoamingNtnAllSatellitePlmnSet
+06-20 14:42:18.118 D/SatelliteController( 5463): getAllPlmnList: [302723, 44026, 71688, 73029, 44055, 312190, 44025, 313130, 73031, 313210, 23402, 310210, 310830, 53004, 53013, 53002, 255707, 50511, 50559]
+06-20 14:42:18.118 D/SatelliteController( 5463): getAllPlmnSet after exclude : [302723, 44026, 71688, 73029, 44055, 312190, 44025, 313130, 73031, 313210, 23402, 310830, 53004, 53013, 53002, 255707, 50511, 50559]
+06-20 14:42:18.119 I/UserAgent<1>( 5532): updatePani
+06-20 14:42:18.119 I/RegiMgr<1>( 5532): updatePani RegisterTask[1][mProfile=TMobile 3G, mRegistrationRat=18, mPdnType=0, mState=CONFIGURED, mObject=null, mReason=, mPcscfHostname=null, mDeregiReason=41]
+06-20 14:42:18.120 I/PaniGenerator<1>( 5532): generate: subId=2, network=18, pdn=0
+06-20 14:42:18.120 I/SECIMSJ ( 5532): [1084]> 192
+06-20 14:42:18.120 I/PaniGenerator<1>( 5532): generate: network=18, fallbackPlmn=310260
+06-20 14:42:18.120 I/PaniGenerator<1>( 5532): generateWiFiPani: Format for generating PANI - <PREFIX>;<COUNTRY>;<NODE_ID>
+06-20 14:42:18.121 V/Configuration( 5463): Updating configuration, locales updated from [en_US] to []
+06-20 14:42:18.121 I/PaniGenerator<1>( 5532): generateWiFiPani: normalized PANI: IEEE-802.11;country=US;i-wlan-node-id=6083e70628bc
+06-20 14:42:18.121 I/[IMS6.0]( 5532): IMS_onResponse()
+06-20 14:42:18.121 I/StackIF ( 5532): processMessage 2
+06-20 14:42:18.121 I/StackIF ( 5532): Processing Response
+06-20 14:42:18.121 I/SECIMSJ ( 5532): [1084]< 600
+06-20 14:42:18.121 I/StackIF ( 5532): processResponse: reqId 600
+06-20 14:42:18.121 I/StackIF ( 5532): processResponse: handle 9670 result 0 reason 0
+06-20 14:42:18.122 I/PaniGenerator<1>( 5532): generate: network=20, fallbackPlmn=null
+06-20 14:42:18.122 I/PdnController<1>( 5532): getAllCellInfo mNeedCellLocationUpdate : false
+06-20 14:42:18.122 I/PaniGenerator( 5532): generate: change to NW PLMN(310260)
+06-20 14:42:18.122 I/PaniGenerator( 5532): NR Access Type TDD
+06-20 14:42:18.125 I/RegiMgr<1>( 5532): tryRegister:
+06-20 14:42:18.125 I/RegiMgr<1>( 5532): RegisterTask(s): TMobile LTE/WiFi (REGISTERED, rat = 18, service = [mmtel-video, mmtel-call-composer, smsip, mmtel, presence]), TMobile 3G (CONFIGURED)
+06-20 14:42:18.125 I/RcsPolicyMgr<1>( 5532): pendingRcsRegister: mActiveDataPhoneId = 1
+06-20 14:42:18.125 I/RcsPolicyMgr<1>( 5532): pendingRcsRegister: mActiveDataPhoneId = 1
+06-20 14:42:18.125 I/RegisterTask( 5532): isSuspended: mSuspended(false) mSuspendByIrat(false)
+06-20 14:42:18.125 I/RegiMgr<1>( 5532): [TMobile 3G|CONFIGURED] checkForTryRegister id: 295
+06-20 14:42:18.125 D/SatelliteController( 5463): isCarrierRoamingNtnEligible: phone is null
+06-20 14:42:18.125 D/SatelliteController( 5463): evaluateCarrierRoamingNtnEligibilityChange: isCarrierRoamingNtnEligible=false
+06-20 14:42:18.125 E/SatelliteController( 5463): notifyNtnEligibility: mSatellitePhone is null
+06-20 14:42:18.125 D/SatelliteController( 5463): handleServiceStateForSatelliteConnectionViaCarrier : SubId = -1
+06-20 14:42:18.125 D/SatelliteController( 5463): handleServiceStateForSatelliteConnectionViaCarrier : SubId = 2
+06-20 14:42:18.125 V/SatelliteController( 5463): getWwanIsInService: return true
+06-20 14:42:18.125 D/SatelliteController( 5463): handleServiceStateForSatelliteConnectionViaCarrier: resetCarrierRoamingSatelliteModeParams: device is connected to terrestrial service or radio is off
+06-20 14:42:18.125 V/SatelliteController( 5463): getWwanIsInService: return true
+06-20 14:42:18.125 I/PdnController( 5532): getDefaultNetworkBearer:  WIFI
+06-20 14:42:18.125 D/SatelliteController( 5463): getCarrierRoamingNtnConnectType: Falling back to global carrier config connect type: 0
+06-20 14:42:18.126 I/RegistrationRatDecider<1>( 5532): findBestNetwork: WIFI (ePDG connected)
+06-20 14:42:18.126 D/SemWifiService( 3211): onServiceStateChanged : state - 0, dataNetworkType : 18
+06-20 14:42:18.126 I/RegiGvnBase<1>( 5532): isReadyToDualRegister: slot 0's call state: 0
+06-20 14:42:18.126 I/RegiGvnBase<1>( 5532): isReadyToDualRegister : true
+06-20 14:42:18.126 V/SatelliteController( 5463): getWwanIsInService: return true
+06-20 14:42:18.126 D/SatelliteController( 5463): updateLastNotifiedNtnModeAndNotify: subId=2 initialized=true lastNotifiedNtnMode=false lastNotifiedNtnModePhone=false currNtnMode=false
+06-20 14:42:18.126 D/SatelliteController( 5463): isInCarrierRoamingNbIotNtn: satellite is disabled
+06-20 14:42:18.126 D/SLocation( 3211): CellLocationManager - onServiceStateChanged 0
+06-20 14:42:18.126 D/SatelliteController( 5463): getCarrierRoamingNtnConnectType: Falling back to global carrier config connect type: 0
+06-20 14:42:18.126 I/LocationAccessPolicy( 3211): com.android.systemui is aware of fine but the app-ops permission is specifically denied.
+06-20 14:42:18.126 V/SatelliteController( 5463): getWwanIsInService: return true
+06-20 14:42:18.126 I/LocationAccessPolicy( 3211): checkLocationPermission - callingUid: 10050, callingPid: 5574, resultForFine: DENIED_SOFT
+06-20 14:42:18.126 D/SatelliteController( 5463): updateLastNotifiedCarrierRoamingNtnSignalStrengthAndNotify(2)
+06-20 14:42:18.126 D/SatelliteController( 5463): updateLastNotifiedCarrierRoamingNtnSignalStrengthAndNotify(2) lastNotifiedSignalStrength level: 0
+06-20 14:42:18.126 D/SatelliteController( 5463): updateLastNotifiedCarrierRoamingNtnSignalStrengthAndNotify(2) currSignalStrength level: 0
+06-20 14:42:18.126 I/LocationAccessPolicy( 3211): com.android.systemui is aware of coarse but the app-ops permission is specifically denied.
+06-20 14:42:18.126 I/LocationAccessPolicy( 3211): checkLocationPermission - callingUid: 10050, callingPid: 5574, resultForCoarse: DENIED_SOFT
+06-20 14:42:18.126 I/RegiMgr<1>( 5532): [TMobile 3G|CONFIGURED] checkInitialRegistrationIsReady: APM ON [false], Roamimg [false]
+06-20 14:42:18.126 I/RcsPolicyMgr<1>( 5532): pendingRcsRegister: mActiveDataPhoneId = 1
+06-20 14:42:18.126 I/ImsProfile( 5532): isRttSupportByCallApp : true
+06-20 14:42:18.126 I/ImsProfile( 5532): ttyType : 1
+06-20 14:42:18.127 I/RegiMgr-Utils<1>( 5532): getPriorityRegiedTask : isPriority  High? true
+06-20 14:42:18.127 I/RegiMgr-Utils<1>( 5532): checkHigherPriorityRegiedTask != null
+06-20 14:42:18.127 D/SemWifiApServiceImpl( 3211): onServiceStateChanged : 0dataNetworkType : 18,isUsingNonTerrestrialNetwork:false
+06-20 14:42:18.127 V/SemWifiBackOff.5G( 3211): checkAndSetup nrFrequencyRange=2 / prevNrFrequencyRange=2
+06-20 14:42:18.127 W/NSLocationMonitor( 3211): onServiceStateChanged, state=0 / channel=502110
+06-20 14:42:18.127 I/NSLocationMonitor( 3211): networkType[20]=NR / nrState=false
+06-20 14:42:18.127 D/GlobalActionsDialogLite( 5574): Service changed before actions created
+06-20 14:42:18.127 I/VolteServiceModule( 5532): onServiceStateChanged({mVoiceRegState=0(IN_SERVICE), mDataRegState=0(IN_SERVICE), mChannelNumber=502110, duplexMode()=0, mCellBandwidths=[], mOperatorAlphaLong=T-Mobile, mOperatorAlphaShort=T-Mobile, isManualNetworkSelection=false(automatic), getRilVoiceRadioTechnology=20(NR_SA), getRilDataRadioTechnology=18(IWLAN), mCssIndicator=unsupported, NonCellular=false, Snap=0, PsOnly=true, OptRadioTech=0, MsimSubmode=0, IsVoiceCallAvailable=true, mIsEmergencyOnly=false, isUsingCarrierAggregation=false, mArfcnRsrpBoost=0, mNetworkRegistrationInfos=[NetworkRegistrationInfo{ domain=PS transportType=WLAN registrationState=HOME networkRegistrationState=HOME roamingType=NOT_ROAMING accessNetworkTechnology=IWLAN rejectCause=0 emergencyEnabled=false availableServices=[DATA] cellIdentity=null voiceSpecificInfo=null dataSpecificInfo=null nrState=**** rRplmn= isUsingCarrierAggregation=false isNonTerrestrialNetwork=TERRESTRIAL}, NetworkRegistrationInfo{ domain=CS transportType=WWAN registrationState=HOME networkRegistrationState=HOME roamingType=NOT_ROAMING accessNetworkTechnology=NR rejectCause=0 emergencyEnabled=false availableServices=[VOICE,SMS,VIDEO] cellIdentity=CellIdentityNr:{ mPci = [****] mTac = [****] mNrArfcn = [****] mBands = [41] mMcc = 310 mMnc = 260 mNci = [****] mAlphaLong = T-Mobile mAlphaShort = T-Mobile mAdditionalPlmns = {} } voiceSpecificInfo=VoiceSpecificRegistrationInfo { mCssSupported=false mRoamingIndicator=0 mSystemIsInPrl=0 mDefaultRoamingIndicator=0} dataSpecificInfo=null nrState=**** rRplmn=310260 isUsingCarrierAggregation=false isNonTerrestrialNetwork=TERRESTRIAL}, NetworkRegistrationInfo{ domain=PS transportType=WWAN registrationState=HOME networkRegistrationState=HOME roamingType=NOT_ROAMING accessNetworkTechnology=NR rejectCause=0 emergencyEnabled=false availableServices=[DATA,MMS] cellIdentity=CellIdentityNr:{ mPci = [****] mTac = [****] mNrArfcn = [****] mBands = [41] mMcc = 310 mMnc = 260 mNci = [****] mAlphaLong = T-Mobile mAlphaShort = T-Mobile mAdditionalPlmns = {} } voiceSpecificInfo=null dataSpecificInfo=android.telephony.DataSpecificRegistrationInfo :{ maxDataCalls = 16 isDcNrRestricted = false isNrAvailable = false isEnDcAvailable = false mLteAttachResultType = 0 mLteAttachExtraInfo = 0 NrVopsSupportInfo :  mVopsSupport = 1 mEmcSupport = 1 mEmfSupport = 1 } nrState=**** rRplmn=310260 isUsingCarrierAggregation=false isNonTerrestrialNetwork=TERRESTRIAL}], mNrFrequencyRange=0, mOperatorAlphaLongRaw=T-Mobile, mOperatorAlphaShortRaw=T-Mobile, mIsDataRoamingFromRegistration=false, mIsIwlanPreferred=true, mIsUsingNonTerrestrialNetwork=false})
+06-20 14:42:18.127 I/LocationAccessPolicy( 3211): com.android.systemui is aware of fine but the app-ops permission is specifically denied.
+06-20 14:42:18.127 I/LocationAccessPolicy( 3211): checkLocationPermission - callingUid: 10050, callingPid: 5574, resultForFine: DENIED_SOFT
+06-20 14:42:18.127 I/VolteServiceModule( 5532): mIsLteEpsOnlyAttached(0):false
+06-20 14:42:18.127 I/LocationAccessPolicy( 3211): com.android.systemui is aware of coarse but the app-ops permission is specifically denied.
+06-20 14:42:18.127 I/LocationAccessPolicy( 3211): checkLocationPermission - callingUid: 10050, callingPid: 5574, resultForCoarse: DENIED_SOFT
+06-20 14:42:18.127 W/NetworkManager_FLP( 6181): updateServiceStateChanged, serviceState=0 / isRegistered=true / channel=502110 / networkTypeName=NR / nr=false
+06-20 14:42:18.128 W/NSLocationMonitor( 3211): onServiceStateChanged, state=0 / channel=502110
+06-20 14:42:18.128 I/NSLocationMonitor( 3211): networkType[20]=NR / nrState=false
+06-20 14:42:18.128 I/LocationAccessPolicy( 3211): com.android.systemui is aware of fine but the app-ops permission is specifically denied.
+06-20 14:42:18.128 I/LocationAccessPolicy( 3211): checkLocationPermission - callingUid: 10050, callingPid: 5574, resultForFine: DENIED_SOFT
+06-20 14:42:18.128 D/SatelliteModeObserver( 5574): service state changed : {mVoiceRegState=0(IN_SERVICE), mDataRegState=0(IN_SERVICE), mChannelNumber=502110, duplexMode()=0, mCellBandwidths=[], mOperatorAlphaLong=null, mOperatorAlphaShort=null, isManualNetworkSelection=false(automatic), getRilVoiceRadioTechnology=20(NR_SA), getRilDataRadioTechnology=18(IWLAN), mCssIndicator=unsupported, NonCellular=false, Snap=0, PsOnly=true, OptRadioTech=0, MsimSubmode=0, IsVoiceCallAvailable=true, mIsEmergencyOnly=false, isUsingCarrierAggregation=false, mArfcnRsrpBoost=0, mNetworkRegistrationInfos=[NetworkRegistrationInfo{ domain=PS transportType=WLAN registrationState=HOME networkRegistrationState=HOME roamingType=NOT_ROAMING accessNetworkTechnology=IWLAN rejectCause=0 emergencyEnabled=false availableServices=[DATA] cellIdentity=null voiceSpecificInfo=null dataSpecificInfo=null nrState=**** rRplmn= isUsingCarrierAggregation=false isNonTerrestrialNetwork=TERRESTRIAL}, NetworkRegistrationInfo{ domain=CS transportType=WWAN registrationState=HOME networkRegistrationState=HOME roamingType=NOT_ROAMING accessNetworkTechnology=NR rejectCause=0 emergencyEnabled=false availableServices=[VOICE,SMS,VIDEO] cellIdentity=CellIdentityNr:{ mPci = [****] mTac = [****] mNrArfcn = [****] mBands = [41] mMcc = 310 mMnc = 260 mNci = [****] mAlphaLong = T-Mobile mAlphaShort = T-Mobile mAdditionalPlmns = {} } voiceSpecificInfo=VoiceSpecificRegistrationInfo { mCssSupported=false mRoamingIndicator=0 mSystemIsInPrl=0 mDefaultRoamingIndicator=0} dataSpecificInfo=null nrState=**** rRplmn=310260 isUsingCarrierAggregation=false isNonTerrestrialNetwork=TERRESTRIAL}, NetworkRegistrationInfo{ domain=PS transportType=WWAN registrationState=HOME networkRegistrationState=HOME roamingType=NOT_ROAMING accessNetworkTechnology=NR rejectCause=0 emergencyEnabled=false availableServices=[DATA,MMS] cellIdentity=CellIdentityNr:{ mPci = [****] mTac = [****] mNrArfcn = [****] mBands = [41] mMcc = 310 mMnc = 260 mNci = [****] mAlphaLong = T-Mobile mAlphaShort = T-Mobile mAdditionalPlmns = {} } voiceSpecificInfo=null dataSpecificInfo=android.telephony.DataSpecificRegistrationInfo :{ maxDataCalls = 16 isDcNrRestricted = false isNrAvailable = false isEnDcAvailable = false mLteAttachResultType = 0 mLteAttachExtraInfo = 0 NrVopsSupportInfo :  mVopsSupport = 1 mEmcSupport = 1 mEmfSupport = 1 } nrState=**** rRplmn=310260 isUsingCarrierAggregation=false isNonTerrestrialNetwork=TERRESTRIAL}], mNrFrequencyRange=0, mOperatorAlphaLongRaw=T-Mobile, mOperatorAlphaShortRaw=T-Mobile, mIsDataRoamingFromRegistration=false, mIsIwlanPreferred=true, mIsUsingNonTerrestrialNetwork=false}
+06-20 14:42:18.128 I/LocationAccessPolicy( 3211): com.android.systemui is aware of coarse but the app-ops permission is specifically denied.
+06-20 14:42:18.128 I/LocationAccessPolicy( 3211): checkLocationPermission - callingUid: 10050, callingPid: 5574, resultForCoarse: DENIED_SOFT
+06-20 14:42:18.128 D/SatelliteModeObserver( 5574): isSatelliteNetworksOn(), isUsingTerrestrialNetwork: false
+06-20 14:42:18.128 W/NetworkManager_FLP( 6181): updateServiceStateChanged, serviceState=0 / isRegistered=true / channel=502110 / networkTypeName=NR / nr=false
+06-20 14:42:18.128 I/LocationAccessPolicy( 3211): com.android.systemui is aware of fine but the app-ops permission is specifically denied.
+06-20 14:42:18.128 I/LocationAccessPolicy( 3211): checkLocationPermission - callingUid: 10050, callingPid: 5574, resultForFine: DENIED_SOFT
+06-20 14:42:18.128 I/LocationAccessPolicy( 3211): com.android.systemui is aware of coarse but the app-ops permission is specifically denied.
+06-20 14:42:18.128 I/LocationAccessPolicy( 3211): checkLocationPermission - callingUid: 10050, callingPid: 5574, resultForCoarse: DENIED_SOFT
+06-20 14:42:18.129 I/TelephonyCallbackForPdnController<1>( 5532): emcbsIndication: SUPPORTED, mobileDataNetworkType: 20
+06-20 14:42:18.129 I/LocationAccessPolicy( 3211): checkLocationPermission - callingUid: 10079, callingPid: 13475, resultForFine: DENIED_HARD
+06-20 14:42:18.129 I/VolteServiceModule( 5532): onServiceStateChanged({mVoiceRegState=0(IN_SERVICE), mDataRegState=0(IN_SERVICE), mChannelNumber=502110, duplexMode()=0, mCellBandwidths=[], mOperatorAlphaLong=T-Mobile, mOperatorAlphaShort=T-Mobile, isManualNetworkSelection=false(automatic), getRilVoiceRadioTechnology=20(NR_SA), getRilDataRadioTechnology=18(IWLAN), mCssIndicator=unsupported, NonCellular=false, Snap=0, PsOnly=true, OptRadioTech=0, MsimSubmode=0, IsVoiceCallAvailable=true, mIsEmergencyOnly=false, isUsingCarrierAggregation=false, mArfcnRsrpBoost=0, mNetworkRegistrationInfos=[NetworkRegistrationInfo{ domain=PS transportType=WLAN registrationState=HOME networkRegistrationState=HOME roamingType=NOT_ROAMING accessNetworkTechnology=IWLAN rejectCause=0 emergencyEnabled=false availableServices=[DATA] cellIdentity=null voiceSpecificInfo=null dataSpecificInfo=null nrState=**** rRplmn= isUsingCarrierAggregation=false isNonTerrestrialNetwork=TERRESTRIAL}, NetworkRegistrationInfo{ domain=CS transportType=WWAN registrationState=HOME networkRegistrationState=HOME roamingType=NOT_ROAMING accessNetworkTechnology=NR rejectCause=0 emergencyEnabled=false availableServices=[VOICE,SMS,VIDEO] cellIdentity=CellIdentityNr:{ mPci = [****] mTac = [****] mNrArfcn = [****] mBands = [41] mMcc = 310 mMnc = 260 mNci = [****] mAlphaLong = T-Mobile mAlphaShort = T-Mobile mAdditionalPlmns = {} } voiceSpecificInfo=VoiceSpecificRegistrationInfo { mCssSupported=false mRoamingIndicator=0 mSystemIsInPrl=0 mDefaultRoamingIndicator=0} dataSpecificInfo=null nrState=**** rRplmn=310260 isUsingCarrierAggregation=false isNonTerrestrialNetwork=TERRESTRIAL}, NetworkRegistrationInfo{ domain=PS transportType=WWAN registrationState=HOME networkRegistrationState=HOME roamingType=NOT_ROAMING accessNetworkTechnology=NR rejectCause=0 emergencyEnabled=false availableServices=[DATA,MMS] cellIdentity=CellIdentityNr:{ mPci = [****] mTac = [****] mNrArfcn = [****] mBands = [41] mMcc = 310 mMnc = 260 mNci = [****] mAlphaLong = T-Mobile mAlphaShort = T-Mobile mAdditionalPlmns = {} } voiceSpecificInfo=null dataSpecificInfo=android.telephony.DataSpecificRegistrationInfo :{ maxDataCalls = 16 isDcNrRestricted = false isNrAvailable = false isEnDcAvailable = false mLteAttachResultType = 0 mLteAttachExtraInfo = 0 NrVopsSupportInfo :  mVopsSupport = 1 mEmcSupport = 1 mEmfSupport = 1 } nrState=**** rRplmn=310260 isUsingCarrierAggregation=false isNonTerrestrialNetwork=TERRESTRIAL}], mNrFrequencyRange=0, mOperatorAlphaLongRaw=T-Mobile, mOperatorAlphaShortRaw=T-Mobile, mIsDataRoamingFromRegistration=false, mIsIwlanPreferred=true, mIsUsingNonTerrestrialNetwork=false})
+06-20 14:42:18.129 I/LocationAccessPolicy( 3211): checkLocationPermission - callingUid: 10079, callingPid: 13475, resultForCoarse: DENIED_HARD
+06-20 14:42:18.129 I/NetworkUtil( 5532): Network Cap check : INTERNET : true
+06-20 14:42:18.129 I/VolteServiceModule( 5532): mIsLteEpsOnlyAttached(1):false
+06-20 14:42:18.129 I/NetworkUtil( 5532): isConnected = false isCellularOnly : true
+06-20 14:42:18.129 I/TelephonyCallbackForPdnController<1>( 5532): onServiceStateChanged: state={mVoiceRegState=0(IN_SERVICE), mDataRegState=0(IN_SERVICE), mChannelNumber=502110, duplexMode()=0, mCellBandwidths=[], mOperatorAlphaLong=T-Mobile, mOperatorAlphaShort=T-Mobile, isManualNetworkSelection=false(automatic), getRilVoiceRadioTechnology=20(NR_SA), getRilDataRadioTechnology=18(IWLAN), mCssIndicator=unsupported, NonCellular=false, Snap=0, PsOnly=true, OptRadioTech=0, MsimSubmode=0, IsVoiceCallAvailable=true, mIsEmergencyOnly=false, isUsingCarrierAggregation=false, mArfcnRsrpBoost=0, mNetworkRegistrationInfos=[NetworkRegistrationInfo{ domain=PS transportType=WLAN registrationState=HOME networkRegistrationState=HOME roamingType=NOT_ROAMING accessNetworkTechnology=IWLAN rejectCause=0 emergencyEnabled=false availableServices=[DATA] cellIdentity=null voiceSpecificInfo=null dataSpecificInfo=null nrState=**** rRplmn= isUsingCarrierAggregation=false isNonTerrestrialNetwork=TERRESTRIAL}, NetworkRegistrationInfo{ domain=CS transportType=WWAN registrationState=HOME networkRegistrationState=HOME roamingType=NOT_ROAMING accessNetworkTechnology=NR rejectCause=0 emergencyEnabled=false availableServices=[VOICE,SMS,VIDEO] cellIdentity=CellIdentityNr:{ mPci = [****] mTac = [****] mNrArfcn = [****] mBands = [41] mMcc = 310 mMnc = 260 mNci = [****] mAlphaLong = T-Mobile mAlphaShort = T-Mobile mAdditionalPlmns = {} } voiceSpecificInfo=VoiceSpecificRegistrationInfo { mCssSupported=false mRoamingIndicator=0 mSystemIsInPrl=0 mDefaultRoamingIndicator=0} dataSpecificInfo=null nrState=**** rRplmn=310260 isUsingCarrierAggregation=false isNonTerrestrialNetwork=TERRESTRIAL}, NetworkRegistrationInfo{ domain=PS transportType=WWAN registrationState=HOME networkRegistrationState=HOME roamingType=NOT_ROAMING accessNetworkTechnology=NR rejectCause=0 emergencyEnabled=false availableServices=[DATA,MMS] cellIdentity=CellIdentityNr:{ mPci = [****] mTac = [****] mNrArfcn = [****] mBands = [41] mMcc = 310 mMnc = 260 mNci = [****] mAlphaLong = T-Mobile mAlphaShort = T-Mobile mAdditionalPlmns = {} } voiceSpecificInfo=null dataSpecificInfo=android.telephony.DataSpecificRegistrationInfo :{ maxDataCalls = 16 isDcNrRestricted = false isNrAvailable = false isEnDcAvailable = false mLteAttachResultType = 0 mLteAttachExtraInfo = 0 NrVopsSupportInfo :  mVopsSupport = 1 mEmcSupport = 1 mEmfSupport = 1 } nrState=**** rRplmn=310260 isUsingCarrierAggregation=false isNonTerrestrialNetwork=TERRESTRIAL}], mNrFrequencyRange=0, mOperatorAlphaLongRaw=T-Mobile, mOperatorAlphaShortRaw=T-Mobile, mIsDataRoamingFromRegistration=false, mIsIwlanPreferred=true, mIsUsingNonTerrestrialNetwork=false}Changed=AvailableServices:[2, 6]=>[2, 6]
+06-20 14:42:18.129 I/PdnController<1>( 5532): notifyDataConnectionState
+06-20 14:42:18.129 I/PdnController<1>( 5532): notifyDataConnectionState: needNotify=true networkType=18 isEpdgConnected=true dataNetType=18=>18 dataRegState=0=>0
+06-20 14:42:18.129 I/RegiMgr-Handler<1>( 5532): onDataConnectionStateChanged(): networkType [IWLAN], isWifiConnected [true]
+06-20 14:42:18.129 I/EPDG-1 [NetChangeController]( 5884): getVoPS, vopsSupportInfo=NrVopsSupportInfo :  mVopsSupport = 1 mEmcSupport = 1 mEmfSupport = 1
+06-20 14:42:18.129 I/EPDG-1 [NetChangeController]( 5884): WWAN Voice Regi: 1 Roaming: 0
+06-20 14:42:18.129 I/EPDG-1 [NetChangeController]( 5884): WWAN Data Regi: 0 Rat: 20 Roaming: false
+06-20 14:42:18.129 I/RegiMgr-Handler( 5532): handleMessage: EVENT_NETWORK_TYPE
+06-20 14:42:18.129 I/RegiMgr-NetEvtCtr<1>( 5532): onNetworkChanged: suspendByIrat=false
+06-20 14:42:18.129 I/NetworkState( 5532): setAllCellInfo : Cleared by null set !!!!
+06-20 14:42:18.129 I/EPDG-1 [Subscription]( 5884): isAirplaneMode, false
+06-20 14:42:18.130 I/LocationAccessPolicy( 3211): com.samsung.android.dialer is aware of fine but the app-ops permission is specifically denied.
+06-20 14:42:18.130 I/LocationAccessPolicy( 3211): checkLocationPermission - callingUid: 10128, callingPid: 29659, resultForFine: DENIED_SOFT
+06-20 14:42:18.130 I/LocationAccessPolicy( 3211): com.samsung.android.dialer is aware of coarse but the app-ops permission is specifically denied.
+06-20 14:42:18.130 I/LocationAccessPolicy( 3211): checkLocationPermission - callingUid: 10128, callingPid: 29659, resultForCoarse: DENIED_SOFT
+06-20 14:42:18.130 I/LocationAccessPolicy( 3211): com.samsung.android.dialer is aware of fine but the app-ops permission is specifically denied.
+06-20 14:42:18.130 I/LocationAccessPolicy( 3211): checkLocationPermission - callingUid: 10128, callingPid: 29659, resultForFine: DENIED_SOFT
+06-20 14:42:18.130 I/LocationAccessPolicy( 3211): com.samsung.android.dialer is aware of coarse but the app-ops permission is specifically denied.
+06-20 14:42:18.130 I/LocationAccessPolicy( 3211): checkLocationPermission - callingUid: 10128, callingPid: 29659, resultForCoarse: DENIED_SOFT
+06-20 14:42:18.130 I/ImsTelephonyStateTracker(29659): [D] onServiceStateChanged()
+06-20 14:42:18.130 I/ImsCallSessionManager( 5532): onDataConnectionStateChanged(): networkType [IWLAN]isWifiConnected [true], phoneId [1]
+06-20 14:42:18.130 I/ImsSim2Manager(29659): [D] onServiceStateChanged state : 0, old : 0
+06-20 14:42:18.130 I/LocationAccessPolicy( 3211): checkLocationPermission - callingUid: 10187, callingPid: 26447, resultForFine: DENIED_HARD
+06-20 14:42:18.130 I/LocationAccessPolicy( 3211): checkLocationPermission - callingUid: 10187, callingPid: 26447, resultForCoarse: DENIED_HARD
+06-20 14:42:18.130 I/TelephonyManagerWrapper<1>( 5532): getRilSimOperator: ETC
+06-20 14:42:18.130 I/SimManager<1>( 5532): hasIsim: [true]
+06-20 14:42:18.130 I/ImsSim2Manager(29659): [D] checkVoiceNetwork voice network : 20
+06-20 14:42:18.130 I/RegiMgr<1>( 5532): updatePani RegisterTask[1][mProfile=TMobile LTE/WiFi, mRegistrationRat=18, mPdnType=11, mState=REGISTERED, mObject=UserAgent - :
+06-20 14:42:18.130 I/RegiMgr<1>( 5532):  total records=1573
+06-20 14:42:18.130 I/RegiMgr<1>( 5532):  rec[0]: time=06-20 14:40:56.059 processed=RegisteredState org=RegisteredState dest=<null> what=2000(0x7d0)
+06-20 14:42:18.130 I/RegiMgr<1>( 5532):  rec[1]: time=06-20 14:40:58.764 processed=ReadyState org=RegisteredState dest=<null> what=34(0x22)
+06-20 14:42:18.130 I/RegiMgr<1>( 5532):  rec[2]: time=06-20 14:40:58.765 processed=RegisteredState org=RegisteredState dest=<null> what=2000(0x7d0)
+06-20 14:42:18.130 I/RegiMgr<1>( 5532):  rec[3]: time=06-20 14:40:58.775 processed=ReadyState org=RegisteredState dest=<null> what=34(0x22)
+06-20 14:42:18.130 I/RegiMgr<1>( 5532):  rec[4]: time=06-20 14:40:58.775 processed=RegisteredState org=RegisteredState dest=<null> what=2000(0x7d0)
+06-20 14:42:18.130 I/RegiMgr<1>( 5532):  rec[5]: time=06-20 14:40:58.777 processed=ReadyState org=RegisteredState dest=<null> what=50(0x32)
+06-20 14:42:18.130 I/RegiMgr<1>( 5532):  rec[6]: time=06-20 14:41:16.867 processed=ReadyState org=RegisteredState dest=<null> what=34(0x22)
+06-20 14:42:18.130 I/RegiMgr<1>( 5532):  rec[7]: time=06-20 14:41:16.867 processed=RegisteredState org=RegisteredState dest=<null> what=2000(0x7d0)
+06-20 14:42:18.130 I/RegiMgr<1>( 5532):  rec[8]: time=06-20 14:41:25.001 processed=ReadyState org=RegisteredState dest=<null> what=34(0x22)
+06-20 14:42:18.130 I/RegiMgr<1>( 5532):  rec[9]: time=06-20 14:41:25.002 processed=RegisteredState org=RegisteredState dest=<null> what=2000(0x7d0)
+06-20 14:42:18.130 I/RegiMgr<1>( 5532):  rec[10]: time=06-20 14:41:25.015 processed=ReadyState org=RegisteredState dest=<null> what=34(0x22)
+06-20 14:42:18.130 I/RegiMgr<1>( 5532):  rec[11]: time=06-20 14:41:25.015 processed=RegisteredState org=RegisteredState dest=<null> what=2000(0x7d0)
+06-20 14:42:18.130 I/RegiMgr<1>( 5532):  rec[12]: time=06-20 14:41:25.017 processed=ReadyState org=RegisteredState dest=<null> what=50(0x32)
+06-20 14:42:18.130 I/RegiMgr<1>( 5532):  rec[13]: time=06-20 14:41:34.622 processed=ReadyState org=RegisteredState dest=<null> what=34(0x22)
+06-20 14:42:18.130 I/RegiMgr<1>( 5532):  rec[14]: time=06-20 14:41:34.622 processed=RegisteredState org=RegisteredState dest=<null> what=2000(0x7d0)
+06-20 14:42:18.130 I/RegiMgr<1>( 5532):  rec[15]: time=06-20 14:41:34.634 processed=ReadyState org=RegisteredState dest=<null> what=34(0x22)
+06-20 14:42:18.130 I/RegiMgr<1>( 5532):  rec[16]: time=06-20 14:41:34.635 processed=RegisteredState org=RegisteredState dest=<null> what=2000(0x7d0)
+06-20 14:42:18.130 I/RegiMgr<1>( 5532):  rec[17]: time=06-20 14:41:34.638 processed=ReadyState org=RegisteredState dest=<null> what=50(0x32)
+06-20 14:42:18.130 I/RegiMgr<1>( 5532):  rec[18]: time=06-20 14:42:18.121 processed=ReadyState org=RegisteredState dest=<null> what=34(0x22)
+06-20 14:42:18.130 I/RegiMgr<1>( 5532):  rec[19]: time=06-20 14:42:18.122 processed=RegisteredState org=RegisteredState dest=<null> what=2000(0x7d0)
+06-20 14:42:18.130 I/RegiMgr<1>( 5532): curState=RegisteredState
+06-20 14:42:18.130 I/RegiMgr<1>( 5532): , mReason=, mPcscfHostname=null, mDeregiReason=41]
+06-20 14:42:18.131 I/SimDataAdaptorTmoUs( 5532): getImpuFromList:
+06-20 14:42:18.131 W/libbinder.IPCThreadState( 3211): Sending oneway calls to frozen process.
+06-20 14:42:18.131 I/PaniGenerator<1>( 5532): generate: subId=2, network=18, pdn=11
+06-20 14:42:18.131 I/LocationAccessPolicy( 3211): com.facebook.katana is aware of fine but the app-ops permission is specifically denied.
+06-20 14:42:18.131 I/LocationAccessPolicy( 3211): checkLocationPermission - callingUid: 10382, callingPid: 29027, resultForFine: DENIED_SOFT
+06-20 14:42:18.131 I/LocationAccessPolicy( 3211): com.facebook.katana is aware of coarse but the app-ops permission is specifically denied.
+06-20 14:42:18.131 I/LocationAccessPolicy( 3211): checkLocationPermission - callingUid: 10382, callingPid: 29027, resultForCoarse: DENIED_SOFT
+06-20 14:42:18.131 I/SimManager<1>( 5532): mSimState:LOADED, mIsimLoaded:true, hasIsim():true
+06-20 14:42:18.131 I/EPDG-1 [NetChangeController]( 5884): getIsRssiDisabledForProfiling: returning: false
+06-20 14:42:18.131 I/TelephonyCallbackForPdnController<1>( 5532): notifySnapshotState: snapshotState=0 old=0
+06-20 14:42:18.131 W/libbinder.IPCThreadState( 3211): Sending oneway calls to frozen process.
+06-20 14:42:18.131 I/LocationAccessPolicy( 3211): checkLocationPermission - callingUid: 10368, callingPid: 440, resultForFine: DENIED_HARD
+06-20 14:42:18.131 I/PaniGenerator<1>( 5532): generate: network=18, fallbackPlmn=310260
+06-20 14:42:18.131 I/ImsIconManager<1>( 5532): onServiceStateChanged: {mVoiceRegState=0(IN_SERVICE), mDataRegState=0(IN_SERVICE), mChannelNumber=502110, duplexMode()=0, mCellBandwidths=[], mOperatorAlphaLong=T-Mobile, mOperatorAlphaShort=T-Mobile, isManualNetworkSelection=false(automatic), getRilVoiceRadioTechnology=20(NR_SA), getRilDataRadioTechnology=18(IWLAN), mCssIndicator=unsupported, NonCellular=false, Snap=0, PsOnly=true, OptRadioTech=0, MsimSubmode=0, IsVoiceCallAvailable=true, mIsEmergencyOnly=false, isUsingCarrierAggregation=false, mArfcnRsrpBoost=0, mNetworkRegistrationInfos=[NetworkRegistrationInfo{ domain=PS transportType=WLAN registrationState=HOME networkRegistrationState=HOME roamingType=NOT_ROAMING accessNetworkTechnology=IWLAN rejectCause=0 emergencyEnabled=false availableServices=[DATA] cellIdentity=null voiceSpecificInfo=null dataSpecificInfo=null nrState=**** rRplmn= isUsingCarrierAggregation=false isNonTerrestrialNetwork=TERRESTRIAL}, NetworkRegistrationInfo{ domain=CS transportType=WWAN registrationState=HOME networkRegistrationState=HOME roamingType=NOT_ROAMING accessNetworkTechnology=NR rejectCause=0 emergencyEnabled=false availableServices=[VOICE,SMS,VIDEO] cellIdentity=CellIdentityNr:{ mPci = [****] mTac = [****] mNrArfcn = [****] mBands = [41] mMcc = 310 mMnc = 260 mNci = [****] mAlphaLong = T-Mobile mAlphaShort = T-Mobile mAdditionalPlmns = {} } voiceSpecificInfo=VoiceSpecificRegistrationInfo { mCssSupported=false mRoamingIndicator=0 mSystemIsInPrl=0 mDefaultRoamingIndicator=0} dataSpecificInfo=null nrState=**** rRplmn=310260 isUsingCarrierAggregation=false isNonTerrestrialNetwork=TERRESTRIAL}, NetworkRegistrationInfo{ domain=PS transportType=WWAN registrationState=HOME networkRegistrationState=HOME roamingType=NOT_ROAMING accessNetworkTechnology=NR rejectCause=0 emergencyEnabled=false availableServices=[DATA,MMS] cellIdentity=CellIdentityNr:{ mPci = [****] mTac = [****] mNrArfcn = [****] mBands = [41] mMcc = 310 mMnc = 260 mNci = [****] mAlphaLong = T-Mobile mAlphaShort = T-Mobile mAdditionalPlmns = {} } voiceSpecificInfo=null dataSpecificInfo=android.telephony.DataSpecificRegistrationInfo :{ maxDataCalls = 16 isDcNrRestricted = false isNrAvailable = false isEnDcAvailable = false mLteAttachResultType = 0 mLteAttachExtraInfo = 0 NrVopsSupportInfo :  mVopsSupport = 1 mEmcSupport = 1 mEmfSupport = 1 } nrState=**** rRplmn=310260 isUsingCarrierAggregation=false isNonTerrestrialNetwork=TERRESTRIAL}], mNrFrequencyRange=0, mOperatorAlphaLongRaw=T-Mobile, mOperatorAlphaShortRaw=T-Mobile, mIsDataRoamingFromRegistration=false, mIsIwlanPreferred=true, mIsUsingNonTerrestrialNetwork=false}
+06-20 14:42:18.131 I/ImsTelephonyStateTracker(29659): [D] onServiceStateChanged()
+06-20 14:42:18.131 I/EPDG-1 [WifiProfiler]( 5884): onServiceStateChanged state=0
+06-20 14:42:18.131 I/EPDG-1 [CellularProfiler]( 5884): onServiceStateChanged: 20
+06-20 14:42:18.131 I/ImsSim1Manager(29659): [D] onServiceStateChanged state : 0, old : 0
+06-20 14:42:18.131 I/PaniGenerator<1>( 5532): generateWiFiPani: Format for generating PANI - <PREFIX>;<COUNTRY>;<NODE_ID>
+06-20 14:42:18.131 I/ImsSim1Manager(29659): [D] checkVoiceNetwork voice network : 20
+06-20 14:42:18.131 I/LocationAccessPolicy( 3211): checkLocationPermission - callingUid: 10368, callingPid: 440, resultForCoarse: DENIED_HARD
+06-20 14:42:18.131 I/PaniGenerator<1>( 5532): generateWiFiPani: normalized PANI: IEEE-802.11;country=US;i-wlan-node-id=6083e70628bc
+06-20 14:42:18.131 W/libbinder.IPCThreadState( 3211): Sending oneway calls to frozen process.
+06-20 14:42:18.131 I/LocationAccessPolicy( 3211): checkLocationPermission - callingUid: 10368, callingPid: 440, resultForFine: DENIED_HARD
+06-20 14:42:18.131 I/LocationAccessPolicy( 3211): checkLocationPermission - callingUid: 10368, callingPid: 440, resultForCoarse: DENIED_HARD
+06-20 14:42:18.132 W/libbinder.IPCThreadState( 3211): Sending oneway calls to frozen process.
+06-20 14:42:18.132 I/EPDG-1 [Utils]( 5884): isDifferentSimAndNWOperator, sim/operator are same
+06-20 14:42:18.132 I/EPDG-1 [SettingManager]( 5884): getVoWifiPreference, 2
+06-20 14:42:18.132 I/PaniGenerator<1>( 5532): generate: network=20, fallbackPlmn=null
+06-20 14:42:18.132 I/PdnController<1>( 5532): getAllCellInfo mNeedCellLocationUpdate : true
+06-20 14:42:18.132 I/EPDG-1 [Subscription]( 5884): isAirplaneMode, false
+06-20 14:42:18.132 I/PdnController<1>( 5532): get latest cellInfo and store, subId = 2
+06-20 14:42:18.132 I/PaniGenerator( 5532): generate: change to NW PLMN(310260)
+06-20 14:42:18.132 I/PaniGenerator( 5532): NR Access Type TDD
+06-20 14:42:18.132 I/EPDG-1 [Subscription]( 5884): isAirplaneMode, false
+06-20 14:42:18.132 I/LocationAccessPolicy( 3211): com.facebook.katana is aware of fine but the app-ops permission is specifically denied.
+06-20 14:42:18.132 I/LocationAccessPolicy( 3211): checkLocationPermission - callingUid: 10382, callingPid: 29027, resultForFine: DENIED_SOFT
+06-20 14:42:18.133 I/LocationAccessPolicy( 3211): com.facebook.katana is aware of coarse but the app-ops permission is specifically denied.
+06-20 14:42:18.133 I/LocationAccessPolicy( 3211): checkLocationPermission - callingUid: 10382, callingPid: 29027, resultForCoarse: DENIED_SOFT
+06-20 14:42:18.133 I/EPDG-1 [NetChangeController]( 5884): voiceNetType: 20 mActiveVoiceRat: 20
+06-20 14:42:18.133 I/EPDG-1 [Subscription]( 5884): isAirplaneMode, false
+06-20 14:42:18.133 W/libbinder.IPCThreadState( 3211): Sending oneway calls to frozen process.
+06-20 14:42:18.133 W/ContextImpl( 3211): Calling a method in the system process without a qualified user: android.app.ContextImpl.sendBroadcastMultiplePermissions:1424 android.content.Context.sendBroadcastMultiplePermissions:2800 com.android.server.TelephonyRegistry.broadcastServiceStateChanged:63 com.android.server.TelephonyRegistry.notifyServiceStateForPhoneId:184 com.android.internal.telephony.ITelephonyRegistry$Stub.onTransact:667 
+06-20 14:42:18.133 I/EPDG-1 [NetChangeController]( 5884): onNetworkStatusChanged : mCellularAvailable = true
+06-20 14:42:18.133 I/UserAgent<1>( 5532): updatePani
+06-20 14:42:18.133 I/RegiMgr<1>( 5532): updatePani RegisterTask[1][mProfile=TMobile 3G, mRegistrationRat=18, mPdnType=0, mState=CONFIGURED, mObject=null, mReason=, mPcscfHostname=null, mDeregiReason=41]
+06-20 14:42:18.133 W/ContextImpl( 3211): Calling a method in the system process without a qualified user: android.app.ContextImpl.sendBroadcastMultiplePermissions:1457 com.android.server.TelephonyRegistry.broadcastServiceStateChanged:92 com.android.server.TelephonyRegistry.notifyServiceStateForPhoneId:184 com.android.internal.telephony.ITelephonyRegistry$Stub.onTransact:667 android.os.Binder.execTransactInternal:1514 
+06-20 14:42:18.134 I/PaniGenerator<1>( 5532): generate: subId=2, network=18, pdn=0
+06-20 14:42:18.134 I/SECIMSJ ( 5532): [1085]> 192
+06-20 14:42:18.134 I/PaniGenerator<1>( 5532): generate: network=18, fallbackPlmn=310260
+06-20 14:42:18.134 I/PaniGenerator<1>( 5532): generateWiFiPani: Format for generating PANI - <PREFIX>;<COUNTRY>;<NODE_ID>
+06-20 14:42:18.134 I/[IMS6.0]( 5532): IMS_onResponse()
+06-20 14:42:18.134 D/SemWifiService( 3211): received: android.intent.action.SERVICE_STATE
+06-20 14:42:18.134 D/CcncManager( 3211): onReceive - ACTION_SERVICE_STATE_CHANGED
+06-20 14:42:18.134 I/PaniGenerator<1>( 5532): generateWiFiPani: normalized PANI: IEEE-802.11;country=US;i-wlan-node-id=6083e70628bc
+06-20 14:42:18.134 I/StackIF ( 5532): processMessage 2
+06-20 14:42:18.134 I/StackIF ( 5532): Processing Response
+06-20 14:42:18.135 D/AppOpsPrivacyItemMonitor( 5574): showLocationSystemApps  AppOpItem(Op code=1, UID=10112, AttributionTag=null, Package name=com.samsung.android.rubin.app, Paused=false)
+06-20 14:42:18.135 I/SECIMSJ ( 5532): [1085]< 600
+06-20 14:42:18.135 I/StackIF ( 5532): processResponse: reqId 600
+06-20 14:42:18.135 I/StackIF ( 5532): processResponse: handle 9670 result 0 reason 0
+06-20 14:42:18.135 I/PaniGenerator<1>( 5532): generate: network=20, fallbackPlmn=null
+06-20 14:42:18.135 I/PdnController<1>( 5532): getAllCellInfo mNeedCellLocationUpdate : false
+06-20 14:42:18.135 I/PaniGenerator( 5532): generate: change to NW PLMN(310260)
+06-20 14:42:18.135 I/PaniGenerator( 5532): NR Access Type TDD
+06-20 14:42:18.136 V/SemWifiBackOff.5G( 3211): checkAndSetup nrFrequencyRange=2 / prevNrFrequencyRange=2
+06-20 14:42:18.136 I/StackIF ( 5532): updateRat: 9670 network: 18
+06-20 14:42:18.136 I/SECIMSJ ( 5532): [1086]> 80
+06-20 14:42:18.136 I/[IMS6.0]( 5532): IMS_onResponse()
+06-20 14:42:18.136 I/StackIF ( 5532): processMessage 2
+06-20 14:42:18.136 I/StackIF ( 5532): Processing Response
+06-20 14:42:18.136 W/ContextImpl( 3211): Calling a method in the system process without a qualified user: android.app.ContextImpl.sendBroadcastMultiplePermissions:1457 com.android.server.TelephonyRegistry.broadcastServiceStateChanged:121 com.android.server.TelephonyRegistry.notifyServiceStateForPhoneId:184 com.android.internal.telephony.ITelephonyRegistry$Stub.onTransact:667 android.os.Binder.execTransactInternal:1514 
+06-20 14:42:18.136 I/SECIMSJ ( 5532): [1086]< 602
+06-20 14:42:18.136 I/StackIF ( 5532): processResponse: reqId 602
+06-20 14:42:18.136 I/StackIF ( 5532): processResponse: handle 9670 result 0 reason 0
+06-20 14:42:18.137 I/GeolocationCon( 5532): handleMessage : what = SERVICE_STATE_CHANGED
+06-20 14:42:18.137 I/GeolocationCon( 5532): matchTimingReqLocation ,match=0, timing=4
+06-20 14:42:18.137 I/GeolocationCon( 5532): matchTimingReqLocation ,match=0, timing=4
+06-20 14:42:18.137 I/GeolocationCon( 5532): matchTimingReqLocation ,match=1, timing=4
+06-20 14:42:18.137 I/GeolocationCon( 5532): profile is null
+06-20 14:42:18.137 W/ContextImpl( 3211): Calling a method in the system process without a qualified user: android.app.ContextImpl.sendBroadcastMultiplePermissions:1457 com.android.server.TelephonyRegistry.broadcastServiceStateChanged:144 com.android.server.TelephonyRegistry.notifyServiceStateForPhoneId:184 com.android.internal.telephony.ITelephonyRegistry$Stub.onTransact:667 android.os.Binder.execTransactInternal:1514 
+06-20 14:42:18.137 I/GeolocationCon<1>( 5532): onNetworkCountryIsoChanged: mCountryIso = us, iso = us
+06-20 14:42:18.137 D/ServiceStateProvider( 5463): subId=2
+06-20 14:42:18.138 D/SatelliteController( 5463): getCarrierRoamingNtnConnectType: Falling back to global carrier config connect type: 0
+06-20 14:42:18.138 W/View    ( 5574): requestLayout() improperly called by android.widget.FrameLayout{30e81a4 V.E...... ......I. 0,0-1080,2340 #14} during layout: running second layout pass
+06-20 14:42:18.138 W/View    ( 5574): requestLayout() improperly called by com.android.systemui.qs.QSTouchAwareFrameLayout{1855b0d V.E...... ......ID 0,164-1080,2340 #7e0a0a4c com.android.systemui:id/qs_frame} during layout: running second layout pass
+06-20 14:42:18.138 V/SatelliteController( 5463): getWwanIsInService: return true
+06-20 14:42:18.138 D/SatelliteController( 5463): isInCarrierRoamingNbIotNtn: satellite is disabled
+06-20 14:42:18.139 I/LocationAccessPolicy( 5463): com.android.systemui is aware of fine but the app-ops permission is specifically denied.
+06-20 14:42:18.139 I/LocationAccessPolicy( 5463): checkLocationPermission - callingUid: 10050, callingPid: 5574, resultForFine: DENIED_SOFT
+06-20 14:42:18.139 I/LocationAccessPolicy( 5463): com.android.systemui is aware of coarse but the app-ops permission is specifically denied.
+06-20 14:42:18.139 I/LocationAccessPolicy( 5463): checkLocationPermission - callingUid: 10050, callingPid: 5574, resultForCoarse: DENIED_SOFT
+06-20 14:42:18.139 W/RefactorFlag( 5574): New code path expects SceneContainerFlag to be enabled.
+06-20 14:42:18.139 D/SLocation( 3211): CellLocationManager - onCellLocationChanged 2 / 1
+06-20 14:42:18.139 I/LocationAccessPolicy( 5463): com.android.systemui is aware of fine but the app-ops permission is specifically denied.
+06-20 14:42:18.139 I/LocationAccessPolicy( 5463): checkLocationPermission - callingUid: 10050, callingPid: 5574, resultForFine: DENIED_SOFT
+06-20 14:42:18.139 I/LocationAccessPolicy( 5463): com.android.systemui is aware of coarse but the app-ops permission is specifically denied.
+06-20 14:42:18.139 I/LocationAccessPolicy( 5463): checkLocationPermission - callingUid: 10050, callingPid: 5574, resultForCoarse: DENIED_SOFT
+06-20 14:42:18.139 D/AiAgentEffect( 5574): onPrivacyItemsChanged privacyItems.size = 1
+06-20 14:42:18.139 D/AiAgentEffect( 5574): onPrivacyItemsChanged privacyItems isEmpty or found item is null
+06-20 14:42:18.139 E/AppOps  ( 3211): Bad call made by uid 1001. Package "com.android.phone" does not belong to uid 1000.
+06-20 14:42:18.139 I/ActivityManager( 3211): Changes in 10315 19 to 11, 0 to 384
+06-20 14:42:18.139 E/AppOps  ( 3211): Cannot noteOperation: non-application UID 1000
+06-20 14:42:18.142 D/Tile.AirplaneModeTile( 5574): onReceive android.intent.action.SERVICE_STATE
+06-20 14:42:18.142 V/PhoneGlobals( 5463): handleServiceStateChanged
+06-20 14:42:18.142 D/NotificationMgr( 5463): updateNetworkSelection, Use Samsung codes instead of AOSP codes
+06-20 14:42:18.142 V/PhoneGlobals( 5463): subId=-1, mDefaultDataSubId=2, ss roaming=false
+06-20 14:42:18.142 D/MULTISIM-PROD-REPO( 5574): onReceive() - action = android.intent.action.SERVICE_STATE
+06-20 14:42:18.142 I/Telephony( 5463): TelecomAccountRegistry$TelecomAccountTelephonyCallback: TelecomAccountRegistry: onServiceStateChanged: newState=0, mServiceState=0
+06-20 14:42:18.142 I/HoneySpace.StatusIconTracker( 6184): invokeEvent() called with: event = PrivacyInfo(visible=false)
+06-20 14:42:18.142 D/CellBroadcastReceiver(  899): onReceive Intent { act=android.intent.action.SERVICE_STATE flg=0x1000010 xflg=0x4 cmp=com.google.android.cellbroadcastreceiver/com.android.cellbroadcastreceiver.CellBroadcastReceiver (has extras) }
+06-20 14:42:18.142 I/Telephony( 5463): TelecomAccountRegistry$AccountEntry: isRttCurrentlySupported -- regular acct,, hasVoiceAvailability: true, isRttSupported: true, alwaysAllowWhileRoaming: false, isRoaming: false, isOnWfc: true
+06-20 14:42:18.142 V/PhoneGlobals( 5463): handleServiceStateChanged
+06-20 14:42:18.142 D/NotificationMgr( 5463): updateNetworkSelection, Use Samsung codes instead of AOSP codes
+06-20 14:42:18.142 V/PhoneGlobals( 5463): subId=2, mDefaultDataSubId=2, ss roaming=false
+06-20 14:42:18.142 D/CellBroadcastReceiver(  899): onServiceStateChanged, ss: 0
+06-20 14:42:18.142 D/CellBroadcastReceiver(  899): networkOperator: 310260
+06-20 14:42:18.143 D/PhoneRestrictionPolicy( 3211): isOperationAllowed >>> slotNum: 1 function: 1
+06-20 14:42:18.143 D/CellBroadcastReceiver(  899): update supported roaming operator as 
+06-20 14:42:18.143 V/PhoneGlobals( 5463): updateDataRoamingStatus
+06-20 14:42:18.143 V/PhoneGlobals( 5463): updateDataRoamingStatus dataAllowed=true, disallowReasons=[], dataIsNowRoaming=false, RoamingNumeric=310260, CallingReason=3
+06-20 14:42:18.143 I/ActivityManager( 3211): Changes in 10315 11 to 19, 384 to 0
+06-20 14:42:18.143 D/DeviceState( 5574): isESIM() :0 : false
+06-20 14:42:18.144 D/DeviceState( 5574): isEuicc() :1 : true
+06-20 14:42:18.144 D/NetworkController.MobileSignalController(2)( 5574): isPowerOffServiceState,mCurrentState.getVoiceServiceState() = 0,mCurrentState.airplaneMode = false,mCurrentState.canCellularVoiceService() = true,mCurrentState.getMobileDataRegState() = true
+06-20 14:42:18.144 D/Tile.AirplaneModeTile( 5574):  handleUpdateState mIsWiFiOnlyDevice false isNoSimState false isPowerOffServiceState false mSetting.getValue() 0 isSatelliteModeOn false isChinaDevice false isSatelliteEnabled false
+06-20 14:42:18.144 D/Tile.AirplaneModeTile( 5574):  handleUpdateState:  value = false, state = 1
+06-20 14:42:18.144 D/MULTISIM-PROD-REPO( 5574): HANDLE_MSG(2000)
+06-20 14:42:18.144 I/SurfaceFlinger( 2350): Current= 120, Period= 120, Distance= 1
+06-20 14:42:18.145 I/SDM     ( 2302): AIScalerFeatureIntfImpl::LookupConfig: Scale ratio = 1.780000
+06-20 14:42:18.145 I/SDM     ( 2302): AIScalerParserIntfImpl::LookupConfig: Scale Ratio Match Found Here
+06-20 14:42:18.145 D/AppOpsPrivacyItemMonitor( 5574): showLocationSystemApps  AppOpItem(Op code=1, UID=10112, AttributionTag=null, Package name=com.samsung.android.rubin.app, Paused=false)false)
+06-20 14:42:18.145 W/View    ( 5574): requestLayout() improperly called by android.widget.FrameLayout{30e81a4 V.E...... ......I. 0,0-1080,2340 #14} during layout: running second layout pass
+06-20 14:42:18.145 W/View    ( 5574): requestLayout() improperly called by com.android.systemui.qs.QSTouchAwareFrameLayout{1855b0d V.E...... ......ID 0,164-1080,2340 #7e0a0a4c com.android.systemui:id/qs_frame} during layout: running second layout pass
+06-20 14:42:18.146 W/RefactorFlag( 5574): New code path expects SceneContainerFlag to be enabled.
+06-20 14:42:18.146 D/AppOpsPrivacyItemMonitor( 5574): showLocationSystemApps  AppOpItem(Op code=1, UID=1001, AttributionTag=null, Package name=com.android.phone, Paused=false)
+06-20 14:42:18.146 D/CarrierTextController( 5574): carrierTextForSimState(2)-(order: 0) : T-Mobile Wi-Fi Calling, T-Mobile Wi-Fi Calling
+06-20 14:42:18.146 D/CarrierTextController( 5574): setCarrierText : T-Mobile Wi-Fi Calling, T-Mobile Wi-Fi Calling allSimsMissing : false anySimReady : true
+06-20 14:42:18.146 D/CarrierTextController( 5574): carrierTextForSimState(2)-(order: 0) : T-Mobile Wi-Fi Calling, T-Mobile Wi-Fi Calling
+06-20 14:42:18.146 D/CarrierTextController( 5574): setCarrierText : T-Mobile Wi-Fi Calling, T-Mobile Wi-Fi Calling allSimsMissing : false anySimReady : true
+06-20 14:42:18.146 D/CarrierTextController( 5574): carrierTextForSimState(2)-(order: 0) : T-Mobile Wi-Fi Calling, T-Mobile Wi-Fi Calling
+06-20 14:42:18.146 D/CarrierTextController( 5574): setCarrierText : T-Mobile Wi-Fi Calling, T-Mobile Wi-Fi Calling allSimsMissing : false anySimReady : true
+06-20 14:42:18.146 D/FaceWidgetPagesController( 5574): onRefreshCarrierInfo()
+06-20 14:42:18.146 D/NativeSemDvfsManager( 2350): acquire:: timeout = 2000 mIsAcquired = 1  mTagName : SurfaceFlinger 
+06-20 14:42:18.146 I/LocationAccessPolicy( 5463): com.android.systemui is aware of fine but the app-ops permission is specifically denied.
+06-20 14:42:18.146 I/LocationAccessPolicy( 5463): checkLocationPermission - callingUid: 10050, callingPid: 5574, resultForFine: DENIED_SOFT
+06-20 14:42:18.146 I/LocationAccessPolicy( 5463): com.android.systemui is aware of coarse but the app-ops permission is specifically denied.
+06-20 14:42:18.146 E/NativeCustomFrequencyManager( 2350): [NativeCFMS] BpCustomFrequencyManager::acquire()
+06-20 14:42:18.146 I/LocationAccessPolicy( 5463): checkLocationPermission - callingUid: 10050, callingPid: 5574, resultForCoarse: DENIED_SOFT
+06-20 14:42:18.147 I/HYPER-HAL( 2279): [RequestManager.cpp]acquire(): Acquired ID : 5613925 [2350 / 1000]  HINT : SF_GPU_MINLOCK   list : [TIMEOUT / 2000] 
+06-20 14:42:18.147 D/FaceWidgetClockRoamManager( 5574): isNetworkRoamingState id=2
+06-20 14:42:18.147 D/FaceWidgetClockRoamManager( 5574): isNetworkRoamingState false
+06-20 14:42:18.147 D/FaceWidgetClockRoamManager( 5574): onRefreshCarrierInfo(pre, now): false, false
+06-20 14:42:18.147 D/FaceWidgetClockPage( 5574): onRefreshCarrierInfo : isChanged false mIsRoaming false
+06-20 14:42:18.147 I/Telecom ( 3211): SamsungTelecomServiceImpl : isInCall - callingPackage : com.android.systemui / callingUser : UserHandle{0} / hasCrossUserAccess : true
+06-20 14:42:18.147 D/AiAgentEffect( 5574): onPrivacyItemsChanged privacyItems.size = 2
+06-20 14:42:18.147 D/AiAgentEffect( 5574): onPrivacyItemsChanged privacyItems isEmpty or found item is null
+06-20 14:42:18.148 D/CarrierTextController( 5574): info.location: Keyguard, info.carrierText: T-Mobile Wi-Fi Calling, info.carrierTextShort: T-Mobile Wi-Fi Calling
+06-20 14:42:18.148 D/CarrierTextController( 5574): info.location: null, info.carrierText: T-Mobile Wi-Fi Calling, info.carrierTextShort: T-Mobile Wi-Fi Calling
+06-20 14:42:18.148 I/HoneySpace.StatusIconTracker( 6184): invokeEvent() called with: event = PrivacyInfo(visible=false)
+06-20 14:42:18.152 I/SurfaceFlinger( 2350): Current= 120, Period= 120, Distance= 120
+06-20 14:42:18.155 W/View    ( 5574): requestLayout() improperly called by android.widget.FrameLayout{30e81a4 V.E...... ......I. 0,0-1080,2340 #14} during layout: running second layout pass
+06-20 14:42:18.155 W/View    ( 5574): requestLayout() improperly called by com.android.systemui.qs.QSTouchAwareFrameLayout{1855b0d V.E...... ......ID 0,164-1080,2340 #7e0a0a4c com.android.systemui:id/qs_frame} during layout: running second layout pass
+06-20 14:42:18.155 W/RefactorFlag( 5574): New code path expects SceneContainerFlag to be enabled.
+06-20 14:42:18.155 D/ShadeCarrierGroup( 5574): handleUpdateCarrierInfo [T-Mobile Wi-Fi Calling] isLatin=false
+06-20 14:42:18.162 W/View    ( 5574): requestLayout() improperly called by android.widget.FrameLayout{30e81a4 V.E...... ......I. 0,0-1080,2340 #14} during layout: running second layout pass
+06-20 14:42:18.162 W/View    ( 5574): requestLayout() improperly called by com.android.systemui.qs.QSTouchAwareFrameLayout{1855b0d V.E...... ......ID 0,164-1080,2340 #7e0a0a4c com.android.systemui:id/qs_frame} during layout: running second layout pass
+06-20 14:42:18.162 W/RefactorFlag( 5574): New code path expects SceneContainerFlag to be enabled.
+06-20 14:42:18.212 I/SDM     ( 2302): AIScalerFeatureIntfImpl::LookupConfig: Scale ratio = 1.780000
+06-20 14:42:18.212 I/SDM     ( 2302): AIScalerParserIntfImpl::LookupConfig: Scale Ratio Match Found Here
+06-20 14:42:18.219 I/SDM     ( 2302): AIScalerFeatureIntfImpl::LookupConfig: Scale ratio = 1.780000
+06-20 14:42:18.219 I/SDM     ( 2302): AIScalerParserIntfImpl::LookupConfig: Scale Ratio Match Found Here
+06-20 14:42:18.296 D/BSOHChargingDataCollector( 3211):  BSOH Sys-servce ... 
+06-20 14:42:18.296 D/BSOHChargingDataCollector( 3211): performBatteryWork++
+06-20 14:42:18.296 D/BSOHChargingDataCollector( 3211): performBatteryWork battery com.android.server.bsoh.device.PrimeBattery@84d3e75
+06-20 14:42:18.296 D/BSOHChargingDataCollector( 3211): primeBatt readVoltage from sysFsBattVolt,  path : /sys/class/power_supply/battery/batt_voltage_now
+06-20 14:42:18.305 D/BSOHChargingDataCollector( 3211): 0 	 BattData addData data : BattData { voltage:4.043, current:0.39375, soc:0.65, temperature:27.5, status:2, timestamp:1781984538305, voltage_chg:null}
+06-20 14:42:18.305 D/BSOHChargingDataCollector( 3211): performBatteryWork--
+06-20 14:42:18.412 E/AppOps  ( 3211): Bad call made by uid 1001. Package "com.android.phone" does not belong to uid 1000.
+06-20 14:42:18.412 E/AppOps  ( 3211): Cannot noteOperation: non-application UID 1000
+06-20 14:42:18.490 I/SDM     ( 2302): DisplayBase::CommitThread: Received idle timeout, panel: cmd, timeout: 70000 us
+06-20 14:42:18.635 D/CcncManager( 3211): CMD_UPDATE_DEVICE_INFO_AND_STATUS
+06-20 14:42:18.637 D/CcncManager( 3211): getKnoxMode - restrictions not found: default_b2c
+06-20 14:42:18.845 I/sensors-hal( 2273): handle_sns_client_event:327, [0][10139] mag_sample_cal(magcal_available:1): ts=22421037961241 ns; cal = [-34.675816, -25.964340, -31.718048], uncal = [-22.075817, 97.875656, -255.398041], bias = [12.599999, 123.839996, -223.679993], status=3, cal_id=2
+06-20 14:42:18.856 I/sensors-hal( 2273): handle_sns_client_event:379, [0][92784] accel_sample [-0.229,  0.053,  9.725] 22421043733273
+06-20 14:42:18.960 I/sensors-hal( 2273): handle_sns_std_sensor_event:157, [6437] Pressure 988.801, cal 0.146, sw_offset 0.000 (lsb(bit) 0xb3 0x93 0x60)
+06-20 14:42:19.052 I/sensors-hal( 2273): handle_sns_std_sensor_event:409, [SSC_LIGHT] P: 120(120),c:15,b:13,m:13,cl:0,l:114,s:122,l0:20096,l1:1280,s0:19500,s1:0,acl:1,opr:0.35,f(r):90,u(bl):100,if:90,wi:0,si:0,0(N:0)
+06-20 14:42:19.086 D/SemWifiSwitchForIndividualAppsService( 3211): isSkipNetworkCondition - result:2
+06-20 14:42:19.297 D/BSOHChargingDataCollector( 3211):  BSOH Sys-servce ... 
+06-20 14:42:19.297 D/BSOHChargingDataCollector( 3211): performBatteryWork++
+06-20 14:42:19.297 D/BSOHChargingDataCollector( 3211): performBatteryWork battery com.android.server.bsoh.device.PrimeBattery@84d3e75
+06-20 14:42:19.297 D/BSOHChargingDataCollector( 3211): primeBatt readVoltage from sysFsBattVolt,  path : /sys/class/power_supply/battery/batt_voltage_now
+06-20 14:42:19.306 D/BSOHChargingDataCollector( 3211): 0 	 BattData addData data : BattData { voltage:4.044, current:0.442187, soc:0.65, temperature:27.5, status:2, timestamp:1781984539306, voltage_chg:null}
+06-20 14:42:19.306 D/BSOHChargingDataCollector( 3211): performBatteryWork--
+06-20 14:42:19.495 D/SemWifiEleStateTracker( 3211): Pressure Diff: 0.0029907227
+06-20 14:42:19.495 D/SemWifiEleStateTracker( 3211): Barometer value: Prev 988.79865 Current 988.80164 mSmallBaroDetected : false
+06-20 14:42:19.688 D/ActivityManager( 3211): freezing 27383 com.google.android.apps.messaging
+06-20 14:42:19.690 D/ActivityManager( 3211): FCA:FCA recordedFileRss = 77128, and changeinRss = 7040
+06-20 14:42:19.890 D/io_stats( 1424): !@   8,0 r 2754756 87090244 w 962834 43366440 d 138431 20035964 f 24801 95352 iot 263496 0 th 0 0 0 pt 0 inp 0 0 16909.613
+06-20 14:42:19.976 D/SemWifiUsabilityStatsMonitor( 3211): onWifiUsabilityStats - seqNum 2349, isSameBssidAndFreq true
+06-20 14:42:19.976 I/EPDG-1 [WifiProfiler]( 5884): handleWifiRssiIntent, rssi=-66
+06-20 14:42:19.976 I/EPDG-1 [WifiProfiler]( 5884): isProfiling, hash=19493184, started=true
+06-20 14:42:19.976 I/EPDG-1 [LogMetrics]( 5884): set, type=WIFI_RSSI_LAST, value=-66
+06-20 14:42:19.976 I/EPDG-1 [WifiProfiler]( 5884): isProfiling, hash=19493184, started=true
+06-20 14:42:19.977 I/EPDG-1 [WifiProfiler]( 5884): Rssi : -66 highrange : -71 lowrange : -80 mIsRssiInHystersis : false
+06-20 14:42:19.977 I/EPDG-1 [WifiProfiler]( 5884): Rssi : -66 highrange : -71 lowrange : -80 mIsRssiInHystersis : false
+06-20 14:42:19.977 I/EPDG-1 [Subscription]( 5884): isEpdgAvailable, IwlanPsState=2/2
+06-20 14:42:19.977 I/EPDG-1 [WifiProfiler]( 5884): getHandoverThresholdMet: value is: false
+06-20 14:42:19.978 D/SGM:GameManager( 3211): identifyGamePackage. com.sec.android.app.launcher, mCurrentUserId: 0, callingMethodInfo: com.samsung.android.game.SemGameManager.isGamePackage(SemGameManager.java:106)
+06-20 14:42:19.978 D/SGM:SemGameManager( 3211): isGamePackage(), pkgName=com.sec.android.app.launcher, ret=false
+06-20 14:42:20.091 D/SemWifiSwitchForIndividualAppsService( 3211): isSkipNetworkCondition - result:2
+06-20 14:42:20.148 I/HYPER-HAL( 2279): [RequestManager.cpp]releaseLocked(): Released ID : 5613925
+06-20 14:42:20.298 D/BSOHChargingDataCollector( 3211):  BSOH Sys-servce ... 
+06-20 14:42:20.298 D/BSOHChargingDataCollector( 3211): performBatteryWork++
+06-20 14:42:20.298 D/BSOHChargingDataCollector( 3211): performBatteryWork battery com.android.server.bsoh.device.PrimeBattery@84d3e75
+06-20 14:42:20.298 D/BSOHChargingDataCollector( 3211): primeBatt readVoltage from sysFsBattVolt,  path : /sys/class/power_supply/battery/batt_voltage_now
+06-20 14:42:20.308 D/BSOHChargingDataCollector( 3211): 0 	 BattData addData data : BattData { voltage:4.044, current:0.424218, soc:0.65, temperature:27.5, status:2, timestamp:1781984540308, voltage_chg:null}
+06-20 14:42:20.308 D/BSOHChargingDataCollector( 3211): performBatteryWork--
+06-20 14:42:20.728 I/id.gms.unstable( 9478): Explicit concurrent mark compact GC freed 264KB AllocSpace bytes, 0(0B) LOS objects, 73% free, 3000KB/10MB, paused 131us,1.290ms total 32.157ms
+06-20 14:42:20.784 I/SurfaceFlinger( 2350): Current= 120, Period= 120, Distance= 0
+06-20 14:42:20.792 I/SurfaceFlinger( 2350): Current= 120, Period= 120, Distance= 120
+06-20 14:42:20.845 I/sensors-hal( 2273): handle_sns_client_event:327, [0][10159] mag_sample_cal(magcal_available:1): ts=22423037961241 ns; cal = [-35.651512, -25.991753, -30.486908], uncal = [-23.051514, 97.848244, -254.166901], bias = [12.599999, 123.839996, -223.679993], status=3, cal_id=2
+06-20 14:42:20.871 I/sensors-hal( 2273): handle_sns_client_event:379, [0][92804] accel_sample [-0.227,  0.053,  9.718] 22423058353221
+06-20 14:42:20.879 I/sensors-hal( 2273): handle_sns_std_sensor_event:157, [6449] Pressure 988.790, cal 0.146, sw_offset 0.000 (lsb(bit) 0x6a 0x93 0x60)
+06-20 14:42:20.972 I/sensors-hal( 2273): handle_sns_std_sensor_event:127, [SSC_LIGHT] A: 115(115),c:15,b:13,m:13,cl:0,l:110,s:115,l0:19488,l1:1216,s0:18500,s1:0,acl:1,opr:0.35,f(r):90,u(bl):100,if:90,wi:0,si:0,0(N:0)
+06-20 14:42:21.100 D/SemWifiSwitchForIndividualAppsService( 3211): isSkipNetworkCondition - result:2
+06-20 14:42:21.300 D/BSOHChargingDataCollector( 3211):  BSOH Sys-servce ... 
+06-20 14:42:21.300 D/BSOHChargingDataCollector( 3211): performBatteryWork++
+06-20 14:42:21.300 D/BSOHChargingDataCollector( 3211): performBatteryWork battery com.android.server.bsoh.device.PrimeBattery@84d3e75
+06-20 14:42:21.300 D/BSOHChargingDataCollector( 3211): primeBatt readVoltage from sysFsBattVolt,  path : /sys/class/power_supply/battery/batt_voltage_now
+06-20 14:42:21.310 D/BSOHChargingDataCollector( 3211): 0 	 BattData addData data : BattData { voltage:4.044, current:0.43125, soc:0.65, temperature:27.5, status:2, timestamp:1781984541310, voltage_chg:null}
+06-20 14:42:21.310 D/BSOHChargingDataCollector( 3211): performBatteryWork--
+06-20 14:42:21.553 D/SemWifiEleStateTracker( 3211): Pressure Diff: -0.011474609
+06-20 14:42:21.553 D/SemWifiEleStateTracker( 3211): Barometer value: Prev 988.80164 Current 988.79016 mSmallBaroDetected : false
+06-20 14:42:21.695 D/ActivityManager( 3211): FCA:Reclamation for pid: 27383
+06-20 14:42:21.776 I/sensors-hal( 2273): handle_sns_std_sensor_event:409, [SSC_LIGHT] P: 111(111),c:15,b:13,m:13,cl:0,l:105,s:109,l0:18656,l1:1152,s0:17500,s1:0,acl:1,opr:0.35,f(r):90,u(bl):100,if:90,wi:0,si:0,0(N:0)
+06-20 14:42:21.891 D/io_stats( 1424): !@ Read_top(KB): .apps.messaging:low(27383) 188 system_server:normal(3211) 4
+06-20 14:42:21.891 D/io_stats( 1424): !@ Write_top(KB): kworker/u17:4:/(4430) 124 .sec.imsservice:normal(5532) 8 m.android.phone:normal(5463) 8
+06-20 14:42:22.112 D/SemWifiSwitchForIndividualAppsService( 3211): isSkipNetworkCondition - result:2
+06-20 14:42:22.215 I/StatsHandler( 2306): [avcD_53] Stats: Pending(0) i/p-done(0) Works: Q: 341/Done 329|Work-Rate: Q(0.0/s Avg=0.0/s) Done(0.000/s Avg=0.020/s)| Stream: 30.00fps 65.3Kbps
+06-20 14:42:22.215 I/StatsHandler( 2306): [avcD_53] Mem-usage:  [In-1D: 21 bufs 168.000 MB] [1D-23: 35 bufs 0.547 MB] [2D-24: 19 bufs 15.141 MB] | Total: 183.688 MB
+06-20 14:42:22.215 I/StatsHandler( 2306): [vp9D_271] Stats: Pending(0) i/p-done(0) Works: Q: 672/Done 705|Work-Rate: Q(0.0/s Avg=1.6/s) Done(0.000/s Avg=1.686/s)| Stream: 29.97fps 1.4Mbps
+06-20 14:42:22.215 I/StatsHandler( 2306): [vp9D_271] Mem-usage:  [In-1D: 14 bufs 112.000 MB] [1D-347: 38 bufs 0.594 MB] [2D-348: 22 bufs 31.453 MB] | Total: 144.047 MB
+06-20 14:42:22.249 I/thermal_core( 2313): pivot(AP) : 286, skin : 289
+06-20 14:42:22.287 D/AHAL_ModulePrimary_QTI( 2276): getVendorParameters: id count: 1
+06-20 14:42:22.287 I/PAL: ResourceManager( 2276): getActiveStream_l: 6587: no active streams found for device 3 ret -2
+06-20 14:42:22.287 D/AHAL_SecModulePrimary( 2276): onGetSECGenericParameters get temperature for g_hw_speaker_amp_temp_rcv: 0
+06-20 14:42:22.288 D/AHAL_ModulePrimary_QTI( 2276): getVendorParameters: id count: 1
+06-20 14:42:22.288 I/PAL: ResourceManager( 2276): getActiveStream_l: 6587: no active streams found for device 3 ret -2
+06-20 14:42:22.288 D/AHAL_SecModulePrimary( 2276): onGetSECGenericParameters get temperature for g_hw_speaker_amp_temp_spk: 0
+06-20 14:42:22.290 I/SDHMS:x ( 8460): SIOP:: AP:286 BAT:275 USB:273 CHG:289 PA:292 WIFI:283 CF:283 BLK:0 SUBBAT:0 LRPTHM:280 SKIN:287 SKINF:286 SKINB:287 LRP:287 LRF:286 LRB:287 APT:286 APR:287 RCV:280 SPK:273 CHGF:284 CHGR:286 MEMF:285 MEMR:287 WIFIF:285 WIFIR:287 FCAM:274 UPSPK:281 DNSPK:274 VAP:287 VWIFI:285 AMB2:248 HIGH:0 AVGCUR:373 AVGSYS:170 POWER:1495
+06-20 14:42:22.290 I/AudioManager( 8460): setParameters keyValuePairs = g_hw_speaker_amp_temp_spk=27
+06-20 14:42:22.291 D/AudioFlinger( 2333): setParameters: filtered dev setParameters keyvalue g_hw_speaker_amp_temp_spk=27
+06-20 14:42:22.292 D/AHAL_HFP_QTI( 2276): hfp_set_parameters enter
+06-20 14:42:22.292 D/AHAL_HFP_QTI( 2276): hfp_set_parameters Exit
+06-20 14:42:22.292 D/AHAL_SecModulePrimary( 2276): processSetVendorParameters: configured g_hw_speaker_amp_temp_spk
+06-20 14:42:22.292 D/AHAL_SecModulePrimary( 2276): processSetVendorParameters: handler set on Feature:0
+06-20 14:42:22.292 D/AHAL_SecModulePrimary( 2276): onSetSECGenericParameters set temperature for g_hw_speaker_amp_temp_spk: 27
+06-20 14:42:22.292 I/PAL: API( 2276): pal_set_param: 1377: Enter: param id 3002
+06-20 14:42:22.292 I/PAL: ResourceManager( 2276): getActiveStream_l: 6587: no active streams found for device 3 ret -2
+06-20 14:42:22.292 E/DeviceHalAidl( 2333): Function: parseAndSetVendorParameters Line: 414 Failed 
+06-20 14:42:22.293 E/DeviceHalAidl( 2333): Function: parseAndSetVendorParameters Line: 414 Failed 
+06-20 14:42:22.293 I/AudioManager( 8460): setParameters keyValuePairs = g_hw_speaker_amp_temp_rcv=28
+06-20 14:42:22.294 D/AudioFlinger( 2333): setParameters: filtered dev setParameters keyvalue g_hw_speaker_amp_temp_rcv=28
+06-20 14:42:22.294 D/AHAL_HFP_QTI( 2276): hfp_set_parameters enter
+06-20 14:42:22.294 D/AHAL_HFP_QTI( 2276): hfp_set_parameters Exit
+06-20 14:42:22.294 D/AHAL_SecModulePrimary( 2276): processSetVendorParameters: configured g_hw_speaker_amp_temp_rcv
+06-20 14:42:22.294 D/AHAL_SecModulePrimary( 2276): processSetVendorParameters: handler set on Feature:0
+06-20 14:42:22.294 D/AHAL_SecModulePrimary( 2276): onSetSECGenericParameters set temperature for g_hw_speaker_amp_temp_rcv: 28
+06-20 14:42:22.294 I/PAL: API( 2276): pal_set_param: 1377: Enter: param id 3001
+06-20 14:42:22.295 I/PAL: ResourceManager( 2276): getActiveStream_l: 6587: no active streams found for device 3 ret -2
+06-20 14:42:22.295 E/DeviceHalAidl( 2333): Function: parseAndSetVendorParameters Line: 414 Failed 
+06-20 14:42:22.295 E/DeviceHalAidl( 2333): Function: parseAndSetVendorParameters Line: 414 Failed 
+06-20 14:42:22.301 D/BSOHChargingDataCollector( 3211):  BSOH Sys-servce ... 
+06-20 14:42:22.303 D/BSOHChargingDataCollector( 3211): performBatteryWork++
+06-20 14:42:22.303 D/BSOHChargingDataCollector( 3211): performBatteryWork battery com.android.server.bsoh.device.PrimeBattery@84d3e75
+06-20 14:42:22.303 D/BSOHChargingDataCollector( 3211): primeBatt readVoltage from sysFsBattVolt,  path : /sys/class/power_supply/battery/batt_voltage_now
+06-20 14:42:22.313 D/BSOHChargingDataCollector( 3211): 0 	 BattData addData data : BattData { voltage:4.044, current:0.426562, soc:0.65, temperature:27.5, status:2, timestamp:1781984542313, voltage_chg:null}
+06-20 14:42:22.313 D/BSOHChargingDataCollector( 3211): performBatteryWork--
+06-20 14:42:22.554 I/sensors-hal( 2273): handle_sns_client_event:202, auto_rotation_debug_2 mode,255, type,1,0 acc,-0.225,0.024,9.701, ar,0, ver,15, pedo,1,e,1,i,3
+06-20 14:42:22.848 I/sensors-hal( 2273): handle_sns_client_event:327, [0][10179] mag_sample_cal(magcal_available:1): ts=22425037961241 ns; cal = [-35.160587, -26.047981, -31.171494], uncal = [-22.560587, 97.792015, -254.851486], bias = [12.599999, 123.839996, -223.679993], status=3, cal_id=2
+06-20 14:42:22.889 I/sensors-hal( 2273): handle_sns_client_event:379, [0][92824] accel_sample [-0.227,  0.052,  9.716] 22425072972804
+06-20 14:42:22.962 I/sensors-hal( 2273): handle_sns_std_sensor_event:157, [6462] Pressure 988.790, cal 0.146, sw_offset 0.000 (lsb(bit) 0x6a 0x93 0x60)
+06-20 14:42:23.010 D/SemWifiUsabilityStatsMonitor( 3211): onWifiUsabilityStats - seqNum 2350, isSameBssidAndFreq true
+06-20 14:42:23.013 D/SGM:GameManager( 3211): identifyGamePackage. com.sec.android.app.launcher, mCurrentUserId: 0, callingMethodInfo: com.samsung.android.game.SemGameManager.isGamePackage(SemGameManager.java:106)
+06-20 14:42:23.013 D/SGM:SemGameManager( 3211): isGamePackage(), pkgName=com.sec.android.app.launcher, ret=false
+06-20 14:42:23.124 D/SemWifiSwitchForIndividualAppsService( 3211): isSkipNetworkCondition - result:2
+06-20 14:42:23.171 I/SurfaceFlinger( 2350): Current= 120, Period= 120, Distance= 0
+06-20 14:42:23.172 W/View    ( 5574): requestLayout() improperly called by android.widget.FrameLayout{30e81a4 V.E...... ......I. 0,0-1080,2340 #14} during layout: running second layout pass
+06-20 14:42:23.172 W/View    ( 5574): requestLayout() improperly called by com.android.systemui.qs.QSTouchAwareFrameLayout{1855b0d V.E...... ......ID 0,164-1080,2340 #7e0a0a4c com.android.systemui:id/qs_frame} during layout: running second layout pass
+06-20 14:42:23.173 W/RefactorFlag( 5574): New code path expects SceneContainerFlag to be enabled.
+06-20 14:42:23.174 I/SurfaceFlinger( 2350): SFWD update time=16912898081307
+06-20 14:42:23.174 D/AiAgentEffect( 5574): onPrivacyItemsChanged privacyItems.size = 0
+06-20 14:42:23.174 D/AiAgentEffect( 5574): onPrivacyItemsChanged privacyItems isEmpty or found item is null
+06-20 14:42:23.176 I/SDM     ( 2302): AIScalerFeatureIntfImpl::LookupConfig: Scale ratio = 1.780000
+06-20 14:42:23.176 I/SDM     ( 2302): AIScalerParserIntfImpl::LookupConfig: Scale Ratio Match Found Here
+06-20 14:42:23.177 D/AiAgentEffect( 5574): onPrivacyItemsChanged privacyItems.size = 0
+06-20 14:42:23.178 D/AiAgentEffect( 5574): onPrivacyItemsChanged privacyItems isEmpty or found item is null
+06-20 14:42:23.179 I/HoneySpace.StatusIconTracker( 6184): invokeEvent() called with: event = PrivacyInfo(visible=false)
+06-20 14:42:23.180 I/SurfaceFlinger( 2350): Current= 120, Period= 120, Distance= 120
+06-20 14:42:23.180 D/NativeSemDvfsManager( 2350): acquire:: timeout = 2000 mIsAcquired = 1  mTagName : SurfaceFlinger 
+06-20 14:42:23.180 E/NativeCustomFrequencyManager( 2350): [NativeCFMS] BpCustomFrequencyManager::acquire()
+06-20 14:42:23.180 I/HoneySpace.StatusIconTracker( 6184): invokeEvent() called with: event = PrivacyInfo(visible=false)
+06-20 14:42:23.180 I/HYPER-HAL( 2279): [RequestManager.cpp]acquire(): Acquired ID : 5613925 [2350 / 1000]  HINT : SF_GPU_MINLOCK   list : [TIMEOUT / 2000] 
+06-20 14:42:23.183 W/View    ( 5574): requestLayout() improperly called by android.widget.FrameLayout{30e81a4 V.E...... ......I. 0,0-1080,2340 #14} during layout: running second layout pass
+06-20 14:42:23.183 W/View    ( 5574): requestLayout() improperly called by com.android.systemui.qs.QSTouchAwareFrameLayout{1855b0d V.E...... ......ID 0,164-1080,2340 #7e0a0a4c com.android.systemui:id/qs_frame} during layout: running second layout pass
+06-20 14:42:23.184 W/RefactorFlag( 5574): New code path expects SceneContainerFlag to be enabled.
+06-20 14:42:23.248 I/SDM     ( 2302): DisplayBase::CommitThread: Received idle timeout, panel: cmd, timeout: 69999 us
+06-20 14:42:23.302 D/BSOHChargingDataCollector( 3211):  BSOH Sys-servce ... 
+06-20 14:42:23.302 D/BSOHChargingDataCollector( 3211): performBatteryWork++
+06-20 14:42:23.302 D/BSOHChargingDataCollector( 3211): performBatteryWork battery com.android.server.bsoh.device.PrimeBattery@84d3e75
+06-20 14:42:23.302 D/BSOHChargingDataCollector( 3211): primeBatt readVoltage from sysFsBattVolt,  path : /sys/class/power_supply/battery/batt_voltage_now
+06-20 14:42:23.310 D/BSOHChargingDataCollector( 3211): 0 	 BattData addData data : BattData { voltage:4.043, current:0.380468, soc:0.65, temperature:27.5, status:2, timestamp:1781984543309, voltage_chg:null}
+06-20 14:42:23.310 D/BSOHChargingDataCollector( 3211): performBatteryWork--
+06-20 14:42:23.593 D/SemWifiEleStateTracker( 3211): Pressure Diff: 0.0
+06-20 14:42:23.593 D/SemWifiEleStateTracker( 3211): Barometer value: Prev 988.79016 Current 988.79016 mSmallBaroDetected : false
+06-20 14:42:24.131 D/SemWifiSwitchForIndividualAppsService( 3211): isSkipNetworkCondition - result:2
+06-20 14:42:24.303 D/BSOHChargingDataCollector( 3211):  BSOH Sys-servce ... 
+06-20 14:42:24.303 D/BSOHChargingDataCollector( 3211): performBatteryWork++
+06-20 14:42:24.303 D/BSOHChargingDataCollector( 3211): performBatteryWork battery com.android.server.bsoh.device.PrimeBattery@84d3e75
+06-20 14:42:24.303 D/BSOHChargingDataCollector( 3211): primeBatt readVoltage from sysFsBattVolt,  path : /sys/class/power_supply/battery/batt_voltage_now
+06-20 14:42:24.312 D/BSOHChargingDataCollector( 3211): 0 	 BattData addData data : BattData { voltage:4.045, current:0.439062, soc:0.65, temperature:27.5, status:2, timestamp:1781984544312, voltage_chg:null}
+06-20 14:42:24.312 D/BSOHChargingDataCollector( 3211): performBatteryWork--
+06-20 14:42:24.787 I/SurfaceFlinger( 2350): Current= 120, Period= 120, Distance= 1
+06-20 14:42:24.794 I/SurfaceFlinger( 2350): Current= 120, Period= 120, Distance= 120
+06-20 14:42:24.844 I/sensors-hal( 2273): handle_sns_client_event:327, [0][10199] mag_sample_cal(magcal_available:1): ts=22427037961241 ns; cal = [-35.646217, -25.962288, -30.863342], uncal = [-23.046219, 97.877708, -254.543335], bias = [12.599999, 123.839996, -223.679993], status=3, cal_id=2
+06-20 14:42:24.879 I/sensors-hal( 2273): handle_sns_std_sensor_event:157, [6474] Pressure 988.790, cal 0.146, sw_offset 0.000 (lsb(bit) 0x6c 0x93 0x60)
+06-20 14:42:24.900 I/sensors-hal( 2273): handle_sns_client_event:379, [0][92844] accel_sample [-0.231,  0.052,  9.718] 22427087594262
+06-20 14:42:25.019 D/BatteryExternalStatsWorker( 3211): update stats : procstate-change (10)
+06-20 14:42:25.019 D/BatteryExternalStatsWorker( 3211): Fetch WiFi data
+06-20 14:42:25.019 D/BatteryExternalStatsWorker( 3211): Update Rail Energy data
+06-20 14:42:25.046 D/BatteryExternalStatsWorker( 3211): mStats lock released
+06-20 14:42:25.049 D/BatteryExternalStatsWorker( 3211): Update wifi state
+06-20 14:42:25.049 D/BatteryExternalStatsWorker( 3211): done updateExternalStatsLocked
+06-20 14:42:25.132 I/sensors-hal( 2273): handle_sns_std_sensor_event:409, [SSC_LIGHT] P: 96(96),c:15,b:13,m:13,cl:0,l:94,s:96,l0:16480,l1:928,s0:15500,s1:0,acl:1,opr:0.35,f(r):90,u(bl):100,if:90,wi:0,si:0,0(N:0)
+06-20 14:42:25.135 D/SemWifiSwitchForIndividualAppsService( 3211): isSkipNetworkCondition - result:2
+06-20 14:42:25.182 I/HYPER-HAL( 2279): [RequestManager.cpp]releaseLocked(): Released ID : 5613925
+06-20 14:42:25.305 D/BSOHChargingDataCollector( 3211):  BSOH Sys-servce ... 
+06-20 14:42:25.305 D/BSOHChargingDataCollector( 3211): performBatteryWork++
+06-20 14:42:25.305 D/BSOHChargingDataCollector( 3211): performBatteryWork battery com.android.server.bsoh.device.PrimeBattery@84d3e75
+06-20 14:42:25.305 D/BSOHChargingDataCollector( 3211): primeBatt readVoltage from sysFsBattVolt,  path : /sys/class/power_supply/battery/batt_voltage_now
+06-20 14:42:25.315 D/BSOHChargingDataCollector( 3211): 0 	 BattData addData data : BattData { voltage:4.043, current:0.426562, soc:0.65, temperature:27.5, status:2, timestamp:1781984545315, voltage_chg:null}
+06-20 14:42:25.315 D/BSOHChargingDataCollector( 3211): performBatteryWork--
+06-20 14:42:25.650 I/SemWifiEleStateTracker( 3211): Ele Parameters BD : 13 13 13 13 13 13 MD : -104 -104 -104 -104 -104 -104 WD : -66 -67 -66 -67 -66 -66 GC : false false false false false false SC : false false false false false false SH : false false false false false false TB : false false false false false false
+06-20 14:42:25.650 D/SemWifiEleStateTracker( 3211): Pressure Diff: 0.0010375977
+06-20 14:42:25.650 D/SemWifiEleStateTracker( 3211): Barometer value: Prev 988.79016 Current 988.7912 mSmallBaroDetected : false
+06-20 14:42:25.746 I/vendor.rmt_storage( 2359): rmt_storage_connect_cb: clnt_h=0x5c conn_h=0xb4000077e05d9070
+06-20 14:42:25.746 I/vendor.rmt_storage( 2359): rmt_storage_rw_iovec_cb: /boot/modem_fs2: req_h=0x5c msg_id=3: R/W request received (wr_count 68)
+06-20 14:42:25.746 I/vendor.rmt_storage( 2359): wakelock acquired: 1, error no: 11
+06-20 14:42:25.746 I/vendor.rmt_storage( 2359): rmt_storage_client_thread: /boot/modem_fs2: Unblock worker thread (th_id: 509474262080)
+06-20 14:42:25.789 I/vendor.rmt_storage( 2359): rmt_storage_client_thread: /boot/modem_fs2: req_h=0x5c msg_id=3: Bytes written = 4194304, wr_count 68
+06-20 14:42:25.789 I/vendor.rmt_storage( 2359): rmt_storage_client_thread: /boot/modem_fs2: req_h=0x5c msg_id=3: Send response: res=0 err=0, wr_count 68
+06-20 14:42:25.789 I/vendor.rmt_storage( 2359): rmt_storage_client_thread: /boot/modem_fs2: About to block rmt_storage client thread (th_id: 509474262080) wakelock released: 1, error no: 0
+06-20 14:42:25.789 I/vendor.rmt_storage( 2359): 
+06-20 14:42:25.790 E/minksocket( 2250): MinkIPC ERROR: ( 2250:2430 ) MinkIPC_preProcess:272 Client down, but cannot find corresponding minksession
+06-20 14:42:25.790 E/minksocket( 2250): MinkIPC ERROR: ( 2250:2423 ) MinkIPC_preProcess:272 Client down, but cannot find corresponding minksession
+06-20 14:42:25.790 I/vendor.rmt_storage( 2359): rmt_storage_disconnect_cb: clnt_h=0x5c conn_h=0xb4000077e05d9070
+06-20 14:42:25.857 D/Tile.CustomTile( 5574): handleSetListening  true  initialized=true  isTileReady=true  getTileSpec() = custom(com.samsung.android.lool/com.samsung.android.sm.battery.ui.mode.BatteryModeTile)
+06-20 14:42:25.861 D/Tile.CustomTile( 5574): handleSetListening  false  initialized=true  isTileReady=true  getTileSpec() = custom(com.samsung.android.lool/com.samsung.android.sm.battery.ui.mode.BatteryModeTile)
+06-20 14:42:25.861 D/TileLifecycleManager( 5574): onStopListening ComponentInfo{com.samsung.android.lool/com.samsung.android.sm.battery.ui.mode.BatteryModeTile}
+06-20 14:42:25.892 D/io_stats( 1424): !@   8,0 r 2754760 87090320 w 962856 43370596 d 138431 20035964 f 24803 95357 iot 263516 0 th 0 0 0 pt 0 inp 0 0 16915.616
+06-20 14:42:25.892 D/io_stats( 1424): !@ Read_top(KB): ndroid.systemui:high(5574) 72 kworker/u17:4:/(4430) 4
+06-20 14:42:25.893 D/io_stats( 1424): !@ Write_top(KB): rmt_storage:normal(2359) 4096 soft.appmanager:low(7432) 16 appmanager:auth:low(7347) 16
+06-20 14:42:25.935 I/sensors-hal( 2273): handle_sns_std_sensor_event:127, [SSC_LIGHT] A: 90(90),c:15,b:13,m:13,cl:0,l:88,s:90,l0:15456,l1:832,s0:14500,s1:0,acl:1,opr:0.35,f(r):90,u(bl):100,if:90,wi:0,si:0,0(N:0)
+06-20 14:42:26.063 D/SemWifiUsabilityStatsMonitor( 3211): onWifiUsabilityStats - seqNum 2351, isSameBssidAndFreq true
+06-20 14:42:26.064 I/EPDG-1 [WifiProfiler]( 5884): handleWifiRssiIntent, rssi=-65
+06-20 14:42:26.064 I/EPDG-1 [WifiProfiler]( 5884): isProfiling, hash=19493184, started=true
+06-20 14:42:26.065 I/EPDG-1 [LogMetrics]( 5884): set, type=WIFI_RSSI_LAST, value=-65
+06-20 14:42:26.065 I/EPDG-1 [WifiProfiler]( 5884): isProfiling, hash=19493184, started=true
+06-20 14:42:26.065 I/EPDG-1 [WifiProfiler]( 5884): Rssi : -65 highrange : -71 lowrange : -80 mIsRssiInHystersis : false
+06-20 14:42:26.065 I/EPDG-1 [WifiProfiler]( 5884): Rssi : -65 highrange : -71 lowrange : -80 mIsRssiInHystersis : false
+06-20 14:42:26.065 I/EPDG-1 [Subscription]( 5884): isEpdgAvailable, IwlanPsState=2/2
+06-20 14:42:26.065 I/EPDG-1 [WifiProfiler]( 5884): getHandoverThresholdMet: value is: false
+06-20 14:42:26.066 D/SGM:GameManager( 3211): identifyGamePackage. com.sec.android.app.launcher, mCurrentUserId: 0, callingMethodInfo: com.samsung.android.game.SemGameManager.isGamePackage(SemGameManager.java:106)
+06-20 14:42:26.066 D/SGM:SemGameManager( 3211): isGamePackage(), pkgName=com.sec.android.app.launcher, ret=false
+06-20 14:42:26.143 D/SemWifiSwitchForIndividualAppsService( 3211): isSkipNetworkCondition - result:2
+06-20 14:42:26.306 D/BSOHChargingDataCollector( 3211):  BSOH Sys-servce ... 
+06-20 14:42:26.306 D/BSOHChargingDataCollector( 3211): performBatteryWork++
+06-20 14:42:26.306 D/BSOHChargingDataCollector( 3211): performBatteryWork battery com.android.server.bsoh.device.PrimeBattery@84d3e75
+06-20 14:42:26.306 D/BSOHChargingDataCollector( 3211): primeBatt readVoltage from sysFsBattVolt,  path : /sys/class/power_supply/battery/batt_voltage_now
+06-20 14:42:26.316 D/BSOHChargingDataCollector( 3211): 0 	 BattData addData data : BattData { voltage:4.043, current:0.365625, soc:0.65, temperature:27.5, status:2, timestamp:1781984546316, voltage_chg:null}
+06-20 14:42:26.316 D/BSOHChargingDataCollector( 3211): performBatteryWork--
+06-20 14:42:26.848 I/sensors-hal( 2273): handle_sns_client_event:327, [0][10219] mag_sample_cal(magcal_available:1): ts=22429037961241 ns; cal = [-35.629536, -26.236038, -30.731796], uncal = [-23.029537, 97.603958, -254.411789], bias = [12.599999, 123.839996, -223.679993], status=3, cal_id=2
+06-20 14:42:26.916 I/sensors-hal( 2273): handle_sns_client_event:379, [0][92864] accel_sample [-0.224,  0.055,  9.705] 22429102216294
+06-20 14:42:26.962 I/sensors-hal( 2273): handle_sns_std_sensor_event:157, [6487] Pressure 988.792, cal 0.146, sw_offset 0.000 (lsb(bit) 0x71 0x93 0x60)
+06-20 14:42:27.149 D/HeatmapThread( 2340): Updated plugType via uevent: 2
+06-20 14:42:27.149 D/SemWifiSwitchForIndividualAppsService( 3211): isSkipNetworkCondition - result:2
+06-20 14:42:27.151 I/seh_thermal_service( 2313): getTemperaturesWithType SehTemperatureType: 3
+06-20 14:42:27.151 V/[SS]SleepChargingTimeController( 3211): [isActivated]mSleepChargingStatus isNowSessionTime False => false
+06-20 14:42:27.151 I/sehhealth-service( 2311): updateLrpSysfs: write: 287
+06-20 14:42:27.151 E/BatteryDump( 2311): !@new_battery_dump : 4044,432,475,550,65,275,273,289,275,0,289,289,0,Charging,NO_CHARGING,Normal,Good,USB,1,Normal,0,0,9300,0x0,0x10000,0x0,0,0,159,v0002,0000,0000,00000000,0,0,0,0,106,4032,6446,985,0,
+06-20 14:42:27.216 I/StatsHandler( 2306): [avcD_53] Stats: Pending(0) i/p-done(0) Works: Q: 341/Done 329|Work-Rate: Q(0.0/s Avg=0.0/s) Done(0.000/s Avg=0.020/s)| Stream: 30.00fps 65.3Kbps
+06-20 14:42:27.216 I/StatsHandler( 2306): [avcD_53] Mem-usage:  [In-1D: 21 bufs 168.000 MB] [1D-23: 35 bufs 0.547 MB] [2D-24: 19 bufs 15.141 MB] | Total: 183.688 MB
+06-20 14:42:27.216 I/StatsHandler( 2306): [vp9D_271] Stats: Pending(0) i/p-done(0) Works: Q: 672/Done 705|Work-Rate: Q(0.0/s Avg=1.6/s) Done(0.000/s Avg=1.666/s)| Stream: 29.97fps 1.4Mbps
+06-20 14:42:27.216 I/StatsHandler( 2306): [vp9D_271] Mem-usage:  [In-1D: 14 bufs 112.000 MB] [1D-347: 38 bufs 0.594 MB] [2D-348: 22 bufs 31.453 MB] | Total: 144.047 MB
+06-20 14:42:27.289 D/PowerManagerService( 3211): [api] setMasterBrightnessLimit : lowerLimit : -1  upperLimit : 1275  mMasterBrightnessLimitPeriod : 200 (uid: 1000 pid: 8460)
+06-20 14:42:27.290 D/PowerManagerService( 3211): [api] BrightnessLimitRunnable done
+06-20 14:42:27.307 D/BSOHChargingDataCollector( 3211):  BSOH Sys-servce ... 
+06-20 14:42:27.307 D/BSOHChargingDataCollector( 3211): performBatteryWork++
+06-20 14:42:27.307 D/BSOHChargingDataCollector( 3211): performBatteryWork battery com.android.server.bsoh.device.PrimeBattery@84d3e75
+06-20 14:42:27.307 D/BSOHChargingDataCollector( 3211): primeBatt readVoltage from sysFsBattVolt,  path : /sys/class/power_supply/battery/batt_voltage_now
+06-20 14:42:27.317 D/BSOHChargingDataCollector( 3211): 0 	 BattData addData data : BattData { voltage:4.044, current:0.442187, soc:0.65, temperature:27.5, status:2, timestamp:1781984547317, voltage_chg:null}
+06-20 14:42:27.317 D/BSOHChargingDataCollector( 3211): performBatteryWork--
+06-20 14:42:27.710 D/SemWifiEleStateTracker( 3211): Pressure Diff: 4.272461E-4
+06-20 14:42:27.710 D/SemWifiEleStateTracker( 3211): Barometer value: Prev 988.7912 Current 988.7916 mSmallBaroDetected : false
+06-20 14:42:27.819 I/wpa_supplicant( 5272): Heartbeat 1953
+06-20 14:42:27.853 I/sensors-hal( 2273): handle_sns_std_sensor_event:409, [SSC_LIGHT] P: 90(90),c:15,b:13,m:13,cl:0,l:87,s:90,l0:15168,l1:768,s0:14500,s1:0,acl:1,opr:0.35,f(r):90,u(bl):100,if:90,wi:0,si:0,0(N:0)
+06-20 14:42:27.931 D/WifiConnectivityMonitor.NetworkStatsAnalyzer( 3211): Backhaul Disconnection due to RetransSeg
+06-20 14:42:27.931 D/WifiConnectivityMonitor.NetworkStatsAnalyzer( 3211): Backhaul result - RSSI:-65, CE:8, PE:8, TI:13, PTI:13, TW:2, PTW:2, Tx:0, Rx:0, TxS:0, RxS:0, RESULT:true, IC:0, ICT:5, WC:0, WCT:5, R:0, RC:25, IE:0, EC:0
+06-20 14:42:28.158 D/SemWifiSwitchForIndividualAppsService( 3211): isSkipNetworkCondition - result:2
+06-20 14:42:28.310 D/BSOHChargingDataCollector( 3211):  BSOH Sys-servce ... 
+06-20 14:42:28.311 D/BSOHChargingDataCollector( 3211): performBatteryWork++
+06-20 14:42:28.311 D/BSOHChargingDataCollector( 3211): performBatteryWork battery com.android.server.bsoh.device.PrimeBattery@84d3e75
+06-20 14:42:28.311 D/BSOHChargingDataCollector( 3211): primeBatt readVoltage from sysFsBattVolt,  path : /sys/class/power_supply/battery/batt_voltage_now
+06-20 14:42:28.321 D/BSOHChargingDataCollector( 3211): 0 	 BattData addData data : BattData { voltage:4.044, current:0.411718, soc:0.65, temperature:27.5, status:2, timestamp:1781984548321, voltage_chg:null}
+06-20 14:42:28.321 D/BSOHChargingDataCollector( 3211): performBatteryWork--
+06-20 14:42:28.789 I/SurfaceFlinger( 2350): Current= 120, Period= 120, Distance= 0
+06-20 14:42:28.797 I/SurfaceFlinger( 2350): Current= 120, Period= 120, Distance= 120
+06-20 14:42:28.844 I/sensors-hal( 2273): handle_sns_client_event:327, [0][10239] mag_sample_cal(magcal_available:1): ts=22431037961241 ns; cal = [-35.496071, -25.646095, -30.978500], uncal = [-22.896072, 98.193901, -254.658493], bias = [12.599999, 123.839996, -223.679993], status=3, cal_id=2
+06-20 14:42:28.879 I/sensors-hal( 2273): handle_sns_std_sensor_event:157, [6499] Pressure 988.791, cal 0.146, sw_offset 0.000 (lsb(bit) 0x6f 0x93 0x60)
+06-20 14:42:28.930 I/sensors-hal( 2273): handle_sns_client_event:379, [0][92884] accel_sample [-0.225,  0.052,  9.724] 22431116840512
+06-20 14:42:29.102 I/EPDG-1 [WifiProfiler]( 5884): handleWifiRssiIntent, rssi=-66
+06-20 14:42:29.102 I/EPDG-1 [WifiProfiler]( 5884): isProfiling, hash=19493184, started=true
+06-20 14:42:29.102 D/SemWifiUsabilityStatsMonitor( 3211): onWifiUsabilityStats - seqNum 2352, isSameBssidAndFreq true
+06-20 14:42:29.102 I/EPDG-1 [LogMetrics]( 5884): set, type=WIFI_RSSI_LAST, value=-66
+06-20 14:42:29.102 I/EPDG-1 [WifiProfiler]( 5884): isProfiling, hash=19493184, started=true
+06-20 14:42:29.103 I/EPDG-1 [WifiProfiler]( 5884): Rssi : -66 highrange : -71 lowrange : -80 mIsRssiInHystersis : false
+06-20 14:42:29.103 I/EPDG-1 [WifiProfiler]( 5884): Rssi : -66 highrange : -71 lowrange : -80 mIsRssiInHystersis : false
+06-20 14:42:29.103 I/EPDG-1 [Subscription]( 5884): isEpdgAvailable, IwlanPsState=2/2
+06-20 14:42:29.103 I/EPDG-1 [WifiProfiler]( 5884): getHandoverThresholdMet: value is: false
+06-20 14:42:29.105 D/SGM:GameManager( 3211): identifyGamePackage. com.sec.android.app.launcher, mCurrentUserId: 0, callingMethodInfo: com.samsung.android.game.SemGameManager.isGamePackage(SemGameManager.java:106)
+06-20 14:42:29.105 D/SGM:SemGameManager( 3211): isGamePackage(), pkgName=com.sec.android.app.launcher, ret=false
+06-20 14:42:29.162 D/SemWifiSwitchForIndividualAppsService( 3211): isSkipNetworkCondition - result:2
+06-20 14:42:29.312 D/BSOHChargingDataCollector( 3211):  BSOH Sys-servce ... 
+06-20 14:42:29.312 D/BSOHChargingDataCollector( 3211): performBatteryWork++
+06-20 14:42:29.312 D/BSOHChargingDataCollector( 3211): performBatteryWork battery com.android.server.bsoh.device.PrimeBattery@84d3e75
+06-20 14:42:29.312 D/BSOHChargingDataCollector( 3211): primeBatt readVoltage from sysFsBattVolt,  path : /sys/class/power_supply/battery/batt_voltage_now
+06-20 14:42:29.323 D/BSOHChargingDataCollector( 3211): 0 	 BattData addData data : BattData { voltage:4.044, current:0.40625, soc:0.65, temperature:27.5, status:2, timestamp:1781984549323, voltage_chg:null}
+06-20 14:42:29.323 D/BSOHChargingDataCollector( 3211): performBatteryWork--
+06-20 14:42:29.785 D/SemWifiEleStateTracker( 3211): Pressure Diff: -0.0012817383
+06-20 14:42:29.785 D/SemWifiEleStateTracker( 3211): Barometer value: Prev 988.7916 Current 988.79034 mSmallBaroDetected : false
+06-20 14:42:29.894 D/io_stats( 1424): !@ Read_top(KB): .gms.persistent:high(6789) 44
+06-20 14:42:29.895 D/io_stats( 1424): !@ Write_top(KB): vendor.samsung.:normal(2311) 8
+06-20 14:42:30.170 D/SemWifiSwitchForIndividualAppsService( 3211): isSkipNetworkCondition - result:2
+06-20 14:42:30.314 D/BSOHChargingDataCollector( 3211):  BSOH Sys-servce ... 
+06-20 14:42:30.314 D/BSOHChargingDataCollector( 3211): performBatteryWork++
+06-20 14:42:30.314 D/BSOHChargingDataCollector( 3211): performBatteryWork battery com.android.server.bsoh.device.PrimeBattery@84d3e75
+06-20 14:42:30.314 D/BSOHChargingDataCollector( 3211): primeBatt readVoltage from sysFsBattVolt,  path : /sys/class/power_supply/battery/batt_voltage_now
+06-20 14:42:30.325 D/BSOHChargingDataCollector( 3211): 0 	 BattData addData data : BattData { voltage:4.045, current:0.436718, soc:0.65, temperature:27.5, status:2, timestamp:1781984550325, voltage_chg:null}
+06-20 14:42:30.325 D/BSOHChargingDataCollector( 3211): performBatteryWork--
+06-20 14:42:30.848 I/sensors-hal( 2273): handle_sns_client_event:327, [0][10259] mag_sample_cal(magcal_available:1): ts=22433037961241 ns; cal = [-34.980377, -25.431274, -32.121475], uncal = [-22.380377, 98.408722, -255.801468], bias = [12.599999, 123.839996, -223.679993], status=3, cal_id=2
+06-20 14:42:30.895 I/sensors-hal( 2273): handle_sns_std_sensor_event:127, [SSC_LIGHT] A: 86(86),c:15,b:13,m:13,cl:0,l:85,s:87,l0:14848,l1:736,s0:14000,s1:0,acl:1,opr:0.35,f(r):90,u(bl):100,if:90,wi:0,si:0,0(N:0)
+06-20 14:42:30.895 I/sensors-hal( 2273): handle_sns_std_sensor_event:409, [SSC_LIGHT] P: 86(86),c:15,b:13,m:13,cl:0,l:85,s:87,l0:14848,l1:736,s0:14000,s1:0,acl:1,opr:0.35,f(r):90,u(bl):100,if:90,wi:0,si:0,0(N:0)
+06-20 14:42:30.950 I/sensors-hal( 2273): handle_sns_client_event:379, [0][92904] accel_sample [-0.226,  0.047,  9.716] 22433131463169
+06-20 14:42:30.962 I/sensors-hal( 2273): handle_sns_std_sensor_event:157, [6512] Pressure 988.791, cal 0.146, sw_offset 0.000 (lsb(bit) 0x6b 0x93 0x60)
+06-20 14:42:31.179 D/SemWifiSwitchForIndividualAppsService( 3211): isSkipNetworkCondition - result:2
+06-20 14:42:31.314 D/BSOHChargingDataCollector( 3211):  BSOH Sys-servce ... 
+06-20 14:42:31.314 D/BSOHChargingDataCollector( 3211): performBatteryWork++
+06-20 14:42:31.315 D/BSOHChargingDataCollector( 3211): performBatteryWork battery com.android.server.bsoh.device.PrimeBattery@84d3e75
+06-20 14:42:31.315 D/BSOHChargingDataCollector( 3211): primeBatt readVoltage from sysFsBattVolt,  path : /sys/class/power_supply/battery/batt_voltage_now
+06-20 14:42:31.327 D/BSOHChargingDataCollector( 3211): 0 	 BattData addData data : BattData { voltage:4.044, current:0.421875, soc:0.65, temperature:27.5, status:2, timestamp:1781984551326, voltage_chg:null}
+06-20 14:42:31.327 D/BSOHChargingDataCollector( 3211): performBatteryWork--
+06-20 14:42:31.823 D/SemWifiEleStateTracker( 3211): Pressure Diff: 0.002319336
+06-20 14:42:31.823 D/SemWifiEleStateTracker( 3211): Barometer value: Prev 988.79034 Current 988.79266 mSmallBaroDetected : false
+06-20 14:42:31.895 D/io_stats( 1424): !@   8,0 r 2754762 87090364 w 962863 43370636 d 138431 20035964 f 24803 95357 iot 263520 0 th 0 0 0 pt 0 inp 0 0 16921.619
+06-20 14:42:32.142 D/SemWifiUsabilityStatsMonitor( 3211): onWifiUsabilityStats - seqNum 2353, isSameBssidAndFreq true
+06-20 14:42:32.145 D/SGM:GameManager( 3211): identifyGamePackage. com.sec.android.app.launcher, mCurrentUserId: 0, callingMethodInfo: com.samsung.android.game.SemGameManager.isGamePackage(SemGameManager.java:106)
+06-20 14:42:32.145 D/SGM:SemGameManager( 3211): isGamePackage(), pkgName=com.sec.android.app.launcher, ret=false
+06-20 14:42:32.145 W/ContextImpl( 3211): Calling a method in the system process without a qualified user: android.app.ContextImpl.bindService:2227 com.samsung.android.server.wifi.SemWifiIntelligentConnectionManager.iwh_predict_action:8 com.samsung.android.server.wifi.SemWifiIntelligentConnectionManager.-$$Nest$miwh_predict_action:1 com.samsung.android.server.wifi.SemWifiIntelligentConnectionManager$IntelligentConnectionManagerHandler.handleMessage:753 android.os.Handler.dispatchMessage:132 
+06-20 14:42:32.148 D/BackgroundInstallControlService( 3211): Package event received: 0
+06-20 14:42:32.168 D/Zygote  ( 2176): Forked child process 12318
+06-20 14:42:32.169 D/DeviceReportingSecurityChecker( 3211): getStatus
+06-20 14:42:32.169 D/DeviceReportingSecurityChecker( 3211): mIsICDStatus is true
+06-20 14:42:32.169 D/DeviceReportingSecurityChecker( 3211): mIsSim is true
+06-20 14:42:32.169 D/DeviceReportingSecurityChecker( 3211): mIsEchoAppSignature is true
+06-20 14:42:32.169 D/DeviceReportingSecurityChecker( 3211): security check passed
+06-20 14:42:32.169 D/DeviceReportingSecurityChecker( 3211): mIsICDStatus === true mIsSim == true mIsMyAccountSignature== false mIsEchoAppSignature== true mIsSprintHubSignature== false
+06-20 14:42:32.169 I/ActivityManager( 3211): Start proc 12318:com.samsung.android.wifi.intelligence:iwhInfService/1000 for service {com.samsung.android.wifi.intelligence/com.samsung.android.wifi.intelligence.iwh.IwhInfService}
+06-20 14:42:32.182 D/SemWifiSwitchForIndividualAppsService( 3211): isSkipNetworkCondition - result:2
+06-20 14:42:32.192 I/Zygote  (12318): Process 12318 created for com.samsung.android.wifi.intelligence:iwhInfService
+06-20 14:42:32.192 I/e:iwhInfService(12318): Using CollectorTypeCMC GC.
+06-20 14:42:32.211 D/BackgroundInstallControlService( 3211): Package event received: 0
+06-20 14:42:32.213 I/org.tensorflow.lite.h(12318): Loaded native library: tensorflowlite_jni
+06-20 14:42:32.213 I/org.tensorflow.lite.h(12318): Didn't load native library: tensorflowlite_jni_gms_client
+06-20 14:42:32.213 I/tflite  (12318): Initialized TensorFlow Lite runtime.
+06-20 14:42:32.216 I/StatsHandler( 2306): [avcD_53] Stats: Pending(0) i/p-done(0) Works: Q: 341/Done 329|Work-Rate: Q(0.0/s Avg=0.0/s) Done(0.000/s Avg=0.020/s)| Stream: 30.00fps 65.3Kbps
+06-20 14:42:32.216 I/StatsHandler( 2306): [avcD_53] Mem-usage:  [In-1D: 21 bufs 168.000 MB] [1D-23: 35 bufs 0.547 MB] [2D-24: 19 bufs 15.141 MB] | Total: 183.688 MB
+06-20 14:42:32.216 I/StatsHandler( 2306): [vp9D_271] Stats: Pending(0) i/p-done(0) Works: Q: 672/Done 705|Work-Rate: Q(0.0/s Avg=1.6/s) Done(0.000/s Avg=1.647/s)| Stream: 29.97fps 1.4Mbps
+06-20 14:42:32.216 I/StatsHandler( 2306): [vp9D_271] Mem-usage:  [In-1D: 14 bufs 112.000 MB] [1D-347: 38 bufs 0.594 MB] [2D-348: 22 bufs 31.453 MB] | Total: 144.047 MB
+06-20 14:42:32.253 I/tflite  (12318): Created TensorFlow Lite delegate for select TF ops.
+06-20 14:42:32.254 I/tflite  (12318): TfLiteFlexDelegate delegate: 0 nodes delegated out of 20 nodes with 0 partitions.
+06-20 14:42:32.254 I/tflite  (12318): Replacing 12 node(s) with delegate (TfLiteFlexDelegate) node, yielding 3 partitions.
+06-20 14:42:32.264 I/tflite  (12318): Replacing 2 node(s) with delegate (TfLiteFlexDelegate) node, yielding 2 partitions.
+06-20 14:42:32.264 I/tflite  (12318): Replacing 6 node(s) with delegate (TfLiteFlexDelegate) node, yielding 7 partitions.
+06-20 14:42:32.265 I/tflite  (12318): Replacing 2 node(s) with delegate (TfLiteFlexDelegate) node, yielding 5 partitions.
+06-20 14:42:32.266 W/libc    (12318): Access denied finding property "ro.mediatek.platform"
+06-20 14:42:32.269 I/tflite  (12318): Created TensorFlow Lite XNNPACK delegate for CPU.
+06-20 14:42:32.272 I/IwhInfService(12318): IWH model: 7O4JsjFKpn / 0 /  T  | 314 / 2 / 0
+06-20 14:42:32.273 I/IwhInfService(12318): Inferenced state & reuslt : [0.558, 0.5] | false
+06-20 14:42:32.275 W/ContextImpl( 3211): Calling a method in the system process without a qualified user: android.app.ContextImpl.stopService:2140 com.samsung.android.server.wifi.SemWifiIntelligentConnectionManager$IntelligentConnectionManagerHandler.handleMessage:244 android.os.Handler.dispatchMessage:132 android.os.Looper.dispatchMessage:358 android.os.Looper.loopOnce:288 
+06-20 14:42:32.275 I/Process ( 3211): Sending signal. PID: 12318 SIG: 9
+06-20 14:42:32.275 I/SemWifiIntelligentConnectionManager( 3211): HQ: 7O4JsjFKpn / 28:bc / 5180 / -66 / 288 / 558 | 87 / 1040 / 79 / NR / F / F / F / 0 / 31 | 0 / 0 (-75.0) ---> S / S / 0
+06-20 14:42:32.286 I/Zygote  ( 2176): Process 12318 exited due to signal 9 (Killed)
+06-20 14:42:32.286 I/ActivityManager( 3211): Process com.samsung.android.wifi.intelligence:iwhInfService (pid 12318) has died: cch+5 CEM (790,2180)
+06-20 14:42:32.287 I/libprocessgroup( 3211): Removed cgroup /sys/fs/cgroup/system/uid_1000/pid_12318
+06-20 14:42:32.290 I/thermal_core( 2313): pivot(AP) : 285, skin : 287
+06-20 14:42:32.315 D/BSOHChargingDataCollector( 3211):  BSOH Sys-servce ... 
+06-20 14:42:32.315 D/BSOHChargingDataCollector( 3211): performBatteryWork++
+06-20 14:42:32.315 D/BSOHChargingDataCollector( 3211): performBatteryWork battery com.android.server.bsoh.device.PrimeBattery@84d3e75
+06-20 14:42:32.315 D/BSOHChargingDataCollector( 3211): primeBatt readVoltage from sysFsBattVolt,  path : /sys/class/power_supply/battery/batt_voltage_now
+06-20 14:42:32.319 D/AHAL_ModulePrimary_QTI( 2276): getVendorParameters: id count: 1
+06-20 14:42:32.319 I/PAL: ResourceManager( 2276): getActiveStream_l: 6587: no active streams found for device 3 ret -2
+06-20 14:42:32.319 D/AHAL_SecModulePrimary( 2276): onGetSECGenericParameters get temperature for g_hw_speaker_amp_temp_rcv: 0
+06-20 14:42:32.320 D/AHAL_ModulePrimary_QTI( 2276): getVendorParameters: id count: 1
+06-20 14:42:32.320 I/PAL: ResourceManager( 2276): getActiveStream_l: 6587: no active streams found for device 3 ret -2
+06-20 14:42:32.320 D/AHAL_SecModulePrimary( 2276): onGetSECGenericParameters get temperature for g_hw_speaker_amp_temp_spk: 0
+06-20 14:42:32.321 I/SDHMS:x ( 8460): SIOP:: AP:285 BAT:275 USB:273 CHG:288 PA:291 WIFI:283 CF:283 BLK:0 SUBBAT:0 LRPTHM:280 SKIN:287 SKINF:286 SKINB:287 LRP:287 LRF:286 LRB:287 APT:286 APR:287 RCV:280 SPK:273 CHGF:284 CHGR:286 MEMF:285 MEMR:287 WIFIF:285 WIFIR:287 FCAM:273 UPSPK:281 DNSPK:274 VAP:287 VWIFI:285 AMB2:248 HIGH:0 AVGCUR:396 AVGSYS:150 POWER:1587
+06-20 14:42:32.321 I/AudioManager( 8460): setParameters keyValuePairs = g_hw_speaker_amp_temp_spk=27
+06-20 14:42:32.323 D/AudioFlinger( 2333): setParameters: filtered dev setParameters keyvalue g_hw_speaker_amp_temp_spk=27
+06-20 14:42:32.323 D/AHAL_HFP_QTI( 2276): hfp_set_parameters enter
+06-20 14:42:32.323 D/AHAL_HFP_QTI( 2276): hfp_set_parameters Exit
+06-20 14:42:32.323 D/AHAL_SecModulePrimary( 2276): processSetVendorParameters: configured g_hw_speaker_amp_temp_spk
+06-20 14:42:32.323 D/AHAL_SecModulePrimary( 2276): processSetVendorParameters: handler set on Feature:0
+06-20 14:42:32.323 D/AHAL_SecModulePrimary( 2276): onSetSECGenericParameters set temperature for g_hw_speaker_amp_temp_spk: 27
+06-20 14:42:32.323 I/PAL: API( 2276): pal_set_param: 1377: Enter: param id 3002
+06-20 14:42:32.323 I/PAL: ResourceManager( 2276): getActiveStream_l: 6587: no active streams found for device 3 ret -2
+06-20 14:42:32.324 E/DeviceHalAidl( 2333): Function: parseAndSetVendorParameters Line: 414 Failed 
+06-20 14:42:32.324 E/DeviceHalAidl( 2333): Function: parseAndSetVendorParameters Line: 414 Failed 
+06-20 14:42:32.325 I/AudioManager( 8460): setParameters keyValuePairs = g_hw_speaker_amp_temp_rcv=28
+06-20 14:42:32.325 D/AudioFlinger( 2333): setParameters: filtered dev setParameters keyvalue g_hw_speaker_amp_temp_rcv=28
+06-20 14:42:32.326 D/AHAL_HFP_QTI( 2276): hfp_set_parameters enter
+06-20 14:42:32.326 D/AHAL_HFP_QTI( 2276): hfp_set_parameters Exit
+06-20 14:42:32.326 D/AHAL_SecModulePrimary( 2276): processSetVendorParameters: configured g_hw_speaker_amp_temp_rcv
+06-20 14:42:32.326 D/AHAL_SecModulePrimary( 2276): processSetVendorParameters: handler set on Feature:0
+06-20 14:42:32.326 D/AHAL_SecModulePrimary( 2276): onSetSECGenericParameters set temperature for g_hw_speaker_amp_temp_rcv: 28
+06-20 14:42:32.326 I/PAL: API( 2276): pal_set_param: 1377: Enter: param id 3001
+06-20 14:42:32.326 I/PAL: ResourceManager( 2276): getActiveStream_l: 6587: no active streams found for device 3 ret -2
+06-20 14:42:32.326 E/DeviceHalAidl( 2333): Function: parseAndSetVendorParameters Line: 414 Failed 
+06-20 14:42:32.327 E/DeviceHalAidl( 2333): Function: parseAndSetVendorParameters Line: 414 Failed 
+06-20 14:42:32.332 D/BSOHChargingDataCollector( 3211): 0 	 BattData addData data : BattData { voltage:4.044, current:0.436718, soc:0.65, temperature:27.5, status:2, timestamp:1781984552332, voltage_chg:null}
+06-20 14:42:32.333 D/BSOHChargingDataCollector( 3211): performBatteryWork--
+06-20 14:42:32.796 I/SurfaceFlinger( 2350): Current= 120, Period= 120, Distance= 0
+06-20 14:42:32.800 I/SurfaceFlinger( 2350): Current= 120, Period= 120, Distance= 120
+06-20 14:42:32.844 I/sensors-hal( 2273): handle_sns_client_event:327, [0][10279] mag_sample_cal(magcal_available:1): ts=22435037961241 ns; cal = [-35.321770, -25.793610, -32.204239], uncal = [-22.721769, 98.046387, -255.884232], bias = [12.599999, 123.839996, -223.679993], status=3, cal_id=2
+06-20 14:42:32.878 I/sensors-hal( 2273): handle_sns_std_sensor_event:157, [6524] Pressure 988.793, cal 0.146, sw_offset 0.000 (lsb(bit) 0x79 0x93 0x60)
+06-20 14:42:32.958 I/sensors-hal( 2273): handle_sns_client_event:379, [0][92924] accel_sample [-0.226,  0.047,  9.717] 22435146084523
+06-20 14:42:33.047 I/sensors-hal( 2273): handle_sns_client_event:202, auto_rotation_debug_2 mode,255, type,1,0 acc,-0.230,0.057,9.696, ar,0, ver,15, pedo,1,e,1,i,3
+06-20 14:42:33.193 D/SemWifiSwitchForIndividualAppsService( 3211): isSkipNetworkCondition - result:2
+06-20 14:42:33.317 D/BSOHChargingDataCollector( 3211):  BSOH Sys-servce ... 
+06-20 14:42:33.317 D/BSOHChargingDataCollector( 3211): performBatteryWork++
+06-20 14:42:33.318 D/BSOHChargingDataCollector( 3211): performBatteryWork battery com.android.server.bsoh.device.PrimeBattery@84d3e75
+06-20 14:42:33.318 D/BSOHChargingDataCollector( 3211): primeBatt readVoltage from sysFsBattVolt,  path : /sys/class/power_supply/battery/batt_voltage_now
+06-20 14:42:33.329 D/BSOHChargingDataCollector( 3211): 0 	 BattData addData data : BattData { voltage:4.044, current:0.421093, soc:0.65, temperature:27.5, status:2, timestamp:1781984553329, voltage_chg:null}
+06-20 14:42:33.329 D/BSOHChargingDataCollector( 3211): performBatteryWork--
+06-20 14:42:33.877 D/SemWifiEleStateTracker( 3211): Pressure Diff: -4.272461E-4
+06-20 14:42:33.877 D/SemWifiEleStateTracker( 3211): Barometer value: Prev 988.79266 Current 988.79224 mSmallBaroDetected : false
+06-20 14:42:33.897 D/io_stats( 1424): !@   8,0 r 2754764 87090372 w 962866 43371236 d 138431 20035964 f 24803 95358 iot 263532 0 th 0 0 0 pt 0 inp 0 0 16923.620
+06-20 14:42:33.897 D/io_stats( 1424): !@ Read_top(KB): system_server:normal(3211) 8
+06-20 14:42:33.897 D/io_stats( 1424): !@ Write_top(KB): system_server:normal(3211) 600 kworker/u17:14:/(4436) 32
+06-20 14:42:33.937 I/sensors-hal( 2273): handle_sns_std_sensor_event:409, [SSC_LIGHT] P: 81(81),c:15,b:13,m:13,cl:0,l:81,s:81,l0:14112,l1:672,s0:13000,s1:0,acl:1,opr:0.35,f(r):90,u(bl):100,if:90,wi:0,si:0,0(N:0)
+06-20 14:42:34.202 D/SemWifiSwitchForIndividualAppsService( 3211): isSkipNetworkCondition - result:2
+06-20 14:42:34.319 D/BSOHChargingDataCollector( 3211):  BSOH Sys-servce ... 
+06-20 14:42:34.319 D/BSOHChargingDataCollector( 3211): performBatteryWork++
+06-20 14:42:34.319 D/BSOHChargingDataCollector( 3211): performBatteryWork battery com.android.server.bsoh.device.PrimeBattery@84d3e75
+06-20 14:42:34.321 D/BSOHChargingDataCollector( 3211): primeBatt readVoltage from sysFsBattVolt,  path : /sys/class/power_supply/battery/batt_voltage_now
+06-20 14:42:34.331 D/BSOHChargingDataCollector( 3211): 0 	 BattData addData data : BattData { voltage:4.043, current:0.390625, soc:0.65, temperature:27.5, status:2, timestamp:1781984554331, voltage_chg:null}
+06-20 14:42:34.331 D/BSOHChargingDataCollector( 3211): performBatteryWork--
+06-20 14:42:34.845 I/sensors-hal( 2273): handle_sns_client_event:327, [0][10299] mag_sample_cal(magcal_available:1): ts=22437037961241 ns; cal = [-35.316650, -25.808853, -30.855621], uncal = [-22.716650, 98.031143, -254.535614], bias = [12.599999, 123.839996, -223.679993], status=3, cal_id=2
+06-20 14:42:34.962 I/sensors-hal( 2273): handle_sns_std_sensor_event:157, [6537] Pressure 988.792, cal 0.146, sw_offset 0.000 (lsb(bit) 0x73 0x93 0x60)
+06-20 14:42:34.973 I/sensors-hal( 2273): handle_sns_client_event:379, [0][92944] accel_sample [-0.227,  0.048,  9.719] 22437160704887
+06-20 14:42:35.182 D/SemWifiUsabilityStatsMonitor( 3211): onWifiUsabilityStats - seqNum 2354, isSameBssidAndFreq true
+06-20 14:42:35.182 I/EPDG-1 [WifiProfiler]( 5884): handleWifiRssiIntent, rssi=-67
+06-20 14:42:35.182 I/EPDG-1 [WifiProfiler]( 5884): isProfiling, hash=19493184, started=true
+06-20 14:42:35.183 I/EPDG-1 [LogMetrics]( 5884): set, type=WIFI_RSSI_LAST, value=-67
+06-20 14:42:35.183 I/EPDG-1 [WifiProfiler]( 5884): isProfiling, hash=19493184, started=true
+06-20 14:42:35.183 I/EPDG-1 [WifiProfiler]( 5884): Rssi : -67 highrange : -71 lowrange : -80 mIsRssiInHystersis : false
+06-20 14:42:35.183 I/EPDG-1 [WifiProfiler]( 5884): Rssi : -67 highrange : -71 lowrange : -80 mIsRssiInHystersis : false
+06-20 14:42:35.183 I/EPDG-1 [Subscription]( 5884): isEpdgAvailable, IwlanPsState=2/2
+06-20 14:42:35.184 I/EPDG-1 [WifiProfiler]( 5884): getHandoverThresholdMet: value is: false
+06-20 14:42:35.184 D/SGM:GameManager( 3211): identifyGamePackage. com.sec.android.app.launcher, mCurrentUserId: 0, callingMethodInfo: com.samsung.android.game.SemGameManager.isGamePackage(SemGameManager.java:106)
+06-20 14:42:35.184 D/SGM:SemGameManager( 3211): isGamePackage(), pkgName=com.sec.android.app.launcher, ret=false
+06-20 14:42:35.205 D/SemWifiSwitchForIndividualAppsService( 3211): isSkipNetworkCondition - result:2
+06-20 14:42:35.320 D/BSOHChargingDataCollector( 3211):  BSOH Sys-servce ... 
+06-20 14:42:35.321 D/BSOHChargingDataCollector( 3211): performBatteryWork++
+06-20 14:42:35.321 D/BSOHChargingDataCollector( 3211): performBatteryWork battery com.android.server.bsoh.device.PrimeBattery@84d3e75
+06-20 14:42:35.321 D/BSOHChargingDataCollector( 3211): primeBatt readVoltage from sysFsBattVolt,  path : /sys/class/power_supply/battery/batt_voltage_now
+06-20 14:42:35.331 D/BSOHChargingDataCollector( 3211): 0 	 BattData addData data : BattData { voltage:4.043, current:0.342187, soc:0.65, temperature:27.5, status:2, timestamp:1781984555331, voltage_chg:null}
+06-20 14:42:35.331 D/BSOHChargingDataCollector( 3211): performBatteryWork--
+06-20 14:42:35.898 D/io_stats( 1424): !@   8,0 r 2754765 87090376 w 962963 43371588 d 138431 20035964 f 24805 95371 iot 263544 0 th 0 0 0 pt 0 inp 0 0 16925.621
+06-20 14:42:35.908 D/SatelliteController( 5463): isInCarrierRoamingNbIotNtn: satellite is disabled
+06-20 14:42:35.908 D/SatelliteController( 5463): getCarrierRoamingNtnConnectType: Falling back to global carrier config connect type: 0
+06-20 14:42:35.909 V/SatelliteController( 5463): getWwanIsInService: return true
+06-20 14:42:35.909 D/SatelliteController( 5463): updateLastNotifiedCarrierRoamingNtnSignalStrengthAndNotify(2)
+06-20 14:42:35.909 D/SatelliteController( 5463): updateLastNotifiedCarrierRoamingNtnSignalStrengthAndNotify(2) lastNotifiedSignalStrength level: 0
+06-20 14:42:35.909 D/SatelliteController( 5463): updateLastNotifiedCarrierRoamingNtnSignalStrengthAndNotify(2) currSignalStrength level: 0
+06-20 14:42:35.909 W/libbinder.IPCThreadState( 3211): Sending oneway calls to frozen process.
+06-20 14:42:35.909 W/libbinder.IPCThreadState( 3211): Sending oneway calls to frozen process.
+06-20 14:42:35.909 W/libbinder.IPCThreadState( 3211): Sending oneway calls to frozen process.
+06-20 14:42:35.910 W/libbinder.IPCThreadState( 3211): Sending oneway calls to frozen process.
+06-20 14:42:35.910 W/libbinder.IPCThreadState( 3211): Sending oneway calls to frozen process.
+06-20 14:42:35.910 W/libbinder.IPCThreadState( 3211): Sending oneway calls to frozen process.
+06-20 14:42:35.912 I/EPDG-1 [CellularProfiler]( 5884): onSignalStrengthsChanged: SignalStrength:{mCdma=Invalid,mGsm=Invalid,mWcdma=Invalid,mTdscdma=Invalid,mLte=Invalid,mNr=CellSignalStrengthNr:{ csiRsrp = 2147483647 csiRsrq = 2147483647 csiCqiTableIndex = 2147483647 csiCqiReport = [] ssRsrp = -105 ssRsrq = -11 ssSinr = 7 level = 1 parametersUseForLevel = 0 timingAdvance = 2147483647 },SignalBarInfo{ nrLevel=4 },rat=20,primary=CellSignalStrengthNr}
+06-20 14:42:35.912 I/EPDG-1 [CellularProfiler]( 5884): lastNrRSRP is -104 currentNrRSRP is -105 lastNrRSRQ is -12 currentNrRSRQ is -11
+06-20 14:42:35.928 D/SemWifiEleStateTracker( 3211): Pressure Diff: 6.713867E-4
+06-20 14:42:35.929 D/SemWifiEleStateTracker( 3211): Barometer value: Prev 988.79224 Current 988.7929 mSmallBaroDetected : false
+06-20 14:42:36.012 I/sensors-hal( 2273): handle_sns_std_sensor_event:127, [SSC_LIGHT] A: 79(79),c:15,b:13,m:13,cl:0,l:80,s:77,l0:13792,l1:640,s0:12500,s1:0,acl:1,opr:0.35,f(r):90,u(bl):100,if:90,wi:0,si:0,0(N:0)
+06-20 14:42:36.215 D/SemWifiSwitchForIndividualAppsService( 3211): isSkipNetworkCondition - result:2
+06-20 14:42:36.322 D/BSOHChargingDataCollector( 3211):  BSOH Sys-servce ... 
+06-20 14:42:36.322 D/BSOHChargingDataCollector( 3211): performBatteryWork++
+06-20 14:42:36.322 D/BSOHChargingDataCollector( 3211): performBatteryWork battery com.android.server.bsoh.device.PrimeBattery@84d3e75
+06-20 14:42:36.322 D/BSOHChargingDataCollector( 3211): primeBatt readVoltage from sysFsBattVolt,  path : /sys/class/power_supply/battery/batt_voltage_now
+06-20 14:42:36.339 D/BSOHChargingDataCollector( 3211): 0 	 BattData addData data : BattData { voltage:4.045, current:0.428906, soc:0.65, temperature:27.5, status:2, timestamp:1781984556339, voltage_chg:null}
+06-20 14:42:36.339 D/BSOHChargingDataCollector( 3211): performBatteryWork--
+06-20 14:42:36.796 I/SurfaceFlinger( 2350): Current= 120, Period= 120, Distance= 0
+06-20 14:42:36.804 I/SurfaceFlinger( 2350): Current= 120, Period= 120, Distance= 120
+06-20 14:42:36.844 I/sensors-hal( 2273): handle_sns_client_event:327, [0][10319] mag_sample_cal(magcal_available:1): ts=22439037961241 ns; cal = [-35.926701, -26.352654, -30.683502], uncal = [-23.326702, 97.487343, -254.363495], bias = [12.599999, 123.839996, -223.679993], status=3, cal_id=2
+06-20 14:42:36.880 I/sensors-hal( 2273): handle_sns_std_sensor_event:157, [6549] Pressure 988.794, cal 0.146, sw_offset 0.000 (lsb(bit) 0x7d 0x93 0x60)
+06-20 14:42:36.988 I/sensors-hal( 2273): handle_sns_client_event:379, [0][92964] accel_sample [-0.227,  0.046,  9.718] 22439175324314
+06-20 14:42:37.132 I/sensors-hal( 2273): handle_sns_std_sensor_event:409, [SSC_LIGHT] P: 83(83),c:15,b:13,m:13,cl:0,l:83,s:81,l0:14400,l1:704,s0:13000,s1:0,acl:1,opr:0.35,f(r):90,u(bl):100,if:90,wi:0,si:0,0(N:0)
+06-20 14:42:37.216 I/StatsHandler( 2306): [avcD_53] Stats: Pending(0) i/p-done(0) Works: Q: 341/Done 329|Work-Rate: Q(0.0/s Avg=0.0/s) Done(0.000/s Avg=0.020/s)| Stream: 30.00fps 65.3Kbps
+06-20 14:42:37.216 I/StatsHandler( 2306): [avcD_53] Mem-usage:  [In-1D: 21 bufs 168.000 MB] [1D-23: 35 bufs 0.547 MB] [2D-24: 19 bufs 15.141 MB] | Total: 183.688 MB
+06-20 14:42:37.216 I/StatsHandler( 2306): [vp9D_271] Stats: Pending(0) i/p-done(0) Works: Q: 672/Done 705|Work-Rate: Q(0.0/s Avg=1.6/s) Done(0.000/s Avg=1.628/s)| Stream: 29.97fps 1.4Mbps
+06-20 14:42:37.216 I/StatsHandler( 2306): [vp9D_271] Mem-usage:  [In-1D: 14 bufs 112.000 MB] [1D-347: 38 bufs 0.594 MB] [2D-348: 22 bufs 31.453 MB] | Total: 144.047 MB
+06-20 14:42:37.223 D/SemWifiSwitchForIndividualAppsService( 3211): isSkipNetworkCondition - result:2
+06-20 14:42:37.308 D/HeatmapThread( 2340): Updated plugType via uevent: 2
+06-20 14:42:37.312 I/seh_thermal_service( 2313): getTemperaturesWithType SehTemperatureType: 3
+06-20 14:42:37.313 I/sehhealth-service( 2311): updateLrpSysfs: write: 287
+06-20 14:42:37.313 V/[SS]SleepChargingTimeController( 3211): [isActivated]mSleepChargingStatus isNowSessionTime False => false
+06-20 14:42:37.313 E/BatteryDump( 2311): !@new_battery_dump : 4044,400,475,550,65,275,273,288,275,0,287,288,0,Charging,NO_CHARGING,Normal,Good,USB,1,Normal,0,0,9300,0x0,0x10000,0x0,0,0,141,v0002,0000,0000,00000000,0,0,0,0,106,4032,6448,985,0,
+06-20 14:42:37.323 D/BSOHChargingDataCollector( 3211):  BSOH Sys-servce ... 
+06-20 14:42:37.323 D/BSOHChargingDataCollector( 3211): performBatteryWork++
+06-20 14:42:37.323 D/BSOHChargingDataCollector( 3211): performBatteryWork battery com.android.server.bsoh.device.PrimeBattery@84d3e75
+06-20 14:42:37.323 D/BSOHChargingDataCollector( 3211): primeBatt readVoltage from sysFsBattVolt,  path : /sys/class/power_supply/battery/batt_voltage_now
+06-20 14:42:37.332 D/BSOHChargingDataCollector( 3211): 0 	 BattData addData data : BattData { voltage:4.044, current:0.400781, soc:0.65, temperature:27.5, status:2, timestamp:1781984557332, voltage_chg:null}
+06-20 14:42:37.332 D/BSOHChargingDataCollector( 3211): performBatteryWork--
+06-20 14:42:37.340 D/PowerManagerService( 3211): [api] setMasterBrightnessLimit : lowerLimit : -1  upperLimit : 1275  mMasterBrightnessLimitPeriod : 200 (uid: 1000 pid: 8460)
+06-20 14:42:37.340 D/PowerManagerService( 3211): [api] BrightnessLimitRunnable done
+06-20 14:42:37.593 D/CustomizedBinderCallsStatsInternal( 3211): reportCpuUsage() : 0%
+06-20 14:42:37.593 I/BinderCallsStats( 3211): Collected cpu time : 29us, collected call count : 521 for 22361498 ms
+06-20 14:42:37.594 D/ProcessCpuUsage( 3211): [0] 902, {556=202070, 748=2650, 960=940, 1152=610, 1363=71290, 1555=2500, 1785=1730, 1996=1620, 2227=5390, 2400=580, 2745=5950, 2918=140, 3072=580, 3532=4400}
+06-20 14:42:37.594 D/ProcessCpuUsage( 3211): [6] 1061, {1017=293750, 1958=830, 2246=3140, 3840=1390, 4089=120, 4281=160, 4473=960}
+06-20 14:42:37.820 I/wpa_supplicant( 5272): Heartbeat 1954
+06-20 14:42:37.898 D/io_stats( 1424): !@   8,0 r 2754767 87090412 w 962965 43371596 d 138431 20035964 f 24805 95371 iot 263548 0 th 0 0 0 pt 0 inp 0 0 16927.622
+06-20 14:42:37.899 D/io_stats( 1424): !@ Read_top(KB): system_server:normal(3211) 32 kworker/0:2H:/(9373) 4 f2fs_ckpt-254:8:/(6008) 4
+06-20 14:42:37.899 D/io_stats( 1424): !@ Write_top(KB): kworker/2:2:/(4976) 180 f2fs_ckpt-254:8:/(6008) 140 appmanager:auth:low(7347) 16
+06-20 14:42:37.937 D/WifiConnectivityMonitor.NetworkStatsAnalyzer( 3211): Backhaul Disconnection due to RetransSeg
+06-20 14:42:37.941 D/WifiConnectivityMonitor.NetworkStatsAnalyzer( 3211): Backhaul result - RSSI:-66, CE:8, PE:8, TI:13, PTI:13, TW:2, PTW:2, Tx:0, Rx:0, TxS:0, RxS:0, RESULT:true, IC:0, ICT:5, WC:0, WCT:5, R:0, RC:26, IE:0, EC:0
+06-20 14:42:37.991 I/SemWifiEleStateTracker( 3211): Ele Parameters BD : 13 13 13 13 13 13 MD : -104 -104 -104 -104 -104 -104 WD : -65 -65 -65 -66 -66 -67 GC : false false false false false false SC : false false false false false false SH : false false false false false false TB : false false false false false false
+06-20 14:42:37.991 D/SemWifiEleStateTracker( 3211): Pressure Diff: 6.1035156E-4
+06-20 14:42:37.991 D/SemWifiEleStateTracker( 3211): Barometer value: Prev 988.7929 Current 988.7935 mSmallBaroDetected : false
+06-20 14:42:38.220 D/SemWifiUsabilityStatsMonitor( 3211): onWifiUsabilityStats - seqNum 2355, isSameBssidAndFreq true
+06-20 14:42:38.220 I/EPDG-1 [WifiProfiler]( 5884): handleWifiRssiIntent, rssi=-64
+06-20 14:42:38.220 I/EPDG-1 [WifiProfiler]( 5884): isProfiling, hash=19493184, started=true
+06-20 14:42:38.222 I/EPDG-1 [LogMetrics]( 5884): set, type=WIFI_RSSI_LAST, value=-64
+06-20 14:42:38.223 I/EPDG-1 [WifiProfiler]( 5884): isProfiling, hash=19493184, started=true
+06-20 14:42:38.223 I/EPDG-1 [WifiProfiler]( 5884): Rssi : -64 highrange : -71 lowrange : -80 mIsRssiInHystersis : false
+06-20 14:42:38.223 I/EPDG-1 [WifiProfiler]( 5884): Rssi : -64 highrange : -71 lowrange : -80 mIsRssiInHystersis : false
+06-20 14:42:38.223 I/EPDG-1 [Subscription]( 5884): isEpdgAvailable, IwlanPsState=2/2
+06-20 14:42:38.223 I/EPDG-1 [WifiProfiler]( 5884): getHandoverThresholdMet: value is: false
+06-20 14:42:38.223 D/SGM:GameManager( 3211): identifyGamePackage. com.sec.android.app.launcher, mCurrentUserId: 0, callingMethodInfo: com.samsung.android.game.SemGameManager.isGamePackage(SemGameManager.java:106)
+06-20 14:42:38.223 D/SGM:SemGameManager( 3211): isGamePackage(), pkgName=com.sec.android.app.launcher, ret=false
+06-20 14:42:38.231 D/SemWifiSwitchForIndividualAppsService( 3211): isSkipNetworkCondition - result:2
+06-20 14:42:38.324 D/BSOHChargingDataCollector( 3211):  BSOH Sys-servce ... 
+06-20 14:42:38.324 D/BSOHChargingDataCollector( 3211): performBatteryWork++
+06-20 14:42:38.324 D/BSOHChargingDataCollector( 3211): performBatteryWork battery com.android.server.bsoh.device.PrimeBattery@84d3e75
+06-20 14:42:38.325 D/BSOHChargingDataCollector( 3211): primeBatt readVoltage from sysFsBattVolt,  path : /sys/class/power_supply/battery/batt_voltage_now
+06-20 14:42:38.335 D/BSOHChargingDataCollector( 3211): 0 	 BattData addData data : BattData { voltage:4.043, current:0.327343, soc:0.65, temperature:27.5, status:2, timestamp:1781984558335, voltage_chg:null}
+06-20 14:42:38.336 D/BSOHChargingDataCollector( 3211): performBatteryWork--
+06-20 14:42:38.514 I/AfterimageCompensationService( 3211): AfcThread mLuminance : 12 , AfpcPeriodCount : 189 , rotation : 0 , AOD : false
+06-20 14:42:38.514 D/mAFPC_ABC( 3211): [READ] Start nativeDataRead : size : 1
+06-20 14:42:38.515 I/SurfaceComposerClient( 3211): captureDisplay:Display-4630947191136750483
+06-20 14:42:38.516 I/SnapAlloc( 2301): Using graphics libs for alignment calculations
+06-20 14:42:38.517 I/SurfaceFlinger( 2350): Capture layer list: 	 Wallpaper BBQ wrapper 7_systemlock#62(preserveDisplayColors:0)
+06-20 14:42:38.517 I/SurfaceFlinger( 2350): Capture layer list: 	 com.sec.android.app.launcher/com.sec.android.app.launcher.activities.LauncherActivity$_6184#4198(preserveDisplayColors:0)
+06-20 14:42:38.517 I/SurfaceFlinger( 2350): Capture layer list: 	 StatusBar$_5574#93(preserveDisplayColors:0)
+06-20 14:42:38.517 I/SurfaceFlinger( 2350): Capture layer list: 	 com.sec.android.app.launcher/com.samsung.app.honeyspace.edge.edgepanel.app.CocktailBarService$_6184#4049(preserveDisplayColors:0)
+06-20 14:42:38.517 I/SurfaceFlinger( 2350): Capture layer list: 	 NavigationBar0$_5574#89(preserveDisplayColors:0)
+06-20 14:42:38.518 D/SurfaceFlinger( 2350): [SEC_SF_EFFECTS] drawLayersInternal,1337, Rendering layer ScreenCaptureFillLayer at index 0
+06-20 14:42:38.518 D/SurfaceFlinger( 2350): [SEC_SF_EFFECTS] drawLayersInternal,1337, Rendering layer Wallpaper BBQ wrapper 7_systemlock#62 at index 1
+06-20 14:42:38.518 D/SurfaceFlinger( 2350): [SEC_SF_EFFECTS] drawLayersInternal,1337, Rendering layer com.sec.android.app.launcher/com.sec.android.app.launcher.activities.LauncherActivity$_6184#4198 at index 2
+06-20 14:42:38.518 I/SurfaceFlinger( 2350): [SEC_SF_EFFECTS] drawLayersInternal,1777, No effectOutput found for blur region nr. 0 in layer LauncherActivity$_6184#4198, blur radius 250
+06-20 14:42:38.519 D/SurfaceFlinger( 2350): [SEC_SF_EFFECTS] drawLayersInternal,1337, Rendering layer StatusBar$_5574#93 at index 3
+06-20 14:42:38.519 D/SurfaceFlinger( 2350): [SEC_SF_EFFECTS] drawLayersInternal,1337, Rendering layer com.sec.android.app.launcher/com.samsung.app.honeyspace.edge.edgepanel.app.CocktailBarService$_6184#4049 at index 4
+06-20 14:42:38.519 D/SurfaceFlinger( 2350): [SEC_SF_EFFECTS] drawLayersInternal,1337, Rendering layer NavigationBar0$_5574#89 at index 5
+06-20 14:42:38.533 D/mAFPC_ABC( 3211): [READ] luminance = 12
+06-20 14:42:38.533 D/mAFPC_ABC( 3211): [READ] w = 1080, h = 2340, s = 8, f = 4, s_size = 10183680, luminance = 12, count = 189, captureOrientation = 0
+06-20 14:42:38.595 E/mAFPC_ABC( 3211): [READ] [TYPE : 0] saProcess : 0
+06-20 14:42:38.595 D/mAFPC_ABC( 3211): [READ] END nativeDataRead
+06-20 14:42:38.782 E/Watchdog( 3211): !@Sync: 564 heap(MB): 145 / 174 FD: 1499 Threads: 570 [2026-06-20 14:42:38.782]
+06-20 14:42:38.790 D/ConnectivityService( 3211): reportNetworkActive, notify 3 listeners
+06-20 14:42:38.848 I/sensors-hal( 2273): handle_sns_client_event:327, [0][10339] mag_sample_cal(magcal_available:1): ts=22441037961241 ns; cal = [-35.084743, -26.063049, -32.483612], uncal = [-22.484745, 97.776947, -256.163605], bias = [12.599999, 123.839996, -223.679993], status=3, cal_id=2
+06-20 14:42:38.959 I/sensors-hal( 2273): handle_sns_std_sensor_event:157, [6562] Pressure 988.795, cal 0.146, sw_offset 0.000 (lsb(bit) 0x84 0x93 0x60)
+06-20 14:42:39.003 I/sensors-hal( 2273): handle_sns_client_event:379, [0][92984] accel_sample [-0.229,  0.050,  9.718] 22441189943116
+06-20 14:42:39.240 D/SemWifiSwitchForIndividualAppsService( 3211): isSkipNetworkCondition - result:2
+06-20 14:42:39.325 D/BSOHChargingDataCollector( 3211):  BSOH Sys-servce ... 
+06-20 14:42:39.325 D/BSOHChargingDataCollector( 3211): performBatteryWork++
+06-20 14:42:39.325 D/BSOHChargingDataCollector( 3211): performBatteryWork battery com.android.server.bsoh.device.PrimeBattery@84d3e75
+06-20 14:42:39.326 D/BSOHChargingDataCollector( 3211): primeBatt readVoltage from sysFsBattVolt,  path : /sys/class/power_supply/battery/batt_voltage_now
+06-20 14:42:39.336 D/BSOHChargingDataCollector( 3211): 0 	 BattData addData data : BattData { voltage:4.042, current:0.298437, soc:0.65, temperature:27.5, status:2, timestamp:1781984559336, voltage_chg:null}
+06-20 14:42:39.336 D/BSOHChargingDataCollector( 3211): performBatteryWork--
+06-20 14:42:39.853 I/sensors-hal( 2273): handle_sns_std_sensor_event:409, [SSC_LIGHT] P: 92(92),c:15,b:13,m:13,cl:0,l:90,s:94,l0:15712,l1:800,s0:15000,s1:0,acl:1,opr:0.35,f(r):90,u(bl):100,if:90,wi:0,si:0,0(N:0)
+06-20 14:42:40.023 D/SemWifiEleStateTracker( 3211): Pressure Diff: 0.0010986328
+06-20 14:42:40.023 D/SemWifiEleStateTracker( 3211): Barometer value: Prev 988.7935 Current 988.7946 mSmallBaroDetected : false
+06-20 14:42:40.249 D/SemWifiSwitchForIndividualAppsService( 3211): isSkipNetworkCondition - result:2
+06-20 14:42:40.327 D/BSOHChargingDataCollector( 3211):  BSOH Sys-servce ... 
+06-20 14:42:40.327 D/BSOHChargingDataCollector( 3211): performBatteryWork++
+06-20 14:42:40.327 D/BSOHChargingDataCollector( 3211): performBatteryWork battery com.android.server.bsoh.device.PrimeBattery@84d3e75
+06-20 14:42:40.327 D/BSOHChargingDataCollector( 3211): primeBatt readVoltage from sysFsBattVolt,  path : /sys/class/power_supply/battery/batt_voltage_now
+06-20 14:42:40.341 D/BSOHChargingDataCollector( 3211): 0 	 BattData addData data : BattData { voltage:4.044, current:0.442187, soc:0.65, temperature:27.5, status:2, timestamp:1781984560341, voltage_chg:null}
+06-20 14:42:40.341 D/BSOHChargingDataCollector( 3211): performBatteryWork--
+06-20 14:42:40.571 D/WifiConnectivityMonitor.DnsThread( 3211):  [|206] []
+06-20 14:42:40.573 D/WifiConnectivityMonitor.NetworkStatsAnalyzer( 3211): DNS resultType : 0, responseTime : 206
+06-20 14:42:40.573 D/OpenNetworkQos[4.00]( 3211): updateBssidLatestDnsResultType - result: 0
+06-20 14:42:40.573 D/OpenNetworkQos[4.00]( 3211): updateBssidNoInternet: mBssidNoInternet = false
+06-20 14:42:40.573 D/OpenNetworkQos[4.00]( 3211): getOpenNetworkQosNoInternetStatus: false
+06-20 14:42:40.573 D/OpenNetworkQos[4.00]( 3211): getOpenNetworkQosScores: 30 26 26 
+06-20 14:42:40.573 I/WifiProfileShare( 3211): network QoS data was changed (internet), updateQoSData networkType: true, qosData: false
+06-20 14:42:40.574 V/WifiProfileShare.Caster( 3211): update wips network, size: 0
+06-20 14:42:40.574 D/WifiProfileShare( 3211): nearby scanning settings run
+06-20 14:42:40.574 D/WifiProfileShare( 3211): network score provider settings enabled
+06-20 14:42:40.574 D/OpenNetworkQos[4.00]( 3211): getOpenNetworkQosScores: 30 26 26 
+06-20 14:42:40.574 D/OpenNetworkQos[4.00]( 3211): getOpenNetworkQosNoInternetStatus: false
+06-20 14:42:40.574 I/WifiProfileShare.Caster( 3211): current network type: 0, score: [30, 26, 26]
+06-20 14:42:40.575 V/WifiProfileShare.Cache( 3211): update network score 60:83:e7:**:**:bd
+06-20 14:42:40.575 D/WifiProfileShare.ScanMatcher( 3211): getMcfDataList size:2
+06-20 14:42:40.575 I/WifiProfileShare.Caster( 3211): qos data was updated , before:type:QOS, pBssid:85:cf:dd, qosData:7c after:type:QOS, pBssid:85:cf:dd, qosData:7c
+06-20 14:42:40.577 I/[MCFSDK_android_1.3.7026]_4_McfCasterImpl( 3211): isNetworkEnabled - type : 1 ret : true
+06-20 14:42:40.577 D/WifiProfileShare.McfCast( 3211): -ME--- mIsNetworkEnabled :true
+06-20 14:42:40.577 D/WifiProfileShare.McfCast( 3211): updateQoSData ignored, same contents
+06-20 14:42:40.577 D/WifiProfileShare.MCF( 3211): success update QosData !
+06-20 14:42:40.577 I/[MCFSDK_android_1.3.7026]_4_McfCasterImpl( 3211): isNetworkEnabled - type : 1 ret : true
+06-20 14:42:40.577 D/WifiProfileShare.McfCast( 3211): -ME--- mIsNetworkEnabled :true
+06-20 14:42:40.578 D/WifiProfileShare.McfCast( 3211): -ME--- updatePasswordDate pwdData size:2
+06-20 14:42:40.641 I/BatteryService_BatteryPropertiesRegistrar( 3211): [getProperty]id:6
+06-20 14:42:40.641 I/BatteryService_BatteryPropertiesRegistrar( 3211): [getProperty]prop.long:-9223372036854775808 ,prop.string:null
+06-20 14:42:40.642 I/BatteryService_BatteryPropertiesRegistrar( 3211): [getProperty]id:4
+06-20 14:42:40.642 I/BatteryService_BatteryPropertiesRegistrar( 3211): [getProperty]prop.long:-9223372036854775808 ,prop.string:null
+06-20 14:42:40.643 I/SemWifiIntelligentTrainingManager( 3211): Tr. cond. check: true / 1 (2) / true / 0 (1)
+06-20 14:42:40.644 I/BatteryService_BatteryPropertiesRegistrar( 3211): [getProperty]id:6
+06-20 14:42:40.644 I/BatteryService_BatteryPropertiesRegistrar( 3211): [getProperty]prop.long:-9223372036854775808 ,prop.string:null
+06-20 14:42:40.644 I/BatteryService_BatteryPropertiesRegistrar( 3211): [getProperty]id:4
+06-20 14:42:40.644 I/BatteryService_BatteryPropertiesRegistrar( 3211): [getProperty]prop.long:-9223372036854775808 ,prop.string:null
+06-20 14:42:40.808 I/SurfaceFlinger( 2350): Current= 120, Period= 120, Distance= 0
+06-20 14:42:40.812 I/sensors-hal( 2273): handle_sns_std_sensor_event:127, [SSC_LIGHT] A: 96(96),c:15,b:13,m:13,cl:0,l:94,s:96,l0:16416,l1:864,s0:15500,s1:0,acl:1,opr:0.35,f(r):90,u(bl):100,if:90,wi:0,si:0,0(N:0)
+06-20 14:42:40.816 I/SurfaceFlinger( 2350): Current= 120, Period= 120, Distance= 120
+06-20 14:42:40.845 I/sensors-hal( 2273): handle_sns_client_event:327, [0][10359] mag_sample_cal(magcal_available:1): ts=22443037961241 ns; cal = [-35.780827, -26.457436, -31.237640], uncal = [-23.180828, 97.382561, -254.917633], bias = [12.599999, 123.839996, -223.679993], status=3, cal_id=2
+06-20 14:42:40.879 I/sensors-hal( 2273): handle_sns_std_sensor_event:157, [6574] Pressure 988.795, cal 0.146, sw_offset 0.000 (lsb(bit) 0x86 0x93 0x60)
+06-20 14:42:41.017 I/sensors-hal( 2273): handle_sns_client_event:379, [0][93004] accel_sample [-0.228,  0.050,  9.720] 22443204561241
+06-20 14:42:41.240 D/SemWifiUsabilityStatsMonitor( 3211): onWifiUsabilityStats - seqNum 2356, isSameBssidAndFreq true
+06-20 14:42:41.241 D/SGM:GameManager( 3211): identifyGamePackage. com.sec.android.app.launcher, mCurrentUserId: 0, callingMethodInfo: com.samsung.android.game.SemGameManager.isGamePackage(SemGameManager.java:106)
+06-20 14:42:41.241 D/SGM:SemGameManager( 3211): isGamePackage(), pkgName=com.sec.android.app.launcher, ret=false
+06-20 14:42:41.241 I/EPDG-1 [WifiProfiler]( 5884): handleWifiRssiIntent, rssi=-65
+06-20 14:42:41.241 I/EPDG-1 [WifiProfiler]( 5884): isProfiling, hash=19493184, started=true
+06-20 14:42:41.241 I/EPDG-1 [LogMetrics]( 5884): set, type=WIFI_RSSI_LAST, value=-65
+06-20 14:42:41.241 I/EPDG-1 [WifiProfiler]( 5884): isProfiling, hash=19493184, started=true
+06-20 14:42:41.242 I/EPDG-1 [WifiProfiler]( 5884): Rssi : -65 highrange : -71 lowrange : -80 mIsRssiInHystersis : false
+06-20 14:42:41.242 I/EPDG-1 [WifiProfiler]( 5884): Rssi : -65 highrange : -71 lowrange : -80 mIsRssiInHystersis : false
+06-20 14:42:41.242 I/EPDG-1 [Subscription]( 5884): isEpdgAvailable, IwlanPsState=2/2
+06-20 14:42:41.242 I/EPDG-1 [WifiProfiler]( 5884): getHandoverThresholdMet: value is: false
+06-20 14:42:41.253 D/SemWifiSwitchForIndividualAppsService( 3211): isSkipNetworkCondition - result:2
+06-20 14:42:41.328 D/BSOHChargingDataCollector( 3211):  BSOH Sys-servce ... 
+06-20 14:42:41.328 D/BSOHChargingDataCollector( 3211): performBatteryWork++
+06-20 14:42:41.328 D/BSOHChargingDataCollector( 3211): performBatteryWork battery com.android.server.bsoh.device.PrimeBattery@84d3e75
+06-20 14:42:41.329 D/BSOHChargingDataCollector( 3211): primeBatt readVoltage from sysFsBattVolt,  path : /sys/class/power_supply/battery/batt_voltage_now
+06-20 14:42:41.340 D/BSOHChargingDataCollector( 3211): 0 	 BattData addData data : BattData { voltage:4.045, current:0.416406, soc:0.65, temperature:27.5, status:2, timestamp:1781984561340, voltage_chg:null}
+06-20 14:42:41.340 D/BSOHChargingDataCollector( 3211): performBatteryWork--
+06-20 14:42:41.673 W/SQLiteLog( 5463): (28) double-quoted string literal: "nitz_status"
+06-20 14:42:41.902 D/io_stats( 1424): !@   8,0 r 2754767 87090412 w 962977 43371712 d 138431 20035964 f 24806 95373 iot 263556 0 th 0 0 0 pt 0 inp 0 0 16931.625
+06-20 14:42:41.902 D/io_stats( 1424): !@ Write_top(KB): kworker/u17:4:/(4430) 92 m.android.phone:normal(5463) 16 kworker/3:0:/(4566) 4
+06-20 14:42:42.023 D/SemWifiEleStateTracker( 3211): Pressure Diff: 6.1035156E-4
+06-20 14:42:42.023 D/SemWifiEleStateTracker( 3211): Barometer value: Prev 988.7946 Current 988.7952 mSmallBaroDetected : false
+06-20 14:42:42.218 I/StatsHandler( 2306): [avcD_53] Stats: Pending(0) i/p-done(0) Works: Q: 341/Done 329|Work-Rate: Q(0.0/s Avg=0.0/s) Done(0.000/s Avg=0.020/s)| Stream: 30.00fps 65.3Kbps
+06-20 14:42:42.219 I/StatsHandler( 2306): [avcD_53] Mem-usage:  [In-1D: 21 bufs 168.000 MB] [1D-23: 35 bufs 0.547 MB] [2D-24: 19 bufs 15.141 MB] | Total: 183.688 MB
+06-20 14:42:42.219 I/StatsHandler( 2306): [vp9D_271] Stats: Pending(0) i/p-done(0) Works: Q: 672/Done 705|Work-Rate: Q(0.0/s Avg=1.5/s) Done(0.000/s Avg=1.609/s)| Stream: 29.97fps 1.4Mbps
+06-20 14:42:42.219 I/StatsHandler( 2306): [vp9D_271] Mem-usage:  [In-1D: 14 bufs 112.000 MB] [1D-347: 38 bufs 0.594 MB] [2D-348: 22 bufs 31.453 MB] | Total: 144.047 MB
+06-20 14:42:42.262 D/SemWifiSwitchForIndividualAppsService( 3211): isSkipNetworkCondition - result:2
+06-20 14:42:42.322 I/thermal_core( 2313): pivot(AP) : 284, skin : 287
+06-20 14:42:42.329 D/BSOHChargingDataCollector( 3211):  BSOH Sys-servce ... 
+06-20 14:42:42.329 D/BSOHChargingDataCollector( 3211): performBatteryWork++
+06-20 14:42:42.329 D/BSOHChargingDataCollector( 3211): performBatteryWork battery com.android.server.bsoh.device.PrimeBattery@84d3e75
+06-20 14:42:42.329 D/BSOHChargingDataCollector( 3211): primeBatt readVoltage from sysFsBattVolt,  path : /sys/class/power_supply/battery/batt_voltage_now
+06-20 14:42:42.347 D/BSOHChargingDataCollector( 3211): 0 	 BattData addData data : BattData { voltage:4.044, current:0.421875, soc:0.65, temperature:27.5, status:2, timestamp:1781984562347, voltage_chg:null}
+06-20 14:42:42.347 D/BSOHChargingDataCollector( 3211): batch_size : 60
+06-20 14:42:42.350 D/BSOHChargingDataCollector( 3211): Bulk Insertion started
+06-20 14:42:42.352 D/BSOHChargingDataCollector( 3211): Bulk inserted 60 records
+06-20 14:42:42.357 D/BSOHChargingDataCollector( 3211): performBatteryWork--
+06-20 14:42:42.360 D/AHAL_ModulePrimary_QTI( 2276): getVendorParameters: id count: 1
+06-20 14:42:42.360 I/PAL: ResourceManager( 2276): getActiveStream_l: 6587: no active streams found for device 3 ret -2
+06-20 14:42:42.360 D/AHAL_SecModulePrimary( 2276): onGetSECGenericParameters get temperature for g_hw_speaker_amp_temp_rcv: 0
+06-20 14:42:42.361 D/AHAL_ModulePrimary_QTI( 2276): getVendorParameters: id count: 1
+06-20 14:42:42.361 I/PAL: ResourceManager( 2276): getActiveStream_l: 6587: no active streams found for device 3 ret -2
+06-20 14:42:42.361 D/AHAL_SecModulePrimary( 2276): onGetSECGenericParameters get temperature for g_hw_speaker_amp_temp_spk: 0
+06-20 14:42:42.362 I/SDHMS:x ( 8460): SIOP:: AP:284 BAT:275 USB:273 CHG:287 PA:290 WIFI:283 CF:283 BLK:0 SUBBAT:0 LRPTHM:279 SKIN:288 SKINF:286 SKINB:288 LRP:288 LRF:286 LRB:288 APT:286 APR:288 RCV:280 SPK:273 CHGF:283 CHGR:287 MEMF:285 MEMR:288 WIFIF:285 WIFIR:288 FCAM:273 UPSPK:280 DNSPK:274 VAP:286 VWIFI:284 AMB2:248 HIGH:0 AVGCUR:403 AVGSYS:143 POWER:1615
+06-20 14:42:42.363 I/AudioManager( 8460): setParameters keyValuePairs = g_hw_speaker_amp_temp_spk=27
+06-20 14:42:42.364 D/AudioFlinger( 2333): setParameters: filtered dev setParameters keyvalue g_hw_speaker_amp_temp_spk=27
+06-20 14:42:42.365 D/AHAL_HFP_QTI( 2276): hfp_set_parameters enter
+06-20 14:42:42.365 D/AHAL_HFP_QTI( 2276): hfp_set_parameters Exit
+06-20 14:42:42.365 D/AHAL_SecModulePrimary( 2276): processSetVendorParameters: configured g_hw_speaker_amp_temp_spk
+06-20 14:42:42.365 D/AHAL_SecModulePrimary( 2276): processSetVendorParameters: handler set on Feature:0
+06-20 14:42:42.365 D/AHAL_SecModulePrimary( 2276): onSetSECGenericParameters set temperature for g_hw_speaker_amp_temp_spk: 27
+06-20 14:42:42.365 I/PAL: API( 2276): pal_set_param: 1377: Enter: param id 3002
+06-20 14:42:42.365 I/PAL: ResourceManager( 2276): getActiveStream_l: 6587: no active streams found for device 3 ret -2
+06-20 14:42:42.365 E/DeviceHalAidl( 2333): Function: parseAndSetVendorParameters Line: 414 Failed 
+06-20 14:42:42.365 E/DeviceHalAidl( 2333): Function: parseAndSetVendorParameters Line: 414 Failed 
+06-20 14:42:42.366 I/AudioManager( 8460): setParameters keyValuePairs = g_hw_speaker_amp_temp_rcv=28
+06-20 14:42:42.366 D/AudioFlinger( 2333): setParameters: filtered dev setParameters keyvalue g_hw_speaker_amp_temp_rcv=28
+06-20 14:42:42.366 D/AHAL_HFP_QTI( 2276): hfp_set_parameters enter
+06-20 14:42:42.366 D/AHAL_HFP_QTI( 2276): hfp_set_parameters Exit
+06-20 14:42:42.366 D/AHAL_SecModulePrimary( 2276): processSetVendorParameters: configured g_hw_speaker_amp_temp_rcv
+06-20 14:42:42.366 D/AHAL_SecModulePrimary( 2276): processSetVendorParameters: handler set on Feature:0
+06-20 14:42:42.366 D/AHAL_SecModulePrimary( 2276): onSetSECGenericParameters set temperature for g_hw_speaker_amp_temp_rcv: 28
+06-20 14:42:42.366 I/PAL: API( 2276): pal_set_param: 1377: Enter: param id 3001
+06-20 14:42:42.366 I/PAL: ResourceManager( 2276): getActiveStream_l: 6587: no active streams found for device 3 ret -2
+06-20 14:42:42.366 E/DeviceHalAidl( 2333): Function: parseAndSetVendorParameters Line: 414 Failed 
+06-20 14:42:42.367 E/DeviceHalAidl( 2333): Function: parseAndSetVendorParameters Line: 414 Failed 

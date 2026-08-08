@@ -152,11 +152,14 @@ struct SpectreState {
     uint32_t entityTotal        = 0;
     uint32_t entityNearby       = 0;
     uint32_t entityObservations = 0;
+    uint32_t entityLocated      = 0;
+    uint32_t entityLocationUpdates = 0;
     uint32_t entityDropped      = 0;
     uint16_t entityAccessPoints = 0;
     uint16_t entityClients      = 0;
     uint16_t entityDrones       = 0;
     uint16_t entitySubGhz       = 0;
+    uint16_t entityBle          = 0;
     int8_t   entityClosestRssi  = -127;
     uint8_t  entityClosestChannel = 0;
     uint8_t  entityClosestKind  = 1;

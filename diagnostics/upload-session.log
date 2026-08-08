@@ -1,0 +1,18 @@
+=== upload session opened 2026-06-21T18:34:17.1789553-05:00 ===
+=== send: upload resume ===
+upload resume
+[6921050][I][MQTT] Upload auto-start resumed reason=usb_serial wasPaused=0
+[UPLOAD] automatic uploads already enabled
+[6922078][I][STORAGE] worker ui refresh serviced uiRefreshServiceCount=461 uiDeferred=1380 uiFlush=461 pressure=0 usedPct=27 pending=10322
+=== send: upload now ===
+upload now
+[6922552][I][WIO] External BLE link dropped reason=manual_upload_start
+[6922553][I][WIFI] Radio paused
+[6922556][I][STORAGE] RAMSpool worker paused inflight=0 lastInflight=0
+[6922556][I][STORAGE] Exclusive window begin kind=upload reason=upload_stream workerPaused=1 displaySuspended=1
+[6922557][I][STORAGE] Upload stream prepare ready=1 pending=10322 budgetMs=1200000 ms=1 internalFree=54024 internalLargest=31732 psramFree=7828076
+[6922615][I][MQTT] Dump start ??? pendingUpload=10322 lease=1200s leaseMaxEvents=10322
+[6922616][I][MQTT] Upload stream fill begin bucket=1 max=16 requested=64 internalFree=53504 indexWindow=0 indexed=0 truncated=0 sessions=10 sessionIndex=0 radioQuiet=1
+[6922617][I][MQTT] Upload bucket session start idx=0 sess=33e864-3617-cb0dcc3c bucket=0
+[6922617][I][MQTT] First event batch fetch session=33e864-3617-cb0dcc3c since=0 radioQuiet=1
+=== upload session closing 2026-06-21T18:39:21.7730960-05:00 ===

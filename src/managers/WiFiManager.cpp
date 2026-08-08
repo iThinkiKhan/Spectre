@@ -4,7 +4,6 @@
 #include "WiFiManager.h"
 #include "AntennaManager.h"
 #include "MQTTManager.h"
-#include "EntityManager.h"
 #include "RadioArbiter.h"
 #include "SettingsManager.h"
 #include "StorageManager.h"
@@ -737,7 +736,7 @@ void WiFiManager::_processProbeRequest(const uint8_t* p,
                 sizeof(g_state.lastProbedSSID));
         strlcpy(g_state.lastProbedMAC, macStr,
                 sizeof(g_state.lastProbedMAC));
-        g_state.probePacketCount++;
+        g_state.probePacketCount = _probePacketCount;
         STATE_WRITE_END();
     }
 }
@@ -1621,9 +1620,6 @@ void WiFiManager::_pwnyEndAttack(uint8_t idx, bool success) {
                  _networks[t.networkIdx].ssid);
         _queueWiFiNotification(NOTIF_PMKID, captureNotif);
 
-        STATE_WRITE_BEGIN();
-        g_state.sessionPMKIDs++;
-        STATE_WRITE_END();
     } else {
         uint32_t cooldown = PWNY_COOLDOWN_MIN_MS +
             (min((int)t.attackCount, 5) *
@@ -2357,10 +2353,6 @@ TrackedDevice* WiFiManager::_findOrCreateDevice(
     MQTT_MGR.queueDevice(mac, ieFingerprint, "",
                           rssi, dev.isRandomMAC);
 
-    STATE_WRITE_BEGIN();
-    g_state.sessionNetworks++;
-    STATE_WRITE_END();
-
     return &dev;
 }
 
@@ -2388,8 +2380,6 @@ WiFiNetwork* WiFiManager::_findOrCreateNetwork(
     const uint8_t* bssid,
     int8_t rssi,
     uint8_t ch) {
-
-    ENTITY_MGR.observeWifiAp(bssid, ssid, rssi, ch);
 
     for (int i = 0; i < _networkCount; i++) {
         if (_macsEqual(_networks[i].bssid, bssid)) {

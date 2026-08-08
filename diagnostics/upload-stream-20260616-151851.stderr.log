@@ -1,0 +1,7 @@
+Traceback (most recent call last):
+  File "C:\Users\JIMSCH~1\AppData\Local\Temp\spectre-upload-watch-20260616-151851.py", line 29, in <module>
+    data = ser.read(4096)
+           ^^^^^^^^^^^^^^
+  File "C:\Users\JimSchneider\.platformio\penv\Lib\site-packages\serial\serialwin32.py", line 275, in read
+    raise SerialException("ClearCommError failed ({!r})".format(ctypes.WinError()))
+serial.serialutil.SerialException: ClearCommError failed (PermissionError(13, 'The device does not recognize the command.', None, 22))

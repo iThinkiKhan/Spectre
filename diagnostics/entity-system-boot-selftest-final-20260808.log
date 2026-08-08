@@ -1,0 +1,42 @@
+=== Entity session opened 2026-08-08T15:05:36.7837928-05:00 ===
+[16507][W][STORAGE] Counter trust=trusted reason=repair_complete since=16507
+[16508][W][STORAGE] Spool repair slow reason=maintenance_repair segs=27 recs=293 ms=5071
+[16508][I][STORAGE] Spool audit[maintenance_repair] scannedSegs=27 scannedRecords=293 validEvents=293 uploadedRetained=0 validEnrichDeltas=0 invalidRecords=0 skippedRecords=0 quarantined=0 unreadable=0 pendingUp
+[17281][I][STORAGE] Maintenance continuity log wrote clean=1 reason=radio_owner_window completed=segment_audit remaining=none gen=6794
+[17282][I][STORAGE] Maintenance done reason=radio_owner_window actions=segment_audit|continuity_pass skipped=none remaining=none elapsedMs=1855 captureSafe=1
+[17282][I][STORAGE] RAMSpool worker resumed
+[17283][I][STORAGE] Exclusive window end kind=maintenance result=capture_safe reason=radio_owner_window
+[17283][I][STORAGE] maintenance owner window ms=1857 captureSafe=1 remaining=none
+[17388][I][WIFI] Promiscuous: YES
+[17388][I][WIFI] Promiscuous mode started data=0
+[22697][I][STORAGE] Spool rotate index deferred owner=WIFI_CAPTURE reason=capture seg=416 format=bin_v2
+[23049][I][STORAGE] worker ui refresh serviced uiRefreshServiceCount=1 uiDeferred=11 uiFlush=1 pressure=0 usedPct=6 pending=764
+[30009][I][HEAP] heap free=4555KB min=4550KB largest=4480KB frag=1% internalFree=60KB internalLargest=31KB psramFree=4495KB core=0/0% owner=WIFI_CAPTURE nets=6 pendingUpload=764 pendingEnrich=764
+[HEALTH] time=2026-08-08 15:05:42 src=ntp
+[HEALTH] heap used=3880/8435KB free=4555KB min=4550KB largest=4480KB frag=1%
+[HEALTH] internal used=183/243KB free=60KB min=56KB largest=31KB
+[HEALTH] psram used=3697/8192KB free=4495KB largest=4480KB
+[HEALTH] stack free_min: core0=11KB/22KB core1=13KB/18KB
+[HEALTH] core usage: core0=0% core1=0%
+[HEALTH] power=usb state=usb batt=100% 4582mV trend=0mV/min runtime=0min cap=1100mAh charging=0
+[HEALTH] radio=WIFI_CAPTURE wifi=0 ble=0 gps=0 nets=6 pendingUpload=764 pendingEnrich=764
+[HEALTH] subghz=NONE mode=OFF pkts=0 nodes=0
+[30011][I][STORAGE] RAMSpool enq=11 cons=11 inflight=0/1024 high=8 pressure=0 drop[full=0 big=0 noise=0 p3Evict=0 p3Drop=0 p2Drop=0 p1Fail=0] free=1024
+[30012][I][STORAGE] RAMSpool enqueue probe[ok=9 drop=0] device[ok=2 drop=0]
+[30012][I][STORAGE] RAMSpool worker probe[ok=3 sup=6 drop=0 fail=0 slow=0] device[ok=2 sup=0 drop=0 fail=0 slow=0] slowTotal=0 maxMs=0
+[30013][I][STORAGE] RAMSpool prioEnq p0=0 p1=0 p2=11 p3=0
+[30013][I][STORAGE] RAMSpool lanes p1=0/0 p2=0/7 p3=0/0
+[31023][I][STACK] TaskHardware watermark=10768B min=10768B
+[31030][I][STACK] TaskDisplay watermark=13128B min=13128B
+=== send: entity status ===
+entity status
+[ENTITY] total=26 nearby=2 observations=764 located=0 locationUpdates=0 dropped=0 linkDrops=0 selftest=pass capacity=8192 links=98304 psram=3088KB
+[ENTITY] ap=0 clients=26 drones=0 subghz=0 ble=0 closest=B8:F7:75:69:05:B4 name=- rssi=-81 channel=3 located=0
+[ENTITY] session networks=0 devices=2 probes=3 pmkids=0 drones=0
+=== send: heap status ===
+heap status
+[HEAP] 8bit total=8435KB free=4555KB largest=4480KB
+[HEAP] internal total=243KB free=60KB largest=31KB
+[HEAP] psram total=8192KB free=4495KB largest=4480KB
+[HEAP] uploadIndex=0 enrichWindow=0 maint=dirty_spool_index|snapshot_lagged owner=WIFI_CAPTURE
+=== Entity session closing 2026-08-08T15:05:55.0634244-05:00 ===

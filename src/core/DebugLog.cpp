@@ -148,16 +148,29 @@ void DebugLog::copyTail(uint8_t* out,
         return;
     }
 
-    // Linear snapshot of the current ring contents.  BUF_SIZE is ~2 KB, so a
-    // static scratch in BSS is acceptable; the alternative (per-call alloc) is
-    // a non-starter inside a critical section.
-    static char scratch[BUF_SIZE];
+    // Linear snapshot of the current ring contents.  Allocated once from PSRAM
+    // rather than held as 2 KB of internal BSS — the critical section below
+    // already reads _buf, which is itself ps_malloc'd, so this adds no new
+    // cache hazard.  Allocation happens outside the critical section; if PSRAM
+    // is unavailable we fall back to internal so the log tail still works.
+    static char* scratch = nullptr;
+    if (!scratch) {
+        scratch = static_cast<char*>(ps_malloc(BUF_SIZE));
+        if (!scratch) {
+            scratch = static_cast<char*>(malloc(BUF_SIZE));
+        }
+        if (!scratch) {
+            return;
+        }
+    }
 
     portENTER_CRITICAL(&_mux);
     const int capacity = _bufSize - 1;
     int used = _used;
-    if (used > static_cast<int>(sizeof(scratch))) {
-        used = static_cast<int>(sizeof(scratch));
+    // NOTE: scratch is a pointer now, so sizeof() would be the pointer width.
+    // Clamp against the real allocation size instead.
+    if (used > BUF_SIZE) {
+        used = BUF_SIZE;
     }
     for (int i = 0; i < used; ++i) {
         scratch[i] = _buf[(_head + i) % capacity];

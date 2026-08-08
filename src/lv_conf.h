@@ -23,7 +23,10 @@
 // The real working pool (64 KB) is added from PSRAM by LVGLDriver::begin()
 // immediately after lv_init() via lv_mem_add_pool().  Shrinking this from 64 KB
 // recovers ~56 KB of internal BSS for BLE and other DMA-capable allocations.
-#define LV_MEM_SIZE (8 * 1024U)
+// Trimmed 8 KB -> 4 KB (2026-08-07): only lv_init()'s own allocations land here
+// (lv_display_create and everything after runs once the PSRAM pool is added),
+// so the remaining 4 KB is still ~2x the measured need. Verified on-device.
+#define LV_MEM_SIZE (4 * 1024U)
 // CRITICAL: TLSF computes FL_INDEX_MAX (its internal bitmask ceiling) at
 // compile time as TLSF_LOG2_CEIL(LV_MEM_SIZE + LV_MEM_POOL_EXPAND_SIZE).
 // Without this, TLSF is physically capped at 8 KB and lv_mem_add_pool()

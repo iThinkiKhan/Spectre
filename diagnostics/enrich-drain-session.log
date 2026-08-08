@@ -1,0 +1,672 @@
+=== session opened 2026-06-21T16:33:17.1890668-05:00 ===
+[90014][I][HEAP] heap free=7696KB min=7692KB largest=7552KB frag=1% internalFree=46KB internalLargest=31KB psramFree=7650KB core=2/16% owner=WIFI_CAPTURE nets=9 pendingUpload=? pendingEnrich=0
+[HEALTH] time=2026-06-21 16:33:34 src=ntp
+[HEALTH] heap used=726/8422KB free=7696KB min=7692KB largest=7552KB frag=1%
+[HEALTH] internal used=184/230KB free=46KB min=42KB largest=31KB
+[HEALTH] psram used=542/8192KB free=7650KB largest=7552KB
+[HEALTH] stack free_min: core0=17KB/22KB core1=13KB/18KB
+[HEALTH] core usage: core0=2% core1=16%
+[HEALTH] radio=WIFI_CAPTURE wifi=0 ble=0 gps=0 nets=9 pendingUpload=? pendingEnrich=0
+[HEALTH] subghz=NONE mode=OFF pkts=0 nodes=0
+[90016][I][STORAGE] RAMSpool enq=17 cons=17 inflight=0/1024 high=2 pressure=0 drop[full=0 big=0 noise=0 p3Evict=0 p3Drop=0 p2Drop=0 p1Fail=0] free=1024
+[90016][I][STORAGE] RAMSpool enqueue probe[ok=13 drop=0] device[ok=4 drop=0]
+[90017][I][STORAGE] RAMSpool worker probe[ok=4 sup=9 drop=0 fail=0 slow=0] device[ok=4 sup=0 drop=0 fail=0 slow=0] slowTotal=0 maxMs=0
+[90017][I][STORAGE] RAMSpool prioEnq p0=0 p1=0 p2=17 p3=0
+[90017][I][STORAGE] RAMSpool lanes p1=0/0 p2=0/1 p3=0/0
+=== send: wio probe ===
+wio probe
+[90623][I][WIO] External BLE probe start reason=serial_wio_probe seq=1 timeoutMs=12000 phone=unknown rssi=0
+[WIO] probe requested
+[91024][I][STACK] TaskHardware watermark=17284B min=17284B
+[92225][I][WIO] External BLE probe response seq=1 found=1 connected=1 source=scan text=0 err=none rssi=-57 best=-57 seen=1 uuid=1 conn=1 fail=0 ageMs=1601
+[92225][I][WIO] external_probe_summary seen=1 rssi=-57 transport=wio
+[92553][W][CORE] TaskHardware loop gap=331ms owner=WIFI_CAPTURE pendingUpload=10157 maintPending=1 suppressed=1
+[93095][I][WIO] External BLE companion authenticated session=1
+[95737][I][WIO] BLE status phone=ready connected=1 rssi=-57 state=ready seq=2 ageMs=2641 raw="phone=ready connected=1 rssi=-57 ble_ready=1 ble_init_started=1"
+=== send: wio status ===
+wio status
+[WIO] available=1 bleProxy=1 sx1262=0 link=ready lastSeenAgeMs=4932
+[WIO] phoneConnected=1 phone=ready rssi=-57
+[WIO] gpsFresh=1 lat=41.959843 lon=-87.993034 acc=100.0 timeTrusted=1 epoch=1782077598
+[WIO] textPending=0 textReady=0 prompt=
+[XPORT] active=wio_ble previous=none ageMs=98322 transitions=0
+[103106][I][WIO] External BLE link dropped reason=ready_idle
+[103106][I][WIO] External BLE phone disconnected reason=ready_idle previous=ready fail=0 phone=ready rssi=-57
+=== send: wio enrich ===
+wio enrich
+[WIO] manual enrich queued
+[104733][I][COMP] Manual enrich request received; probe backoff bypassed
+[104734][I][WIFI] Radio paused
+[104738][I][STORAGE] RAMSpool worker paused inflight=0 lastInflight=0
+[104739][I][COMP] Manual enrich exclusive start reason=external_manual_enrich workerPaused=1 drained=1 owner=NONE
+[104739][I][WIO] External BLE probe start reason=external_manual_enrich seq=3 timeoutMs=12000 phone=ready rssi=-57
+[104739][I][WIO] External enrichment session started reason=external_manual_enrich
+[104896][I][WIFI] Radio suspended
+[106230][I][WIO] External BLE probe response seq=3 found=1 connected=1 source=scan text=0 err=none rssi=-50 best=-50 seen=1 uuid=1 conn=1 fail=0 ageMs=1491
+[106231][I][WIO] external_probe_summary seen=1 rssi=-50 transport=wio
+[106525][I][WIO] BLE status phone=ready connected=1 rssi=-50 state=auth seq=4 ageMs=2 raw="phone=ready connected=1 rssi=-50 ble_ready=1 ble_init_started=1"
+[106536][W][CORE] TaskHardware loop gap=306ms owner=STORAGE_MAINT pendingUpload=10157 maintPending=1 suppressed=1
+[107042][I][WIO] External BLE companion authenticated session=2
+[107050][I][STORAGE] RAMSpool worker paused inflight=0 lastInflight=0
+[107051][I][STORAGE] Exclusive window begin kind=maintenance reason=external_manual_enrich_scan workerPaused=1 displaySuspended=1
+[107051][I][STORAGE] prepare_enter maxRecords=18 freeInternal=76760 largestInternal=31732
+[107052][I][STORAGE] prepare_assigned records=18 freeInternal=76372
+[107052][I][STORAGE] batch_load_ids_enter freeInternal=76372 segments=32
+[107052][I][STORAGE] load_ids_reserve count=54 freeInternal=76372 largest=31732
+[107052][I][STORAGE] load_ids_reserved freeInternal=76136
+[107053][I][STORAGE] load_ids_scan seg=102 enrichDeltas=0 freeInternal=76136 largest=31732
+[107163][I][STORAGE] load_ids_scan seg=112 enrichDeltas=0 freeInternal=75684 largest=31732
+[107216][I][STORAGE] load_ids_scan seg=127 enrichDeltas=0 freeInternal=75684 largest=31732
+[107264][I][STORAGE] load_ids_scan seg=128 enrichDeltas=0 freeInternal=75684 largest=31732
+[107311][I][STORAGE] load_ids_scan seg=129 enrichDeltas=0 freeInternal=75684 largest=31732
+[107357][I][STORAGE] load_ids_scan seg=130 enrichDeltas=54 freeInternal=75684 largest=31732
+[107406][I][STORAGE] load_ids_scan seg=131 enrichDeltas=0 freeInternal=75684 largest=31732
+[107435][I][STORAGE] load_ids_loop_done scanned=7 skipped=25 idsCollected=54 freeInternal=75684
+[107436][I][STORAGE] batch_load_ids_done count=54 capacity=54 freeInternal=75684
+[107436][I][STORAGE] batch_pending_loop_enter segments=32 maxCount=18 streaming=1 freeInternal=75684
+[107437][I][STORAGE] batch_pending_scan seg=102 pending=0 events=491 freeInternal=75684 largest=31732 outCount=0
+[107496][I][STORAGE] batch_pending_loop_break_streaming outCount=18 maxCount=18
+[107496][I][STORAGE] batch_pending_loop_done scanned=1 skipped=1 outCount=18 timeHit=0 elapsedMs=60 freeInternal=75684
+[107496][I][STORAGE] prepare_batch_done ok=1 outCount=18 freeInternal=75920
+[107497][I][STORAGE] Enrichment window ready records=18 truncated=1 ms=445
+[108008][W][STORAGE] worker append file flush reason=append_enrich_batch_sync seg=132 records=8 ms=442 close=1 ok=1
+[108018][W][STORAGE] Counter trust=trusted_snapshot_lagged reason=pending_enrich_summary_stale since=108018
+[108219][I][STORAGE] Spool enrich_batch applied=16 failed=0 batchFirstEventId=9789 batchLastEventId=9804 firstRecord=19985 lastRecord=20000 ms=201
+[108407][I][STORAGE] Spool enrich_batch applied=2 failed=0 batchFirstEventId=9805 batchLastEventId=9806 firstRecord=20001 lastRecord=20002 ms=125
+[108407][I][STORAGE] Enrichment window released reason=manual_cursor_done
+[108407][I][WIO] Manual enrichment window batch count=0 active=0 noData=18 budgetExhausted=0 timeHit=0
+[108408][I][STORAGE] RAMSpool worker resumed
+[108408][I][STORAGE] Exclusive window end kind=maintenance result=manual_batch_built reason=external_manual_enrich_scan
+[108422][I][STORAGE] RAMSpool worker paused inflight=0 lastInflight=0
+[108422][I][STORAGE] Exclusive window begin kind=maintenance reason=external_manual_enrich_scan workerPaused=1 displaySuspended=1
+[108423][I][STORAGE] prepare_enter maxRecords=18 freeInternal=81556 largestInternal=31732
+[108423][I][STORAGE] prepare_assigned records=18 freeInternal=81168
+[108423][I][STORAGE] batch_load_ids_enter freeInternal=81168 segments=32
+[108424][I][STORAGE] load_ids_reserve count=72 freeInternal=81168 largest=31732
+[108424][I][STORAGE] load_ids_reserved freeInternal=80860
+[108424][I][STORAGE] load_ids_scan seg=102 enrichDeltas=0 freeInternal=80860 largest=31732
+[108518][I][STORAGE] load_ids_scan seg=112 enrichDeltas=0 freeInternal=80860 largest=31732
+[108553][I][STORAGE] load_ids_scan seg=127 enrichDeltas=0 freeInternal=80860 largest=31732
+[108583][I][STORAGE] load_ids_scan seg=128 enrichDeltas=0 freeInternal=80860 largest=31732
+[108612][I][STORAGE] load_ids_scan seg=129 enrichDeltas=0 freeInternal=80860 largest=31732
+[108640][I][STORAGE] load_ids_scan seg=130 enrichDeltas=54 freeInternal=80860 largest=31732
+[108677][I][STORAGE] load_ids_scan seg=131 enrichDeltas=0 freeInternal=80860 largest=31732
+[108704][I][STORAGE] load_ids_scan seg=132 enrichDeltas=18 freeInternal=80860 largest=31732
+[108728][I][STORAGE] load_ids_loop_done scanned=8 skipped=24 idsCollected=72 freeInternal=80860
+[108728][I][STORAGE] batch_load_ids_done count=72 capacity=72 freeInternal=80860
+[108728][I][STORAGE] batch_pending_loop_enter segments=32 maxCount=18 streaming=1 freeInternal=80860
+[108729][I][STORAGE] batch_pending_scan seg=102 pending=0 events=491 freeInternal=80860 largest=31732 outCount=0
+[108775][I][STORAGE] batch_pending_loop_break_streaming outCount=18 maxCount=18
+[108775][I][STORAGE] batch_pending_loop_done scanned=1 skipped=1 outCount=18 timeHit=0 elapsedMs=47 freeInternal=80860
+[108776][I][STORAGE] prepare_batch_done ok=1 outCount=18 freeInternal=81168
+[108776][I][STORAGE] Enrichment window ready records=18 truncated=1 ms=353
+[108975][I][STORAGE] Spool enrich_batch applied=16 failed=0 batchFirstEventId=9807 batchLastEventId=9822 firstRecord=20003 lastRecord=20018 ms=131
+[109176][I][STORAGE] Spool enrich_batch applied=2 failed=0 batchFirstEventId=9823 batchLastEventId=9824 firstRecord=20019 lastRecord=20020 ms=131
+[109176][I][STORAGE] Enrichment window released reason=manual_cursor_done
+[109177][I][WIO] Manual enrichment window batch count=0 active=0 noData=18 budgetExhausted=0 timeHit=0
+[109177][I][STORAGE] RAMSpool worker resumed
+[109177][I][STORAGE] Exclusive window end kind=maintenance result=manual_batch_built reason=external_manual_enrich_scan
+[109187][I][STORAGE] RAMSpool worker paused inflight=0 lastInflight=0
+[109188][I][STORAGE] Exclusive window begin kind=maintenance reason=external_manual_enrich_scan workerPaused=1 displaySuspended=1
+[109188][I][STORAGE] prepare_enter maxRecords=18 freeInternal=81556 largestInternal=31732
+[109189][I][STORAGE] prepare_assigned records=18 freeInternal=81168
+[109189][I][STORAGE] batch_load_ids_enter freeInternal=81168 segments=32
+[109189][I][STORAGE] load_ids_reserve count=90 freeInternal=81168 largest=31732
+[109190][I][STORAGE] load_ids_reserved freeInternal=80780
+[109190][I][STORAGE] load_ids_scan seg=102 enrichDeltas=0 freeInternal=80780 largest=31732
+[109288][I][STORAGE] load_ids_scan seg=112 enrichDeltas=0 freeInternal=80780 largest=31732
+[109328][I][STORAGE] load_ids_scan seg=127 enrichDeltas=0 freeInternal=80780 largest=31732
+[109363][I][STORAGE] load_ids_scan seg=128 enrichDeltas=0 freeInternal=80780 largest=31732
+[109397][I][STORAGE] load_ids_scan seg=129 enrichDeltas=0 freeInternal=80780 largest=31732
+[109429][I][STORAGE] load_ids_scan seg=130 enrichDeltas=54 freeInternal=80780 largest=31732
+[109470][I][STORAGE] load_ids_scan seg=131 enrichDeltas=0 freeInternal=80780 largest=31732
+[109502][I][STORAGE] load_ids_scan seg=132 enrichDeltas=36 freeInternal=80780 largest=31732
+[109529][I][STORAGE] load_ids_loop_done scanned=8 skipped=24 idsCollected=90 freeInternal=80780
+[109530][I][STORAGE] batch_load_ids_done count=90 capacity=90 freeInternal=80780
+[109530][I][STORAGE] batch_pending_loop_enter segments=32 maxCount=18 streaming=1 freeInternal=80780
+[109530][I][STORAGE] batch_pending_scan seg=102 pending=0 events=491 freeInternal=80780 largest=31732 outCount=0
+[109583][I][STORAGE] batch_pending_loop_break_streaming outCount=18 maxCount=18
+[109583][I][STORAGE] batch_pending_loop_done scanned=1 skipped=1 outCount=18 timeHit=0 elapsedMs=53 freeInternal=80780
+[109583][I][STORAGE] prepare_batch_done ok=1 outCount=18 freeInternal=81168
+[109583][I][STORAGE] Enrichment window ready records=18 truncated=1 ms=394
+[109803][I][STORAGE] Spool enrich_batch applied=16 failed=0 batchFirstEventId=9825 batchLastEventId=9840 firstRecord=20021 lastRecord=20036 ms=145
+[110013][I][STORAGE] Spool enrich_batch applied=2 failed=0 batchFirstEventId=9841 batchLastEventId=9842 firstRecord=20037 lastRecord=20038 ms=131
+[110014][I][STORAGE] Enrichment window released reason=manual_cursor_done
+[110014][I][WIO] Manual enrichment window batch count=0 active=0 noData=18 budgetExhausted=0 timeHit=0
+[110014][I][STORAGE] RAMSpool worker resumed
+[110015][I][STORAGE] Exclusive window end kind=maintenance result=manual_batch_built reason=external_manual_enrich_scan
+[110028][I][STORAGE] RAMSpool worker paused inflight=0 lastInflight=0
+[110028][I][STORAGE] Exclusive window begin kind=maintenance reason=external_manual_enrich_scan workerPaused=1 displaySuspended=1
+[110029][I][STORAGE] prepare_enter maxRecords=18 freeInternal=81556 largestInternal=31732
+[110029][I][STORAGE] prepare_assigned records=18 freeInternal=81168
+[110030][I][STORAGE] batch_load_ids_enter freeInternal=81168 segments=32
+[110030][I][STORAGE] load_ids_reserve count=108 freeInternal=81168 largest=31732
+[110030][I][STORAGE] load_ids_reserved freeInternal=80716
+[110031][I][STORAGE] load_ids_scan seg=102 enrichDeltas=0 freeInternal=80716 largest=31732
+[110133][I][STORAGE] load_ids_scan seg=112 enrichDeltas=0 freeInternal=80716 largest=31732
+[110178][I][STORAGE] load_ids_scan seg=127 enrichDeltas=0 freeInternal=80716 largest=31732
+[110217][I][STORAGE] load_ids_scan seg=128 enrichDeltas=0 freeInternal=80716 largest=31732
+[110256][I][STORAGE] load_ids_scan seg=129 enrichDeltas=0 freeInternal=80716 largest=31732
+[110293][I][STORAGE] load_ids_scan seg=130 enrichDeltas=54 freeInternal=80716 largest=31732
+[110338][I][STORAGE] load_ids_scan seg=131 enrichDeltas=0 freeInternal=80716 largest=31732
+[110375][I][STORAGE] load_ids_scan seg=132 enrichDeltas=54 freeInternal=80716 largest=31732
+[110406][I][STORAGE] load_ids_loop_done scanned=8 skipped=24 idsCollected=108 freeInternal=80716
+[110406][I][STORAGE] batch_load_ids_done count=108 capacity=108 freeInternal=80716
+[110406][I][STORAGE] batch_pending_loop_enter segments=32 maxCount=18 streaming=1 freeInternal=80716
+[110407][I][STORAGE] batch_pending_scan seg=102 pending=0 events=491 freeInternal=80716 largest=31732 outCount=0
+[110465][I][STORAGE] batch_pending_loop_break_streaming outCount=18 maxCount=18
+[110465][I][STORAGE] batch_pending_loop_done scanned=1 skipped=1 outCount=18 timeHit=0 elapsedMs=59 freeInternal=80716
+[110465][I][STORAGE] prepare_batch_done ok=1 outCount=18 freeInternal=81168
+[110465][I][STORAGE] Enrichment window ready records=18 truncated=1 ms=436
+[110685][I][STORAGE] Spool enrich_batch applied=16 failed=0 batchFirstEventId=9843 batchLastEventId=9858 firstRecord=20039 lastRecord=20054 ms=137
+[110911][I][STORAGE] Spool enrich_batch applied=2 failed=0 batchFirstEventId=9859 batchLastEventId=9860 firstRecord=20055 lastRecord=20056 ms=139
+[110912][I][STORAGE] Enrichment window released reason=manual_cursor_done
+[110912][I][WIO] Manual enrichment window batch count=0 active=0 noData=18 budgetExhausted=0 timeHit=0
+[110912][I][STORAGE] RAMSpool worker resumed
+[110912][I][STORAGE] Exclusive window end kind=maintenance result=manual_batch_built reason=external_manual_enrich_scan
+[110922][I][STORAGE] RAMSpool worker paused inflight=0 lastInflight=0
+[110923][I][STORAGE] Exclusive window begin kind=maintenance reason=external_manual_enrich_scan workerPaused=1 displaySuspended=1
+[110923][I][STORAGE] prepare_enter maxRecords=18 freeInternal=81556 largestInternal=31732
+[110924][I][STORAGE] prepare_assigned records=18 freeInternal=81168
+[110924][I][STORAGE] batch_load_ids_enter freeInternal=81168 segments=32
+[110924][I][STORAGE] load_ids_reserve count=126 freeInternal=81168 largest=31732
+[110925][I][STORAGE] load_ids_reserved freeInternal=80620
+[110925][I][STORAGE] load_ids_scan seg=102 enrichDeltas=0 freeInternal=80620 largest=31732
+[111031][I][STORAGE] load_ids_scan seg=112 enrichDeltas=0 freeInternal=80620 largest=31732
+[111081][I][STORAGE] load_ids_scan seg=127 enrichDeltas=0 freeInternal=80620 largest=31732
+[111125][I][STORAGE] load_ids_scan seg=128 enrichDeltas=0 freeInternal=80620 largest=31732
+[111168][I][STORAGE] load_ids_scan seg=129 enrichDeltas=0 freeInternal=80620 largest=31732
+[111211][I][STORAGE] load_ids_scan seg=130 enrichDeltas=54 freeInternal=80620 largest=31732
+[111260][I][STORAGE] load_ids_scan seg=131 enrichDeltas=0 freeInternal=80620 largest=31732
+[111301][I][STORAGE] load_ids_scan seg=132 enrichDeltas=72 freeInternal=80620 largest=31732
+[111335][I][STORAGE] load_ids_loop_done scanned=8 skipped=24 idsCollected=126 freeInternal=80624
+[111336][I][STORAGE] batch_load_ids_done count=126 capacity=126 freeInternal=80624
+[111336][I][STORAGE] batch_pending_loop_enter segments=32 maxCount=18 streaming=1 freeInternal=80624
+[111336][I][STORAGE] batch_pending_scan seg=102 pending=0 events=491 freeInternal=80624 largest=31732 outCount=0
+[111401][I][STORAGE] batch_pending_loop_break_streaming outCount=18 maxCount=18
+[111402][I][STORAGE] batch_pending_loop_done scanned=1 skipped=1 outCount=18 timeHit=0 elapsedMs=65 freeInternal=80624
+[111402][I][STORAGE] prepare_batch_done ok=1 outCount=18 freeInternal=81172
+[111402][I][STORAGE] Enrichment window ready records=18 truncated=1 ms=478
+[112018][I][STORAGE] Spool enrich_batch applied=16 failed=0 batchFirstEventId=9861 batchLastEventId=9876 firstRecord=20057 lastRecord=20072 ms=526
+[112230][I][STORAGE] Spool enrich_batch applied=2 failed=0 batchFirstEventId=9877 batchLastEventId=9878 firstRecord=20073 lastRecord=20074 ms=140
+[112231][I][STORAGE] Enrichment window released reason=manual_cursor_done
+[112231][I][WIO] Manual enrichment window batch count=0 active=0 noData=18 budgetExhausted=0 timeHit=0
+[112232][I][STORAGE] RAMSpool worker resumed
+[112232][I][STORAGE] Exclusive window end kind=maintenance result=manual_batch_built reason=external_manual_enrich_scan
+[112246][I][STORAGE] RAMSpool worker paused inflight=0 lastInflight=0
+[112247][I][STORAGE] Exclusive window begin kind=maintenance reason=external_manual_enrich_scan workerPaused=1 displaySuspended=1
+[112247][I][STORAGE] prepare_enter maxRecords=18 freeInternal=81560 largestInternal=31732
+[112248][I][STORAGE] prepare_assigned records=18 freeInternal=81172
+[112248][I][STORAGE] batch_load_ids_enter freeInternal=81172 segments=32
+[112248][I][STORAGE] load_ids_reserve count=144 freeInternal=81172 largest=31732
+[112249][I][STORAGE] load_ids_reserved freeInternal=80560
+[112249][I][STORAGE] load_ids_scan seg=102 enrichDeltas=0 freeInternal=80560 largest=31732
+[112341][I][STORAGE] load_ids_scan seg=112 enrichDeltas=0 freeInternal=80560 largest=31732
+[112374][I][STORAGE] load_ids_scan seg=127 enrichDeltas=0 freeInternal=80560 largest=31732
+[112401][I][STORAGE] load_ids_scan seg=128 enrichDeltas=0 freeInternal=80560 largest=31732
+[112428][I][STORAGE] load_ids_scan seg=129 enrichDeltas=0 freeInternal=80560 largest=31732
+[112454][I][STORAGE] load_ids_scan seg=130 enrichDeltas=54 freeInternal=80560 largest=31732
+[112489][I][STORAGE] load_ids_scan seg=131 enrichDeltas=0 freeInternal=80560 largest=31732
+[112513][I][STORAGE] load_ids_scan seg=132 enrichDeltas=90 freeInternal=80560 largest=31732
+[112543][I][STORAGE] load_ids_loop_done scanned=8 skipped=24 idsCollected=144 freeInternal=80560
+[112544][I][STORAGE] batch_load_ids_done count=144 capacity=144 freeInternal=80560
+[112544][I][STORAGE] batch_pending_loop_enter segments=32 maxCount=18 streaming=1 freeInternal=80560
+[112544][I][STORAGE] batch_pending_scan seg=102 pending=0 events=491 freeInternal=80560 largest=31732 outCount=0
+[112597][I][STORAGE] batch_pending_loop_break_streaming outCount=18 maxCount=18
+[112598][I][STORAGE] batch_pending_loop_done scanned=1 skipped=1 outCount=18 timeHit=0 elapsedMs=54 freeInternal=80560
+[112598][I][STORAGE] prepare_batch_done ok=1 outCount=18 freeInternal=81172
+[112598][I][STORAGE] Enrichment window ready records=18 truncated=1 ms=350
+[112656][I][STORAGE] Spool enrich preflight rotate seg=132 bytes=3486 records=98 enrich=90 expected=16
+[113276][I][STORAGE] Spool rotate newSeg=133 format=bin_v2
+[113276][I][STORAGE] Spool diag[rotate] validSegments=32 untrustedSegments=1 invalidSegments=0 activeSegment=133 totalRecords=10340 storedEvents=10157 pendingUpload=10157 nextEventId=20075
+[113303][I][STORAGE] Spool enrich_batch applied=16 failed=0 batchFirstEventId=9879 batchLastEventId=9894 firstRecord=20075 lastRecord=20090 ms=3
+[113757][I][STORAGE] Spool enrich_batch applied=2 failed=0 batchFirstEventId=9895 batchLastEventId=9896 firstRecord=20091 lastRecord=20092 ms=357
+[113758][I][STORAGE] Enrichment window released reason=manual_cursor_done
+[113758][I][WIO] Manual enrichment window batch count=0 active=0 noData=18 budgetExhausted=0 timeHit=0
+[113758][I][STORAGE] RAMSpool worker resumed
+[113758][I][STORAGE] Exclusive window end kind=maintenance result=manual_batch_built reason=external_manual_enrich_scan
+[113771][I][STORAGE] RAMSpool worker paused inflight=0 lastInflight=0
+[113771][I][STORAGE] Exclusive window begin kind=maintenance reason=external_manual_enrich_scan workerPaused=1 displaySuspended=1
+[113772][I][STORAGE] prepare_enter maxRecords=18 freeInternal=84264 largestInternal=31732
+[113772][I][STORAGE] prepare_assigned records=18 freeInternal=83876
+[113773][I][STORAGE] batch_load_ids_enter freeInternal=83876 segments=33
+[113773][I][STORAGE] load_ids_reserve count=162 freeInternal=83876 largest=31732
+[113773][I][STORAGE] load_ids_reserved freeInternal=83200
+[113773][I][STORAGE] load_ids_scan seg=102 enrichDeltas=0 freeInternal=83200 largest=31732
+[113867][I][STORAGE] load_ids_scan seg=112 enrichDeltas=0 freeInternal=83200 largest=31732
+[113901][I][STORAGE] load_ids_scan seg=127 enrichDeltas=0 freeInternal=83200 largest=31732
+[113929][I][STORAGE] load_ids_scan seg=128 enrichDeltas=0 freeInternal=83200 largest=31732
+[113956][I][STORAGE] load_ids_scan seg=129 enrichDeltas=0 freeInternal=83200 largest=31732
+[113982][I][STORAGE] load_ids_scan seg=130 enrichDeltas=54 freeInternal=83200 largest=31732
+[114018][I][STORAGE] load_ids_scan seg=131 enrichDeltas=0 freeInternal=83200 largest=31732
+[114043][I][STORAGE] load_ids_scan seg=132 enrichDeltas=90 freeInternal=83200 largest=31732
+[114076][I][STORAGE] load_ids_scan seg=133 enrichDeltas=18 freeInternal=83200 largest=31732
+[114102][I][STORAGE] load_ids_loop_done scanned=9 skipped=24 idsCollected=162 freeInternal=83200
+[114103][I][STORAGE] batch_load_ids_done count=162 capacity=162 freeInternal=83200
+[114103][I][STORAGE] batch_pending_loop_enter segments=33 maxCount=18 streaming=1 freeInternal=83200
+[114103][I][STORAGE] batch_pending_scan seg=102 pending=0 events=491 freeInternal=83200 largest=31732 outCount=0
+[114159][I][STORAGE] batch_pending_loop_break_streaming outCount=18 maxCount=18
+[114159][I][STORAGE] batch_pending_loop_done scanned=1 skipped=1 outCount=18 timeHit=0 elapsedMs=56 freeInternal=83200
+[114159][I][STORAGE] prepare_batch_done ok=1 outCount=18 freeInternal=83876
+[114160][I][STORAGE] Enrichment window ready records=18 truncated=1 ms=388
+[114352][I][STORAGE] Spool enrich_batch applied=16 failed=0 batchFirstEventId=9897 batchLastEventId=9912 firstRecord=20093 lastRecord=20108 ms=110
+[114543][I][STORAGE] Spool enrich_batch applied=2 failed=0 batchFirstEventId=9913 batchLastEventId=9914 firstRecord=20109 lastRecord=20110 ms=106
+[114544][I][STORAGE] Enrichment window released reason=manual_cursor_done
+[114544][I][WIO] Manual enrichment window batch count=0 active=0 noData=18 budgetExhausted=0 timeHit=0
+[114545][I][STORAGE] RAMSpool worker resumed
+[114545][I][STORAGE] Exclusive window end kind=maintenance result=manual_batch_built reason=external_manual_enrich_scan
+[114555][I][STORAGE] RAMSpool worker paused inflight=0 lastInflight=0
+[114556][I][STORAGE] Exclusive window begin kind=maintenance reason=external_manual_enrich_scan workerPaused=1 displaySuspended=1
+[114556][I][STORAGE] prepare_enter maxRecords=18 freeInternal=84264 largestInternal=31732
+[114557][I][STORAGE] prepare_assigned records=18 freeInternal=83876
+[114557][I][STORAGE] batch_load_ids_enter freeInternal=83876 segments=33
+[114557][I][STORAGE] load_ids_reserve count=180 freeInternal=83876 largest=31732
+[114558][I][STORAGE] load_ids_reserved freeInternal=83136
+[114558][I][STORAGE] load_ids_scan seg=102 enrichDeltas=0 freeInternal=83136 largest=31732
+[114656][I][STORAGE] load_ids_scan seg=112 enrichDeltas=0 freeInternal=83136 largest=31732
+[114696][I][STORAGE] load_ids_scan seg=127 enrichDeltas=0 freeInternal=83136 largest=31732
+[114730][I][STORAGE] load_ids_scan seg=128 enrichDeltas=0 freeInternal=83136 largest=31732
+[114763][I][STORAGE] load_ids_scan seg=129 enrichDeltas=0 freeInternal=83136 largest=31732
+[114796][I][STORAGE] load_ids_scan seg=130 enrichDeltas=54 freeInternal=83136 largest=31732
+[114837][I][STORAGE] load_ids_scan seg=131 enrichDeltas=0 freeInternal=83136 largest=31732
+[114868][I][STORAGE] load_ids_scan seg=132 enrichDeltas=90 freeInternal=83136 largest=31732
+[114906][I][STORAGE] load_ids_scan seg=133 enrichDeltas=36 freeInternal=83136 largest=31732
+[114934][I][STORAGE] load_ids_loop_done scanned=9 skipped=24 idsCollected=180 freeInternal=83136
+[114934][I][STORAGE] batch_load_ids_done count=180 capacity=180 freeInternal=83136
+[114934][I][STORAGE] batch_pending_loop_enter segments=33 maxCount=18 streaming=1 freeInternal=83136
+[114935][I][STORAGE] batch_pending_scan seg=102 pending=0 events=491 freeInternal=83136 largest=31732 outCount=0
+[114998][I][STORAGE] batch_pending_loop_break_streaming outCount=18 maxCount=18
+[114998][I][STORAGE] batch_pending_loop_done scanned=1 skipped=1 outCount=18 timeHit=0 elapsedMs=64 freeInternal=83136
+[114999][I][STORAGE] prepare_batch_done ok=1 outCount=18 freeInternal=83876
+[114999][I][STORAGE] Enrichment window ready records=18 truncated=1 ms=443
+[115199][I][STORAGE] Spool enrich_batch applied=16 failed=0 batchFirstEventId=9915 batchLastEventId=9930 firstRecord=20111 lastRecord=20126 ms=111
+[115409][I][STORAGE] Spool enrich_batch applied=2 failed=0 batchFirstEventId=9931 batchLastEventId=9932 firstRecord=20127 lastRecord=20128 ms=118
+[115409][I][STORAGE] Enrichment window released reason=manual_cursor_done
+[115410][I][WIO] Manual enrichment window batch count=0 active=0 noData=18 budgetExhausted=0 timeHit=0
+[115410][I][STORAGE] RAMSpool worker resumed
+[115410][I][STORAGE] Exclusive window end kind=maintenance result=manual_batch_built reason=external_manual_enrich_scan
+[115423][I][STORAGE] RAMSpool worker paused inflight=0 lastInflight=0
+[115423][I][STORAGE] Exclusive window begin kind=maintenance reason=external_manual_enrich_scan workerPaused=1 displaySuspended=1
+[115424][I][STORAGE] prepare_enter maxRecords=18 freeInternal=84264 largestInternal=31732
+[115424][I][STORAGE] prepare_assigned records=18 freeInternal=83876
+[115425][I][STORAGE] batch_load_ids_enter freeInternal=83876 segments=33
+[115425][I][STORAGE] load_ids_reserve count=198 freeInternal=83876 largest=31732
+[115425][I][STORAGE] load_ids_reserved freeInternal=83040
+[115426][I][STORAGE] load_ids_scan seg=102 enrichDeltas=0 freeInternal=83040 largest=31732
+[115528][I][STORAGE] load_ids_scan seg=112 enrichDeltas=0 freeInternal=83040 largest=31732
+[115572][I][STORAGE] load_ids_scan seg=127 enrichDeltas=0 freeInternal=83040 largest=31732
+[115611][I][STORAGE] load_ids_scan seg=128 enrichDeltas=0 freeInternal=83040 largest=31732
+[115650][I][STORAGE] load_ids_scan seg=129 enrichDeltas=0 freeInternal=83040 largest=31732
+[115687][I][STORAGE] load_ids_scan seg=130 enrichDeltas=54 freeInternal=83040 largest=31732
+[115732][I][STORAGE] load_ids_scan seg=131 enrichDeltas=0 freeInternal=83040 largest=31732
+[115768][I][STORAGE] load_ids_scan seg=132 enrichDeltas=90 freeInternal=83040 largest=31732
+[115810][I][STORAGE] load_ids_scan seg=133 enrichDeltas=54 freeInternal=83040 largest=31732
+[115841][I][STORAGE] load_ids_loop_done scanned=9 skipped=24 idsCollected=198 freeInternal=83040
+[115842][I][STORAGE] batch_load_ids_done count=198 capacity=198 freeInternal=83040
+[115842][I][STORAGE] batch_pending_loop_enter segments=33 maxCount=18 streaming=1 freeInternal=83040
+[115842][I][STORAGE] batch_pending_scan seg=102 pending=0 events=491 freeInternal=83040 largest=31732 outCount=0
+[115912][I][STORAGE] batch_pending_loop_break_streaming outCount=18 maxCount=18
+[115913][I][STORAGE] batch_pending_loop_done scanned=1 skipped=1 outCount=18 timeHit=0 elapsedMs=71 freeInternal=83040
+[115913][I][STORAGE] prepare_batch_done ok=1 outCount=18 freeInternal=83876
+[115913][I][STORAGE] Enrichment window ready records=18 truncated=1 ms=489
+[116133][I][STORAGE] Spool enrich_batch applied=16 failed=0 batchFirstEventId=9933 batchLastEventId=9948 firstRecord=20129 lastRecord=20144 ms=123
+[116349][I][STORAGE] Spool enrich_batch applied=2 failed=0 batchFirstEventId=9949 batchLastEventId=9950 firstRecord=20145 lastRecord=20146 ms=115
+[116350][I][STORAGE] Enrichment window released reason=manual_cursor_done
+[116350][I][WIO] Manual enrichment window batch count=0 active=0 noData=18 budgetExhausted=0 timeHit=0
+[116350][I][STORAGE] RAMSpool worker resumed
+[116351][I][STORAGE] Exclusive window end kind=maintenance result=manual_batch_built reason=external_manual_enrich_scan
+[116363][I][STORAGE] RAMSpool worker paused inflight=0 lastInflight=0
+[116363][I][STORAGE] Exclusive window begin kind=maintenance reason=external_manual_enrich_scan workerPaused=1 displaySuspended=1
+[116364][I][STORAGE] prepare_enter maxRecords=18 freeInternal=84264 largestInternal=31732
+[116364][I][STORAGE] prepare_assigned records=18 freeInternal=83876
+[116365][I][STORAGE] batch_load_ids_enter freeInternal=83876 segments=33
+[116365][I][STORAGE] load_ids_reserve count=216 freeInternal=83876 largest=31732
+[116365][I][STORAGE] load_ids_reserved freeInternal=82976
+[116365][I][STORAGE] load_ids_scan seg=102 enrichDeltas=0 freeInternal=82976 largest=31732
+[116471][I][STORAGE] load_ids_scan seg=112 enrichDeltas=0 freeInternal=82976 largest=31732
+[116520][I][STORAGE] load_ids_scan seg=127 enrichDeltas=0 freeInternal=82976 largest=31732
+[116563][I][STORAGE] load_ids_scan seg=128 enrichDeltas=0 freeInternal=82976 largest=31732
+[116606][I][STORAGE] load_ids_scan seg=129 enrichDeltas=0 freeInternal=82976 largest=31732
+[116648][I][STORAGE] load_ids_scan seg=130 enrichDeltas=54 freeInternal=82976 largest=31732
+[116696][I][STORAGE] load_ids_scan seg=131 enrichDeltas=0 freeInternal=82976 largest=31732
+[116737][I][STORAGE] load_ids_scan seg=132 enrichDeltas=90 freeInternal=82976 largest=31732
+[116783][I][STORAGE] load_ids_scan seg=133 enrichDeltas=72 freeInternal=82976 largest=31732
+[116817][I][STORAGE] load_ids_loop_done scanned=9 skipped=24 idsCollected=216 freeInternal=82976
+[116818][I][STORAGE] batch_load_ids_done count=216 capacity=216 freeInternal=82976
+[116818][I][STORAGE] batch_pending_loop_enter segments=33 maxCount=18 streaming=1 freeInternal=82976
+[116818][I][STORAGE] batch_pending_scan seg=102 pending=0 events=491 freeInternal=82976 largest=31732 outCount=0
+[116894][I][STORAGE] batch_pending_loop_break_streaming outCount=18 maxCount=18
+[116894][I][STORAGE] batch_pending_loop_done scanned=1 skipped=1 outCount=18 timeHit=0 elapsedMs=76 freeInternal=82976
+[116894][I][STORAGE] prepare_batch_done ok=1 outCount=18 freeInternal=83876
+[116894][I][STORAGE] Enrichment window ready records=18 truncated=1 ms=530
+[117643][I][STORAGE] Spool enrich_batch applied=16 failed=0 batchFirstEventId=9951 batchLastEventId=9966 firstRecord=20147 lastRecord=20162 ms=295
+[117856][I][STORAGE] Spool enrich_batch applied=2 failed=0 batchFirstEventId=9967 batchLastEventId=9968 firstRecord=20163 lastRecord=20164 ms=128
+[117857][I][STORAGE] Enrichment window released reason=manual_cursor_done
+[117857][I][WIO] Manual enrichment window batch count=0 active=0 noData=18 budgetExhausted=0 timeHit=0
+[117857][I][STORAGE] RAMSpool worker resumed
+[117857][I][STORAGE] Exclusive window end kind=maintenance result=manual_batch_built reason=external_manual_enrich_scan
+[117867][W][CORE] TaskHardware loop gap=1506ms owner=STORAGE_MAINT pendingUpload=10157 maintPending=1 suppressed=9
+[117870][I][STORAGE] RAMSpool worker paused inflight=0 lastInflight=0
+[117871][I][STORAGE] Exclusive window begin kind=maintenance reason=external_manual_enrich_scan workerPaused=1 displaySuspended=1
+[117871][I][STORAGE] prepare_enter maxRecords=18 freeInternal=84264 largestInternal=31732
+[117872][I][STORAGE] prepare_assigned records=18 freeInternal=83876
+[117872][I][STORAGE] batch_load_ids_enter freeInternal=83876 segments=33
+[117872][I][STORAGE] load_ids_reserve count=234 freeInternal=83876 largest=31732
+[117873][I][STORAGE] load_ids_reserved freeInternal=82912
+[117873][I][STORAGE] load_ids_scan seg=102 enrichDeltas=0 freeInternal=82912 largest=31732
+[117965][I][STORAGE] load_ids_scan seg=112 enrichDeltas=0 freeInternal=82912 largest=31732
+[117998][I][STORAGE] load_ids_scan seg=127 enrichDeltas=0 freeInternal=82912 largest=31732
+[118025][I][STORAGE] load_ids_scan seg=128 enrichDeltas=0 freeInternal=82912 largest=31732
+[118051][I][STORAGE] load_ids_scan seg=129 enrichDeltas=0 freeInternal=82912 largest=31732
+[118077][I][STORAGE] load_ids_scan seg=130 enrichDeltas=54 freeInternal=82912 largest=31732
+[118111][I][STORAGE] load_ids_scan seg=131 enrichDeltas=0 freeInternal=82912 largest=31732
+[118136][I][STORAGE] load_ids_scan seg=132 enrichDeltas=90 freeInternal=82912 largest=31732
+[118168][I][STORAGE] load_ids_scan seg=133 enrichDeltas=90 freeInternal=82912 largest=31732
+[118196][I][STORAGE] load_ids_loop_done scanned=9 skipped=24 idsCollected=234 freeInternal=82912
+[118197][I][STORAGE] batch_load_ids_done count=234 capacity=234 freeInternal=82912
+[118197][I][STORAGE] batch_pending_loop_enter segments=33 maxCount=18 streaming=1 freeInternal=82912
+[118197][I][STORAGE] batch_pending_scan seg=102 pending=0 events=491 freeInternal=82912 largest=31732 outCount=0
+[118261][I][STORAGE] batch_pending_loop_break_streaming outCount=18 maxCount=18
+[118261][I][STORAGE] batch_pending_loop_done scanned=1 skipped=1 outCount=18 timeHit=0 elapsedMs=64 freeInternal=82912
+[118261][I][STORAGE] prepare_batch_done ok=1 outCount=18 freeInternal=83876
+[118262][I][STORAGE] Enrichment window ready records=18 truncated=1 ms=390
+[118333][I][STORAGE] Spool enrich preflight rotate seg=133 bytes=1595 records=90 enrich=90 expected=16
+[118953][I][STORAGE] Spool rotate newSeg=134 format=bin_v2
+[118954][I][STORAGE] Spool diag[rotate] validSegments=33 untrustedSegments=1 invalidSegments=0 activeSegment=134 totalRecords=10430 storedEvents=10157 pendingUpload=10157 nextEventId=20165
+[118980][I][STORAGE] Spool enrich_batch applied=16 failed=0 batchFirstEventId=9969 batchLastEventId=9984 firstRecord=20165 lastRecord=20180 ms=3
+[119979][I][STORAGE] Spool enrich_batch applied=2 failed=0 batchFirstEventId=9985 batchLastEventId=9986 firstRecord=20181 lastRecord=20182 ms=891
+[119980][I][STORAGE] Enrichment window released reason=manual_cursor_done
+[119980][I][WIO] Manual enrichment window batch count=0 active=0 noData=18 budgetExhausted=0 timeHit=0
+[119980][I][STORAGE] RAMSpool worker resumed
+[119981][I][STORAGE] Exclusive window end kind=maintenance result=manual_batch_built reason=external_manual_enrich_scan
+[119993][I][WIO] External BLE link dropped reason=ready_idle
+[119994][I][WIO] External BLE phone disconnected reason=ready_idle previous=ready fail=0 phone=ready rssi=-50
+[119995][I][WIO] External BLE probe start reason=external_enrich seq=6 timeoutMs=12000 phone=ready rssi=-50
+[120006][I][WIO] External BLE phone disconnected reason=phone_drop previous=probing fail=1 phone=ready rssi=-50
+[120007][I][WIO] External BLE link dropped reason=failure
+[120007][I][WIO] External BLE phone disconnected reason=failure previous=failed fail=0 phone=ready rssi=-50
+[120007][W][WIO] External BLE enrichment exchange failed
+[120007][W][WIO] Phone enrichment failed
+[120008][I][COMP] Manual enrich exclusive end reason=enrich_fail resumedCapture=0 owner=STORAGE_MAINT
+[HEAP] integrity check ok
+[120019][I][STORAGE] RAMSpool worker paused inflight=0 lastInflight=0
+[120019][I][STORAGE] Exclusive window begin kind=maintenance reason=radio_owner_window workerPaused=1 displaySuspended=1
+[120020][I][STORAGE] Maintenance start reason=radio_owner_window budgetMs=5000 flags=dirty_spool_index|dirty_summary|boot_safe_deferred_persist|snapshot_lagged|segment_audit|fs_audit captureSafe=1
+[120844][I][STORAGE] worker ui refresh serviced uiRefreshServiceCount=1 uiDeferred=17 uiFlush=1 pressure=0 usedPct=27 pending=10157
+[120845][W][STORAGE] worker metadata flush reason=radio_owner_window ms=825 ok=1 dirty=1
+[120845][I][STORAGE] worker metadata flush metadataFlushCount=1 reason=radio_owner_window entryMetadataDirtyPending=1 entryUiRefreshPending=1 metadataDirtyPending=1 uiDeferred=17 uiFlush=1 uiRefreshServiceCount=1
+[121986][I][STORAGE] Segment lifecycle seg=102 sealed->indexed trust=trusted pending=491
+[122484][I][STORAGE] Spool repair start reason=maintenance_repair segs=34
+[122654][I][STORAGE] Spool repair checkpoint seg=102 off=99455 records=491 events=484 enrich=0
+[122768][I][STORAGE] Spool repair checkpoint seg=103 off=99332 records=507 events=507 enrich=0
+[122864][I][STORAGE] Spool repair checkpoint seg=104 off=56430 records=288 events=288 enrich=0
+[123034][I][STORAGE] Spool repair checkpoint seg=105 off=99641 records=497 events=497 enrich=0
+[123146][I][STORAGE] Spool repair checkpoint seg=106 off=99554 records=506 events=506 enrich=0
+[123233][I][STORAGE] Spool repair checkpoint seg=107 off=49044 records=248 events=248 enrich=0
+[123308][I][STORAGE] Spool repair checkpoint seg=108 off=13154 records=64 events=64 enrich=0
+[123450][I][STORAGE] Spool repair checkpoint seg=109 off=99547 records=494 events=494 enrich=0
+[123539][I][STORAGE] Spool repair checkpoint seg=110 off=50591 records=251 events=251 enrich=0
+[123646][I][STORAGE] Spool repair checkpoint seg=111 off=27098 records=131 events=131 enrich=0
+[124360][I][STORAGE] worker ui refresh serviced uiRefreshServiceCount=2 uiDeferred=17 uiFlush=1 pressure=0 usedPct=27 pending=10157
+[124361][W][STORAGE] worker metadata flush reason=radio_owner_window ms=622 ok=1 dirty=1
+[124361][I][STORAGE] worker metadata flush metadataFlushCount=2 reason=radio_owner_window entryMetadataDirtyPending=1 entryUiRefreshPending=0 metadataDirtyPending=1 uiDeferred=17 uiFlush=1 uiRefreshServiceCount=2
+[125024][I][FSAUDIT] pass done files=29 dirs=14 valid=29 invalid=0 legacy=0 forensic=0 tmp=0 unknown=0 vaulted=0 missing=0 skipped=1 actions del=0 quar=0 rebuild=0 salv=0 evict=0 skip=0 fail=0 spool_seg=14 maxSeg
+[125121][W][STORAGE] fs_audit spool drift seenFiles=14 indexedSegs=34 seenMaxId=114 activeId=134
+[125121][I][STORAGE] Maintenance requested reason=dirty_spool_index source=fs_audit_spool_drift flags=dirty_spool_index|dirty_summary|snapshot_lagged|segment_audit|fs_audit
+[125122][I][STORAGE] fs_audit done mode=1 complete=1 files=29 invalid=0 tmp=0 missing=0 del=0 quar=0 rebuild=0 salv=0 evict=0 skip=0 fail=0 drift=1 ms=662
+[125122][I][STORAGE] Maintenance done reason=radio_owner_window actions=dirty_spool_index|boot_safe_deferred_persist|snapshot_lagged|upload_enrich_cursor_dirty|segment_audit|fs_audit skipped=dirty_summary|segment
+[125123][I][STORAGE] RAMSpool worker resumed
+[125123][I][STORAGE] Routine maintenance requests coalesced count=2 latest=snapshot_lagged source=ramspool_idle flags=dirty_spool_index|dirty_summary|snapshot_lagged|segment_audit
+[125123][I][STORAGE] Exclusive window end kind=maintenance result=capture_safe reason=radio_owner_window
+[125124][I][STORAGE] maintenance owner window ms=5104 captureSafe=1 remaining=dirty_spool_index|dirty_summary|snapshot_lagged|segment_audit
+[125282][I][WIFI] Radio suspended
+[125380][I][WIO] External BLE probe response seq=6 found=0 connected=0 source=scan text=0 err=service_missing rssi=-54 best=-54 seen=4 uuid=1 conn=1 fail=1 ageMs=5373
+[125381][W][WIO] External BLE probe miss class=service_missing seq=6 source=scan text=0 seen=4 uuid=1 best=-54 conn=1 fail=1 disc=0x3E
+[125381][W][WIO] External BLE failed reason=phone_not_reachable state=idle seq=0 ageMs=5374 phone=ready rssi=-54
+[125382][I][STORAGE] RAMSpool worker paused inflight=0 lastInflight=0
+[125383][I][STORAGE] Exclusive window begin kind=maintenance reason=radio_owner_window workerPaused=1 displaySuspended=1
+[125383][I][STORAGE] Maintenance start reason=radio_owner_window budgetMs=5000 flags=dirty_spool_index|dirty_summary|snapshot_lagged|segment_audit captureSafe=1
+[126285][I][STORAGE] Segment lifecycle seg=112 sealed->drained trust=trusted pending=0
+[127033][I][STORAGE] Spool repair checkpoint seg=113 off=13173 records=64 events=64 enrich=0
+[127143][I][STORAGE] Spool repair checkpoint seg=114 off=98898 records=502 events=502 enrich=0
+[127233][I][STORAGE] Spool repair checkpoint seg=115 off=98824 records=512 events=512 enrich=0
+[127321][I][STORAGE] Spool repair checkpoint seg=116 off=98834 records=512 events=512 enrich=0
+[127420][I][STORAGE] Spool repair checkpoint seg=117 off=98744 records=512 events=512 enrich=0
+[127525][I][STORAGE] Spool repair checkpoint seg=118 off=98750 records=514 events=514 enrich=0
+[127630][I][STORAGE] Spool repair checkpoint seg=119 off=98839 records=512 events=512 enrich=0
+[127734][I][STORAGE] Spool repair checkpoint seg=120 off=98830 records=512 events=512 enrich=0
+[127838][I][STORAGE] Spool repair checkpoint seg=121 off=98659 records=511 events=511 enrich=0
+[127942][I][STORAGE] Spool repair checkpoint seg=122 off=98692 records=512 events=512 enrich=0
+[128044][I][STORAGE] Spool repair checkpoint seg=123 off=98725 records=512 events=512 enrich=0
+[128146][I][STORAGE] Spool repair checkpoint seg=124 off=98853 records=512 events=512 enrich=0
+[128248][I][STORAGE] Spool repair checkpoint seg=125 off=98652 records=514 events=514 enrich=0
+[128915][I][STORAGE] Maintenance done reason=radio_owner_window actions=dirty_spool_index|boot_safe_deferred_persist|snapshot_lagged|upload_enrich_cursor_dirty|segment_audit skipped=dirty_summary|segment_audit re
+[128916][I][STORAGE] RAMSpool worker resumed
+[128916][I][STORAGE] Exclusive window end kind=maintenance result=capture_safe reason=radio_owner_window
+[128917][I][STORAGE] maintenance owner window ms=3535 captureSafe=1 remaining=dirty_summary|snapshot_lagged|segment_audit
+[129075][I][WIFI] Radio suspended
+[129075][W][CORE] TaskHardware loop gap=3700ms owner=STORAGE_MAINT pendingUpload=10157 maintPending=1 suppressed=2
+[129080][I][WIO] BLE status phone=idle connected=0 rssi=-54 state=failed seq=0 ageMs=3698 raw="phone=idle connected=0 rssi=-54 ble_ready=1 ble_init_started=1"
+[129081][I][STORAGE] RAMSpool worker paused inflight=0 lastInflight=0
+[129081][I][STORAGE] Exclusive window begin kind=maintenance reason=radio_owner_window workerPaused=1 displaySuspended=1
+[129082][I][STORAGE] Maintenance start reason=radio_owner_window budgetMs=5000 flags=dirty_summary|snapshot_lagged|segment_audit captureSafe=1
+[129723][I][STORAGE] Segment lifecycle seg=127 sealed->drained trust=trusted pending=0
+[130338][I][STORAGE] Spool repair checkpoint seg=126 off=72707 records=367 events=367 enrich=0
+[130914][I][STORAGE] Spool repair checkpoint seg=132 off=2217 records=24 events=8 enrich=16
+[131974][W][STORAGE] Spool repair slow reason=maintenance_repair segs=33 recs=361 ms=9490
+[131974][I][STORAGE] Spool audit[maintenance_repair] scannedSegs=33 scannedRecords=361 validEvents=143 uploadedRetained=0 validEnrichDeltas=218 invalidRecords=0 skippedRecords=0 quarantined=0 unreadable=0 pending
+[132682][W][STORAGE] Counter trust=trusted reason=worker_metadata_flush since=132681
+[132682][W][STORAGE] worker metadata flush reason=radio_owner_window ms=526 ok=1 dirty=0
+[132682][I][STORAGE] worker metadata flush metadataFlushCount=6 reason=radio_owner_window entryMetadataDirtyPending=1 entryUiRefreshPending=0 metadataDirtyPending=0 uiDeferred=17 uiFlush=1 uiRefreshServiceCount=2
+[132772][I][STORAGE] Maintenance done reason=radio_owner_window actions=dirty_spool_index|boot_safe_deferred_persist|snapshot_lagged|upload_enrich_cursor_dirty|segment_audit skipped=dirty_summary remaining=dirty_
+[132773][I][STORAGE] RAMSpool worker resumed
+[132773][I][STORAGE] Exclusive window end kind=maintenance result=capture_safe reason=radio_owner_window
+[132773][I][STORAGE] maintenance owner window ms=3692 captureSafe=1 remaining=dirty_summary
+[132932][I][WIFI] Radio suspended
+[132935][I][STORAGE] RAMSpool worker paused inflight=0 lastInflight=0
+[132936][I][STORAGE] Exclusive window begin kind=maintenance reason=radio_owner_window workerPaused=1 displaySuspended=1
+[132936][I][STORAGE] Maintenance start reason=radio_owner_window budgetMs=5000 flags=dirty_summary captureSafe=1
+[133401][I][STORAGE] Maintenance continuity log wrote clean=1 reason=radio_owner_window completed=dirty_summary remaining=none gen=36352
+[133402][I][STORAGE] Maintenance done reason=radio_owner_window actions=dirty_summary|continuity_pass skipped=none remaining=none elapsedMs=465 captureSafe=1
+[133402][I][STORAGE] RAMSpool worker resumed
+[133402][I][STORAGE] Exclusive window end kind=maintenance result=capture_safe reason=radio_owner_window
+[133402][I][STORAGE] maintenance owner window ms=467 captureSafe=1 remaining=none
+[133614][I][WIFI] Promiscuous: YES
+[133615][I][WIFI] Promiscuous mode started data=0
+[133621][I][WIO] BLE status phone=idle connected=0 rssi=-54 state=failed seq=0 ageMs=8240 raw="phone=idle connected=0 rssi=-54 ble_ready=1 ble_init_started=1"
+[133622][I][WIO] External BLE recovery to idle reason=new_probe state=failed phone=idle rssi=-54
+[133623][I][WIO] External BLE probe start reason=manual_probe seq=7 timeoutMs=12000 phone=idle rssi=-54
+[133623][I][WIO] External phone probe requested reason=manual_probe
+[133624][I][STACK] TaskHardware watermark=11140B min=11140B
+[133626][I][HEAP] heap free=7697KB min=7685KB largest=7552KB frag=1% internalFree=52KB internalLargest=31KB psramFree=7645KB core=62/35% owner=WIFI_CAPTURE nets=9 pendingUpload=10189 pendingEnrich=10189
+[HEALTH] time=2026-06-21 16:34:17 src=ntp
+[HEALTH] heap used=725/8422KB free=7697KB min=7685KB largest=7552KB frag=1%
+[HEALTH] internal used=178/230KB free=52KB min=40KB largest=31KB
+[HEALTH] psram used=547/8192KB free=7645KB largest=7552KB
+[HEALTH] stack free_min: core0=11KB/22KB core1=13KB/18KB
+[HEALTH] core usage: core0=62% core1=35%
+[HEALTH] radio=WIFI_CAPTURE wifi=0 ble=0 gps=0 nets=9 pendingUpload=10189 pendingEnrich=10189
+[HEALTH] subghz=NONE mode=OFF pkts=0 nodes=0
+[133628][I][STORAGE] RAMSpool enq=17 cons=17 inflight=0/1024 high=2 pressure=0 drop[full=0 big=0 noise=0 p3Evict=0 p3Drop=0 p2Drop=0 p1Fail=0] free=1024
+[133628][I][STORAGE] RAMSpool enqueue probe[ok=13 drop=0] device[ok=4 drop=0]
+[133629][I][STORAGE] RAMSpool worker probe[ok=4 sup=9 drop=0 fail=0 slow=0] device[ok=4 sup=0 drop=0 fail=0 slow=0] slowTotal=0 maxMs=0
+[133629][I][STORAGE] RAMSpool prioEnq p0=0 p1=0 p2=17 p3=0
+[133629][I][STORAGE] RAMSpool lanes p1=0/0 p2=0/1 p3=0/0
+[133640][I][WIO] External BLE phone disconnected reason=phone_drop previous=probing fail=1 phone=idle rssi=-54
+[133642][I][WIO] External BLE link dropped reason=failure
+[133642][I][WIO] External BLE phone disconnected reason=failure previous=failed fail=0 phone=idle rssi=-54
+[133643][W][WIO] external_probe_summary result=not_seen stage=1 miss=0 nextIn=60s
+[134409][I][WIO] External BLE probe response seq=7 found=0 connected=0 source=scan text=0 err=service_missing rssi=-51 best=-51 seen=2 uuid=1 conn=1 fail=1 ageMs=765
+[134409][W][WIO] External BLE probe miss class=service_missing seq=7 source=scan text=0 seen=2 uuid=1 best=-51 conn=1 fail=1 disc=0x3E
+[134410][W][WIO] External BLE failed reason=phone_not_reachable state=idle seq=0 ageMs=766 phone=idle rssi=-51
+[134422][I][WIO] BLE status phone=idle connected=0 rssi=-51 state=failed seq=0 ageMs=11 raw="phone=idle connected=0 rssi=-51 ble_ready=1 ble_init_started=1"
+[139426][I][WIO] BLE status phone=idle connected=0 rssi=-51 state=failed seq=0 ageMs=5015 raw="phone=idle connected=0 rssi=-51 ble_ready=1 ble_init_started=1"
+[143543][I][STORAGE] worker ui refresh serviced uiRefreshServiceCount=3 uiDeferred=19 uiFlush=2 pressure=0 usedPct=27 pending=10189
+[144428][I][WIO] BLE status phone=idle connected=0 rssi=-51 state=failed seq=0 ageMs=10017 raw="phone=idle connected=0 rssi=-51 ble_ready=1 ble_init_started=1"
+[149415][I][WIO] External BLE recovery to idle reason=failed_idle_recovery state=failed phone=idle rssi=-51
+[163632][I][STACK] TaskHardware watermark=11140B min=11140B
+[163634][I][HEAP] heap free=7697KB min=7685KB largest=7552KB frag=1% internalFree=52KB internalLargest=31KB psramFree=7645KB core=0/0% owner=WIFI_CAPTURE nets=9 pendingUpload=10189 pendingEnrich=10189
+[HEALTH] time=2026-06-21 16:34:48 src=ntp
+[HEALTH] heap used=725/8422KB free=7697KB min=7685KB largest=7552KB frag=1%
+[HEALTH] internal used=178/230KB free=52KB min=40KB largest=31KB
+[HEALTH] psram used=547/8192KB free=7645KB largest=7552KB
+[HEALTH] stack free_min: core0=11KB/22KB core1=13KB/18KB
+[HEALTH] core usage: core0=0% core1=0%
+[HEALTH] radio=WIFI_CAPTURE wifi=0 ble=0 gps=0 nets=9 pendingUpload=10189 pendingEnrich=10189
+[HEALTH] subghz=NONE mode=OFF pkts=0 nodes=0
+[163636][I][STORAGE] RAMSpool enq=19 cons=19 inflight=0/1024 high=2 pressure=0 drop[full=0 big=0 noise=0 p3Evict=0 p3Drop=0 p2Drop=0 p1Fail=0] free=1024
+[163636][I][STORAGE] RAMSpool enqueue probe[ok=15 drop=0] device[ok=4 drop=0]
+[163636][I][STORAGE] RAMSpool worker probe[ok=4 sup=11 drop=0 fail=0 slow=0] device[ok=4 sup=0 drop=0 fail=0 slow=0] slowTotal=0 maxMs=0
+[163637][I][STORAGE] RAMSpool prioEnq p0=0 p1=0 p2=19 p3=0
+[163637][I][STORAGE] RAMSpool lanes p1=0/0 p2=0/1 p3=0/0
+[172078][I][STORAGE] worker ui refresh serviced uiRefreshServiceCount=4 uiDeferred=24 uiFlush=3 pressure=0 usedPct=27 pending=10189
+[177082][I][STORAGE] worker ui refresh serviced uiRefreshServiceCount=5 uiDeferred=26 uiFlush=4 pressure=0 usedPct=27 pending=10189
+[182088][I][STORAGE] worker ui refresh serviced uiRefreshServiceCount=6 uiDeferred=28 uiFlush=5 pressure=0 usedPct=27 pending=10189
+[189406][I][STORAGE] worker ui refresh serviced uiRefreshServiceCount=7 uiDeferred=32 uiFlush=6 pressure=0 usedPct=27 pending=10189
+[191241][I][STORAGE] Routine maintenance requests coalesced count=4 latest=dirty_summary source=ramspool_idle flags=dirty_summary|snapshot_lagged
+[193635][I][STACK] TaskHardware watermark=11140B min=11140B
+[193637][I][HEAP] heap free=7697KB min=7685KB largest=7552KB frag=1% internalFree=52KB internalLargest=31KB psramFree=7645KB core=0/0% owner=WIFI_CAPTURE nets=9 pendingUpload=10189 pendingEnrich=10189
+[HEALTH] time=2026-06-21 16:35:18 src=ntp
+[HEALTH] heap used=725/8422KB free=7697KB min=7685KB largest=7552KB frag=1%
+[HEALTH] internal used=178/230KB free=52KB min=40KB largest=31KB
+[HEALTH] psram used=547/8192KB free=7645KB largest=7552KB
+[HEALTH] stack free_min: core0=11KB/22KB core1=13KB/18KB
+[HEALTH] core usage: core0=0% core1=0%
+[HEALTH] radio=WIFI_CAPTURE wifi=0 ble=0 gps=0 nets=9 pendingUpload=10189 pendingEnrich=10189
+[HEALTH] subghz=NONE mode=OFF pkts=0 nodes=0
+[193639][I][STORAGE] RAMSpool enq=33 cons=33 inflight=0/1024 high=2 pressure=0 drop[full=0 big=0 noise=0 p3Evict=0 p3Drop=0 p2Drop=0 p1Fail=0] free=1024
+[193639][I][STORAGE] RAMSpool enqueue probe[ok=29 drop=0] device[ok=4 drop=0]
+[193639][I][STORAGE] RAMSpool worker probe[ok=4 sup=25 drop=0 fail=0 slow=0] device[ok=4 sup=0 drop=0 fail=0 slow=0] slowTotal=0 maxMs=0
+[193640][I][STORAGE] RAMSpool prioEnq p0=0 p1=0 p2=33 p3=0
+[193640][I][STORAGE] RAMSpool lanes p1=0/0 p2=0/1 p3=0/0
+[194406][I][STORAGE] worker ui refresh serviced uiRefreshServiceCount=8 uiDeferred=33 uiFlush=7 pressure=0 usedPct=27 pending=10189
+[223641][I][STACK] TaskHardware watermark=11140B min=11140B
+[223643][I][HEAP] heap free=7697KB min=7685KB largest=7552KB frag=1% internalFree=52KB internalLargest=31KB psramFree=7645KB core=0/0% owner=WIFI_CAPTURE nets=9 pendingUpload=10189 pendingEnrich=10189
+[HEALTH] time=2026-06-21 16:35:48 src=ntp
+[HEALTH] heap used=725/8422KB free=7697KB min=7685KB largest=7552KB frag=1%
+[HEALTH] internal used=178/230KB free=52KB min=40KB largest=31KB
+[HEALTH] psram used=547/8192KB free=7645KB largest=7552KB
+[HEALTH] stack free_min: core0=11KB/22KB core1=13KB/18KB
+[HEALTH] core usage: core0=0% core1=0%
+[HEALTH] radio=WIFI_CAPTURE wifi=0 ble=0 gps=0 nets=9 pendingUpload=10189 pendingEnrich=10189
+[HEALTH] subghz=NONE mode=OFF pkts=0 nodes=0
+[223645][I][STORAGE] RAMSpool enq=33 cons=33 inflight=0/1024 high=2 pressure=0 drop[full=0 big=0 noise=0 p3Evict=0 p3Drop=0 p2Drop=0 p1Fail=0] free=1024
+[223645][I][STORAGE] RAMSpool enqueue probe[ok=29 drop=0] device[ok=4 drop=0]
+[223645][I][STORAGE] RAMSpool worker probe[ok=4 sup=25 drop=0 fail=0 slow=0] device[ok=4 sup=0 drop=0 fail=0 slow=0] slowTotal=0 maxMs=0
+[223646][I][STORAGE] RAMSpool prioEnq p0=0 p1=0 p2=33 p3=0
+[223646][I][STORAGE] RAMSpool lanes p1=0/0 p2=0/1 p3=0/0
+[234045][I][STORAGE] worker ui refresh serviced uiRefreshServiceCount=9 uiDeferred=34 uiFlush=8 pressure=0 usedPct=27 pending=10189
+[252576][I][STORAGE] worker ui refresh serviced uiRefreshServiceCount=10 uiDeferred=36 uiFlush=9 pressure=0 usedPct=27 pending=10189
+[253650][I][STACK] TaskHardware watermark=11140B min=11140B
+[253652][I][HEAP] heap free=7697KB min=7685KB largest=7552KB frag=1% internalFree=52KB internalLargest=31KB psramFree=7645KB core=0/0% owner=WIFI_CAPTURE nets=9 pendingUpload=10189 pendingEnrich=10189
+[HEALTH] time=2026-06-21 16:36:18 src=ntp
+[HEALTH] heap used=725/8422KB free=7697KB min=7685KB largest=7552KB frag=1%
+[HEALTH] internal used=178/230KB free=52KB min=40KB largest=31KB
+[HEALTH] psram used=547/8192KB free=7645KB largest=7552KB
+[HEALTH] stack free_min: core0=11KB/22KB core1=13KB/18KB
+[HEALTH] core usage: core0=0% core1=0%
+[HEALTH] radio=WIFI_CAPTURE wifi=0 ble=0 gps=0 nets=9 pendingUpload=10189 pendingEnrich=10189
+[HEALTH] subghz=NONE mode=OFF pkts=0 nodes=0
+[253654][I][STORAGE] RAMSpool enq=36 cons=36 inflight=0/1024 high=2 pressure=0 drop[full=0 big=0 noise=0 p3Evict=0 p3Drop=0 p2Drop=0 p1Fail=0] free=1024
+[253654][I][STORAGE] RAMSpool enqueue probe[ok=32 drop=0] device[ok=4 drop=0]
+[253654][I][STORAGE] RAMSpool worker probe[ok=4 sup=28 drop=0 fail=0 slow=0] device[ok=4 sup=0 drop=0 fail=0 slow=0] slowTotal=0 maxMs=0
+[253655][I][STORAGE] RAMSpool prioEnq p0=0 p1=0 p2=36 p3=0
+[253655][I][STORAGE] RAMSpool lanes p1=0/0 p2=0/1 p3=0/0
+[263088][I][STORAGE] worker ui refresh serviced uiRefreshServiceCount=11 uiDeferred=38 uiFlush=10 pressure=0 usedPct=27 pending=10189
+[283652][I][STACK] TaskHardware watermark=11140B min=11140B
+[283654][I][HEAP] heap free=7697KB min=7685KB largest=7552KB frag=1% internalFree=52KB internalLargest=31KB psramFree=7645KB core=0/0% owner=WIFI_CAPTURE nets=9 pendingUpload=10189 pendingEnrich=10189
+[HEALTH] time=2026-06-21 16:36:48 src=ntp
+[HEALTH] heap used=725/8422KB free=7697KB min=7685KB largest=7552KB frag=1%
+[HEALTH] internal used=178/230KB free=52KB min=40KB largest=31KB
+[HEALTH] psram used=547/8192KB free=7645KB largest=7552KB
+[HEALTH] stack free_min: core0=11KB/22KB core1=13KB/18KB
+[HEALTH] core usage: core0=0% core1=0%
+[HEALTH] radio=WIFI_CAPTURE wifi=0 ble=0 gps=0 nets=9 pendingUpload=10189 pendingEnrich=10189
+[HEALTH] subghz=NONE mode=OFF pkts=0 nodes=0
+[283656][I][STORAGE] RAMSpool enq=38 cons=38 inflight=0/1024 high=2 pressure=0 drop[full=0 big=0 noise=0 p3Evict=0 p3Drop=0 p2Drop=0 p1Fail=0] free=1024
+[283656][I][STORAGE] RAMSpool enqueue probe[ok=34 drop=0] device[ok=4 drop=0]
+[283656][I][STORAGE] RAMSpool worker probe[ok=4 sup=30 drop=0 fail=0 slow=0] device[ok=4 sup=0 drop=0 fail=0 slow=0] slowTotal=0 maxMs=0
+[283657][I][STORAGE] RAMSpool prioEnq p0=0 p1=0 p2=38 p3=0
+[283657][I][STORAGE] RAMSpool lanes p1=0/0 p2=0/1 p3=0/0
+[293087][I][STORAGE] worker ui refresh serviced uiRefreshServiceCount=12 uiDeferred=40 uiFlush=11 pressure=0 usedPct=27 pending=10189
+[310492][I][STORAGE] worker ui refresh serviced uiRefreshServiceCount=13 uiDeferred=45 uiFlush=12 pressure=0 usedPct=27 pending=10189
+[313654][I][STACK] TaskHardware watermark=11140B min=11140B
+[313656][I][HEAP] heap free=7697KB min=7685KB largest=7552KB frag=1% internalFree=52KB internalLargest=31KB psramFree=7645KB core=0/0% owner=WIFI_CAPTURE nets=9 pendingUpload=10189 pendingEnrich=10189
+[HEALTH] time=2026-06-21 16:37:17 src=ntp
+[HEALTH] heap used=725/8422KB free=7697KB min=7685KB largest=7552KB frag=1%
+[HEALTH] internal used=178/230KB free=52KB min=40KB largest=31KB
+[HEALTH] psram used=547/8192KB free=7645KB largest=7552KB
+[HEALTH] stack free_min: core0=11KB/22KB core1=13KB/18KB
+[HEALTH] core usage: core0=0% core1=0%
+[HEALTH] radio=WIFI_CAPTURE wifi=0 ble=0 gps=0 nets=9 pendingUpload=10189 pendingEnrich=10189
+[HEALTH] subghz=NONE mode=OFF pkts=0 nodes=0
+[313658][I][STORAGE] RAMSpool enq=45 cons=45 inflight=0/1024 high=2 pressure=0 drop[full=0 big=0 noise=0 p3Evict=0 p3Drop=0 p2Drop=0 p1Fail=0] free=1024
+[313658][I][STORAGE] RAMSpool enqueue probe[ok=41 drop=0] device[ok=4 drop=0]
+[313658][I][STORAGE] RAMSpool worker probe[ok=4 sup=37 drop=0 fail=0 slow=0] device[ok=4 sup=0 drop=0 fail=0 slow=0] slowTotal=0 maxMs=0
+[313659][I][STORAGE] RAMSpool prioEnq p0=0 p1=0 p2=45 p3=0
+[313659][I][STORAGE] RAMSpool lanes p1=0/0 p2=0/1 p3=0/0
+[343654][I][STACK] TaskHardware watermark=11140B min=11140B
+[343656][I][HEAP] heap free=7697KB min=7685KB largest=7552KB frag=1% internalFree=52KB internalLargest=31KB psramFree=7645KB core=0/0% owner=WIFI_CAPTURE nets=9 pendingUpload=10189 pendingEnrich=10189
+[HEALTH] time=2026-06-21 16:37:47 src=ntp
+[HEALTH] heap used=725/8422KB free=7697KB min=7685KB largest=7552KB frag=1%
+[HEALTH] internal used=178/230KB free=52KB min=40KB largest=31KB
+[HEALTH] psram used=547/8192KB free=7645KB largest=7552KB
+[HEALTH] stack free_min: core0=11KB/22KB core1=13KB/18KB
+[HEALTH] core usage: core0=0% core1=0%
+[HEALTH] radio=WIFI_CAPTURE wifi=0 ble=0 gps=0 nets=9 pendingUpload=10189 pendingEnrich=10189
+[HEALTH] subghz=NONE mode=OFF pkts=0 nodes=0
+[343658][I][STORAGE] RAMSpool enq=45 cons=45 inflight=0/1024 high=2 pressure=0 drop[full=0 big=0 noise=0 p3Evict=0 p3Drop=0 p2Drop=0 p1Fail=0] free=1024
+[343658][I][STORAGE] RAMSpool enqueue probe[ok=41 drop=0] device[ok=4 drop=0]
+[343658][I][STORAGE] RAMSpool worker probe[ok=4 sup=37 drop=0 fail=0 slow=0] device[ok=4 sup=0 drop=0 fail=0 slow=0] slowTotal=0 maxMs=0
+[343659][I][STORAGE] RAMSpool prioEnq p0=0 p1=0 p2=45 p3=0
+[343659][I][STORAGE] RAMSpool lanes p1=0/0 p2=0/1 p3=0/0
+[353532][I][STORAGE] worker ui refresh serviced uiRefreshServiceCount=14 uiDeferred=47 uiFlush=13 pressure=0 usedPct=27 pending=10189
+[362586][I][STORAGE] worker ui refresh serviced uiRefreshServiceCount=15 uiDeferred=49 uiFlush=14 pressure=0 usedPct=27 pending=10189
+[369585][W][STORAGE] Counter trust=trusted_snapshot_lagged reason=append_metadata_deferred since=369584
+[369930][I][STORAGE] worker ui refresh serviced uiRefreshServiceCount=16 uiDeferred=53 uiFlush=15 pressure=0 usedPct=27 pending=10191
+[373656][I][STACK] TaskHardware watermark=11140B min=11140B
+[373658][I][HEAP] heap free=7691KB min=7685KB largest=7552KB frag=1% internalFree=47KB internalLargest=31KB psramFree=7645KB core=1/0% owner=WIFI_CAPTURE nets=9 pendingUpload=10191 pendingEnrich=10191
+[HEALTH] time=2026-06-21 16:38:17 src=ntp
+[HEALTH] heap used=731/8422KB free=7691KB min=7685KB largest=7552KB frag=1%
+[HEALTH] internal used=183/230KB free=47KB min=40KB largest=31KB
+[HEALTH] psram used=547/8192KB free=7645KB largest=7552KB
+[HEALTH] stack free_min: core0=11KB/22KB core1=13KB/18KB
+[HEALTH] core usage: core0=1% core1=0%
+[HEALTH] radio=WIFI_CAPTURE wifi=0 ble=0 gps=0 nets=9 pendingUpload=10191 pendingEnrich=10191
+[HEALTH] subghz=NONE mode=OFF pkts=0 nodes=0
+[373660][I][STORAGE] RAMSpool enq=53 cons=53 inflight=0/1024 high=2 pressure=0 drop[full=0 big=0 noise=0 p3Evict=0 p3Drop=0 p2Drop=0 p1Fail=0] free=1024
+[373661][I][STORAGE] RAMSpool enqueue probe[ok=48 drop=0] device[ok=5 drop=0]
+[373661][I][STORAGE] RAMSpool worker probe[ok=5 sup=43 drop=0 fail=0 slow=0] device[ok=5 sup=0 drop=0 fail=0 slow=0] slowTotal=0 maxMs=0
+[373661][I][STORAGE] RAMSpool prioEnq p0=0 p1=0 p2=53 p3=0
+[373661][I][STORAGE] RAMSpool lanes p1=0/0 p2=0/1 p3=0/0
+[394066][I][STORAGE] worker ui refresh serviced uiRefreshServiceCount=17 uiDeferred=55 uiFlush=16 pressure=0 usedPct=27 pending=10191
+[403662][I][STACK] TaskHardware watermark=11140B min=11140B
+[403664][I][HEAP] heap free=7691KB min=7685KB largest=7552KB frag=1% internalFree=47KB internalLargest=31KB psramFree=7645KB core=0/0% owner=WIFI_CAPTURE nets=9 pendingUpload=10191 pendingEnrich=10191
+[HEALTH] time=2026-06-21 16:38:48 src=ntp
+[HEALTH] heap used=731/8422KB free=7691KB min=7685KB largest=7552KB frag=1%
+[HEALTH] internal used=183/230KB free=47KB min=40KB largest=31KB
+[HEALTH] psram used=547/8192KB free=7645KB largest=7552KB
+[HEALTH] stack free_min: core0=11KB/22KB core1=13KB/18KB
+[HEALTH] core usage: core0=0% core1=0%
+[HEALTH] radio=WIFI_CAPTURE wifi=0 ble=0 gps=0 nets=9 pendingUpload=10191 pendingEnrich=10191
+[HEALTH] subghz=NONE mode=OFF pkts=0 nodes=0
+[403665][I][STORAGE] RAMSpool enq=55 cons=55 inflight=0/1024 high=2 pressure=0 drop[full=0 big=0 noise=0 p3Evict=0 p3Drop=0 p2Drop=0 p1Fail=0] free=1024
+[403666][I][STORAGE] RAMSpool enqueue probe[ok=50 drop=0] device[ok=5 drop=0]
+[403666][I][STORAGE] RAMSpool worker probe[ok=5 sup=45 drop=0 fail=0 slow=0] device[ok=5 sup=0 drop=0 fail=0 slow=0] slowTotal=0 maxMs=0
+[403666][I][STORAGE] RAMSpool prioEnq p0=0 p1=0 p2=55 p3=0
+[403667][I][STORAGE] RAMSpool lanes p1=0/0 p2=0/1 p3=0/0
+=== send: spool enrich (post) ===
+spool enrich
+[404792][I][WIFI] Radio paused
+[404948][I][WIFI] Radio suspended
+[405034][I][STORAGE] RAMSpool worker paused inflight=0 lastInflight=0
+[405035][I][STORAGE] Exclusive window begin kind=maintenance reason=manual_spool_enrich workerPaused=1 displaySuspended=1
+[SPOOL] enrich starting...
+[405262][I][STORAGE] load_ids_reserve count=252 freeInternal=78468 largest=31732
+[405262][I][STORAGE] load_ids_reserved freeInternal=77440
+[405263][I][STORAGE] load_ids_scan seg=130 enrichDeltas=54 freeInternal=77440 largest=31732
+[405305][I][STORAGE] load_ids_scan seg=132 enrichDeltas=90 freeInternal=77440 largest=31732
+[405344][I][STORAGE] load_ids_scan seg=133 enrichDeltas=90 freeInternal=77444 largest=31732
+[405383][I][STORAGE] load_ids_scan seg=134 enrichDeltas=18 freeInternal=77444 largest=31732
+[405414][I][STORAGE] load_ids_loop_done scanned=4 skipped=30 idsCollected=252 freeInternal=77444
+=== session closing 2026-06-21T16:39:08.4707537-05:00 ===

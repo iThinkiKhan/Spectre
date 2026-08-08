@@ -57,7 +57,9 @@ MascotState _missionMascot(MissionProfile profile) {
     switch (profile) {
         case MISSION_RECON:  return MASCOT_RECON_WALK;
         case MISSION_PWNY:   return MASCOT_PWNY;
-        case MISSION_UPLINK: return MASCOT_HOMELAB_SYNC;
+        // Uplink has its own sync/publish mascot now. It used to borrow
+        // HOMELAB_SYNC, which is the boot-summary character.
+        case MISSION_UPLINK: return MASCOT_UPLINK;
         default:             return MASCOT_STANDBY;
     }
 }
@@ -70,7 +72,10 @@ MascotState _generalMascot(Screen screen) {
         case SCREEN_RECON:      return MASCOT_PREFLIGHT;
         case SCREEN_MISSION:    return MASCOT_PREFLIGHT;
         case SCREEN_MISSION_SUMMARY: return MASCOT_HOMELAB_SYNC;
-        case SCREEN_MESHTASTIC:
+        // Mesh gets its own relay-operator mascot instead of the generic
+        // standby it shared with SYSTEM; SYSTEM keeps STANDBY, which now reads
+        // as its own character rather than a fallback.
+        case SCREEN_MESHTASTIC: return MASCOT_MESHTASTIC;
         case SCREEN_SYSTEM:
         default:                return MASCOT_STANDBY;
     }

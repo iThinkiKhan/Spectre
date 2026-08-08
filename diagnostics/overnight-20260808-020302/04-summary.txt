@@ -1,0 +1,69 @@
+SPECTRE OVERNIGHT ANALYTICS
+===========================
+run started : 20260808-020302
+finished    : 2026-08-08 05:39:13
+soak hours  : 3.5
+samples     : 113
+
+MEMORY TREND (leak detection)
+-----------------------------
+window            : 3.50 h
+heap free         : 6252 -> 6247 KB   (delta -5 KB)
+internal free     : 66 -> 60 KB   (delta -6 KB)
+psram free        : 6186 -> 6186 KB   (delta 0 KB)
+heap drift/hour   : -1.4 KB/h
+internal drift/h  : -1.7 KB/h
+verdict           : stable
+
+PRESSURE EXTREMES
+-----------------
+lowest internal free : 60 KB   (headroom warning below ~25 KB)
+worst fragmentation  : 1 %
+
+BACKLOG TREND
+-------------
+pendingUpload : 332 -> 434
+pendingEnrich : 332 -> 434
+note: upload backlog GREW during soak - capture is outrunning drain
+
+RADIO OWNERSHIP DISTRIBUTION
+----------------------------
+  WIFI_CAPTURE        113 samples (100%)
+
+ERROR / WARNING CENSUS
+----------------------
+  assert             0
+  enrich stall       0
+  error-level log    0
+  panic/crash        0
+  radio churn        0
+  storage drop       0
+  warn-level log     87
+  watchdog           0
+
+TOP DISTINCT WARN/ERROR LINES (what to work on)
+-----------------------------------------------
+     19x [W][STORAGE] Counter trust=trusted_snapshot_lagged reason=append_metadata_deferred since=N
+     16x [W][CORE] TaskHardware loop gap=Nms owner=WIFI_CAPTURE pendingUpload=N maintPending=N suppressed=N
+     13x [W][STORAGE] Counter trust=trusted reason=worker_metadata_flush since=N
+     12x [W][CORE] TaskHardware slow section=capture_storage_maintenance ms=N owner=WIFI_CAPTURE pendingUpload=N maintPending=N
+      6x [W][STORAGE] worker append file flush reason=capture_micro_idle seg=N records=N ms=N close=N ok=N
+      6x [W][STORAGE] worker metadata flush reason=capture_micro_idle ms=N ok=N dirty=N
+      2x [W][STORAGE] worker metadata flush reason=radio_owner_window ms=N ok=N dirty=N
+      2x [W][CORE] TaskHardware loop gap=Nms owner=STORAGE_MAINT pendingUpload=N maintPending=N suppressed=N
+      2x [W][STORAGE] worker append file flush reason=radio_owner_window seg=N records=N ms=N close=N ok=N
+      2x [W][STORAGE] Spool audit slow reason=manual_audit segs=N recs=N ms=N
+      2x [W][STORAGE] Spool audit slow reason=manual_count segs=N recs=N ms=N
+      1x [W][STORAGE] queued write slow type=device total=N parse=N classify=N build=N append=N checkpoint=N index=N counter=N ui=N
+      1x [W][CORE] TaskHardware slow section=capture_storage_maintenance ms=N owner=STORAGE_MAINT pendingUpload=N maintPending=N
+      1x [W][STORAGE] queued write slow batch records=N total=N parse=N classify=N build=N append=N checkpoint=N index=N counter=N ui=N close=N ok=N
+      1x [W][STORAGE] Counter trust=trusted reason=manual_count_reconcile since=N
+      1x [W][STORAGE] worker append file flush reason=manual_count seg=N records=N ms=N close=N ok=N
+
+ARTIFACTS
+---------
+  boot      : C:\PlatformIO\Projects\Spectre\diagnostics\overnight-20260808-020302\00-boot.log
+  commands  : C:\PlatformIO\Projects\Spectre\diagnostics\overnight-20260808-020302\01-commands.log
+  soak      : C:\PlatformIO\Projects\Spectre\diagnostics\overnight-20260808-020302\02-soak.log
+  samples   : C:\PlatformIO\Projects\Spectre\diagnostics\overnight-20260808-020302\03-samples.csv
+

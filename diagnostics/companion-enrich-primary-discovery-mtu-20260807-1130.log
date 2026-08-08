@@ -1,0 +1,43 @@
+=== session opened 2026-08-07T11:30:06.6797293-05:00 ===
+=== send: companion status ===
+companion status
+[COMP] enabled=1
+[COMP] external accessory=0 bleProxy=0 phoneConnected=0 phone=unknown rssi=0 ageMs=0
+[COMP] wio link=idle sx1262=0 textInput=0
+[COMP] phone=UNKNOWN work=IDLE
+[COMP] bleBegun=0 bleRadio=0 bleState=IDLE
+[COMP] ready link=0 gps=0 freshGps=0 ctrl=0 enrich=0
+[COMP] bleInitAgeMs=0 scanStartAgeMs=0 disconnReason=0
+[COMP] pendingEnrichMission=0 pendingEnrichNoise=0 pendingEnrichTotal=0
+[COMP] lastProbeAgeMs=0 lastEnrichAgeMs=0
+[COMP] radioOwner=wifi_capture
+[60011][I][HEAP] heap free=7686KB min=7682KB largest=7552KB frag=1% internalFree=42KB internalLargest=31KB psramFree=7645KB core=0/0% owner=WIFI_CAPTURE nets=6 pendingUpload=? pendingEnrich=0
+[HEALTH] time=2026-08-07 11:30:06 src=ntp
+[HEALTH] heap used=731/8418KB free=7686KB min=7682KB largest=7552KB frag=1%
+[HEALTH] internal used=184/226KB free=42KB min=37KB largest=31KB
+[HEALTH] psram used=547/8192KB free=7645KB largest=7552KB
+[HEALTH] stack free_min: core0=17KB/22KB core1=13KB/18KB
+[HEALTH] core usage: core0=0% core1=0%
+[HEALTH] power=usb state=usb batt=100% 4911mV trend=38mV/min runtime=0min cap=1100mAh charging=1
+[HEALTH] radio=WIFI_CAPTURE wifi=0 ble=0 gps=0 nets=6 pendingUpload=? pendingEnrich=0
+[HEALTH] subghz=NONE mode=OFF pkts=0 nodes=0
+[60013][I][STORAGE] RAMSpool enq=22 cons=22 inflight=0/1024 high=3 pressure=0 drop[full=0 big=0 noise=0 p3Evict=0 p3Drop=0 p2Drop=0 p1Fail=0] free=1024
+[60014][I][STORAGE] RAMSpool enqueue probe[ok=19 drop=0] device[ok=3 drop=0]
+[60014][I][STORAGE] RAMSpool worker probe[ok=4 sup=15 drop=0 fail=0 slow=0] device[ok=3 sup=0 drop=0 fail=0 slow=0] slowTotal=0 maxMs=0
+[60014][I][STORAGE] RAMSpool prioEnq p0=0 p1=0 p2=22 p3=0
+[60015][I][STORAGE] RAMSpool lanes p1=0/0 p2=0/2 p3=0/0
+[61028][I][STACK] TaskHardware watermark=17216B min=17216B
+=== send: companion enrich ===
+companion enrich
+[COMP] manual enrich queued
+[61771][I][COMP] Manual enrich request received; probe backoff bypassed
+[61772][I][WIFI] Radio paused
+[61933][I][WIFI] Radio suspended
+[62009][I][BLE] begin phase=nimble_pre bt=idle/0 heap=73244 largest=31732 stack=17216 devLen=14
+[62009][I][BLE] begin phase=nimble_init
+[62019][I][BLE] begin phase=nimble_init_ok bt=enabled/2 heap=10232 largest=7156 stack=17216
+[62020][I][BLE] BLE SM disabled; app-layer P-256/AES-GCM required
+[62021][I][BLE] begin phase=server_ok
+[62022][I][BLE] scanner configured legacy=1 active=1 interval=30 window=30 srTimeout=200
+[62022][I][BLE] begin phase=scanner_ok
+[62022][E][BLE] worker stack alloc failed

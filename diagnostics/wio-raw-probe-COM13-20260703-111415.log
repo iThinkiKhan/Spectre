@@ -1,0 +1,45 @@
+# opened COM13 2026-07-03T11:14:15.5838842-05:00
+[121036][I][STACK] TaskHardware watermark=17120B min=17120B
+[124039][I][STORAGE] worker ui refresh serviced uiRefreshServiceCount=10 uiDeferred=28 uiFlush=10 pressure=0 usedPct=4 pending=445
+>>> wio status
+wio status
+[WIO] available=0 bleProxy=0 sx1262=0 link=idle lastSeenAgeMs=0
+[WIO] phoneConnected=0 phone=unknown rssi=0
+[WIO] gpsFresh=0 lat=0.000000 lon=0.000000 acc=0.0 timeTrusted=0 epoch=0
+[WIO] textPending=0 textReady=0 prompt=
+[XPORT] active=internal_ble previous=none ageMs=119196 transitions=0
+>>> wio ble status
+wio ble status
+[WIO] BLE_STATUS requested
+>>> wio raw SPECTRE/1 BLE_PROBE id=4242 timeout=20000
+wio raw SPECTRE/1 BLE_PROBE id=4242 timeout=20000
+[WIO] raw line sent
+[129043][I][STORAGE] worker ui refresh serviced uiRefreshServiceCount=11 uiDeferred=32 uiFlush=11 pressure=0 usedPct=4 pending=445
+# waiting for raw relay probe result
+[134043][I][STORAGE] worker ui refresh serviced uiRefreshServiceCount=12 uiDeferred=36 uiFlush=12 pressure=0 usedPct=4 pending=445
+[139050][I][STORAGE] worker ui refresh serviced uiRefreshServiceCount=13 uiDeferred=38 uiFlush=13 pressure=0 usedPct=4 pending=445
+[146197][I][STORAGE] capture write allowed owner=WIFI_CAPTURE path=/events/counter.txt reason=capture_micro_idle ms=93 ok=1
+[146306][I][STORAGE] capture write allowed owner=WIFI_CAPTURE path=/events/meta.json reason=capture_micro_idle ms=108 ok=1
+[147025][I][STORAGE] capture write allowed owner=WIFI_CAPTURE path=/spool/index.json reason=capture_micro_idle ms=713 ok=1
+[147026][W][STORAGE] Counter trust=trusted reason=worker_metadata_flush since=147026
+[147026][W][CORE] TaskHardware slow section=capture_storage_maintenance ms=988 owner=WIFI_CAPTURE pendingUpload=445 maintPending=0
+[147036][W][CORE] TaskHardware loop gap=998ms owner=WIFI_CAPTURE pendingUpload=445 maintPending=0 suppressed=0
+[150036][I][HEAP] heap free=7692KB min=7671KB largest=7552KB frag=1% internalFree=42KB internalLargest=30KB psramFree=7650KB core=3/2% owner=WIFI_CAPTURE nets=8 pendingUpload=445 pendingEnrich=448
+[HEALTH] time=2026-07-03 11:14:42 src=ntp
+[HEALTH] heap used=726/8418KB free=7692KB min=7671KB largest=7552KB frag=1%
+[HEALTH] internal used=184/226KB free=42KB min=21KB largest=30KB
+[HEALTH] psram used=542/8192KB free=7650KB largest=7552KB
+[HEALTH] stack free_min: core0=17KB/22KB core1=13KB/18KB
+[HEALTH] core usage: core0=3% core1=2%
+[HEALTH] power=usb state=usb batt=100% 4827mV trend=-73mV/min runtime=0min cap=1100mAh charging=0
+[HEALTH] radio=WIFI_CAPTURE wifi=0 ble=0 gps=0 nets=8 pendingUpload=445 pendingEnrich=448
+[HEALTH] subghz=NONE mode=OFF pkts=0 nodes=0
+[150038][I][STORAGE] RAMSpool enq=38 cons=38 inflight=0/1024 high=3 pressure=0 drop[full=0 big=0 noise=0 p3Evict=0 p3Drop=0 p2Drop=0 p1Fail=0] free=1024
+[150039][I][STORAGE] RAMSpool enqueue probe[ok=33 drop=0] device[ok=5 drop=0]
+[150039][I][STORAGE] RAMSpool worker probe[ok=5 sup=28 drop=0 fail=0 slow=0] device[ok=5 sup=0 drop=0 fail=0 slow=0] slowTotal=0 maxMs=0
+[150039][I][STORAGE] RAMSpool prioEnq p0=0 p1=0 p2=38 p3=0
+[150039][I][STORAGE] RAMSpool lanes p1=0/0 p2=0/2 p3=0/0
+[151046][I][STACK] TaskHardware watermark=17120B min=17120B
+[151141][I][STORAGE] Routine maintenance requests coalesced count=4 latest=snapshot_lagged source=ramspool_batch flags=snapshot_lagged
+[151423][I][STORAGE] worker ui refresh serviced uiRefreshServiceCount=14 uiDeferred=40 uiFlush=14 pressure=0 usedPct=4 pending=445
+# closing 2026-07-03T11:14:51.1151800-05:00

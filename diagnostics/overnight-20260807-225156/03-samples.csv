@@ -1,0 +1,5 @@
+timestamp,uptime_ms,heap_free_kb,heap_min_kb,frag_pct,internal_free_kb,internal_largest_kb,psram_free_kb,pending_upload,pending_enrich,core0_pct,core1_pct,owner
+2026-08-07 22:56:57,540510,6252,6229,1,66,31,6186,175,175,0,0,WIFI_CAPTURE
+2026-08-07 22:56:57,570512,6252,6229,1,66,31,6186,175,175,0,0,WIFI_CAPTURE
+2026-08-07 22:58:59,660514,6252,6229,1,66,31,6186,175,175,1,0,WIFI_CAPTURE
+2026-08-07 22:58:59,690517,6252,6229,1,66,31,6186,175,175,0,0,WIFI_CAPTURE

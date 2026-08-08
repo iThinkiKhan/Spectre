@@ -1,0 +1,201 @@
+SERIAL_OPENED COM13
+WROTE upload now
+upload now
+[UPLOAD] pending count not authoritative; forcing indexed recovery drain pending=224
+[467980][I][WIFI] Radio paused
+[467983][I][STORAGE] RAMSpool worker paused inflight=0 lastInflight=0
+[467983][I][STORAGE] Exclusive window begin kind=upload reason=upload_index workerPaused=1 displaySuspended=1
+[467984][W][STORAGE] Upload index window reduced reason=heap_guard pending=224 requested=224 window=16 estimate=1152 maxAlloc=6404 psramLargest=7733236 psramFree=7822560 internalLargest=20468 internalFree=47348 m
+[468057][I][STORAGE] Upload index rebuild begin pending=224 window=16 heapFree=7875276 largest=7733236
+[468090][W][STORAGE] Upload index sidecar stale seg=1 reason=no_pending path=/spool/idx_000001.uix
+[470499][W][STORAGE] Upload index sidecar stale seg=2 reason=no_pending path=/spool/idx_000002.uix
+[471299][W][STORAGE] Upload index sidecar stale seg=3 reason=no_pending path=/spool/idx_000003.uix
+[472917][W][STORAGE] Upload index sidecar stale seg=4 reason=no_pending path=/spool/idx_000004.uix
+[474793][W][STORAGE] Upload index sidecar stale seg=5 reason=no_pending path=/spool/idx_000005.uix
+[476292][W][STORAGE] Upload index sidecar stale seg=6 reason=no_pending path=/spool/idx_000006.uix
+[477797][W][STORAGE] Upload index sidecar stale seg=7 reason=no_pending path=/spool/idx_000007.uix
+[480351][W][STORAGE] Upload index sidecar stale seg=8 reason=no_pending path=/spool/idx_000008.uix
+[482656][W][STORAGE] Upload index sidecar stale seg=9 reason=no_pending path=/spool/idx_000009.uix
+[483740][W][STORAGE] Upload index sidecar stale seg=10 reason=no_pending path=/spool/idx_000010.uix
+[484447][W][STORAGE] Upload index sidecar stale seg=11 reason=no_pending path=/spool/idx_000011.uix
+[486691][W][STORAGE] Upload index sidecar stale seg=12 reason=no_pending path=/spool/idx_000012.uix
+[487693][W][STORAGE] Upload index sidecar stale seg=13 reason=no_pending path=/spool/idx_000013.uix
+[488198][W][STORAGE] Upload index sidecar stale seg=15 reason=coverage max=4548 last=4564 pending=4
+[490866][I][STORAGE] Upload index rebuild progress segs=25 indexed=16 window=16 heapFree=7783396 largest=7733236
+[490866][I][STORAGE] Upload index window full indexed=16 window=16 stopSeg=26
+[490867][I][STORAGE] Upload window rebuild accepted indexed=16 window=16 pending=224 sessions=2 skipped=0 failedSegs=0 sidecarLoaded=1 sidecarStale=24 truncated=1 heapFree=7783396 largest=7733236
+[490867][I][STORAGE] Upload index prepare rebuilt=1 indexed=16 sessions=2 skipped=0 failedSegs=0 ms=22882 fallback=0
+[490872][I][MQTT] Dump start � pendingUpload=224 lease=154s leaseMaxEvents=224
+[490873][I][MQTT] Upload stream fill begin bucket=1 max=1 requested=64 internalFree=8192 indexWindow=16 indexed=16 truncated=1 sessions=2 sessionIndex=0 radioQuiet=1
+[490873][I][MQTT] Upload bucket session start idx=0 sess=33e864-3480-e0163c81 bucket=0
+[490874][I][MQTT] First event batch fetch session=33e864-3480-e0163c81 since=4448 radioQuiet=1
+[490894][I][MQTT] Upload RAM bucket staged bucket=1 records=1 lastEvent=4449 heapFree=212 psramFree=7773436
+[490895][I][MQTT] First event batch fetched ok=1 count=1 ms=19 radioQuiet=1
+[490896][I][MQTT] Upload stream fill done bucket=1 records=1 complete=0 ms=23
+[490896][I][STORAGE] Upload batch open � deferring watermark flush
+[490896][I][MQTT] Upload lease granted � pending=224 window=224 lease=154s
+[UPLOAD] manual upload queued pending=224
+[490900][I][MQTT] Connecting to upload network: Nothing But Net timeout=30s txPowerQdbm=32
+[490901][E][CORE] Contract violation: repair pending owner=WIFI_UPLOAD flags=dirty_spool_index|dirty_summary|boot_safe_deferred_persist|snapshot_lagged|upload_enrich_cursor_dirty|counter_untrusted|
+[490903][I][STACK] TaskHardware watermark=14800B min=14800B
+[490905][I][HEAP] heap free=7595KB min=7582KB largest=7552KB frag=0% psramFree=7592KB core=45/20% owner=WIFI_UPLOAD nets=12 pendingUpload=? pendingEnrich=0
+[HEALTH] uptime=0h08m10s
+[HEALTH] heap used=827/8422KB free=7595KB min=7582KB largest=7552KB frag=0%
+[HEALTH] psram used=600/8192KB free=7592KB largest=7552KB
+[HEALTH] stack free_min: core0=14KB/22KB core1=13KB/18KB
+[HEALTH] core usage: core0=45% core1=20%
+[HEALTH] radio=WIFI_UPLOAD wifi=0 ble=0 gps=0 nets=12 pendingUpload=? pendingEnrich=0
+[HEALTH] subghz=NONE mode=OFF pkts=0 nodes=0
+[490907][I][STORAGE] RAMSpool enq=90 cons=90 inflight=0/1024 high=4 pressure=0 drop[full=0 big=0 noise=0 p3Evict=0 p3Drop=0 p2Drop=0 p1Fail=0] free=1024
+[490907][I][STORAGE] RAMSpool enqueue probe[ok=84 drop=0] device[ok=6 drop=0]
+[490908][I][STORAGE] RAMSpool worker probe[ok=9 sup=75 drop=0 fail=0 slow=0] device[ok=6 sup=0 drop=0 fail=0 slow=0] slowTotal=0 maxMs=0
+[490908][I][STORAGE] RAMSpool prioEnq p0=0 p1=0 p2=90 p3=0
+[490908][I][STORAGE] RAMSpool lanes p1=0/0 p2=0/3 p3=0/0
+[HEAP] integrity check ok
+[490920][W][CORE] TaskHardware loop gap=22941ms owner=WIFI_UPLOAD pendingUpload=224 maintPending=1 suppressed=0
+[492533][I][MQTT] WiFi connected, connecting broker
+[492544][I][MQTT] Broker connect settling after WiFi association ms=300
+[492855][I][MQTT] Broker connect attempt host=192.168.0.11 port=1883 client=spectre_33e864-3
+[495870][I][MQTT] Broker connect result ok=0 state=-4 ms=3015
+[495902][I][MQTT] Broker connect attempt host=192.168.0.11 port=1883 client=spectre_33e864-3
+[498904][I][MQTT] Broker connect result ok=0 state=-2 ms=3002
+[498937][I][MQTT] Broker connect attempt host=192.168.0.11 port=1883 client=spectre_33e864-3
+[501939][I][MQTT] Broker connect result ok=0 state=-2 ms=3002
+[501950][W][CORE] TaskHardware loop gap=3035ms owner=WIFI_UPLOAD pendingUpload=224 maintPending=1 suppressed=2
+[501973][I][MQTT] Broker connect attempt host=192.168.0.11 port=1883 client=spectre_33e864-3
+[504975][I][MQTT] Broker connect result ok=0 state=-2 ms=3002
+[505008][I][MQTT] Broker connect attempt host=192.168.0.11 port=1883 client=spectre_33e864-3
+[508010][I][MQTT] Broker connect result ok=0 state=-2 ms=3002
+[508043][I][MQTT] Broker connect attempt host=192.168.0.11 port=1883 client=spectre_33e864-3
+[511045][I][MQTT] Broker connect result ok=0 state=-2 ms=3002
+[511046][W][MQTT] Broker connect failed
+[511046][W][MQTT] Broker timeout
+[511059][W][MQTT] Dump failed, backoff 300000 ms
+[511064][I][STORAGE] Upload batch closed � maintenance queued dirty=0 sidecar=1 flags=dirty_spool_index|dirty_summary|boot_safe_deferred_persist|snapshot_lagged|upload_enrich_cursor_dirty|counter_untrusted|segm
+[511071][I][STORAGE] Upload index released reason=upload_batch_end indexed=16 sessions=2
+[513366][I][STORAGE] RAMSpool worker resumed
+[513367][I][STORAGE] Exclusive window end kind=upload result=failed reason=upload_index
+[513524][I][WIFI] Radio suspended
+[513525][I][STACK] TaskHardware upload watermark result=failed before=14800B after=14800B drop=0B
+[513535][W][CORE] TaskHardware loop gap=2479ms owner=STORAGE_MAINT pendingUpload=224 maintPending=1 suppressed=3
+[513538][I][STORAGE] RAMSpool worker paused inflight=0 lastInflight=0
+[513539][I][STORAGE] Exclusive window begin kind=maintenance reason=radio_owner_window workerPaused=1 displaySuspended=1
+[513539][I][STORAGE] Maintenance start reason=radio_owner_window budgetMs=30000 flags=dirty_spool_index|dirty_summary|boot_safe_deferred_persist|snapshot_lagged|upload_enrich_cursor_dirty|counter_untrusted|segmen
+[513540][W][STORAGE] maintenance deferred reason=unsafe_repair_backoff backoffMs=300000 remaining=dirty_spool_index|dirty_summary|boot_safe_deferred_persist|snapshot_lagged|upload_enrich_cursor_dirty|counter_untr
+[513540][I][STORAGE] RAMSpool worker resumed
+[513540][I][STORAGE] Exclusive window end kind=maintenance result=pending reason=radio_owner_window
+[513541][I][STORAGE] maintenance owner window ms=2 captureSafe=0 remaining=dirty_spool_index|dirty_summary|boot_safe_deferred_persist|snapshot_lagged|upload_enrich_cursor_dirty|counter_untrusted|segment_audit|fs_
+[513752][I][WIFI] Promiscuous: YES
+[513753][I][WIFI] Promiscuous mode started data=0
+[520902][I][STACK] TaskHardware watermark=14800B min=14800B
+[520904][I][HEAP] heap free=7690KB min=7582KB largest=7552KB frag=1% psramFree=7639KB core=17/2% owner=WIFI_CAPTURE nets=12 pendingUpload=? pendingEnrich=0
+[HEALTH] uptime=0h08m40s
+[HEALTH] heap used=732/8422KB free=7690KB min=7582KB largest=7552KB frag=1%
+[HEALTH] psram used=553/8192KB free=7639KB largest=7552KB
+[HEALTH] stack free_min: core0=14KB/22KB core1=13KB/18KB
+[HEALTH] core usage: core0=17% core1=2%
+[HEALTH] radio=WIFI_CAPTURE wifi=0 ble=0 gps=0 nets=12 pendingUpload=? pendingEnrich=0
+[HEALTH] subghz=NONE mode=OFF pkts=0 nodes=0
+[520905][I][STORAGE] RAMSpool enq=92 cons=92 inflight=0/1024 high=4 pressure=0 drop[full=0 big=0 noise=0 p3Evict=0 p3Drop=0 p2Drop=0 p1Fail=0] free=1024
+[520906][I][STORAGE] RAMSpool enqueue probe[ok=86 drop=0] device[ok=6 drop=0]
+[520906][I][STORAGE] RAMSpool worker probe[ok=9 sup=77 drop=0 fail=0 slow=0] device[ok=6 sup=0 drop=0 fail=0 slow=0] slowTotal=0 maxMs=0
+[520906][I][STORAGE] RAMSpool prioEnq p0=0 p1=0 p2=92 p3=0
+[520907][I][STORAGE] RAMSpool lanes p1=0/0 p2=0/3 p3=0/0
+NO_DATA_10S
+NO_DATA_10S
+[550904][I][STACK] TaskHardware watermark=14800B min=14800B
+[550906][I][HEAP] heap free=7690KB min=7582KB largest=7552KB frag=1% psramFree=7639KB core=0/0% owner=WIFI_CAPTURE nets=12 pendingUpload=? pendingEnrich=0
+[HEALTH] uptime=0h09m10s
+[HEALTH] heap used=732/8422KB free=7690KB min=7582KB largest=7552KB frag=1%
+[HEALTH] psram used=553/8192KB free=7639KB largest=7552KB
+[HEALTH] stack free_min: core0=14KB/22KB core1=13KB/18KB
+[HEALTH] core usage: core0=0% core1=0%
+[HEALTH] radio=WIFI_CAPTURE wifi=0 ble=0 gps=0 nets=12 pendingUpload=? pendingEnrich=0
+[HEALTH] subghz=NONE mode=OFF pkts=0 nodes=0
+[550907][I][STORAGE] RAMSpool enq=94 cons=94 inflight=0/1024 high=4 pressure=0 drop[full=0 big=0 noise=0 p3Evict=0 p3Drop=0 p2Drop=0 p1Fail=0] free=1024
+[550908][I][STORAGE] RAMSpool enqueue probe[ok=88 drop=0] device[ok=6 drop=0]
+[550908][I][STORAGE] RAMSpool worker probe[ok=9 sup=79 drop=0 fail=0 slow=0] device[ok=6 sup=0 drop=0 fail=0 slow=0] slowTotal=0 maxMs=0
+[550908][I][STORAGE] RAMSpool prioEnq p0=0 p1=0 p2=94 p3=0
+[550908][I][STORAGE] RAMSpool lanes p1=0/0 p2=0/3 p3=0/0
+NO_DATA_10S
+NO_DATA_10S
+[580909][I][STACK] TaskHardware watermark=14800B min=14800B
+[580911][I][HEAP] heap free=7690KB min=7582KB largest=7552KB frag=1% psramFree=7639KB core=0/0% owner=WIFI_CAPTURE nets=12 pendingUpload=? pendingEnrich=0
+[HEALTH] uptime=0h09m40s
+[HEALTH] heap used=732/8422KB free=7690KB min=7582KB largest=7552KB frag=1%
+[HEALTH] psram used=553/8192KB free=7639KB largest=7552KB
+[HEALTH] stack free_min: core0=14KB/22KB core1=13KB/18KB
+[HEALTH] core usage: core0=0% core1=0%
+[HEALTH] radio=WIFI_CAPTURE wifi=0 ble=0 gps=0 nets=12 pendingUpload=? pendingEnrich=0
+[HEALTH] subghz=NONE mode=OFF pkts=0 nodes=0
+[580912][I][STORAGE] RAMSpool enq=98 cons=98 inflight=0/1024 high=4 pressure=0 drop[full=0 big=0 noise=0 p3Evict=0 p3Drop=0 p2Drop=0 p1Fail=0] free=1024
+[580913][I][STORAGE] RAMSpool enqueue probe[ok=92 drop=0] device[ok=6 drop=0]
+[580913][I][STORAGE] RAMSpool worker probe[ok=9 sup=83 drop=0 fail=0 slow=0] device[ok=6 sup=0 drop=0 fail=0 slow=0] slowTotal=0 maxMs=0
+[580913][I][STORAGE] RAMSpool prioEnq p0=0 p1=0 p2=98 p3=0
+[580913][I][STORAGE] RAMSpool lanes p1=0/0 p2=0/3 p3=0/0
+NO_DATA_10S
+NO_DATA_10S
+[610911][I][STACK] TaskHardware watermark=14800B min=14800B
+[610913][I][HEAP] heap free=7690KB min=7582KB largest=7552KB frag=1% psramFree=7639KB core=0/0% owner=WIFI_CAPTURE nets=12 pendingUpload=? pendingEnrich=0
+[HEALTH] uptime=0h10m10s
+[HEALTH] heap used=732/8422KB free=7690KB min=7582KB largest=7552KB frag=1%
+[HEALTH] psram used=553/8192KB free=7639KB largest=7552KB
+[HEALTH] stack free_min: core0=14KB/22KB core1=13KB/18KB
+[HEALTH] core usage: core0=0% core1=0%
+[HEALTH] radio=WIFI_CAPTURE wifi=0 ble=0 gps=0 nets=12 pendingUpload=? pendingEnrich=0
+[HEALTH] subghz=NONE mode=OFF pkts=0 nodes=0
+[610915][I][STORAGE] RAMSpool enq=98 cons=98 inflight=0/1024 high=4 pressure=0 drop[full=0 big=0 noise=0 p3Evict=0 p3Drop=0 p2Drop=0 p1Fail=0] free=1024
+[610915][I][STORAGE] RAMSpool enqueue probe[ok=92 drop=0] device[ok=6 drop=0]
+[610915][I][STORAGE] RAMSpool worker probe[ok=9 sup=83 drop=0 fail=0 slow=0] device[ok=6 sup=0 drop=0 fail=0 slow=0] slowTotal=0 maxMs=0
+[610916][I][STORAGE] RAMSpool prioEnq p0=0 p1=0 p2=98 p3=0
+[610916][I][STORAGE] RAMSpool lanes p1=0/0 p2=0/3 p3=0/0
+NO_DATA_10S
+NO_DATA_10S
+[640911][I][STACK] TaskHardware watermark=14800B min=14800B
+[640913][I][HEAP] heap free=7690KB min=7582KB largest=7552KB frag=1% psramFree=7639KB core=0/0% owner=WIFI_CAPTURE nets=12 pendingUpload=? pendingEnrich=0
+[HEALTH] uptime=0h10m40s
+[HEALTH] heap used=732/8422KB free=7690KB min=7582KB largest=7552KB frag=1%
+[HEALTH] psram used=553/8192KB free=7639KB largest=7552KB
+[HEALTH] stack free_min: core0=14KB/22KB core1=13KB/18KB
+[HEALTH] core usage: core0=0% core1=0%
+[HEALTH] radio=WIFI_CAPTURE wifi=0 ble=0 gps=0 nets=12 pendingUpload=? pendingEnrich=0
+[HEALTH] subghz=NONE mode=OFF pkts=0 nodes=0
+[640914][I][STORAGE] RAMSpool enq=102 cons=102 inflight=0/1024 high=4 pressure=0 drop[full=0 big=0 noise=0 p3Evict=0 p3Drop=0 p2Drop=0 p1Fail=0] free=1024
+[640915][I][STORAGE] RAMSpool enqueue probe[ok=96 drop=0] device[ok=6 drop=0]
+[640915][I][STORAGE] RAMSpool worker probe[ok=9 sup=87 drop=0 fail=0 slow=0] device[ok=6 sup=0 drop=0 fail=0 slow=0] slowTotal=0 maxMs=0
+[640915][I][STORAGE] RAMSpool prioEnq p0=0 p1=0 p2=102 p3=0
+[640915][I][STORAGE] RAMSpool lanes p1=0/0 p2=0/3 p3=0/0
+NO_DATA_10S
+NO_DATA_10S
+[670911][I][STACK] TaskHardware watermark=14800B min=14800B
+[670913][I][HEAP] heap free=7690KB min=7582KB largest=7552KB frag=1% psramFree=7639KB core=0/0% owner=WIFI_CAPTURE nets=12 pendingUpload=? pendingEnrich=0
+[HEALTH] uptime=0h11m10s
+[HEALTH] heap used=732/8422KB free=7690KB min=7582KB largest=7552KB frag=1%
+[HEALTH] psram used=553/8192KB free=7639KB largest=7552KB
+[HEALTH] stack free_min: core0=14KB/22KB core1=13KB/18KB
+[HEALTH] core usage: core0=0% core1=0%
+[HEALTH] radio=WIFI_CAPTURE wifi=0 ble=0 gps=0 nets=12 pendingUpload=? pendingEnrich=0
+[HEALTH] subghz=NONE mode=OFF pkts=0 nodes=0
+[670914][I][STORAGE] RAMSpool enq=107 cons=107 inflight=0/1024 high=4 pressure=0 drop[full=0 big=0 noise=0 p3Evict=0 p3Drop=0 p2Drop=0 p1Fail=0] free=1024
+[670915][I][STORAGE] RAMSpool enqueue probe[ok=101 drop=0] device[ok=6 drop=0]
+[670915][I][STORAGE] RAMSpool worker probe[ok=9 sup=92 drop=0 fail=0 slow=0] device[ok=6 sup=0 drop=0 fail=0 slow=0] slowTotal=0 maxMs=0
+[670916][I][STORAGE] RAMSpool prioEnq p0=0 p1=0 p2=107 p3=0
+[670916][I][STORAGE] RAMSpool lanes p1=0/0 p2=0/3 p3=0/0
+NO_DATA_10S
+NO_DATA_10S
+[700913][I][STACK] TaskHardware watermark=14800B min=14800B
+[700915][I][HEAP] heap free=7690KB min=7582KB largest=7552KB frag=1% psramFree=7639KB core=0/0% owner=WIFI_CAPTURE nets=12 pendingUpload=? pendingEnrich=0
+[HEALTH] uptime=0h11m40s
+[HEALTH] heap used=732/8422KB free=7690KB min=7582KB largest=7552KB frag=1%
+[HEALTH] psram used=553/8192KB free=7639KB largest=7552KB
+[HEALTH] stack free_min: core0=14KB/22KB core1=13KB/18KB
+[HEALTH] core usage: core0=0% core1=0%
+[HEALTH] radio=WIFI_CAPTURE wifi=0 ble=0 gps=0 nets=12 pendingUpload=? pendingEnrich=0
+[HEALTH] subghz=NONE mode=OFF pkts=0 nodes=0
+[700916][I][STORAGE] RAMSpool enq=111 cons=111 inflight=0/1024 high=4 pressure=0 drop[full=0 big=0 noise=0 p3Evict=0 p3Drop=0 p2Drop=0 p1Fail=0] free=1024
+[700917][I][STORAGE] RAMSpool enqueue probe[ok=105 drop=0] device[ok=6 drop=0]
+[700917][I][STORAGE] RAMSpool worker probe[ok=9 sup=96 drop=0 fail=0 slow=0] device[ok=6 sup=0 drop=0 fail=0 slow=0] slowTotal=0 maxMs=0
+[700917][I][STORAGE] RAMSpool prioEnq p0=0 p1=0 p2=111 p3=0
+[700918][I][STORAGE] RAMSpool lanes p1=0/0 p2=0/3 p3=0/0
+NO_DATA_10S
+NO_DATA_10S

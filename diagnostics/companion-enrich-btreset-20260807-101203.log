@@ -1,0 +1,125 @@
+=== session opened 2026-08-07T10:12:03.2066873-05:00 ===
+[21500][I][STORAGE] Maintenance continuity log wrote clean=1 reason=radio_owner_window completed=segment_audit remaining=none gen=47120
+[21501][I][STORAGE] Maintenance done reason=radio_owner_window actions=segment_audit|continuity_pass skipped=none remaining=none elapsedMs=1918 captureSafe=1
+[21501][I][STORAGE] RAMSpool worker resumed
+[21502][I][STORAGE] Exclusive window end kind=maintenance result=capture_safe reason=radio_owner_window
+[21503][I][STORAGE] maintenance owner window ms=1920 captureSafe=1 remaining=none
+=== send: companion status ===
+[21757][I][WIFI] Promiscuous: YES
+[21758][I][WIFI] Promiscuous mode started data=0
+companion status
+[COMP] enabled=0
+[COMP] external accessory=0 bleProxy=0 phoneConnected=0 phone=unknown rssi=0 ageMs=0
+[COMP] wio link=n/a sx1262=0 textInput=0
+[COMP] phone=UNKNOWN work=IDLE
+[COMP] bleBegun=0 bleRadio=0 bleState=IDLE
+[COMP] ready link=0 gps=0 freshGps=0 ctrl=0 enrich=0
+[COMP] bleInitAgeMs=0 scanStartAgeMs=0 disconnReason=0
+[COMP] pendingEnrichMission=0 pendingEnrichNoise=0 pendingEnrichTotal=0
+[COMP] lastProbeAgeMs=0 lastEnrichAgeMs=0
+[COMP] radioOwner=none
+=== send: companion enrich ===
+companion enrich
+[COMP] manual enrich queued
+[24709][I][COMP] Manual enrich request received; probe backoff bypassed
+[24711][I][WIFI] Radio paused
+[24874][I][WIFI] Radio suspended
+[24950][I][BLE] begin phase=nimble_pre bt=idle/0 heap=79588 largest=31732 stack=10868 devLen=14
+[24950][I][BLE] begin phase=nimble_init
+[24960][I][BLE] begin phase=nimble_init_ok bt=enabled/2 heap=16620 largest=8180 stack=10868
+[24960][I][BLE] BLE SM disabled; app-layer P-256/AES-GCM required
+[24962][I][BLE] begin phase=server_ok
+[24962][I][BLE] scanner configured legacy=1 active=1 interval=30 window=30 srTimeout=200
+[24962][I][BLE] begin phase=scanner_ok
+[24963][I][BLE] begin phase=worker_ok
+[24963][I][BLE] begin ready
+[24963][I][BLE] radio enabled settle=500ms
+[24963][I][BLE] companion link requested reason=manual_probe mode=fresh_scan timeout=15s settle=500ms cacheAge=0ms rssi=0
+[24968][I][BLE] Phone probe lease granted reason=manual_probe cachedFirst=0 hold=60000ms
+[24979][W][CORE] TaskHardware loop gap=272ms owner=BLE_GPS pendingUpload=4309 maintPending=0 suppressed=6
+[25573][I][BLE] scan start
+[25573][I][BLE] scan start diag=1 dup=1 diagLeft=44390 state=1 window=8000ms weakRecent=0 lastRssi=0
+[30011][I][HEAP] heap free=7654KB min=7654KB largest=7552KB frag=1% internalFree=15KB internalLargest=7KB psramFree=7639KB core=0/0% owner=BLE_GPS nets=6 pendingUpload=4309 pendingEnrich=4312
+[HEALTH] time=2026-08-07 10:11:59 src=ntp
+[HEALTH] heap used=764/8418KB free=7654KB min=7654KB largest=7552KB frag=1%
+[HEALTH] internal used=211/226KB free=15KB min=15KB largest=7KB
+[HEALTH] psram used=553/8192KB free=7639KB largest=7552KB
+[HEALTH] stack free_min: core0=11KB/22KB core1=13KB/18KB
+[HEALTH] core usage: core0=0% core1=0%
+[HEALTH] power=usb state=usb batt=100% 4501mV trend=0mV/min runtime=0min cap=1100mAh charging=0
+[HEALTH] radio=BLE_GPS wifi=0 ble=0 gps=0 nets=6 pendingUpload=4309 pendingEnrich=4312
+[HEALTH] subghz=NONE mode=OFF pkts=0 nodes=0
+[30013][I][STORAGE] RAMSpool enq=0 cons=0 inflight=0/1024 high=0 pressure=0 drop[full=0 big=0 noise=0 p3Evict=0 p3Drop=0 p2Drop=0 p1Fail=0] free=1024
+[30014][I][STORAGE] RAMSpool enqueue probe[ok=0 drop=0] device[ok=0 drop=0]
+[30014][I][STORAGE] RAMSpool worker probe[ok=0 sup=0 drop=0 fail=0 slow=0] device[ok=0 sup=0 drop=0 fail=0 slow=0] slowTotal=0 maxMs=0
+[30014][I][STORAGE] RAMSpool prioEnq p0=0 p1=0 p2=0 p3=0
+[30014][I][STORAGE] RAMSpool lanes p1=0/0 p2=0/0 p3=0/0
+[31015][I][STACK] TaskDisplay watermark=13212B min=13212B
+[31029][I][STACK] TaskHardware watermark=10868B min=10868B
+[33585][I][BLE] scan window ended window=8000ms weakRecent=0 lastRssi=0
+[33896][I][BLE] scan start
+[33897][I][BLE] scan start diag=1 dup=1 diagLeft=36067 state=1 window=8000ms weakRecent=0 lastRssi=0
+[42021][I][BLE] scan window ended window=8000ms weakRecent=0 lastRssi=0
+[42325][I][BLE] scan start
+[42325][I][BLE] scan start diag=1 dup=1 diagLeft=27638 state=1 window=8000ms weakRecent=0 lastRssi=0
+[42334][I][BLE] adv check addr=41:3a:41:aa:aa:ab addrType=1 targetSvc=0 matchedBy=none rssi=-57
+[42334][I][BLE] adv raw name='' addr=41:3a:41:aa:aa:ab addrType=1 rssi=-57 hasName=0 hasSvc=1 targetSvc=0 rawTargetSvc=0 svcCount=2 matchedBy=none
+[42335][I][BLE] adv raw payload len=30 hex=02 01 1A 05 03 0A 18 F3 FE 14 16 F3 FE 51 20 60 00 18 02 01 00 03 08 00...
+[42335][I][BLE] adv svc=0x180a
+[50450][I][BLE] scan window ended window=8000ms weakRecent=0 lastRssi=0
+[50751][I][BLE] scan start
+[50751][I][BLE] scan start diag=1 dup=1 diagLeft=19212 state=1 window=8000ms weakRecent=0 lastRssi=0
+[54974][I][BLE] worker stack free=9448B min=9448B
+[58886][I][BLE] scan window ended window=8000ms weakRecent=0 lastRssi=0
+[59190][I][BLE] scan start
+[59190][I][BLE] scan start diag=1 dup=1 diagLeft=10773 state=1 window=8000ms weakRecent=0 lastRssi=0
+[60012][I][HEAP] heap free=7654KB min=7654KB largest=7552KB frag=1% internalFree=15KB internalLargest=7KB psramFree=7639KB core=0/0% owner=BLE_GPS nets=6 pendingUpload=4309 pendingEnrich=4312
+[HEALTH] time=2026-08-07 10:12:29 src=ntp
+[HEALTH] heap used=764/8418KB free=7654KB min=7654KB largest=7552KB frag=1%
+[HEALTH] internal used=211/226KB free=15KB min=15KB largest=7KB
+[HEALTH] psram used=553/8192KB free=7639KB largest=7552KB
+[HEALTH] stack free_min: core0=11KB/22KB core1=13KB/18KB
+[HEALTH] core usage: core0=0% core1=0%
+[HEALTH] power=usb state=usb batt=100% 4569mV trend=81mV/min runtime=0min cap=1100mAh charging=1
+[HEALTH] radio=BLE_GPS wifi=0 ble=0 gps=0 nets=6 pendingUpload=4309 pendingEnrich=4312
+[HEALTH] subghz=NONE mode=OFF pkts=0 nodes=0
+[60014][I][STORAGE] RAMSpool enq=0 cons=0 inflight=0/1024 high=0 pressure=0 drop[full=0 big=0 noise=0 p3Evict=0 p3Drop=0 p2Drop=0 p1Fail=0] free=1024
+[60014][I][STORAGE] RAMSpool enqueue probe[ok=0 drop=0] device[ok=0 drop=0]
+[60015][I][STORAGE] RAMSpool worker probe[ok=0 sup=0 drop=0 fail=0 slow=0] device[ok=0 sup=0 drop=0 fail=0 slow=0] slowTotal=0 maxMs=0
+[60015][I][STORAGE] RAMSpool prioEnq p0=0 p1=0 p2=0 p3=0
+[60015][I][STORAGE] RAMSpool lanes p1=0/0 p2=0/0 p3=0/0
+[61029][I][STACK] TaskHardware watermark=10868B min=10868B
+[67329][I][BLE] scan window ended window=8000ms weakRecent=0 lastRssi=0
+[67630][I][BLE] scan start
+[67630][I][BLE] scan start diag=1 dup=1 diagLeft=2333 state=1 window=8000ms weakRecent=0 lastRssi=0
+[67634][I][BLE] adv check addr=41:3a:41:aa:aa:ab addrType=1 targetSvc=0 matchedBy=none rssi=-68
+[67634][I][BLE] adv raw name='FWIT-MBARTHEL' addr=41:3a:41:aa:aa:ab addrType=1 rssi=-68 hasName=1 hasSvc=1 targetSvc=0 rawTargetSvc=0 svcCount=2 matchedBy=none
+[67635][I][BLE] adv raw payload len=45 hex=02 01 1A 05 03 0A 18 F3 FE 14 16 F3 FE 51 20 60 00 18 02 01 00 03 08 00...
+[67635][I][BLE] adv svc=0x180a
+[75751][I][BLE] scan window ended window=8000ms weakRecent=0 lastRssi=0
+[76061][W][BLE] probe timeout: phone not seen in 45000ms ??? releasing radio
+[76062][I][BLE] probe resource release
+[76062][I][BLE] client soft drop reason=radio_disabled
+[76062][I][BLE] radio disabled
+[76062][I][BLE] probe_release phase=worker_delete
+[76062][I][BLE] probe_release phase=worker_stack_free
+[76398][E][WIFI] Radio init failed: modeOk=0 setMode=ESP_ERR_WIFI_NOT_INIT start=ESP_ERR_WIFI_NOT_INIT promOff=ESP_ERR_WIFI_NOT_INIT country=ESP_ERR_WIFI_NOT_INIT getMode=ESP_ERR_WIFI_NOT_INIT current=0
+[76399][W][CORE] TaskHardware slow section=ble_tick ms=338 owner=NONE pendingUpload=4309 maintPending=0
+[76403][W][BLE] probe_summary seen=0 result=not_seen stage=1 miss=0 nextIn=60s
+[76414][W][CORE] TaskHardware loop gap=353ms owner=NONE pendingUpload=4309 maintPending=0 suppressed=0
+[90018][I][HEAP] heap free=7664KB min=7640KB largest=7552KB frag=1% internalFree=15KB internalLargest=7KB psramFree=7649KB core=0/0% owner=NONE nets=6 pendingUpload=4309 pendingEnrich=4312
+[HEALTH] time=2026-08-07 10:12:59 src=ntp
+[HEALTH] heap used=754/8418KB free=7664KB min=7640KB largest=7552KB frag=1%
+[HEALTH] internal used=211/226KB free=15KB min=1KB largest=7KB
+[HEALTH] psram used=543/8192KB free=7649KB largest=7552KB
+[HEALTH] stack free_min: core0=11KB/22KB core1=13KB/18KB
+[HEALTH] core usage: core0=0% core1=0%
+[HEALTH] power=usb state=usb batt=100% 4570mV trend=52mV/min runtime=0min cap=1100mAh charging=1
+[HEALTH] radio=NONE wifi=0 ble=0 gps=0 nets=6 pendingUpload=4309 pendingEnrich=4312
+[HEALTH] subghz=NONE mode=OFF pkts=0 nodes=0
+[90020][I][STORAGE] RAMSpool enq=0 cons=0 inflight=0/1024 high=0 pressure=0 drop[full=0 big=0 noise=0 p3Evict=0 p3Drop=0 p2Drop=0 p1Fail=0] free=1024
+[90021][I][STORAGE] RAMSpool enqueue probe[ok=0 drop=0] device[ok=0 drop=0]
+[90021][I][STORAGE] RAMSpool worker probe[ok=0 sup=0 drop=0 fail=0 slow=0] device[ok=0 sup=0 drop=0 fail=0 slow=0] slowTotal=0 maxMs=0
+[90021][I][STORAGE] RAMSpool prioEnq p0=0 p1=0 p2=0 p3=0
+[90022][I][STORAGE] RAMSpool lanes p1=0/0 p2=0/0 p3=0/0
+[91035][I][STACK] TaskHardware watermark=10868B min=10868B

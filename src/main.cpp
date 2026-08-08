@@ -1980,7 +1980,7 @@ static bool _applyPhoneEnrichmentBatch(const PendingEnrichment* records,
     }
 
     if (!STORAGE.prepareForEnrichmentAppend(count)) {
-        DLOG_WARN(logTag, "Enrich preflight rotate failed; dropping batch count=%u",
+        DLOG_WARN(logTag, "Enrich preflight unavailable; records retained count=%u",
                   static_cast<unsigned>(count));
         return false;
     }
@@ -3520,23 +3520,35 @@ void _handleUsbConsoleLine(const char* rawLine) {
 
     if (lower == "entity status" || lower == "entities") {
         const EntitySummary entities = ENTITY_MGR.snapshot();
-        Serial.printf("[ENTITY] total=%lu nearby=%lu observations=%lu dropped=%lu capacity=%u psram=%luKB\r\n",
+        Serial.printf("[ENTITY] total=%lu nearby=%lu observations=%lu located=%lu locationUpdates=%lu dropped=%lu linkDrops=%lu selftest=%s capacity=%u links=%lu psram=%luKB\r\n",
                       static_cast<unsigned long>(entities.total),
                       static_cast<unsigned long>(entities.nearby),
                       static_cast<unsigned long>(entities.observations),
+                      static_cast<unsigned long>(entities.located),
+                      static_cast<unsigned long>(entities.locationUpdates),
                       static_cast<unsigned long>(entities.dropped),
+                      static_cast<unsigned long>(entities.eventLinksDropped),
+                      entities.selfTestPassed ? "pass" : "FAIL",
                       static_cast<unsigned>(EntityManager::MAX_ENTITIES),
+                      static_cast<unsigned long>(EntityManager::MAX_EVENT_LINKS),
                       static_cast<unsigned long>(ENTITY_MGR.psramBytes() / 1024UL));
-        Serial.printf("[ENTITY] ap=%u clients=%u drones=%u subghz=%u closest=%s name=%s rssi=%d channel=%u located=%d\r\n",
+        Serial.printf("[ENTITY] ap=%u clients=%u drones=%u subghz=%u ble=%u closest=%s name=%s rssi=%d channel=%u located=%d\r\n",
                       static_cast<unsigned>(entities.byKind[ENTITY_WIFI_AP]),
                       static_cast<unsigned>(entities.byKind[ENTITY_WIFI_CLIENT]),
                       static_cast<unsigned>(entities.byKind[ENTITY_DRONE]),
                       static_cast<unsigned>(entities.byKind[ENTITY_SUBGHZ]),
+                      static_cast<unsigned>(entities.byKind[ENTITY_BLE]),
                       entities.closestIdentity[0] ? entities.closestIdentity : "-",
                       entities.closestName[0] ? entities.closestName : "-",
                       static_cast<int>(entities.closestRssi),
                       static_cast<unsigned>(entities.closestChannel),
                       entities.closestLocated ? 1 : 0);
+        Serial.printf("[ENTITY] session networks=%lu devices=%lu probes=%lu pmkids=%lu drones=%lu\r\n",
+                      static_cast<unsigned long>(entities.sessionNetworks),
+                      static_cast<unsigned long>(entities.sessionDevices),
+                      static_cast<unsigned long>(entities.sessionProbes),
+                      static_cast<unsigned long>(entities.sessionPmkids),
+                      static_cast<unsigned long>(entities.sessionDrones));
         return;
     }
 
@@ -4503,7 +4515,6 @@ ExecutionPolicy::UiRefreshSchedule _uiRefreshScheduleForPowerState(uint8_t power
 
 void _initializeHardwareManagers(uint32_t& lastWifiTick) {
     MQTT_MGR.begin();
-    ENTITY_MGR.begin();
     BADUSB_MGR.begin();
 
     WIO_NRF.begin(2500);
@@ -4547,6 +4558,7 @@ void _initializeHardwareManagers(uint32_t& lastWifiTick) {
 #endif
 
     SESS.begin();
+    ENTITY_MGR.begin();
     WIFI_MGR.begin();
     RADIO_ARB.begin();
 
@@ -5397,17 +5409,12 @@ bool _runButtonAction(SpectreButtonAction action, bool storageOk) {
         case BUTTON_ACTION_DEBRIEF_CLEAR: {
             const uint32_t pendingUploads =
                 storageOk ? STORAGE.getPendingEventCount() : 0;
+            ENTITY_MGR.reset();
             STATE_WRITE_BEGIN();
-            g_state.sessionNetworks  = 0;
-            g_state.sessionDevices   = 0;
-            g_state.sessionProbes    = 0;
-            g_state.sessionPMKIDs    = 0;
-            g_state.sessionDrones    = 0;
             g_state.sessionFilesPending = static_cast<int>(pendingUploads);
             g_state.kaliSyncAvailable = (pendingUploads > 0);
             g_state.dataRefresh      = true;
             STATE_WRITE_END();
-            ENTITY_MGR.reset();
             _dispatchUiCommand(UI_CMD_OPEN_DEBRIEF);
             DLOG_INFO("SYS", "Session data cleared");
             STORAGE.checkHealth();

@@ -1,0 +1,9 @@
+# opened COM8 2026-07-03T11:49:14.4942234-05:00
+>>> status
+>>> wio status
+>>> wio hello
+>>> wio ble status
+>>> wio raw SPECTRE/1 BLE_STATUS
+>>> wio status
+>>> companion status
+# closing 2026-07-03T11:49:36.1330990-05:00

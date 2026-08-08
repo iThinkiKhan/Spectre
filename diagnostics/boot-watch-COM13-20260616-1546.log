@@ -1,0 +1,216 @@
+# boot watch start 2026-06-16 15:46:52
+# OPEN_FAILED 15:46:52 could not open port 'COM13': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2)
+# READ_ERROR 15:46:54 Attempting to use a port that is not open
+# OPEN_FAILED 15:46:56 could not open port 'COM13': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2)
+# READ_ERROR 15:46:58 Attempting to use a port that is not open
+# OPEN 15:47:00
+[6077][W][STORAGE] Counter trust=trusted_snapshot_lagged reason=pending_enrich_counter_clamp since=6076
+# READ_ERROR 15:47:04 ClearCommError failed (PermissionError(13, 'The device does not recognize the command.', None, 22))
+# OPEN 15:47:06
+[2684][I][STORAGE] Routine maintenance requests coalesced count=1 latest=dirty_summary source=boot_invalid_summary flags=dirty_summary|snapshot_lagged
+[2809][I][STORAGE] Counter trust=trusted reason=metadata_generation_match gen=13776 pending=209 nextEventId=9032
+[2813][I][STORAGE] Spool diag[ensure_ready_pre_rescan] validSegments=75 untrustedSegments=1 invalidSegments=0 activeSegment=75 totalRecords=9033 storedEvents=4559
+[2827][I][STORAGE] Maintenance continuity log loaded clean=1 remaining=none gen=8829 pending=4373
+[2833][I][STORAGE] Maintenance requested reason=segment_audit source=boot_fast_audit_failed flags=dirty_summary|segment_audit
+[2833][I][STORAGE] Maintenance requested reason=counter_untrusted source=boot_fast_audit_failed flags=dirty_summary|counter_untrusted|segment_audit
+[2834][W][STORAGE] Counter trust=repair_required reason=boot_fast_audit_failed since=2833
+[2834][W][STORAGE] Fast boot: repair deferred pending=209 active=75 nextEventId=9032 flags=dirty_summary|counter_untrusted|segment_audit
+[2838][I][STORAGE] Config synced from settings for: Spectre
+[2838][W][STORAGE] Boot heap pressure: deferring post-boot refresh pending=209 freeInternal=121352 largestInternal=69620
+[2843][I][CORE] Storage begin done ok=1 ready=1 pending=209 heapFree=121352 largest=69620
+[2847][I][STORAGE] Maintenance start reason=pre_capture_boot budgetMs=5000 flags=dirty_summary|counter_untrusted|segment_audit captureSafe=0
+[3164][I][STORAGE] Segment lifecycle seg=76 drained->indexed trust=trusted pending=7
+[6077][W][STORAGE] Counter trust=trusted_snapshot_lagged reason=pending_enrich_counter_clamp since=6077
+# READ_ERROR 15:47:12 ClearCommError failed (PermissionError(13, 'The device does not recognize the command.', None, 22))
+# OPEN 15:47:14
+[2682][I][STORAGE] Routine maintenance requests coalesced count=1 latest=dirty_summary source=boot_invalid_summary flags=dirty_summary|snapshot_lagged
+[2756][I][STORAGE] Counter trust=trusted reason=metadata_generation_match gen=13776 pending=209 nextEventId=9032
+[2759][I][STORAGE] Spool diag[ensure_ready_pre_rescan] validSegments=75 untrustedSegments=1 invalidSegments=0 activeSegment=75 totalRecords=9033 storedEvents=4559
+[2827][I][STORAGE] Maintenance continuity log loaded clean=1 remaining=none gen=8829 pending=4373
+[2832][I][STORAGE] Maintenance requested reason=segment_audit source=boot_fast_audit_failed flags=dirty_summary|segment_audit
+[2833][I][STORAGE] Maintenance requested reason=counter_untrusted source=boot_fast_audit_failed flags=dirty_summary|counter_untrusted|segment_audit
+[2833][W][STORAGE] Counter trust=repair_required reason=boot_fast_audit_failed since=2833
+[2834][W][STORAGE] Fast boot: repair deferred pending=209 active=75 nextEventId=9032 flags=dirty_summary|counter_untrusted|segment_audit
+[2837][I][STORAGE] Config synced from settings for: Spectre
+[2838][W][STORAGE] Boot heap pressure: deferring post-boot refresh pending=209 freeInternal=121352 largestInternal=69620
+[2843][I][CORE] Storage begin done ok=1 ready=1 pending=209 heapFree=121352 largest=69620
+[2847][I][STORAGE] Maintenance start reason=pre_capture_boot budgetMs=5000 flags=dirty_summary|counter_untrusted|segment_audit captureSafe=0
+[3163][I][STORAGE] Segment lifecycle seg=76 drained->indexed trust=trusted pending=7
+[6078][W][STORAGE] Counter trust=trusted_snapshot_lagged reason=pending_enrich_counter_clamp since=6078
+# READ_ERROR 15:47:21 ClearCommError failed (PermissionError(13, 'The device does not recognize the command.', None, 22))
+# OPEN 15:47:23
+[2685][I][STORAGE] Routine maintenance requests coalesced count=1 latest=dirty_summary source=boot_invalid_summary flags=dirty_summary|snapshot_lagged
+[2758][I][STORAGE] Counter trust=trusted reason=metadata_generation_match gen=13776 pending=209 nextEventId=9032
+[2761][I][STORAGE] Spool diag[ensure_ready_pre_rescan] validSegments=75 untrustedSegments=1 invalidSegments=0 activeSegment=75 totalRecords=9033 storedEvents=4559
+[2776][I][STORAGE] Maintenance continuity log loaded clean=1 remaining=none gen=8829 pending=4373
+[2835][I][STORAGE] Maintenance requested reason=segment_audit source=boot_fast_audit_failed flags=dirty_summary|segment_audit
+[2836][I][STORAGE] Maintenance requested reason=counter_untrusted source=boot_fast_audit_failed flags=dirty_summary|counter_untrusted|segment_audit
+[2836][W][STORAGE] Counter trust=repair_required reason=boot_fast_audit_failed since=2836
+[2837][W][STORAGE] Fast boot: repair deferred pending=209 active=75 nextEventId=9032 flags=dirty_summary|counter_untrusted|segment_audit
+[2840][I][STORAGE] Config synced from settings for: Spectre
+[2841][W][STORAGE] Boot heap pressure: deferring post-boot refresh pending=209 freeInternal=121356 largestInternal=69620
+[2846][I][CORE] Storage begin done ok=1 ready=1 pending=209 heapFree=121356 largest=69620
+[2850][I][STORAGE] Maintenance start reason=pre_capture_boot budgetMs=5000 flags=dirty_summary|counter_untrusted|segment_audit captureSafe=0
+[3166][I][STORAGE] Segment lifecycle seg=76 drained->indexed trust=trusted pending=7
+[6082][W][STORAGE] Counter trust=trusted_snapshot_lagged reason=pending_enrich_counter_clamp since=6082
+# READ_ERROR 15:47:29 ClearCommError failed (PermissionError(13, 'The device does not recognize the command.', None, 22))
+# OPEN 15:47:31
+[2685][I][STORAGE] Routine maintenance requests coalesced count=1 latest=dirty_summary source=boot_invalid_summary flags=dirty_summary|snapshot_lagged
+[2759][I][STORAGE] Counter trust=trusted reason=metadata_generation_match gen=13776 pending=209 nextEventId=9032
+[2762][I][STORAGE] Spool diag[ensure_ready_pre_rescan] validSegments=75 untrustedSegments=1 invalidSegments=0 activeSegment=75 totalRecords=9033 storedEvents=4559
+[2777][I][STORAGE] Maintenance continuity log loaded clean=1 remaining=none gen=8829 pending=4373
+[2782][I][STORAGE] Maintenance requested reason=segment_audit source=boot_fast_audit_failed flags=dirty_summary|segment_audit
+[2783][I][STORAGE] Maintenance requested reason=counter_untrusted source=boot_fast_audit_failed flags=dirty_summary|counter_untrusted|segment_audit
+[2783][W][STORAGE] Counter trust=repair_required reason=boot_fast_audit_failed since=2783
+[2784][W][STORAGE] Fast boot: repair deferred pending=209 active=75 nextEventId=9032 flags=dirty_summary|counter_untrusted|segment_audit
+[2787][I][STORAGE] Config synced from settings for: Spectre
+[2788][W][STORAGE] Boot heap pressure: deferring post-boot refresh pending=209 freeInternal=121204 largestInternal=69620
+[2848][I][CORE] Storage begin done ok=1 ready=1 pending=209 heapFree=121352 largest=69620
+[2852][I][STORAGE] Maintenance start reason=pre_capture_boot budgetMs=5000 flags=dirty_summary|counter_untrusted|segment_audit captureSafe=0
+[3169][I][STORAGE] Segment lifecycle seg=76 drained->indexed trust=trusted pending=7
+[6084][W][STORAGE] Counter trust=trusted_snapshot_lagged reason=pending_enrich_counter_clamp since=6084
+# READ_ERROR 15:47:38 ClearCommError failed (PermissionError(13, 'The device does not recognize the command.', None, 22))
+# OPEN 15:47:40
+[2684][I][STORAGE] Routine maintenance requests coalesced count=1 latest=dirty_summary source=boot_invalid_summary flags=dirty_summary|snapshot_lagged
+[2757][I][STORAGE] Counter trust=trusted reason=metadata_generation_match gen=13776 pending=209 nextEventId=9032
+[2760][I][STORAGE] Spool diag[ensure_ready_pre_rescan] validSegments=75 untrustedSegments=1 invalidSegments=0 activeSegment=75 totalRecords=9033 storedEvents=4559
+[2775][I][STORAGE] Maintenance continuity log loaded clean=1 remaining=none gen=8829 pending=4373
+[2780][I][STORAGE] Maintenance requested reason=segment_audit source=boot_fast_audit_failed flags=dirty_summary|segment_audit
+[2781][I][STORAGE] Maintenance requested reason=counter_untrusted source=boot_fast_audit_failed flags=dirty_summary|counter_untrusted|segment_audit
+[2781][W][STORAGE] Counter trust=repair_required reason=boot_fast_audit_failed since=2781
+[2782][W][STORAGE] Fast boot: repair deferred pending=209 active=75 nextEventId=9032 flags=dirty_summary|counter_untrusted|segment_audit
+[2785][I][STORAGE] Config synced from settings for: Spectre
+[2786][W][STORAGE] Boot heap pressure: deferring post-boot refresh pending=209 freeInternal=121364 largestInternal=69620
+[2791][I][CORE] Storage begin done ok=1 ready=1 pending=209 heapFree=121364 largest=69620
+[2795][I][STORAGE] Maintenance start reason=pre_capture_boot budgetMs=5000 flags=dirty_summary|counter_untrusted|segment_audit captureSafe=0
+[3111][I][STORAGE] Segment lifecycle seg=76 drained->indexed trust=trusted pending=7
+[6026][W][STORAGE] Counter trust=trusted_snapshot_lagged reason=pending_enrich_counter_clamp since=6026
+# READ_ERROR 15:47:46 ClearCommError failed (PermissionError(13, 'The device does not recognize the command.', None, 22))
+# OPEN 15:47:48
+[2686][I][STORAGE] Routine maintenance requests coalesced count=1 latest=dirty_summary source=boot_invalid_summary flags=dirty_summary|snapshot_lagged
+[2813][I][STORAGE] Counter trust=trusted reason=metadata_generation_match gen=13776 pending=209 nextEventId=9032
+[2816][I][STORAGE] Spool diag[ensure_ready_pre_rescan] validSegments=75 untrustedSegments=1 invalidSegments=0 activeSegment=75 totalRecords=9033 storedEvents=4559
+[2831][I][STORAGE] Maintenance continuity log loaded clean=1 remaining=none gen=8829 pending=4373
+[2836][I][STORAGE] Maintenance requested reason=segment_audit source=boot_fast_audit_failed flags=dirty_summary|segment_audit
+[2837][I][STORAGE] Maintenance requested reason=counter_untrusted source=boot_fast_audit_failed flags=dirty_summary|counter_untrusted|segment_audit
+[2837][W][STORAGE] Counter trust=repair_required reason=boot_fast_audit_failed since=2837
+[2838][W][STORAGE] Fast boot: repair deferred pending=209 active=75 nextEventId=9032 flags=dirty_summary|counter_untrusted|segment_audit
+[2841][I][STORAGE] Config synced from settings for: Spectre
+[2842][W][STORAGE] Boot heap pressure: deferring post-boot refresh pending=209 freeInternal=121356 largestInternal=69620
+[2847][I][CORE] Storage begin done ok=1 ready=1 pending=209 heapFree=121356 largest=69620
+[2851][I][STORAGE] Maintenance start reason=pre_capture_boot budgetMs=5000 flags=dirty_summary|counter_untrusted|segment_audit captureSafe=0
+[3167][I][STORAGE] Segment lifecycle seg=76 drained->indexed trust=trusted pending=7
+[6078][W][STORAGE] Counter trust=trusted_snapshot_lagged reason=pending_enrich_counter_clamp since=6078
+# READ_ERROR 15:47:54 ClearCommError failed (PermissionError(13, 'The device does not recognize the command.', None, 22))
+# OPEN 15:47:56
+[2687][I][STORAGE] Routine maintenance requests coalesced count=1 latest=dirty_summary source=boot_invalid_summary flags=dirty_summary|snapshot_lagged
+[2813][I][STORAGE] Counter trust=trusted reason=metadata_generation_match gen=13776 pending=209 nextEventId=9032
+[2816][I][STORAGE] Spool diag[ensure_ready_pre_rescan] validSegments=75 untrustedSegments=1 invalidSegments=0 activeSegment=75 totalRecords=9033 storedEvents=4559
+[2831][I][STORAGE] Maintenance continuity log loaded clean=1 remaining=none gen=8829 pending=4373
+[2836][I][STORAGE] Maintenance requested reason=segment_audit source=boot_fast_audit_failed flags=dirty_summary|segment_audit
+[2837][I][STORAGE] Maintenance requested reason=counter_untrusted source=boot_fast_audit_failed flags=dirty_summary|counter_untrusted|segment_audit
+[2837][W][STORAGE] Counter trust=repair_required reason=boot_fast_audit_failed since=2837
+[2838][W][STORAGE] Fast boot: repair deferred pending=209 active=75 nextEventId=9032 flags=dirty_summary|counter_untrusted|segment_audit
+[2841][I][STORAGE] Config synced from settings for: Spectre
+[2842][W][STORAGE] Boot heap pressure: deferring post-boot refresh pending=209 freeInternal=121352 largestInternal=69620
+[2847][I][CORE] Storage begin done ok=1 ready=1 pending=209 heapFree=121352 largest=69620
+[2851][I][STORAGE] Maintenance start reason=pre_capture_boot budgetMs=5000 flags=dirty_summary|counter_untrusted|segment_audit captureSafe=0
+[3167][I][STORAGE] Segment lifecycle seg=76 drained->indexed trust=trusted pending=7
+[6082][W][STORAGE] Counter trust=trusted_snapshot_lagged reason=pending_enrich_counter_clamp since=6081
+# READ_ERROR 15:48:03 ClearCommError failed (PermissionError(13, 'The device does not recognize the command.', None, 22))
+# OPEN 15:48:05
+[2686][I][STORAGE] Routine maintenance requests coalesced count=1 latest=dirty_summary source=boot_invalid_summary flags=dirty_summary|snapshot_lagged
+[2813][I][STORAGE] Counter trust=trusted reason=metadata_generation_match gen=13776 pending=209 nextEventId=9032
+[2817][I][STORAGE] Spool diag[ensure_ready_pre_rescan] validSegments=75 untrustedSegments=1 invalidSegments=0 activeSegment=75 totalRecords=9033 storedEvents=4559
+[2831][I][STORAGE] Maintenance continuity log loaded clean=1 remaining=none gen=8829 pending=4373
+[2837][I][STORAGE] Maintenance requested reason=segment_audit source=boot_fast_audit_failed flags=dirty_summary|segment_audit
+[2837][I][STORAGE] Maintenance requested reason=counter_untrusted source=boot_fast_audit_failed flags=dirty_summary|counter_untrusted|segment_audit
+[2838][W][STORAGE] Counter trust=repair_required reason=boot_fast_audit_failed since=2837
+[2838][W][STORAGE] Fast boot: repair deferred pending=209 active=75 nextEventId=9032 flags=dirty_summary|counter_untrusted|segment_audit
+[2841][I][STORAGE] Config synced from settings for: Spectre
+[2842][W][STORAGE] Boot heap pressure: deferring post-boot refresh pending=209 freeInternal=121352 largestInternal=69620
+[2847][I][CORE] Storage begin done ok=1 ready=1 pending=209 heapFree=121352 largest=69620
+[2851][I][STORAGE] Maintenance start reason=pre_capture_boot budgetMs=5000 flags=dirty_summary|counter_untrusted|segment_audit captureSafe=0
+[3168][I][STORAGE] Segment lifecycle seg=76 drained->indexed trust=trusted pending=7
+[6083][W][STORAGE] Counter trust=trusted_snapshot_lagged reason=pending_enrich_counter_clamp since=6083
+# READ_ERROR 15:48:11 ClearCommError failed (PermissionError(13, 'The device does not recognize the command.', None, 22))
+# OPEN 15:48:13
+[2685][I][STORAGE] Routine maintenance requests coalesced count=1 latest=dirty_summary source=boot_invalid_summary flags=dirty_summary|snapshot_lagged
+[2758][I][STORAGE] Counter trust=trusted reason=metadata_generation_match gen=13776 pending=209 nextEventId=9032
+[2761][I][STORAGE] Spool diag[ensure_ready_pre_rescan] validSegments=75 untrustedSegments=1 invalidSegments=0 activeSegment=75 totalRecords=9033 storedEvents=4559
+[2829][I][STORAGE] Maintenance continuity log loaded clean=1 remaining=none gen=8829 pending=4373
+[2834][I][STORAGE] Maintenance requested reason=segment_audit source=boot_fast_audit_failed flags=dirty_summary|segment_audit
+[2835][I][STORAGE] Maintenance requested reason=counter_untrusted source=boot_fast_audit_failed flags=dirty_summary|counter_untrusted|segment_audit
+[2835][W][STORAGE] Counter trust=repair_required reason=boot_fast_audit_failed since=2835
+[2836][W][STORAGE] Fast boot: repair deferred pending=209 active=75 nextEventId=9032 flags=dirty_summary|counter_untrusted|segment_audit
+[2839][I][STORAGE] Config synced from settings for: Spectre
+[2840][W][STORAGE] Boot heap pressure: deferring post-boot refresh pending=209 freeInternal=121352 largestInternal=69620
+[2845][I][CORE] Storage begin done ok=1 ready=1 pending=209 heapFree=121352 largest=69620
+[2849][I][STORAGE] Maintenance start reason=pre_capture_boot budgetMs=5000 flags=dirty_summary|counter_untrusted|segment_audit captureSafe=0
+[3165][I][STORAGE] Segment lifecycle seg=76 drained->indexed trust=trusted pending=7
+[6080][W][STORAGE] Counter trust=trusted_snapshot_lagged reason=pending_enrich_counter_clamp since=6080
+# READ_ERROR 15:48:19 ClearCommError failed (PermissionError(13, 'The device does not recognize the command.', None, 22))
+# OPEN 15:48:21
+[2685][I][STORAGE] Routine maintenance requests coalesced count=1 latest=dirty_summary source=boot_invalid_summary flags=dirty_summary|snapshot_lagged
+[2758][I][STORAGE] Counter trust=trusted reason=metadata_generation_match gen=13776 pending=209 nextEventId=9032
+[2761][I][STORAGE] Spool diag[ensure_ready_pre_rescan] validSegments=75 untrustedSegments=1 invalidSegments=0 activeSegment=75 totalRecords=9033 storedEvents=4559
+[2776][I][STORAGE] Maintenance continuity log loaded clean=1 remaining=none gen=8829 pending=4373
+[2835][I][STORAGE] Maintenance requested reason=segment_audit source=boot_fast_audit_failed flags=dirty_summary|segment_audit
+[2836][I][STORAGE] Maintenance requested reason=counter_untrusted source=boot_fast_audit_failed flags=dirty_summary|counter_untrusted|segment_audit
+[2836][W][STORAGE] Counter trust=repair_required reason=boot_fast_audit_failed since=2836
+[2837][W][STORAGE] Fast boot: repair deferred pending=209 active=75 nextEventId=9032 flags=dirty_summary|counter_untrusted|segment_audit
+[2840][I][STORAGE] Config synced from settings for: Spectre
+[2841][W][STORAGE] Boot heap pressure: deferring post-boot refresh pending=209 freeInternal=121356 largestInternal=69620
+[2846][I][CORE] Storage begin done ok=1 ready=1 pending=209 heapFree=121356 largest=69620
+[2850][I][STORAGE] Maintenance start reason=pre_capture_boot budgetMs=5000 flags=dirty_summary|counter_untrusted|segment_audit captureSafe=0
+[3166][I][STORAGE] Segment lifecycle seg=76 drained->indexed trust=trusted pending=7
+[6080][W][STORAGE] Counter trust=trusted_snapshot_lagged reason=pending_enrich_counter_clamp since=6080
+# READ_ERROR 15:48:28 ClearCommError failed (PermissionError(13, 'The device does not recognize the command.', None, 22))
+# OPEN 15:48:30
+[2686][I][STORAGE] Routine maintenance requests coalesced count=1 latest=dirty_summary source=boot_invalid_summary flags=dirty_summary|snapshot_lagged
+[2759][I][STORAGE] Counter trust=trusted reason=metadata_generation_match gen=13776 pending=209 nextEventId=9032
+[2762][I][STORAGE] Spool diag[ensure_ready_pre_rescan] validSegments=75 untrustedSegments=1 invalidSegments=0 activeSegment=75 totalRecords=9033 storedEvents=4559
+[2777][I][STORAGE] Maintenance continuity log loaded clean=1 remaining=none gen=8829 pending=4373
+[2782][I][STORAGE] Maintenance requested reason=segment_audit source=boot_fast_audit_failed flags=dirty_summary|segment_audit
+[2783][I][STORAGE] Maintenance requested reason=counter_untrusted source=boot_fast_audit_failed flags=dirty_summary|counter_untrusted|segment_audit
+[2783][W][STORAGE] Counter trust=repair_required reason=boot_fast_audit_failed since=2783
+[2784][W][STORAGE] Fast boot: repair deferred pending=209 active=75 nextEventId=9032 flags=dirty_summary|counter_untrusted|segment_audit
+[2787][I][STORAGE] Config synced from settings for: Spectre
+[2788][W][STORAGE] Boot heap pressure: deferring post-boot refresh pending=209 freeInternal=121204 largestInternal=69620
+[2846][I][CORE] Storage begin done ok=1 ready=1 pending=209 heapFree=121352 largest=69620
+[2850][I][STORAGE] Maintenance start reason=pre_capture_boot budgetMs=5000 flags=dirty_summary|counter_untrusted|segment_audit captureSafe=0
+[3167][I][STORAGE] Segment lifecycle seg=76 drained->indexed trust=trusted pending=7
+[6082][W][STORAGE] Counter trust=trusted_snapshot_lagged reason=pending_enrich_counter_clamp since=6082
+# READ_ERROR 15:48:36 ClearCommError failed (PermissionError(13, 'The device does not recognize the command.', None, 22))
+# OPEN 15:48:38
+[2681][I][STORAGE] Routine maintenance requests coalesced count=1 latest=dirty_summary source=boot_invalid_summary flags=dirty_summary|snapshot_lagged
+[2755][I][STORAGE] Counter trust=trusted reason=metadata_generation_match gen=13776 pending=209 nextEventId=9032
+[2758][I][STORAGE] Spool diag[ensure_ready_pre_rescan] validSegments=75 untrustedSegments=1 invalidSegments=0 activeSegment=75 totalRecords=9033 storedEvents=4559
+[2773][I][STORAGE] Maintenance continuity log loaded clean=1 remaining=none gen=8829 pending=4373
+[2778][I][STORAGE] Maintenance requested reason=segment_audit source=boot_fast_audit_failed flags=dirty_summary|segment_audit
+[2779][I][STORAGE] Maintenance requested reason=counter_untrusted source=boot_fast_audit_failed flags=dirty_summary|counter_untrusted|segment_audit
+[2779][W][STORAGE] Counter trust=repair_required reason=boot_fast_audit_failed since=2779
+[2780][W][STORAGE] Fast boot: repair deferred pending=209 active=75 nextEventId=9032 flags=dirty_summary|counter_untrusted|segment_audit
+[2783][I][STORAGE] Config synced from settings for: Spectre
+[2784][W][STORAGE] Boot heap pressure: deferring post-boot refresh pending=209 freeInternal=121364 largestInternal=69620
+[2789][I][CORE] Storage begin done ok=1 ready=1 pending=209 heapFree=121364 largest=69620
+[2793][I][STORAGE] Maintenance start reason=pre_capture_boot budgetMs=5000 flags=dirty_summary|counter_untrusted|segment_audit captureSafe=0
+[3109][I][STORAGE] Segment lifecycle seg=76 drained->indexed trust=trusted pending=7
+[6025][W][STORAGE] Counter trust=trusted_snapshot_lagged reason=pending_enrich_counter_clamp since=6025
+# READ_ERROR 15:48:45 ClearCommError failed (PermissionError(13, 'The device does not recognize the command.', None, 22))
+# OPEN 15:48:47
+[2685][I][STORAGE] Routine maintenance requests coalesced count=1 latest=dirty_summary source=boot_invalid_summary flags=dirty_summary|snapshot_lagged
+[2815][I][STORAGE] Counter trust=trusted reason=metadata_generation_match gen=13776 pending=209 nextEventId=9032
+[2818][I][STORAGE] Spool diag[ensure_ready_pre_rescan] validSegments=75 untrustedSegments=1 invalidSegments=0 activeSegment=75 totalRecords=9033 storedEvents=4559
+[2833][I][STORAGE] Maintenance continuity log loaded clean=1 remaining=none gen=8829 pending=4373
+[2838][I][STORAGE] Maintenance requested reason=segment_audit source=boot_fast_audit_failed flags=dirty_summary|segment_audit
+[2839][I][STORAGE] Maintenance requested reason=counter_untrusted source=boot_fast_audit_failed flags=dirty_summary|counter_untrusted|segment_audit
+[2839][W][STORAGE] Counter trust=repair_required reason=boot_fast_audit_failed since=2839
+[2840][W][STORAGE] Fast boot: repair deferred pending=209 active=75 nextEventId=9032 flags=dirty_summary|counter_untrusted|segment_audit
+[2843][I][STORAGE] Config synced from settings for: Spectre
+[2844][W][STORAGE] Boot heap pressure: deferring post-boot refresh pending=209 freeInternal=121356 largestInternal=69620
+[2849][I][CORE] Storage begin done ok=1 ready=1 pending=209 heapFree=121356 largest=69620
+[2853][I][STORAGE] Maintenance start reason=pre_capture_boot budgetMs=5000 flags=dirty_summary|counter_untrusted|segment_audit captureSafe=0
+[3169][I][STORAGE] Segment lifecycle seg=76 drained->indexed trust=trusted pending=7
+[6079][W][STORAGE] Counter trust=trusted_snapshot_lagged reason=pending_enrich_counter_clamp since=6079
+# boot watch end 2026-06-16 15:48:52

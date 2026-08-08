@@ -1,0 +1,445 @@
+# OPEN 15:20:29
+ESP-ROM:esp32s3-20210327
+Build:Mar 27 2021
+rst:0x7 (TG0WDT_SYS_RST),boot:0x2b (SPI_FAST_FLASH_BOOT)
+Saved PC:0x400454e9
+SPIWP:0xee
+mode:QIO, clock div:1
+load:0x3fce2820,len:0x10cc
+ets_loader.c 79 
+# OPEN 15:20:31
+ESP-ROM:esp32s3-20210327
+Build:Mar 27 2021
+rst:0x7 (TG0WDT_SYS_RST),boot:0x2b (SPI_FAST_FLASH_BOOT)
+Saved PC:0x400454e9
+SPIWP:0xee
+mode:QIO, clock div:1
+load:0x3fce2820,len:0x10cc
+ets_loader.c 79 
+ESP-ROM:esp32s3-20210327
+Build:Mar 27 2021
+rst:0x7 (TG0WDT_SYS_RST),boot:0x2b (SPI_FAST_FLASH_BOOT)
+Saved PC:0x400454e9
+SPIWP:0xee
+mode:QIO, clock div:1
+load:0x3fce2820,len:0x10cc
+ets_loader.c 79 
+# OPEN 15:20:34
+ESP-ROM:esp32s3-20210327
+Build:Mar 27 2021
+rst:0x7 (TG0WDT_SYS_RST),boot:0x2b (SPI_FAST_FLASH_BOOT)
+Saved PC:0x400454e9
+SPIWP:0xee
+mode:QIO, clock div:1
+load:0x3fce2820,len:0x10cc
+ets_loader.c 79 
+ESP-ROM:esp32s3-20210327
+Build:Mar 27 2021
+rst:0x7 (TG0WDT_SYS_RST),boot:0x2b (SPI_FAST_FLASH_BOOT)
+Saved PC:0x400454e9
+SPIWP:0xee
+mode:QIO, clock div:1
+load:0x3fce2820,len:0x10cc
+ets_loader.c 79 
+# OPEN 15:20:37
+ESP-ROM:esp32s3-20210327
+Build:Mar 27 2021
+rst:0x7 (TG0WDT_SYS_RST),boot:0x2b (SPI_FAST_FLASH_BOOT)
+Saved PC:0x400454e9
+SPIWP:0xee
+mode:QIO, clock div:1
+load:0x3fce2820,len:0x10cc
+ets_loader.c 79 
+ESP-ROM:esp32s3-20210327
+Build:Mar 27 2021
+rst:0x7 (TG0WDT_SYS_RST),boot:0x2b (SPI_FAST_FLASH_BOOT)
+Saved PC:0x400454e9
+SPIWP:0xee
+mode:QIO, clock div:1
+load:0x3fce2820,len:0x10cc
+ets_loader.c 79 
+# OPEN 15:20:39
+ESP-ROM:esp32s3-20210327
+Build:Mar 27 2021
+rst:0x7 (TG0WDT_SYS_RST),boot:0x2b (SPI_FAST_FLASH_BOOT)
+Saved PC:0x400454e9
+SPIWP:0xee
+mode:QIO, clock div:1
+load:0x3fce2820,len:0x10cc
+ets_loader.c 79 
+ESP-ROM:esp32s3-20210327
+Build:Mar 27 2021
+rst:0x7 (TG0WDT_SYS_RST),boot:0x2b (SPI_FAST_FLASH_BOOT)
+Saved PC:0x400454e9
+SPIWP:0xee
+mode:QIO, clock div:1
+load:0x3fce2820,len:0x10cc
+ets_loader.c 79 
+# OPEN 15:20:42
+ESP-ROM:esp32s3-20210327
+Build:Mar 27 2021
+rst:0x7 (TG0WDT_SYS_RST),boot:0x2b (SPI_FAST_FLASH_BOOT)
+Saved PC:0x400454e9
+SPIWP:0xee
+mode:QIO, clock div:1
+load:0x3fce2820,len:0x10cc
+ets_loader.c 79 
+ESP-ROM:esp32s3-20210327
+Build:Mar 27 2021
+rst:0x7 (TG0WDT_SYS_RST),boot:0x2b (SPI_FAST_FLASH_BOOT)
+Saved PC:0x400454e9
+SPIWP:0xee
+mode:QIO, clock div:1
+load:0x3fce2820,len:0x10cc
+ets_loader.c 79 
+# OPEN 15:20:45
+# SENT upload resume
+ESP-ROM:esp32s3-20210327
+Build:Mar 27 2021
+rst:0x7 (TG0WDT_SYS_RST),boot:0x2b (SPI_FAST_FLASH_BOOT)
+Saved PC:0x400454e9
+SPIWP:0xee
+mode:QIO, clock div:1
+load:0x3fce2820,len:0x10cc
+ets_loader.c 79 
+ESP-ROM:esp32s3-20210327
+Build:Mar 27 2021
+rst:0x7 (TG0WDT_SYS_RST),boot:0x2b (SPI_FAST_FLASH_BOOT)
+Saved PC:0x400454e9
+SPIWP:0xee
+mode:QIO, clock div:1
+load:0x3fce2820,len:0x10cc
+ets_loader.c 79 
+# OPEN 15:20:48
+ESP-ROM:esp32s3-20210327
+Build:Mar 27 2021
+rst:0x7 (TG0WDT_SYS_RST),boot:0x2b (SPI_FAST_FLASH_BOOT)
+Saved PC:0x400454e9
+SPIWP:0xee
+mode:QIO, clock div:1
+load:0x3fce2820,len:0x10cc
+ets_loader.c 79 
+ESP-ROM:esp32s3-20210327
+Build:Mar 27 2021
+rst:0x7 (TG0WDT_SYS_RST),boot:0x2b (SPI_FAST_FLASH_BOOT)
+Saved PC:0x400454e9
+SPIWP:0xee
+mode:QIO, clock div:1
+load:0x3fce2820,len:0x10cc
+ets_loader.c 79 
+# OPEN 15:20:50
+# SENT upload now
+ESP-ROM:esp32s3-20210327
+Build:Mar 27 2021
+rst:0x7 (TG0WDT_SYS_RST),boot:0x2b (SPI_FAST_FLASH_BOOT)
+Saved PC:0x400454e9
+SPIWP:0xee
+mode:QIO, clock div:1
+load:0x3fce2820,len:0x10cc
+ets_loader.c 79 
+ESP-ROM:esp32s3-20210327
+Build:Mar 27 2021
+rst:0x7 (TG0WDT_SYS_RST),boot:0x2b (SPI_FAST_FLASH_BOOT)
+Saved PC:0x400454e9
+SPIWP:0xee
+mode:QIO, clock div:1
+load:0x3fce2820,len:0x10cc
+ets_loader.c 79 
+# OPEN 15:20:53
+ESP-ROM:esp32s3-20210327
+Build:Mar 27 2021
+rst:0x7 (TG0WDT_SYS_RST),boot:0x2b (SPI_FAST_FLASH_BOOT)
+Saved PC:0x400454e9
+SPIWP:0xee
+mode:QIO, clock div:1
+load:0x3fce2820,len:0x10cc
+ets_loader.c 79 
+ESP-ROM:esp32s3-20210327
+Build:Mar 27 2021
+rst:0x7 (TG0WDT_SYS_RST),boot:0x2b (SPI_FAST_FLASH_BOOT)
+Saved PC:0x400454e9
+SPIWP:0xee
+mode:QIO, clock div:1
+load:0x3fce2820,len:0x10cc
+ets_loader.c 79 
+# OPEN 15:20:56
+ESP-ROM:esp32s3-20210327
+Build:Mar 27 2021
+rst:0x7 (TG0WDT_SYS_RST),boot:0x2b (SPI_FAST_FLASH_BOOT)
+Saved PC:0x400454e9
+SPIWP:0xee
+mode:QIO, clock div:1
+load:0x3fce2820,len:0x10cc
+ets_loader.c 79 
+ESP-ROM:esp32s3-20210327
+Build:Mar 27 2021
+rst:0x7 (TG0WDT_SYS_RST),boot:0x2b (SPI_FAST_FLASH_BOOT)
+Saved PC:0x400454e9
+SPIWP:0xee
+mode:QIO, clock div:1
+load:0x3fce2820,len:0x10cc
+ets_loader.c 79 
+# OPEN 15:20:58
+ESP-ROM:esp32s3-20210327
+Build:Mar 27 2021
+rst:0x7 (TG0WDT_SYS_RST),boot:0x2b (SPI_FAST_FLASH_BOOT)
+Saved PC:0x400454e9
+SPIWP:0xee
+mode:QIO, clock div:1
+load:0x3fce2820,len:0x10cc
+ets_loader.c 79 
+ESP-ROM:esp32s3-20210327
+Build:Mar 27 2021
+rst:0x7 (TG0WDT_SYS_RST),boot:0x2b (SPI_FAST_FLASH_BOOT)
+Saved PC:0x400454e9
+SPIWP:0xee
+mode:QIO, clock div:1
+load:0x3fce2820,len:0x10cc
+ets_loader.c 79 
+# OPEN 15:21:01
+ESP-ROM:esp32s3-20210327
+Build:Mar 27 2021
+rst:0x7 (TG0WDT_SYS_RST),boot:0x2b (SPI_FAST_FLASH_BOOT)
+Saved PC:0x400454e9
+SPIWP:0xee
+mode:QIO, clock div:1
+load:0x3fce2820,len:0x10cc
+ets_loader.c 79 
+ESP-ROM:esp32s3-20210327
+Build:Mar 27 2021
+rst:0x7 (TG0WDT_SYS_RST),boot:0x2b (SPI_FAST_FLASH_BOOT)
+Saved PC:0x400454e9
+SPIWP:0xee
+mode:QIO, clock div:1
+load:0x3fce2820,len:0x10cc
+ets_loader.c 79 
+# OPEN 15:21:04
+ESP-ROM:esp32s3-20210327
+Build:Mar 27 2021
+rst:0x7 (TG0WDT_SYS_RST),boot:0x2b (SPI_FAST_FLASH_BOOT)
+Saved PC:0x400454e9
+SPIWP:0xee
+mode:QIO, clock div:1
+load:0x3fce2820,len:0x10cc
+ets_loader.c 79 
+ESP-ROM:esp32s3-20210327
+Build:Mar 27 2021
+rst:0x7 (TG0WDT_SYS_RST),boot:0x2b (SPI_FAST_FLASH_BOOT)
+Saved PC:0x400454e9
+SPIWP:0xee
+mode:QIO, clock div:1
+load:0x3fce2820,len:0x10cc
+ets_loader.c 79 
+# OPEN 15:21:07
+ESP-ROM:esp32s3-20210327
+Build:Mar 27 2021
+rst:0x7 (TG0WDT_SYS_RST),boot:0x2b (SPI_FAST_FLASH_BOOT)
+Saved PC:0x400454e9
+SPIWP:0xee
+mode:QIO, clock div:1
+load:0x3fce2820,len:0x10cc
+ets_loader.c 79 
+ESP-ROM:esp32s3-20210327
+Build:Mar 27 2021
+rst:0x7 (TG0WDT_SYS_RST),boot:0x2b (SPI_FAST_FLASH_BOOT)
+Saved PC:0x400454e9
+SPIWP:0xee
+mode:QIO, clock div:1
+load:0x3fce2820,len:0x10cc
+ets_loader.c 79 
+# OPEN 15:21:09
+ESP-ROM:esp32s3-20210327
+Build:Mar 27 2021
+rst:0x7 (TG0WDT_SYS_RST),boot:0x2b (SPI_FAST_FLASH_BOOT)
+Saved PC:0x400454e9
+SPIWP:0xee
+mode:QIO, clock div:1
+load:0x3fce2820,len:0x10cc
+ets_loader.c 79 
+ESP-ROM:esp32s3-20210327
+Build:Mar 27 2021
+rst:0x7 (TG0WDT_SYS_RST),boot:0x2b (SPI_FAST_FLASH_BOOT)
+Saved PC:0x400454e9
+SPIWP:0xee
+mode:QIO, clock div:1
+load:0x3fce2820,len:0x10cc
+ets_loader.c 79 
+# OPEN 15:21:12
+ESP-ROM:esp32s3-20210327
+Build:Mar 27 2021
+rst:0x7 (TG0WDT_SYS_RST),boot:0x2b (SPI_FAST_FLASH_BOOT)
+Saved PC:0x400454e9
+SPIWP:0xee
+mode:QIO, clock div:1
+load:0x3fce2820,len:0x10cc
+ets_loader.c 79 
+ESP-ROM:esp32s3-20210327
+Build:Mar 27 2021
+rst:0x7 (TG0WDT_SYS_RST),boot:0x2b (SPI_FAST_FLASH_BOOT)
+Saved PC:0x400454e9
+SPIWP:0xee
+mode:QIO, clock div:1
+load:0x3fce2820,len:0x10cc
+ets_loader.c 79 
+# OPEN 15:21:15
+ESP-ROM:esp32s3-20210327
+Build:Mar 27 2021
+rst:0x7 (TG0WDT_SYS_RST),boot:0x2b (SPI_FAST_FLASH_BOOT)
+Saved PC:0x400454e9
+SPIWP:0xee
+mode:QIO, clock div:1
+load:0x3fce2820,len:0x10cc
+ets_loader.c 79 
+ESP-ROM:esp32s3-20210327
+Build:Mar 27 2021
+rst:0x7 (TG0WDT_SYS_RST),boot:0x2b (SPI_FAST_FLASH_BOOT)
+Saved PC:0x400454e9
+SPIWP:0xee
+mode:QIO, clock div:1
+load:0x3fce2820,len:0x10cc
+ets_loader.c 79 
+# OPEN 15:21:18
+ESP-ROM:esp32s3-20210327
+Build:Mar 27 2021
+rst:0x7 (TG0WDT_SYS_RST),boot:0x2b (SPI_FAST_FLASH_BOOT)
+Saved PC:0x400454e9
+SPIWP:0xee
+mode:QIO, clock div:1
+load:0x3fce2820,len:0x10cc
+ets_loader.c 79 
+ESP-ROM:esp32s3-20210327
+Build:Mar 27 2021
+rst:0x7 (TG0WDT_SYS_RST),boot:0x2b (SPI_FAST_FLASH_BOOT)
+Saved PC:0x400454e9
+SPIWP:0xee
+mode:QIO, clock div:1
+load:0x3fce2820,len:0x10cc
+ets_loader.c 79 
+# OPEN 15:21:20
+ESP-ROM:esp32s3-20210327
+Build:Mar 27 2021
+rst:0x7 (TG0WDT_SYS_RST),boot:0x2b (SPI_FAST_FLASH_BOOT)
+Saved PC:0x400454e9
+SPIWP:0xee
+mode:QIO, clock div:1
+load:0x3fce2820,len:0x10cc
+ets_loader.c 79 
+ESP-ROM:esp32s3-20210327
+Build:Mar 27 2021
+rst:0x7 (TG0WDT_SYS_RST),boot:0x2b (SPI_FAST_FLASH_BOOT)
+Saved PC:0x400454e9
+SPIWP:0xee
+mode:QIO, clock div:1
+load:0x3fce2820,len:0x10cc
+ets_loader.c 79 
+# OPEN 15:21:23
+ESP-ROM:esp32s3-20210327
+Build:Mar 27 2021
+rst:0x7 (TG0WDT_SYS_RST),boot:0x2b (SPI_FAST_FLASH_BOOT)
+Saved PC:0x400454e9
+SPIWP:0xee
+mode:QIO, clock div:1
+load:0x3fce2820,len:0x10cc
+ets_loader.c 79 
+ESP-ROM:esp32s3-20210327
+Build:Mar 27 2021
+rst:0x7 (TG0WDT_SYS_RST),boot:0x2b (SPI_FAST_FLASH_BOOT)
+Saved PC:0x400454e9
+SPIWP:0xee
+mode:QIO, clock div:1
+load:0x3fce2820,len:0x10cc
+ets_loader.c 79 
+# OPEN 15:21:26
+ESP-ROM:esp32s3-20210327
+Build:Mar 27 2021
+rst:0x7 (TG0WDT_SYS_RST),boot:0x2b (SPI_FAST_FLASH_BOOT)
+Saved PC:0x400454e9
+SPIWP:0xee
+mode:QIO, clock div:1
+load:0x3fce2820,len:0x10cc
+ets_loader.c 79 
+ESP-ROM:esp32s3-20210327
+Build:Mar 27 2021
+rst:0x7 (TG0WDT_SYS_RST),boot:0x2b (SPI_FAST_FLASH_BOOT)
+Saved PC:0x400454e9
+SPIWP:0xee
+mode:QIO, clock div:1
+load:0x3fce2820,len:0x10cc
+ets_loader.c 79 
+# OPEN 15:21:29
+ESP-ROM:esp32s3-20210327
+Build:Mar 27 2021
+rst:0x7 (TG0WDT_SYS_RST),boot:0x2b (SPI_FAST_FLASH_BOOT)
+Saved PC:0x400454e9
+SPIWP:0xee
+mode:QIO, clock div:1
+load:0x3fce2820,len:0x10cc
+ets_loader.c 79 
+ESP-ROM:esp32s3-20210327
+Build:Mar 27 2021
+rst:0x7 (TG0WDT_SYS_RST),boot:0x2b (SPI_FAST_FLASH_BOOT)
+Saved PC:0x400454e9
+SPIWP:0xee
+mode:QIO, clock div:1
+load:0x3fce2820,len:0x10cc
+ets_loader.c 79 
+# OPEN 15:21:31
+ESP-ROM:esp32s3-20210327
+Build:Mar 27 2021
+rst:0x7 (TG0WDT_SYS_RST),boot:0x2b (SPI_FAST_FLASH_BOOT)
+Saved PC:0x400454e9
+SPIWP:0xee
+mode:QIO, clock div:1
+load:0x3fce2820,len:0x10cc
+ets_loader.c 79 
+ESP-ROM:esp32s3-20210327
+Build:Mar 27 2021
+rst:0x7 (TG0WDT_SYS_RST),boot:0x2b (SPI_FAST_FLASH_BOOT)
+Saved PC:0x400454e9
+SPIWP:0xee
+mode:QIO, clock div:1
+load:0x3fce2820,len:0x10cc
+ets_loader.c 79 
+# OPEN 15:21:34
+ESP-ROM:esp32s3-20210327
+Build:Mar 27 2021
+rst:0x7 (TG0WDT_SYS_RST),boot:0x2b (SPI_FAST_FLASH_BOOT)
+Saved PC:0x400454e9
+SPIWP:0xee
+mode:QIO, clock div:1
+load:0x3fce2820,len:0x10cc
+ets_loader.c 79 
+ESP-ROM:esp32s3-20210327
+Build:Mar 27 2021
+rst:0x7 (TG0WDT_SYS_RST),boot:0x2b (SPI_FAST_FLASH_BOOT)
+Saved PC:0x400454e9
+SPIWP:0xee
+mode:QIO, clock div:1
+load:0x3fce2820,len:0x10cc
+ets_loader.c 79 
+# OPEN 15:21:37
+ESP-ROM:esp32s3-20210327
+Build:Mar 27 2021
+rst:0x7 (TG0WDT_SYS_RST),boot:0x2b (SPI_FAST_FLASH_BOOT)
+Saved PC:0x400454e9
+SPIWP:0xee
+mode:QIO, clock div:1
+load:0x3fce2820,len:0x10cc
+ets_loader.c 79 
+ESP-ROM:esp32s3-20210327
+Build:Mar 27 2021
+rst:0x7 (TG0WDT_SYS_RST),boot:0x2b (SPI_FAST_FLASH_BOOT)
+Saved PC:0x400454e9
+SPIWP:0xee
+mode:QIO, clock div:1
+load:0x3fce2820,len:0x10cc
+ets_loader.c 79 
+# OPEN 15:21:39
+ESP-ROM:esp32s3-20210327
+Build:Mar 27 2021
+rst:0x7 (TG0WDT_SYS_RST),boot:0x2b (SPI_FAST_FLASH_BOOT)
+Saved PC:0x400454e9
+SPIWP:0xee
+mode:QIO, clock div:1
+load:0x3fce2820,len:0x10cc
+ets_loader.c 79 

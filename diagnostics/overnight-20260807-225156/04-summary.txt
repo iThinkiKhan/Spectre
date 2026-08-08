@@ -1,0 +1,56 @@
+SPECTRE OVERNIGHT ANALYTICS
+===========================
+run started : 20260807-225156
+finished    : 2026-08-07 23:00:42
+soak hours  : 0.045
+samples     : 4
+
+MEMORY TREND (leak detection)
+-----------------------------
+window            : 0.04 h
+heap free         : 6252 -> 6252 KB   (delta 0 KB)
+internal free     : 66 -> 66 KB   (delta 0 KB)
+psram free        : 6186 -> 6186 KB   (delta 0 KB)
+verdict           : stable
+
+PRESSURE EXTREMES
+-----------------
+lowest internal free : 66 KB   (headroom warning below ~25 KB)
+worst fragmentation  : 1 %
+
+BACKLOG TREND
+-------------
+pendingUpload : 175 -> 175
+pendingEnrich : 175 -> 175
+
+RADIO OWNERSHIP DISTRIBUTION
+----------------------------
+  WIFI_CAPTURE          4 samples (100%)
+
+ERROR / WARNING CENSUS
+----------------------
+  assert             0
+  enrich stall       0
+  error-level log    0
+  panic/crash        0
+  radio churn        0
+  storage drop       0
+  warn-level log     12
+  watchdog           0
+
+TOP DISTINCT WARN/ERROR LINES (what to work on)
+-----------------------------------------------
+      5x [W][CORE] TaskHardware loop gap=Nms owner=WIFI_CAPTURE pendingUpload=N maintPending=N suppressed=N
+      2x [W][STORAGE] Spool audit slow reason=manual_count segs=N recs=N ms=N
+      2x [W][STORAGE] Spool audit slow reason=manual_audit segs=N recs=N ms=N
+      1x [W][STORAGE] Counter trust=trusted_snapshot_lagged reason=append_metadata_deferred since=N
+      1x [W][STORAGE] Counter trust=trusted reason=worker_metadata_flush since=N
+      1x [W][CORE] TaskHardware slow section=capture_storage_maintenance ms=N owner=WIFI_CAPTURE pendingUpload=N maintPending=N
+
+ARTIFACTS
+---------
+  boot      : C:\PlatformIO\Projects\Spectre\diagnostics\overnight-20260807-225156\00-boot.log
+  commands  : C:\PlatformIO\Projects\Spectre\diagnostics\overnight-20260807-225156\01-commands.log
+  soak      : C:\PlatformIO\Projects\Spectre\diagnostics\overnight-20260807-225156\02-soak.log
+  samples   : C:\PlatformIO\Projects\Spectre\diagnostics\overnight-20260807-225156\03-samples.csv
+

@@ -100,6 +100,9 @@ private:
     lv_obj_t*   _lblBle      = nullptr;
     lv_obj_t*   _lblLora     = nullptr;
     lv_obj_t*   _lblScreen   = nullptr;
+    // Always-on affordance for the global A+B sleep chord. The chord works from
+    // every screen (and with the display blanked) but was invisible in the UI.
+    lv_obj_t*   _lblSleepHint = nullptr;
 
     // Action bar labels
     lv_obj_t*   _lblActionA  = nullptr;
@@ -140,6 +143,8 @@ private:
     lv_timer_t* _sparkTimer     = nullptr;
     lv_obj_t*   _divArcL        = nullptr;
     lv_obj_t*   _divArcR        = nullptr;
+    lv_obj_t*   _sparkL2        = nullptr;  // reused secondary spark (no per-fire alloc)
+    lv_obj_t*   _sparkR2        = nullptr;
     int         _divPulseY      = 0;
     lv_obj_t*   _radarLine      = nullptr;
     lv_anim_t   _radarAnim;

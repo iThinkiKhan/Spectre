@@ -1,0 +1,58 @@
+=== session opened 2026-08-07T10:02:09.9539513-05:00 ===
+=== send: companion status ===
+companion status
+[COMP] enabled=1
+[COMP] external accessory=0 bleProxy=0 phoneConnected=0 phone=unknown rssi=0 ageMs=0
+[COMP] wio link=idle sx1262=0 textInput=0
+[COMP] phone=UNKNOWN work=IDLE
+[COMP] bleBegun=0 bleRadio=0 bleState=IDLE
+[COMP] ready link=0 gps=0 freshGps=0 ctrl=0 enrich=0
+[COMP] bleInitAgeMs=0 scanStartAgeMs=0 disconnReason=0
+[COMP] pendingEnrichMission=0 pendingEnrichNoise=4301 pendingEnrichTotal=4301
+[COMP] lastProbeAgeMs=0 lastEnrichAgeMs=0
+[COMP] radioOwner=wifi_capture
+[73927][I][STORAGE] capture write allowed owner=WIFI_CAPTURE path=/events/counter.txt reason=capture_micro_idle ms=73 ok=1
+[74020][I][STORAGE] capture write allowed owner=WIFI_CAPTURE path=/events/meta.json reason=capture_micro_idle ms=92 ok=1
+[74611][I][STORAGE] capture write allowed owner=WIFI_CAPTURE path=/spool/index.json reason=capture_micro_idle ms=576 ok=1
+[74612][I][STORAGE] worker ui refresh serviced uiRefreshServiceCount=12 uiDeferred=46 uiFlush=12 pressure=0 usedPct=17 pending=4298
+[74612][W][STORAGE] Counter trust=trusted reason=worker_metadata_flush since=74612
+[74613][W][STORAGE] worker metadata flush reason=capture_micro_idle ms=758 ok=1 dirty=0
+[74613][I][STORAGE] worker metadata flush metadataFlushCount=1 reason=capture_micro_idle entryMetadataDirtyPending=1 entryUiRefreshPending=1 metadataDirtyPending=0 uiDeferred=46 uiFlush=12 uiRefreshServiceCount=
+[74614][W][CORE] TaskHardware slow section=capture_storage_maintenance ms=838 owner=WIFI_CAPTURE pendingUpload=4298 maintPending=1
+[74624][W][CORE] TaskHardware loop gap=848ms owner=WIFI_CAPTURE pendingUpload=4298 maintPending=1 suppressed=1
+=== send: companion enrich ===
+companion enrich
+[COMP] manual enrich queued
+[76139][I][COMP] Manual enrich request received; probe backoff bypassed
+[76140][I][WIFI] Radio paused
+[76301][I][WIFI] Radio suspended
+[76377][I][BLE] begin phase=nimble_pre bt=idle/0 heap=73496 largest=31732 stack=17152 devLen=14
+[76377][I][BLE] begin phase=nimble_init
+[76387][I][BLE] begin phase=nimble_init_ok bt=enabled/2 heap=10476 largest=7156 stack=17152
+[76388][I][BLE] BLE SM disabled; app-layer P-256/AES-GCM required
+[76389][I][BLE] begin phase=server_ok
+[76389][I][BLE] scanner configured legacy=1 active=1 interval=30 window=30 srTimeout=200
+[76390][I][BLE] begin phase=scanner_ok
+[76390][I][BLE] begin phase=worker_ok
+[76390][I][BLE] begin ready
+[76390][I][BLE] radio enabled settle=500ms
+[76391][I][BLE] companion link requested reason=manual_probe mode=fresh_scan timeout=15s settle=500ms cacheAge=0ms rssi=0
+[76395][I][BLE] Phone probe lease granted reason=manual_probe cachedFirst=0 hold=60000ms
+[77001][I][BLE] scan start
+[77001][I][BLE] scan start diag=1 dup=1 diagLeft=44390 state=1 window=8000ms weakRecent=0 lastRssi=0
+[85126][I][BLE] scan window ended window=8000ms weakRecent=0 lastRssi=0
+[85437][I][BLE] scan start
+[85437][I][BLE] scan start diag=1 dup=1 diagLeft=35954 state=1 window=8000ms weakRecent=0 lastRssi=0
+[85446][I][BLE] adv check addr=59:ab:d0:f9:30:e5 addrType=1 targetSvc=1 matchedBy=service rssi=-59
+[85446][I][BLE] adv raw name='' addr=59:ab:d0:f9:30:e5 addrType=1 rssi=-59 hasName=0 hasSvc=1 targetSvc=1 rawTargetSvc=1 svcCount=1 matchedBy=service
+[85447][I][BLE] adv raw payload len=21 hex=02 01 02 11 07 01 00 3A 6F 2D 6B 64 9A 4D 4D 7B 6D 80 3A F0 84
+[85447][I][BLE] adv svc=84f03a80-6d7b-4d4d-9a64-6b2d6f3a0001
+[85448][I][BLE] target found matchedBy=service cachePeer=0 addr=59:ab:d0:f9:30:e5 name=SpectrePhone rssi=-59
+[85448][I][BLE] scan stop; connect pending addr=59:ab:d0:f9:30:e5
+[85742][I][BLE] connect pending settled addr=59:ab:d0:f9:30:e5
+[85743][I][BLE] connect attempt addr=59:ab:d0:f9:30:e5 name=SpectrePhone
+[85743][I][BLE] connect params timeoutMs=45000 scanItvl=16 scanWin=16 addrType=1
+[86370][I][BLE] connect result ok=1 err=0 addr=59:ab:d0:f9:30:e5
+[86370][I][BLE] BLE link connected; starting app-layer auth watchdog=50000ms
+[86371][I][BLE] remote service lookup begin core=1 internalFree=9108 largest=7156
+[86429][I][BLE] remote service lookup end found=1 err=0

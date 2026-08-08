@@ -70,7 +70,11 @@ private:
     uint16_t     _droppedSinceLast  = 0;
     uint8_t      _lastTransportKind = 0;
 
-    LineSlot _slots[SLOT_COUNT] = {};
+    // Ring of captured lines (~5.8 KB).  PSRAM-backed and allocated in begin()
+    // rather than held as internal BSS; this is a debug/telemetry path, and
+    // every consumer is gated behind _begun so a failed allocation simply
+    // leaves the streamer disabled instead of dereferencing null.
+    LineSlot* _slots = nullptr;
     uint16_t _head = 0;          // oldest populated slot
     uint16_t _depth = 0;         // populated slots
 };

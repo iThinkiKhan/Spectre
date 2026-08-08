@@ -1,0 +1,28 @@
+=== session opened 2026-08-07T13:16:13.6263509-05:00 ===
+=== send: companion status ===
+companion status
+[COMP] enabled=1
+[COMP] external accessory=0 bleProxy=0 phoneConnected=0 phone=unknown rssi=0 ageMs=0
+[COMP] wio link=idle sx1262=0 textInput=0
+[COMP] phone=UNKNOWN work=IDLE
+[COMP] bleBegun=0 bleRadio=0 bleState=IDLE
+[COMP] ready link=0 gps=0 freshGps=0 ctrl=0 enrich=0
+[COMP] bleInitAgeMs=0 scanStartAgeMs=0 disconnReason=0
+[COMP] pendingEnrichMission=0 pendingEnrichNoise=4450 pendingEnrichTotal=4450
+[COMP] lastProbeAgeMs=0 lastEnrichAgeMs=0
+[COMP] radioOwner=wifi_capture
+[73024][I][STORAGE] worker ui refresh serviced uiRefreshServiceCount=10 uiDeferred=24 uiFlush=10 pressure=0 usedPct=18 pending=4449
+=== send: companion enrich ===
+companion enrich
+[COMP] manual enrich queued
+[75656][I][COMP] Manual enrich request received; probe backoff bypassed
+[75657][I][WIFI] Radio paused
+[75818][I][WIFI] Radio suspended
+[75894][I][BLE] begin phase=nimble_pre bt=idle/0 heap=72472 largest=27636 stack=17252 devLen=14
+[75894][I][BLE] begin phase=nimble_init
+[75904][I][BLE] begin phase=nimble_init_ok bt=enabled/2 heap=9452 largest=7156 stack=17252
+[75905][I][BLE] BLE SM disabled; app-layer P-256/AES-GCM required
+[75906][I][BLE] begin phase=server_ok
+[75907][I][BLE] scanner configured legacy=1 active=1 interval=30 window=30 srTimeout=200
+[75907][I][BLE] begin phase=scanner_ok
+[75907][E][BLE] worker stack alloc failed

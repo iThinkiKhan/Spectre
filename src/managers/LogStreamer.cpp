@@ -1,6 +1,8 @@
 #include "LogStreamer.h"
 
 #include <string.h>
+#include <stdlib.h>
+#include <esp_heap_caps.h>
 
 #include "../core/DebugLog.h"
 #include "PhoneTransportRouter.h"
@@ -14,6 +16,20 @@ LogStreamer LOG_STREAMER;
 void LogStreamer::begin() {
     if (_begun) {
         return;
+    }
+    // Allocate the line ring from PSRAM before arming _begun — every producer
+    // and consumer checks _begun, so if this fails the streamer stays inert
+    // rather than writing through a null pointer.
+    if (!_slots) {
+        _slots = static_cast<LineSlot*>(
+            heap_caps_calloc(SLOT_COUNT, sizeof(LineSlot),
+                             MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT));
+        if (!_slots) {
+            _slots = static_cast<LineSlot*>(calloc(SLOT_COUNT, sizeof(LineSlot)));
+        }
+        if (!_slots) {
+            return;
+        }
     }
     _begun = true;
     portENTER_CRITICAL(&_mux);

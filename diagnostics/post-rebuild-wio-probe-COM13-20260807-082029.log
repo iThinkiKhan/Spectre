@@ -1,0 +1,102 @@
+=== POST-REBUILD VERIFY 2026-08-07T08:20:29.0491757-05:00 ===
+[1614508][I][STORAGE] worker ui refresh serviced uiRefreshServiceCount=26 uiDeferred=486 uiFlush=26 pressure=0 usedPct=16 pending=4202
+=== send: spool diag ===
+spool diag
+[1614610][I][WIFI] Radio paused
+[1614771][I][WIFI] Radio suspended
+[1614771][I][STORAGE] RAMSpool worker paused inflight=0 lastInflight=0
+[1614772][I][STORAGE] Exclusive window begin kind=maintenance reason=manual_spool_diag workerPaused=1 displaySuspended=1
+[SPOOL] validSegments=33 untrustedSegments=0 invalidSegments=0 active=259 oldest=207
+[SPOOL] indexedTotalRecords=4222 storedEvents=4214 uploadedRetainedEstimate=12
+[SPOOL] pendingUpload=4202 nextEventId=25414 sessions=23
+[1615036][I][STORAGE] load_ids_reserve count=0 freeInternal=73284 largest=27636
+[1615036][I][STORAGE] load_ids_reserved freeInternal=73284
+[1615037][I][STORAGE] load_ids_loop_done scanned=0 skipped=33 idsCollected=0 freeInternal=73284
+[SPOOL] pendingEnrich mission=0 noise=4222 total=4222
+[SPOOL] used=1380KB / 8128KB auditRepairReq=0 summaryRebuildPending=0
+[SPOOL]   seg=207 fmt=bin_v2 trust=trusted records=10 storedEvents=10 storedLaneEvents=10 pendingUpload=7 pendingMission=0 pendingNoise=7 pendingEnrich=10 summaryOk=1 active=0
+[SPOOL]   seg=210 fmt=bin_v2 trust=trusted records=13 storedEvents=13 storedLaneEvents=13 pendingUpload=13 pendingMission=0 pendingNoise=13 pendingEnrich=13 summaryOk=1 active=0
+[SPOOL]   seg=211 fmt=bin_v2 trust=trusted records=8 storedEvents=8 storedLaneEvents=8 pendingUpload=8 pendingMission=0 pendingNoise=8 pendingEnrich=8 summaryOk=1 active=0
+[SPOOL]   seg=214 fmt=bin_v2 trust=trusted records=5 storedEvents=5 storedLaneEvents=5 pendingUpload=5 pendingMission=0 pendingNoise=5 pendingEnrich=5 summaryOk=1 active=0
+[SPOOL]   seg=219 fmt=bin_v2 trust=trusted records=51 storedEvents=51 storedLaneEvents=51 pendingUpload=51 pendingMission=0 pendingNoise=51 pendingEnrich=51 summaryOk=1 active=0
+[SPOOL]   seg=220 fmt=bin_v2 trust=trusted records=138 storedEvents=138 storedLaneEvents=138 pendingUpload=138 pendingMission=0 pendingNoise=138 pendingEnrich=138 summaryOk=1 active=0
+[SPOOL]   seg=221 fmt=bin_v2 trust=trusted records=154 storedEvents=154 storedLaneEvents=154 pendingUpload=154 pendingMission=0 pendingNoise=154 pendingEnrich=154 summaryOk=1 active=0
+[SPOOL]   seg=222 fmt=bin_v2 trust=trusted records=8 storedEvents=8 storedLaneEvents=8 pendingUpload=8 pendingMission=0 pendingNoise=8 pendingEnrich=8 summaryOk=1 active=0
+[SPOOL]   seg=223 fmt=bin_v2 trust=trusted records=9 storedEvents=9 storedLaneEvents=9 pendingUpload=9 pendingMission=0 pendingNoise=9 pendingEnrich=9 summaryOk=1 active=0
+[SPOOL]   seg=226 fmt=bin_v2 trust=trusted records=13 storedEvents=13 storedLaneEvents=13 pendingUpload=13 pendingMission=0 pendingNoise=13 pendingEnrich=13 summaryOk=1 active=0
+[SPOOL]   seg=227 fmt=bin_v2 trust=trusted records=3 storedEvents=3 storedLaneEvents=3 pendingUpload=3 pendingMission=0 pendingNoise=3 pendingEnrich=3 summaryOk=1 active=0
+[SPOOL]   seg=228 fmt=bin_v2 trust=trusted records=15 storedEvents=15 storedLaneEvents=15 pendingUpload=15 pendingMission=0 pendingNoise=15 pendingEnrich=15 summaryOk=1 active=0
+[SPOOL]   seg=229 fmt=bin_v2 trust=trusted records=11 storedEvents=11 storedLaneEvents=11 pendingUpload=11 pendingMission=0 pendingNoise=11 pendingEnrich=11 summaryOk=1 active=0
+[SPOOL]   seg=230 fmt=bin_v2 trust=trusted records=10 storedEvents=10 storedLaneEvents=10 pendingUpload=10 pendingMission=0 pendingNoise=10 pendingEnrich=10 summaryOk=1 active=0
+[SPOOL]   seg=232 fmt=bin_v2 trust=trusted records=200 storedEvents=200 storedLaneEvents=200 pendingUpload=200 pendingMission=0 pendingNoise=200 pendingEnrich=200 summaryOk=1 active=0
+[SPOOL]   seg=233 fmt=bin_v2 trust=trusted records=197 storedEvents=197 storedLaneEvents=197 pendingUpload=197 pendingMission=0 pendingNoise=197 pendingEnrich=197 summaryOk=1 active=0
+[SPOOL]   seg=234 fmt=bin_v2 trust=trusted records=194 storedEvents=194 storedLaneEvents=194 pendingUpload=194 pendingMission=0 pendingNoise=194 pendingEnrich=194 summaryOk=1 active=0
+[SPOOL]   seg=235 fmt=bin_v2 trust=trusted records=198 storedEvents=198 storedLaneEvents=198 pendingUpload=198 pendingMission=0 pendingNoise=198 pendingEnrich=198 summaryOk=1 active=0
+[SPOOL]   seg=236 fmt=bin_v2 trust=trusted records=147 storedEvents=147 storedLaneEvents=147 pendingUpload=147 pendingMission=0 pendingNoise=147 pendingEnrich=147 summaryOk=1 active=0
+[SPOOL]   seg=238 fmt=bin_v2 trust=trusted records=443 storedEvents=443 storedLaneEvents=443 pendingUpload=443 pendingMission=0 pendingNoise=443 pendingEnrich=443 summaryOk=1 active=0
+[SPOOL]   seg=240 fmt=bin_v2 trust=trusted records=397 storedEvents=397 storedLaneEvents=397 pendingUpload=397 pendingMission=0 pendingNoise=397 pendingEnrich=397 summaryOk=1 active=0
+[SPOOL]   seg=241 fmt=bin_v2 trust=trusted records=436 storedEvents=436 storedLaneEvents=436 pendingUpload=436 pendingMission=0 pendingNoise=436 pendingEnrich=436 summaryOk=1 active=0
+[SPOOL]   seg=243 fmt=bin_v2 trust=trusted records=2 storedEvents=2 storedLaneEvents=2 pendingUpload=2 pendingMission=0 pendingNoise=2 pendingEnrich=2 summaryOk=1 active=0
+[SPOOL]   seg=244 fmt=bin_v2 trust=trusted records=53 storedEvents=53 storedLaneEvents=53 pendingUpload=53 pendingMission=0 pendingNoise=53 pendingEnrich=53 summaryOk=1 active=0
+[SPOOL]   seg=245 fmt=bin_v2 trust=trusted records=436 storedEvents=436 storedLaneEvents=436 pendingUpload=436 pendingMission=0 pendingNoise=436 pendingEnrich=436 summaryOk=1 active=0
+[SPOOL]   seg=246 fmt=bin_v2 trust=trusted records=101 storedEvents=101 storedLaneEvents=101 pendingUpload=101 pendingMission=0 pendingNoise=101 pendingEnrich=101 summaryOk=1 active=0
+[SPOOL]   seg=247 fmt=bin_v2 trust=trusted records=9 storedEvents=9 storedLaneEvents=9 pendingUpload=9 pendingMission=0 pendingNoise=9 pendingEnrich=9 summaryOk=1 active=0
+[SPOOL]   seg=253 fmt=bin_v2 trust=trusted records=191 storedEvents=191 storedLaneEvents=191 pendingUpload=191 pendingMission=0 pendingNoise=191 pendingEnrich=191 summaryOk=1 active=0
+[SPOOL]   seg=255 fmt=bin_v2 trust=trusted records=3 storedEvents=3 storedLaneEvents=3 pendingUpload=3 pendingMission=0 pendingNoise=3 pendingEnrich=3 summaryOk=1 active=0
+[SPOOL]   seg=256 fmt=bin_v2 trust=trusted records=435 storedEvents=435 storedLaneEvents=435 pendingUpload=435 pendingMission=0 pendingNoise=435 pendingEnrich=435 summaryOk=1 active=0
+[SPOOL]   seg=257 fmt=bin_v2 trust=trusted records=85 storedEvents=85 storedLaneEvents=85 pendingUpload=85 pendingMission=0 pendingNoise=85 pendingEnrich=85 summaryOk=1 active=0
+[SPOOL]   seg=258 fmt=bin_v2 trust=trusted records=226 storedEvents=226 storedLaneEvents=226 pendingUpload=226 pendingMission=0 pendingNoise=226 pendingEnrich=226 summaryOk=1 active=0
+[SPOOL]   seg=259 fmt=bin_v2 trust=trusted records=21 storedEvents=13 storedLaneEvents=4 pendingUpload=4 pendingMission=0 pendingNoise=4 pendingEnrich=4 summaryOk=1 active=1
+[1625982][I][STORAGE] Spool diag[manual_diag] validSegments=33 untrustedSegments=0 invalidSegments=0 activeSegment=259 totalRecords=4222 storedEvents=4214 pendingUpload=4202 nextEventId=25414
+[1625982][I][STORAGE] RAMSpool worker resumed
+[1625983][I][STORAGE] Exclusive window end kind=maintenance result=done reason=manual_spool_diag
+[1626194][I][WIFI] Promiscuous: YES
+[1626194][I][WIFI] Promiscuous mode started data=0
+[1626210][W][CORE] TaskHardware loop gap=11601ms owner=WIFI_CAPTURE pendingUpload=4202 maintPending=1 suppressed=0
+[1626912][I][STORAGE] worker ui refresh serviced uiRefreshServiceCount=27 uiDeferred=490 uiFlush=27 pressure=0 usedPct=16 pending=4202
+[1632896][I][STORAGE] worker ui refresh serviced uiRefreshServiceCount=28 uiDeferred=492 uiFlush=28 pressure=0 usedPct=16 pending=4202
+[1634115][I][STACK] TaskHardware watermark=10864B min=10864B
+[1634117][I][HEAP] heap free=7685KB min=7646KB largest=7552KB frag=1% internalFree=42KB internalLargest=27KB psramFree=7643KB core=38/8% owner=WIFI_CAPTURE nets=6 pendingUpload=4202 pendingEnrich=4205
+[HEALTH] time=2026-08-07 08:20:49 src=ntp
+[HEALTH] heap used=733/8418KB free=7685KB min=7646KB largest=7552KB frag=1%
+[HEALTH] internal used=184/226KB free=42KB min=4KB largest=27KB
+[HEALTH] psram used=549/8192KB free=7643KB largest=7552KB
+[HEALTH] stack free_min: core0=11KB/22KB core1=13KB/18KB
+[HEALTH] core usage: core0=38% core1=8%
+[HEALTH] power=usb state=usb batt=100% 4624mV trend=1mV/min runtime=0min cap=1100mAh charging=0
+[HEALTH] radio=WIFI_CAPTURE wifi=0 ble=0 gps=0 nets=6 pendingUpload=4202 pendingEnrich=4205
+[HEALTH] subghz=NONE mode=OFF pkts=0 nodes=0
+[1634119][I][STORAGE] RAMSpool enq=492 cons=492 inflight=0/1024 high=6 pressure=0 drop[full=0 big=0 noise=0 p3Evict=0 p3Drop=0 p2Drop=0 p1Fail=0] free=1024
+[1634119][I][STORAGE] RAMSpool enqueue probe[ok=484 drop=0] device[ok=8 drop=0]
+[1634120][I][STORAGE] RAMSpool worker probe[ok=13 sup=471 drop=0 fail=0 slow=0] device[ok=8 sup=0 drop=0 fail=0 slow=0] slowTotal=0 maxMs=0
+[1634120][I][STORAGE] RAMSpool prioEnq p0=0 p1=0 p2=492 p3=0
+[1634120][I][STORAGE] RAMSpool lanes p1=0/0 p2=0/5 p3=0/0
+=== send: spool enrich ===
+spool enrich
+[1639639][I][WIFI] Radio paused
+[1639800][I][WIFI] Radio suspended
+[1639800][I][STORAGE] RAMSpool worker paused inflight=0 lastInflight=0
+[1639801][I][STORAGE] Exclusive window begin kind=maintenance reason=manual_spool_enrich workerPaused=1 displaySuspended=1
+[SPOOL] enrich starting...
+[1640065][I][STORAGE] load_ids_reserve count=0 freeInternal=73284 largest=27636
+[1640065][I][STORAGE] load_ids_reserved freeInternal=73284
+[1640065][I][STORAGE] load_ids_loop_done scanned=0 skipped=33 idsCollected=0 freeInternal=73284
+[SPOOL] pendingEnrich mission=0 noise=4222 total=4222
+[SPOOL] enriched=0 trackedTotal=4222 summaryValid=1
+[SPOOL] used=1380KB / 8128KB auditRepairReq=0 summaryRebuildPending=0
+[1650999][I][STORAGE] RAMSpool worker resumed
+[1650999][I][STORAGE] Exclusive window end kind=maintenance result=done reason=manual_spool_enrich
+[1651210][I][WIFI] Promiscuous: YES
+[1651358][I][WIFI] Promiscuous mode started data=0
+[1651372][W][CORE] TaskHardware loop gap=11734ms owner=WIFI_CAPTURE pendingUpload=4202 maintPending=1 suppressed=0
+=== send: wio hello ===
+wio hello
+[WIO] HELLO sent
+=== send: wio status ===
+[1657691][I][STORAGE] worker ui refresh serviced uiRefreshServiceCount=29 uiDeferred=493 uiFlush=29 pressure=0 usedPct=16 pending=4202
+wio status
+[WIO] available=0 bleProxy=0 sx1262=0 link=idle lastSeenAgeMs=0
+[WIO] phoneConnected=0 phone=unknown rssi=0
+[WIO] gpsFresh=0 lat=0.000000 lon=0.000000 acc=0.0 timeTrusted=0 epoch=0
+[WIO] textPending=0 textReady=0 prompt=
+[XPORT] active=internal_ble previous=none ageMs=1652807 transitions=0

@@ -144,14 +144,7 @@ private:
     void _pauseDisplayForUpload();
     void _resumeDisplayAfterUpload();
 
-    enum QueueMetric : uint8_t {
-        QUEUE_METRIC_NONE = 0,
-        QUEUE_METRIC_PROBES,
-        QUEUE_METRIC_DEVICES,
-        QUEUE_METRIC_DRONES,
-        QUEUE_METRIC_PMKIDS
-    };
-        enum DumpPhase : uint8_t {
+    enum DumpPhase : uint8_t {
         DUMP_PHASE_IDLE = 0,
         DUMP_PHASE_HEALTH,
         DUMP_PHASE_EVENTS,
@@ -374,9 +367,8 @@ private:
     void _refreshPendingCount(bool refreshDebriefMirror = false);
     void _prepareQueuedEvent(JsonDocument& doc);
     uint32_t _appendSyncEvent(const char* eventType,
-                              JsonDocument& doc,
-                              QueueMetric metric);
-    void _noteQueuedRecord(QueueMetric metric);
+                              JsonDocument& doc);
+    void _noteQueuedRecord();
     bool _purgeTransientFiles();
     DumpContext _dumpCtx{};
 

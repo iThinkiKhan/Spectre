@@ -19,6 +19,10 @@ enum MascotState {
     MASCOT_RECON_WALK,
     MASCOT_PREFLIGHT,
     MASCOT_ERROR,
+    // Dedicated states so these screens stop borrowing STANDBY / HOMELAB_SYNC:
+    // the mesh screen and the uplink mission each get their own identity.
+    MASCOT_MESHTASTIC,
+    MASCOT_UPLINK,
     MASCOT_COUNT
 };
 

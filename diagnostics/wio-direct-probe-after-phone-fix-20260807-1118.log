@@ -1,0 +1,7 @@
+probe 15000
+USB/1 OK probe id=900002 timeout=15000
+nrf> [tx] WIO/1 BLE_PROBE id=900002 result=found connected=1 rssi=-51 seen=4 uuid=1 conn=1 fail=0 text=0 best=-51 disc=0x00 err=none source=scan
+drop
+[tx] WIO/1 BLE_DROP reason=usb_console
+USB/1 OK drop requested
+nrf> 

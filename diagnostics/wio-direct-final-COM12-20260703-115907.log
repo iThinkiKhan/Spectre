@@ -1,0 +1,67 @@
+# opened COM12 2026-07-03T11:59:07.3400359-05:00
+
+Spectre WIO nRF relay console
+version=0.4.0 baud=115200
+type 'help' for commands; typed characters echo here
+>>> status
+nrf> status
+USB/1 STATUS
+  version=0.4.0
+  uptime_ms=693144
+  phone=idle
+  connected=0
+  services_ready=0
+  text_ready=0
+  conn_handle=65535
+  rssi=-43
+  probe_active=0
+  probe_seen=11
+  probe_uuid_seen=3
+  probe_err=conn_failed_0x3E
+  uart_rx_lines=0
+  uart_tx_lines=3
+  ble_rx=0
+  ble_write=0
+  usb_commands=8
+  led_mode=auto
+  led_color=off
+  ble_init_started=1
+  ble_ready=1
+  ble_init_blocked=0
+>>> sx status
+nrf> sx status
+USB/1 SX present=1 mode=0 freq=915000000 bw=125000 sf=9 rx=0 tx=0 rssi=0 snr=0
+>>> caps
+nrf> caps
+[tx] WIO/1 CAPS BLE_PROXY UART BLE_WRITE_BIN UART_FLOWCTRL SX1262_PRESENT ver=0.4.0
+USB/1 OK caps sent to S3 UART
+>>> wio-status
+nrf> wio-status
+[tx] WIO/1 STATUS phone=idle connected=0 rssi=-43 ble_ready=1 ble_init_started=1
+USB/1 OK status sent to S3 UART
+>>> status
+nrf> status
+USB/1 STATUS
+  version=0.4.0
+  uptime_ms=701397
+  phone=idle
+  connected=0
+  services_ready=0
+  text_ready=0
+  conn_handle=65535
+  rssi=-43
+  probe_active=0
+  probe_seen=11
+  probe_uuid_seen=3
+  probe_err=conn_failed_0x3E
+  uart_rx_lines=0
+  uart_tx_lines=5
+  ble_rx=0
+  ble_write=0
+  usb_commands=12
+  led_mode=auto
+  led_color=off
+  ble_init_started=1
+  ble_ready=1
+  ble_init_blocked=0
+# closing 2026-07-03T11:59:19.8149085-05:00

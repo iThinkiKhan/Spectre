@@ -370,6 +370,11 @@ public:
     bool     markEnrichmentNoData(uint32_t eventId);
     bool     forEachEventForSession(const char* sessionId,
                                     const std::function<bool(JsonObjectConst)>& cb);
+    // Streaming physical-order traversal for derived indexes such as Entities.
+    // Unlike resolved upload reads, this does not build an enrichment map in
+    // internal RAM; callers consume event and delta records in one pass.
+    bool     forEachStoredRecord(
+        const std::function<bool(const DecodedSpoolRecord&)>& cb) const;
     bool     markEventUploaded(uint32_t eventId,
                                const char* sessionId = nullptr,
                                uint8_t laneHint = 0xFF);

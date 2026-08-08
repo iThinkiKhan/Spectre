@@ -101,9 +101,20 @@ static inline const char* spectreButtonActionLabel(SpectreButtonAction action,
     }
 }
 
+// Per-screen bindings. The layout rule, applied consistently everywhere:
+//
+//   A short  primary action of this page
+//   A long   secondary / more deliberate action (SLEEP where nothing fits)
+//   B long   drill-in: the page's list or detail view
+//   B short  NEXT — the navigation anchor, identical on every general screen
+//
+// A+B held is a global SLEEP chord handled in TaskHardware, so it works from
+// any screen and even with the display blanked; it is not part of this table.
 static inline ButtonBindingSet spectreScreenBindings(Screen screen) {
     switch (screen) {
         case SCREEN_LORA:
+            // Sub-GHz: cycle the mode, ping the band. No third radio action
+            // exists, so A-long carries SLEEP.
             return {BUTTON_ACTION_SUBGHZ_MODE_CYCLE, BUTTON_ACTION_SLEEP,
                     BUTTON_ACTION_LORA_PING, BUTTON_ACTION_SCREEN_NEXT};
         case SCREEN_WIFI:
@@ -113,16 +124,26 @@ static inline ButtonBindingSet spectreScreenBindings(Screen screen) {
             return {BUTTON_ACTION_BADUSB_ARM, BUTTON_ACTION_BADUSB_RUN,
                     BUTTON_ACTION_BADUSB_LIST_OPEN, BUTTON_ACTION_SCREEN_NEXT};
         case SCREEN_SYSTEM:
-            return {BUTTON_ACTION_SYSTEM_DEBRIEF, BUTTON_ACTION_SESSION_TAG,
+            // ANT replaces SESSION_TAG here: this page already displays the
+            // antenna state in its RADIO row (".. EXT"/".. INT"), so toggling
+            // it belongs with the readout. Tagging is a session concern and
+            // lives on BOOT SUMMARY / DEBRIEF instead. ANTENNA_TOGGLE was
+            // implemented but bound to no button on any screen before this.
+            return {BUTTON_ACTION_SYSTEM_DEBRIEF, BUTTON_ACTION_ANTENNA_TOGGLE,
                     BUTTON_ACTION_UPLINK_TRIGGER, BUTTON_ACTION_SCREEN_NEXT};
         case SCREEN_MISSION_SUMMARY:
-            return {BUTTON_ACTION_SESSION_TAG, BUTTON_ACTION_SLEEP,
+            // Boot summary reports records/pending, so a manual enrich pass is
+            // the natural secondary. BLE_TEST was likewise unreachable before.
+            return {BUTTON_ACTION_SESSION_TAG, BUTTON_ACTION_BLE_TEST,
                     BUTTON_ACTION_UPLINK_TRIGGER, BUTTON_ACTION_SCREEN_NEXT};
         case SCREEN_MESHTASTIC:
             return {BUTTON_ACTION_MESH_TOGGLE, BUTTON_ACTION_SLEEP,
                     BUTTON_ACTION_MESH_SEND, BUTTON_ACTION_SCREEN_NEXT};
         case SCREEN_RECON:
-            return {BUTTON_ACTION_MISSION_ENTER, BUTTON_ACTION_MISSION_ENTER,
+            // Was LAUNCH on both A-short and A-long, which burned the slot on a
+            // duplicate. Long-press now sleeps, matching every other page that
+            // has no distinct secondary.
+            return {BUTTON_ACTION_MISSION_ENTER, BUTTON_ACTION_SLEEP,
                     BUTTON_ACTION_MISSION_LIST_OPEN, BUTTON_ACTION_SCREEN_NEXT};
         case SCREEN_MISSION:
             return {BUTTON_ACTION_NONE, BUTTON_ACTION_MISSION_EXIT,

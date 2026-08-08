@@ -1,0 +1,198 @@
+=== session opened 2026-08-07T14:52:08.1232497-05:00 ===
+=== send: companion status ===
+companion status
+[COMP] enabled=1
+[COMP] external accessory=0 bleProxy=0 phoneConnected=0 phone=unknown rssi=0 ageMs=0
+[COMP] wio link=idle sx1262=0 textInput=0
+[COMP] phone=UNKNOWN work=IDLE
+[COMP] bleBegun=0 bleRadio=0 bleState=IDLE
+[COMP] ready link=0 gps=0 freshGps=0 ctrl=0 enrich=0
+[COMP] bleInitAgeMs=0 scanStartAgeMs=0 disconnReason=0
+[COMP] pendingEnrichMission=0 pendingEnrichNoise=4 pendingEnrichTotal=4
+[COMP] lastProbeAgeMs=0 lastEnrichAgeMs=0
+[COMP] radioOwner=wifi_capture
+[24750][I][STORAGE] worker ui refresh serviced uiRefreshServiceCount=3 uiDeferred=10 uiFlush=3 pressure=0 usedPct=20 pending=4555
+=== send: companion enrich ===
+companion enrich
+[COMP] manual enrich queued
+[27262][I][COMP] Manual enrich request received; probe backoff bypassed
+[27263][I][WIFI] Radio paused
+[27486][I][WIFI] Radio suspended
+[27487][I][BLE] BLE payload buffers in PSRAM bytes=6276
+[27563][I][BLE] begin phase=nimble_pre bt=idle/0 heap=78512 largest=31732 stack=17176 devLen=14
+[27563][I][BLE] begin phase=nimble_init
+[27574][I][BLE] begin phase=nimble_init_ok bt=enabled/2 heap=15512 largest=7412 stack=17176
+[27575][I][BLE] BLE SM disabled; app-layer P-256/AES-GCM required
+[27577][I][BLE] begin phase=server_ok
+[27578][I][BLE] scanner configured legacy=1 active=0 interval=30 window=30 srTimeout=200
+[27578][I][BLE] begin phase=scanner_ok
+[27579][I][BLE] begin phase=worker_ok
+[27579][I][BLE] begin ready
+[27579][I][BLE] radio enabled settle=500ms
+[27579][I][BLE] companion link requested reason=manual_probe mode=fresh_scan timeout=15s settle=500ms cacheAge=0ms rssi=0
+[27584][I][BLE] Phone probe lease granted reason=manual_probe cachedFirst=0 hold=60000ms
+[27595][W][CORE] TaskHardware loop gap=335ms owner=BLE_GPS pendingUpload=4555 maintPending=1 suppressed=0
+[28199][I][BLE] scan start
+[28200][I][BLE] scan start diag=1 deliverDuplicates=1 diagLeft=44380 state=1 window=8000ms weakRecent=0 lastRssi=0
+[28212][I][BLE] adv check addr=10:6a:81:48:62:af addrType=1 targetSvc=0 matchedBy=none rssi=-91
+[28213][I][BLE] adv raw name='' addr=10:6a:81:48:62:af addrType=1 rssi=-91 hasName=0 hasSvc=0 targetSvc=0 rawTargetSvc=0 svcCount=0 matchedBy=none
+[28213][I][BLE] adv raw payload len=31 hex=1E FF 06 00 01 09 20 02 1E 2E 09 94 A4 55 EE B4 27 8C E1 17 ED 83 90 0D...
+[28279][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-99
+[28280][I][BLE] adv raw name='' addr=6c:0b:5e:94:c7:92 addrType=0 rssi=-99 hasName=0 hasSvc=0 targetSvc=0 rawTargetSvc=0 svcCount=0 matchedBy=none
+[28281][I][BLE] adv raw payload len=29 hex=02 01 06 19 16 F7 FD 01 93 53 B3 79 C7 2C 41 E9 95 11 7C AC 46 7C 95 2E...
+[28297][I][BLE] adv check addr=2c:84:ee:89:59:fa addrType=1 targetSvc=0 matchedBy=none rssi=-63
+[28298][I][BLE] adv raw name='' addr=2c:84:ee:89:59:fa addrType=1 rssi=-63 hasName=0 hasSvc=0 targetSvc=0 rawTargetSvc=0 svcCount=0 matchedBy=none
+[28298][I][BLE] adv raw payload len=31 hex=1E FF 06 00 01 09 20 22 5A 86 DF D7 F9 CE 95 C4 C2 E2 16 BE A6 69 11 81...
+[28308][I][BLE] adv check addr=55:e2:a4:6a:4c:57 addrType=1 targetSvc=0 matchedBy=none rssi=-62
+[28309][I][BLE] adv raw name='' addr=55:e2:a4:6a:4c:57 addrType=1 rssi=-62 hasName=0 hasSvc=1 targetSvc=0 rawTargetSvc=0 svcCount=2 matchedBy=none
+[28309][I][BLE] adv raw payload len=30 hex=02 01 1A 05 03 0A 18 F3 FE 14 16 F3 FE 51 22 00 00 10 02 00 00 03 44 24...
+[28310][I][BLE] adv svc=0x180a
+[28316][I][BLE] adv check addr=10:6a:81:48:62:af addrType=1 targetSvc=0 matchedBy=none rssi=-92
+[28317][I][BLE] adv raw name='' addr=10:6a:81:48:62:af addrType=1 rssi=-92 hasName=0 hasSvc=0 targetSvc=0 rawTargetSvc=0 svcCount=0 matchedBy=none
+[28318][I][BLE] adv raw payload len=31 hex=1E FF 06 00 01 09 20 02 1E 2E 09 94 A4 55 EE B4 27 8C E1 17 ED 83 90 0D...
+[28325][I][BLE] adv check addr=09:a3:c6:ac:a0:d3 addrType=1 targetSvc=0 matchedBy=none rssi=-54
+[28326][I][BLE] adv raw name='' addr=09:a3:c6:ac:a0:d3 addrType=1 rssi=-54 hasName=0 hasSvc=0 targetSvc=0 rawTargetSvc=0 svcCount=0 matchedBy=none
+[28326][I][BLE] adv raw payload len=31 hex=1E 16 F3 FE 4A 17 23 46 41 59 43 11 32 90 98 4F F3 AD 5C FC 92 F1 FC 33...
+[28369][I][BLE] adv check addr=58:0d:e3:b0:22:0c addrType=1 targetSvc=1 matchedBy=service rssi=-57
+[28370][I][BLE] adv raw name='' addr=58:0d:e3:b0:22:0c addrType=1 rssi=-57 hasName=0 hasSvc=1 targetSvc=1 rawTargetSvc=1 svcCount=1 matchedBy=service
+[28370][I][BLE] adv raw payload len=21 hex=02 01 02 11 07 01 00 3A 6F 2D 6B 64 9A 4D 4D 7B 6D 80 3A F0 84
+[28371][I][BLE] adv svc=84f03a80-6d7b-4d4d-9a64-6b2d6f3a0001
+[28371][I][BLE] target found matchedBy=service cachePeer=0 addr=58:0d:e3:b0:22:0c name=SpectrePhone rssi=-57
+[28372][I][BLE] adv check addr=58:0d:e3:b0:22:0c addrType=1 targetSvc=1 matchedBy=service rssi=-57
+[28372][I][BLE] adv raw name='' addr=58:0d:e3:b0:22:0c addrType=1 rssi=-57 hasName=0 hasSvc=1 targetSvc=1 rawTargetSvc=1 svcCount=1 matchedBy=service
+[28373][I][BLE] adv raw payload len=21 hex=02 01 02 11 07 01 00 3A 6F 2D 6B 64 9A 4D 4D 7B 6D 80 3A F0 84
+[28373][I][BLE] adv svc=84f03a80-6d7b-4d4d-9a64-6b2d6f3a0001
+[28374][I][BLE] target found matchedBy=service cachePeer=0 addr=58:0d:e3:b0:22:0c name=SpectrePhone rssi=-57
+[28386][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-91
+[28387][I][BLE] adv raw name='' addr=6c:0b:5e:94:c7:92 addrType=0 rssi=-91 hasName=0 hasSvc=0 targetSvc=0 rawTargetSvc=0 svcCount=0 matchedBy=none
+[28388][I][BLE] adv raw payload len=29 hex=02 01 06 19 16 F7 FD 01 93 53 B3 79 C7 2C 41 E9 95 11 7C AC 46 7C 95 2E...
+[28403][I][BLE] adv check addr=2c:84:ee:89:59:fa addrType=1 targetSvc=0 matchedBy=none rssi=-63
+[28403][I][BLE] adv raw name='' addr=2c:84:ee:89:59:fa addrType=1 rssi=-63 hasName=0 hasSvc=0 targetSvc=0 rawTargetSvc=0 svcCount=0 matchedBy=none
+[28404][I][BLE] adv raw payload len=31 hex=1E FF 06 00 01 09 20 22 5A 86 DF D7 F9 CE 95 C4 C2 E2 16 BE A6 69 11 81...
+[28410][I][BLE] adv check addr=55:e2:a4:6a:4c:57 addrType=1 targetSvc=0 matchedBy=none rssi=-63
+[28411][I][BLE] adv raw name='' addr=55:e2:a4:6a:4c:57 addrType=1 rssi=-63 hasName=0 hasSvc=1 targetSvc=0 rawTargetSvc=0 svcCount=2 matchedBy=none
+[28411][I][BLE] adv raw payload len=30 hex=02 01 1A 05 03 0A 18 F3 FE 14 16 F3 FE 51 22 00 00 10 02 00 00 03 44 24...
+[28412][I][BLE] adv svc=0x180a
+[28418][I][BLE] adv check addr=10:6a:81:48:62:af addrType=1 targetSvc=0 matchedBy=none rssi=-91
+[28419][I][BLE] adv raw name='' addr=10:6a:81:48:62:af addrType=1 rssi=-91 hasName=0 hasSvc=0 targetSvc=0 rawTargetSvc=0 svcCount=0 matchedBy=none
+[28420][I][BLE] adv raw payload len=31 hex=1E FF 06 00 01 09 20 02 1E 2E 09 94 A4 55 EE B4 27 8C E1 17 ED 83 90 0D...
+[28487][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-81
+[28488][I][BLE] adv raw name='' addr=6c:0b:5e:94:c7:92 addrType=0 rssi=-81 hasName=0 hasSvc=0 targetSvc=0 rawTargetSvc=0 svcCount=0 matchedBy=none
+[28488][I][BLE] adv raw payload len=29 hex=02 01 06 19 16 F7 FD 01 93 53 B3 79 C7 2C 41 E9 95 11 7C AC 46 7C 95 2E...
+[28502][I][BLE] adv check addr=58:0d:e3:b0:22:0c addrType=1 targetSvc=1 matchedBy=service rssi=-54
+[28503][I][BLE] adv raw name='' addr=58:0d:e3:b0:22:0c addrType=1 rssi=-54 hasName=0 hasSvc=1 targetSvc=1 rawTargetSvc=1 svcCount=1 matchedBy=service
+[28503][I][BLE] adv raw payload len=21 hex=02 01 02 11 07 01 00 3A 6F 2D 6B 64 9A 4D 4D 7B 6D 80 3A F0 84
+[28504][I][BLE] adv svc=84f03a80-6d7b-4d4d-9a64-6b2d6f3a0001
+[28504][I][BLE] target found matchedBy=service cachePeer=0 addr=58:0d:e3:b0:22:0c name=SpectrePhone rssi=-54
+[28505][I][BLE] adv check addr=58:0d:e3:b0:22:0c addrType=1 targetSvc=1 matchedBy=service rssi=-54
+[28506][I][BLE] adv raw name='' addr=58:0d:e3:b0:22:0c addrType=1 rssi=-54 hasName=0 hasSvc=1 targetSvc=1 rawTargetSvc=1 svcCount=1 matchedBy=service
+[28506][I][BLE] adv raw payload len=21 hex=02 01 02 11 07 01 00 3A 6F 2D 6B 64 9A 4D 4D 7B 6D 80 3A F0 84
+[28506][I][BLE] adv svc=84f03a80-6d7b-4d4d-9a64-6b2d6f3a0001
+[28507][I][BLE] target found matchedBy=service cachePeer=0 addr=58:0d:e3:b0:22:0c name=SpectrePhone rssi=-54
+[28509][I][BLE] scan stop; connect pending addr=58:0d:e3:b0:22:0c
+[28811][I][BLE] connect pending settled addr=58:0d:e3:b0:22:0c
+[28812][I][BLE] connect attempt addr=58:0d:e3:b0:22:0c name=SpectrePhone
+[28812][I][BLE] connect params timeoutMs=45000 scanItvl=16 scanWin=16 addrType=1
+[29006][I][BLE] connect result ok=1 err=0 addr=58:0d:e3:b0:22:0c
+[29007][I][BLE] BLE link connected; starting app-layer auth watchdog=50000ms
+[29007][I][BLE] remote service lookup begin core=1 internalFree=13444 largest=7156
+[29066][I][BLE] remote service lookup end found=1 err=0
+[29066][I][BLE] remote characteristic discovery begin
+[29245][I][BLE] remote characteristic discovery end count=13 err=0
+[29305][I][BLE] remote descriptor discovery char=auth count=2 err=0
+[29306][I][BLE] auth notify subscribe begin
+[29365][I][BLE] auth notify subscribe end ok=1 err=0
+[29728][I][BLE] auth challenge write bytes=163 mtu=247 attPayload=244 mode=response
+[30007][I][HEAP] heap free=7638KB min=7635KB largest=7552KB frag=1% internalFree=11KB internalLargest=7KB psramFree=7627KB core=0/0% owner=BLE_GPS nets=6 pendingUpload=4555 pendingEnrich=6
+[HEALTH] time=2026-08-07 14:52:14 src=ntp
+[HEALTH] heap used=786/8424KB free=7638KB min=7635KB largest=7552KB frag=1%
+[HEALTH] internal used=221/232KB free=11KB min=8KB largest=7KB
+[HEALTH] psram used=565/8192KB free=7627KB largest=7552KB
+[HEALTH] stack free_min: core0=17KB/22KB core1=13KB/18KB
+[HEALTH] core usage: core0=0% core1=0%
+[HEALTH] power=usb state=usb batt=100% 4658mV trend=0mV/min runtime=0min cap=1100mAh charging=0
+[HEALTH] radio=BLE_GPS wifi=0 ble=1 gps=0 nets=6 pendingUpload=4555 pendingEnrich=6
+[HEALTH] subghz=NONE mode=OFF pkts=0 nodes=0
+[30009][I][STORAGE] RAMSpool enq=10 cons=10 inflight=0/1024 high=3 pressure=0 drop[full=0 big=0 noise=0 p3Evict=0 p3Drop=0 p2Drop=0 p1Fail=0] free=1024
+[30010][I][STORAGE] RAMSpool enqueue probe[ok=7 drop=0] device[ok=3 drop=0]
+[30010][I][STORAGE] RAMSpool worker probe[ok=3 sup=4 drop=0 fail=0 slow=0] device[ok=3 sup=0 drop=0 fail=0 slow=1] slowTotal=1 maxMs=654
+[30010][I][STORAGE] RAMSpool prioEnq p0=0 p1=0 p2=10 p3=0
+[30011][I][STORAGE] RAMSpool lanes p1=0/0 p2=0/2 p3=0/0
+[30832][I][BLE] app secure session ready alg=P-256+ECDH+AES-256-GCM
+[30832][I][BLE] phone auth confirmed; caching peer addr=58:0d:e3:b0:22:0c ttl=300000ms rssi=-54
+[30865][I][BLE] remote descriptor discovery char=enrichment count=2 err=0
+[31026][I][STACK] TaskHardware watermark=17096B min=17096B
+[31028][I][STACK] TaskDisplay watermark=13120B min=13120B
+[31105][I][BLE] remote bound gps=1 ctrl=1 meta=1 batch=1 enrich=1 auth=1 authReq=1 storage=1 cmdReq=1 cmdResp=1 logStream=1 dashStream=1 notification=1 notify(gps=0 ctrl=0 enrich=1 auth=1 cmdReq=0) mtu=247 a
+[31106][I][BLE] probe_summary seen=1 matchedBy=service rssi=-54 scanMs=2634
+[31106][I][BLE] phone_session_summary auth=ok mtu=247 gps=1 ctrl=1 enrich=1 storage=1
+[31165][I][BLE] storage snapshot sent pendingUp=0/4555 pendingEnrich=0/6 usedPct=20
+[31170][I][BLE] Phone probe succeeded ??? backoff reset
+[31174][I][BLE] Phone probe promoted to enrichment pendingEnrich=6 maxBatch=18
+[31175][I][STORAGE] RAMSpool worker paused inflight=0 lastInflight=0
+[31176][I][STORAGE] Exclusive window begin kind=enrichment reason=manual_enrich_window workerPaused=1 displaySuspended=1
+[31177][I][STORAGE] Enrichment window build started limit=18 enrichedIdReserve=2472 segments=103 freeInternal=10368 freePsram=7799784
+[31990][I][STORAGE] Enrichment ID slice scanned=12 skipped=53 nextSegment=65/103 ids=784 ms=813
+[31991][I][STORAGE] RAMSpool worker resumed
+[31991][I][STORAGE] Exclusive window end kind=enrichment result=manual_index_slice reason=manual_enrich_window
+[32006][I][BLE] link ready state=4
+[32008][I][STORAGE] RAMSpool worker paused inflight=0 lastInflight=0
+[32008][I][STORAGE] Exclusive window begin kind=enrichment reason=manual_enrich_window workerPaused=1 displaySuspended=1
+[32779][I][STORAGE] Enrichment ID slice scanned=10 skipped=7 nextSegment=82/103 ids=1424 ms=770
+[32780][I][STORAGE] RAMSpool worker resumed
+[32780][I][STORAGE] Exclusive window end kind=enrichment result=manual_index_slice reason=manual_enrich_window
+[32791][W][BLE] gps decrypt failed: secure decrypt replay/stale counter
+[32792][W][BLE] control decrypt failed: secure decrypt replay/stale counter
+[32793][I][STORAGE] RAMSpool worker paused inflight=0 lastInflight=0
+[32794][I][STORAGE] Exclusive window begin kind=enrichment reason=manual_enrich_window workerPaused=1 displaySuspended=1
+[33589][I][STORAGE] Enrichment ID slice scanned=10 skipped=2 nextSegment=94/103 ids=2064 ms=795
+[33589][I][STORAGE] RAMSpool worker resumed
+[33590][I][STORAGE] Exclusive window end kind=enrichment result=manual_index_slice reason=manual_enrich_window
+[33605][I][STORAGE] RAMSpool worker paused inflight=0 lastInflight=0
+[33606][I][STORAGE] Exclusive window begin kind=enrichment reason=manual_enrich_window workerPaused=1 displaySuspended=1
+[34066][I][STORAGE] Enrichment IDs ready records=2259 scanned=6 skipped=3 ms=459
+[34374][I][STORAGE] Enrichment window slice scanned=7 skipped=0 nextSegment=7/103 candidates=0 ms=768
+[34374][I][STORAGE] RAMSpool worker resumed
+[34375][I][STORAGE] Exclusive window end kind=enrichment result=manual_index_slice reason=manual_enrich_window
+[34386][I][STORAGE] RAMSpool worker paused inflight=0 lastInflight=0
+[34387][I][STORAGE] Exclusive window begin kind=enrichment reason=manual_enrich_window workerPaused=1 displaySuspended=1
+[35166][I][STORAGE] Enrichment window slice scanned=14 skipped=0 nextSegment=21/103 candidates=0 ms=777
+[35166][I][STORAGE] RAMSpool worker resumed
+[35166][I][STORAGE] Exclusive window end kind=enrichment result=manual_index_slice reason=manual_enrich_window
+[35181][W][BLE] control decrypt failed: secure decrypt replay/stale counter
+[35182][I][STORAGE] RAMSpool worker paused inflight=0 lastInflight=0
+[35183][I][STORAGE] Exclusive window begin kind=enrichment reason=manual_enrich_window workerPaused=1 displaySuspended=1
+[35959][I][STORAGE] Enrichment window slice scanned=13 skipped=0 nextSegment=34/103 candidates=0 ms=776
+[35960][I][STORAGE] RAMSpool worker resumed
+[35960][I][STORAGE] Exclusive window end kind=enrichment result=manual_index_slice reason=manual_enrich_window
+[35972][I][STORAGE] RAMSpool worker paused inflight=0 lastInflight=0
+[35972][I][STORAGE] Exclusive window begin kind=enrichment reason=manual_enrich_window workerPaused=1 displaySuspended=1
+[36761][I][STORAGE] Enrichment window slice scanned=14 skipped=0 nextSegment=48/103 candidates=0 ms=788
+[36761][I][STORAGE] RAMSpool worker resumed
+[36762][I][STORAGE] Exclusive window end kind=enrichment result=manual_index_slice reason=manual_enrich_window
+[36775][I][STORAGE] RAMSpool worker paused inflight=0 lastInflight=0
+[36776][I][STORAGE] Exclusive window begin kind=enrichment reason=manual_enrich_window workerPaused=1 displaySuspended=1
+[37567][I][STORAGE] Enrichment window slice scanned=11 skipped=17 nextSegment=76/103 candidates=0 ms=790
+[37567][I][STORAGE] RAMSpool worker resumed
+[37568][I][STORAGE] Exclusive window end kind=enrichment result=manual_index_slice reason=manual_enrich_window
+[37579][W][BLE] control decrypt failed: secure decrypt replay/stale counter
+[37580][I][STORAGE] RAMSpool worker paused inflight=0 lastInflight=0
+[37581][I][STORAGE] Exclusive window begin kind=enrichment reason=manual_enrich_window workerPaused=1 displaySuspended=1
+[37801][I][STORAGE] Maintenance requested reason=dirty_spool_index source=enrichment_window_reconciled flags=dirty_spool_index|snapshot_lagged
+[37802][I][STORAGE] Enrichment window ready records=0 truncated=0 buildMs=6626 freeInternal=10368 freePsram=7809772
+[37802][I][STORAGE] Enrichment window released reason=manual_scan_empty
+[37803][I][BLE] Manual enrich complete: authoritative scan found no pending records
+[37803][I][STORAGE] RAMSpool worker resumed
+[37803][I][STORAGE] Exclusive window end kind=enrichment result=manual_scan_empty reason=manual_enrich_window
+[37804][I][BLE] Phone enrichment finished successfully
+[37805][I][BLE] probe resource release
+[37806][I][BLE] client soft drop reason=radio_disabled
+[37807][I][BLE] radio disabled
+[37808][I][BLE] probe_release phase=worker_delete
+[37825][I][BLE] peer disconnect ignored after radio release reason=534
+[37967][I][WIFI] Radio suspended
+[37983][W][CORE] TaskHardware loop gap=405ms owner=STORAGE_MAINT pendingUpload=4555 maintPending=1 suppressed=8
+[37987][I][STORAGE] RAMSpool worker paused inflight=0 lastInflight=0
+[37987][I][STORAGE] Exclusive window begin kind=maintenance reason=radio_owner_window workerPaused=1 displaySuspended=1
+[37988][I][STORAGE] Maintenance start reason=radio_owner_window budgetMs=5000 flags=dirty_spool_index|snapshot_lagged captureSafe=1
+=== serial read failed 2026-08-07T14:52:23.8548358-05:00: Exception calling "ReadExisting" with "0" argument(s): "The port is closed." ===

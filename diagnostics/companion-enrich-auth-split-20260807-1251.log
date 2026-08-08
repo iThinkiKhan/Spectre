@@ -1,0 +1,332 @@
+=== session opened 2026-08-07T12:50:47.0927722-05:00 ===
+=== send: companion status ===
+companion status
+[COMP] enabled=1
+[COMP] external accessory=0 bleProxy=0 phoneConnected=0 phone=unknown rssi=0 ageMs=0
+[COMP] wio link=idle sx1262=0 textInput=0
+[COMP] phone=UNKNOWN work=IDLE
+[COMP] bleBegun=0 bleRadio=0 bleState=IDLE
+[COMP] ready link=0 gps=0 freshGps=0 ctrl=0 enrich=0
+[COMP] bleInitAgeMs=0 scanStartAgeMs=0 disconnReason=0
+[COMP] pendingEnrichMission=0 pendingEnrichNoise=0 pendingEnrichTotal=0
+[COMP] lastProbeAgeMs=0 lastEnrichAgeMs=0
+[COMP] radioOwner=wifi_capture
+[13123][I][STORAGE] Spool rotate index deferred owner=WIFI_CAPTURE reason=capture seg=301 format=bin_v2
+[13166][W][STORAGE] Counter trust=trusted_snapshot_lagged reason=append_metadata_deferred since=13166
+[13495][I][STORAGE] worker ui refresh serviced uiRefreshServiceCount=2 uiDeferred=5 uiFlush=2 pressure=0 usedPct=17 pending=4434
+=== send: companion enrich ===
+companion enrich
+[COMP] manual enrich queued
+[16050][I][COMP] Manual enrich request received; probe backoff bypassed
+[16051][I][WIFI] Radio paused
+[16212][I][WIFI] Radio suspended
+[16288][I][BLE] begin phase=nimble_pre bt=idle/0 heap=73064 largest=27636 stack=17184 devLen=14
+[16288][I][BLE] begin phase=nimble_init
+[16299][I][BLE] begin phase=nimble_init_ok bt=enabled/2 heap=10060 largest=7156 stack=17184
+[16300][I][BLE] BLE SM disabled; app-layer P-256/AES-GCM required
+[16301][I][BLE] begin phase=server_ok
+[16302][I][BLE] scanner configured legacy=1 active=0 interval=30 window=30 srTimeout=200
+[16302][I][BLE] begin phase=scanner_ok
+[16302][I][BLE] begin phase=worker_ok
+[16303][I][BLE] begin ready
+[16303][I][BLE] radio enabled settle=500ms
+[16303][I][BLE] companion link requested reason=manual_probe mode=fresh_scan timeout=15s settle=500ms cacheAge=0ms rssi=0
+[16309][I][BLE] Phone probe lease granted reason=manual_probe cachedFirst=0 hold=60000ms
+[16319][W][CORE] TaskHardware loop gap=270ms owner=BLE_GPS pendingUpload=4436 maintPending=1 suppressed=1
+[16913][I][BLE] scan start
+[16913][I][BLE] scan start diag=1 deliverDuplicates=1 diagLeft=44390 state=1 window=8000ms weakRecent=0 lastRssi=0
+[16950][I][BLE] adv check addr=15:05:e3:76:c7:59 addrType=1 targetSvc=0 matchedBy=none rssi=-57
+[16950][I][BLE] adv raw name='' addr=15:05:e3:76:c7:59 addrType=1 rssi=-57 hasName=0 hasSvc=0 targetSvc=0 rawTargetSvc=0 svcCount=0 matchedBy=none
+[16951][I][BLE] adv raw payload len=31 hex=1E FF 06 00 01 09 20 22 4A E3 B7 AB 6F 72 AF 4F 30 C7 81 B5 23 55 3A 2F...
+[16969][I][BLE] adv check addr=06:1a:f4:d9:3f:aa addrType=1 targetSvc=0 matchedBy=none rssi=-92
+[16970][I][BLE] adv raw name='' addr=06:1a:f4:d9:3f:aa addrType=1 rssi=-92 hasName=0 hasSvc=0 targetSvc=0 rawTargetSvc=0 svcCount=0 matchedBy=none
+[16970][I][BLE] adv raw payload len=31 hex=1E FF 06 00 01 09 20 02 B5 CD 2A 9F 0E 94 DF 12 21 3E F9 B3 E7 7E F0 A1...
+[16972][I][BLE] adv check addr=70:2f:4a:f5:ad:8e addrType=1 targetSvc=1 matchedBy=service rssi=-64
+[16973][I][BLE] adv raw name='' addr=70:2f:4a:f5:ad:8e addrType=1 rssi=-64 hasName=0 hasSvc=1 targetSvc=1 rawTargetSvc=1 svcCount=1 matchedBy=service
+[16974][I][BLE] adv raw payload len=21 hex=02 01 02 11 07 01 00 3A 6F 2D 6B 64 9A 4D 4D 7B 6D 80 3A F0 84
+[16975][I][BLE] adv svc=84f03a80-6d7b-4d4d-9a64-6b2d6f3a0001
+[16976][I][BLE] target found matchedBy=service cachePeer=0 addr=70:2f:4a:f5:ad:8e name=SpectrePhone rssi=-64
+[16978][I][BLE] adv check addr=70:2f:4a:f5:ad:8e addrType=1 targetSvc=1 matchedBy=service rssi=-64
+[16979][I][BLE] adv raw name='' addr=70:2f:4a:f5:ad:8e addrType=1 rssi=-64 hasName=0 hasSvc=1 targetSvc=1 rawTargetSvc=1 svcCount=1 matchedBy=service
+[16980][I][BLE] adv raw payload len=21 hex=02 01 02 11 07 01 00 3A 6F 2D 6B 64 9A 4D 4D 7B 6D 80 3A F0 84
+[16981][I][BLE] adv svc=84f03a80-6d7b-4d4d-9a64-6b2d6f3a0001
+[16982][I][BLE] target found matchedBy=service cachePeer=0 addr=70:2f:4a:f5:ad:8e name=SpectrePhone rssi=-64
+[16984][I][BLE] adv check addr=58:d0:ba:b8:a6:69 addrType=1 targetSvc=0 matchedBy=none rssi=-57
+[16985][I][BLE] adv raw name='' addr=58:d0:ba:b8:a6:69 addrType=1 rssi=-57 hasName=0 hasSvc=1 targetSvc=0 rawTargetSvc=0 svcCount=2 matchedBy=none
+[16986][I][BLE] adv raw payload len=30 hex=02 01 1A 05 03 0A 18 F3 FE 14 16 F3 FE 51 A2 00 00 10 02 00 00 03 00 90...
+[16987][I][BLE] adv svc=0x180a
+[17005][I][BLE] adv check addr=6c:0b:5e:94:c7:92 addrType=0 targetSvc=0 matchedBy=none rssi=-89
+[17006][I][BLE] adv raw name='' addr=6c:0b:5e:94:c7:92 addrType=0 rssi=-89 hasName=0 hasSvc=0 targetSvc=0 rawTargetSvc=0 svcCount=0 matchedBy=none
+[17006][I][BLE] adv raw payload len=29 hex=02 01 06 19 16 F7 FD 01 93 53 B3 79 C7 2C 41 E9 95 11 7C AC 46 7C 95 2E...
+[17058][I][BLE] adv check addr=15:05:e3:76:c7:59 addrType=1 targetSvc=0 matchedBy=none rssi=-57
+[17059][I][BLE] adv raw name='' addr=15:05:e3:76:c7:59 addrType=1 rssi=-57 hasName=0 hasSvc=0 targetSvc=0 rawTargetSvc=0 svcCount=0 matchedBy=none
+[17060][I][BLE] adv raw payload len=31 hex=1E FF 06 00 01 09 20 22 4A E3 B7 AB 6F 72 AF 4F 30 C7 81 B5 23 55 3A 2F...
+[17070][I][BLE] adv check addr=06:1a:f4:d9:3f:aa addrType=1 targetSvc=0 matchedBy=none rssi=-91
+[17071][I][BLE] adv raw name='' addr=06:1a:f4:d9:3f:aa addrType=1 rssi=-91 hasName=0 hasSvc=0 targetSvc=0 rawTargetSvc=0 svcCount=0 matchedBy=none
+[17071][I][BLE] adv raw payload len=31 hex=1E FF 06 00 01 09 20 02 B5 CD 2A 9F 0E 94 DF 12 21 3E F9 B3 E7 7E F0 A1...
+[17073][I][BLE] scan stop; connect pending addr=70:2f:4a:f5:ad:8e
+[17376][I][BLE] connect pending settled addr=70:2f:4a:f5:ad:8e
+[17377][I][BLE] connect attempt addr=70:2f:4a:f5:ad:8e name=SpectrePhone
+[17379][I][BLE] connect params timeoutMs=45000 scanItvl=16 scanWin=16 addrType=1
+[17611][I][BLE] connect result ok=1 err=0 addr=70:2f:4a:f5:ad:8e
+[17612][I][BLE] BLE link connected; starting app-layer auth watchdog=50000ms
+[17612][I][BLE] remote service lookup begin core=1 internalFree=8444 largest=7156
+[17670][I][BLE] remote service lookup end found=1 err=0
+[17670][I][BLE] remote characteristic discovery begin
+[17850][I][BLE] remote characteristic discovery end count=13 err=0
+[17910][I][BLE] remote descriptor discovery char=auth count=2 err=0
+[17911][I][BLE] auth notify subscribe begin
+[17911][I][BLE] auth notify subscribe end ok=1 err=0
+[18352][I][BLE] auth challenge write bytes=163 mtu=247 attPayload=244 mode=no_response
+[24537][W][BLE] auth response timeout
+[24538][E][BLE] remote auth failed: -
+[24538][W][BLE] connect failed at characteristic bind
+[24539][W][BLE] cleanup: dropping client and peer cache reason=connect_failed_bind
+[24539][I][BLE] clearing cached peer reason=connect_failed_bind addr=70:2f:4a:f5:ad:8e svcCached=0 attempts=0
+[24607][W][BLE] connect failed -> return to scanning
+[24918][I][BLE] scan start
+[24918][I][BLE] scan start diag=1 deliverDuplicates=1 diagLeft=36385 state=1 window=8000ms weakRecent=0 lastRssi=-64
+[24935][I][BLE] adv check addr=58:d0:ba:b8:a6:69 addrType=1 targetSvc=0 matchedBy=none rssi=-55
+[24936][I][BLE] adv raw name='' addr=58:d0:ba:b8:a6:69 addrType=1 rssi=-55 hasName=0 hasSvc=1 targetSvc=0 rawTargetSvc=0 svcCount=2 matchedBy=none
+[24936][I][BLE] adv raw payload len=30 hex=02 01 1A 05 03 0A 18 F3 FE 14 16 F3 FE 51 A2 00 00 10 02 00 00 03 00 90...
+[24937][I][BLE] adv svc=0x180a
+[24941][I][BLE] adv check addr=56:7d:74:41:55:ef addrType=1 targetSvc=1 matchedBy=service rssi=-64
+[24942][I][BLE] adv raw name='' addr=56:7d:74:41:55:ef addrType=1 rssi=-64 hasName=0 hasSvc=1 targetSvc=1 rawTargetSvc=1 svcCount=1 matchedBy=service
+[24942][I][BLE] adv raw payload len=21 hex=02 01 02 11 07 01 00 3A 6F 2D 6B 64 9A 4D 4D 7B 6D 80 3A F0 84
+[24942][I][BLE] adv svc=84f03a80-6d7b-4d4d-9a64-6b2d6f3a0001
+[24943][I][BLE] target found matchedBy=service cachePeer=0 addr=56:7d:74:41:55:ef name=SpectrePhone rssi=-64
+[24944][I][BLE] adv check addr=56:7d:74:41:55:ef addrType=1 targetSvc=1 matchedBy=service rssi=-64
+[24944][I][BLE] adv raw name='' addr=56:7d:74:41:55:ef addrType=1 rssi=-64 hasName=0 hasSvc=1 targetSvc=1 rawTargetSvc=1 svcCount=1 matchedBy=service
+[24945][I][BLE] adv raw payload len=21 hex=02 01 02 11 07 01 00 3A 6F 2D 6B 64 9A 4D 4D 7B 6D 80 3A F0 84
+[24945][I][BLE] adv svc=84f03a80-6d7b-4d4d-9a64-6b2d6f3a0001
+[24946][I][BLE] target found matchedBy=service cachePeer=0 addr=56:7d:74:41:55:ef name=SpectrePhone rssi=-64
+[24969][I][BLE] adv check addr=15:05:e3:76:c7:59 addrType=1 targetSvc=0 matchedBy=none rssi=-56
+[24969][I][BLE] adv raw name='' addr=15:05:e3:76:c7:59 addrType=1 rssi=-56 hasName=0 hasSvc=0 targetSvc=0 rawTargetSvc=0 svcCount=0 matchedBy=none
+[24970][I][BLE] adv raw payload len=31 hex=1E FF 06 00 01 09 20 22 4A E3 B7 AB 6F 72 AF 4F 30 C7 81 B5 23 55 3A 2F...
+[24995][I][BLE] adv check addr=06:1a:f4:d9:3f:aa addrType=1 targetSvc=0 matchedBy=none rssi=-92
+[24996][I][BLE] adv raw name='' addr=06:1a:f4:d9:3f:aa addrType=1 rssi=-92 hasName=0 hasSvc=0 targetSvc=0 rawTargetSvc=0 svcCount=0 matchedBy=none
+[24996][I][BLE] adv raw payload len=31 hex=1E FF 06 00 01 09 20 02 B5 CD 2A 9F 0E 94 DF 12 21 3E F9 B3 E7 7E F0 A1...
+[25037][I][BLE] adv check addr=58:d0:ba:b8:a6:69 addrType=1 targetSvc=0 matchedBy=none rssi=-54
+[25038][I][BLE] adv raw name='' addr=58:d0:ba:b8:a6:69 addrType=1 rssi=-54 hasName=0 hasSvc=1 targetSvc=0 rawTargetSvc=0 svcCount=2 matchedBy=none
+[25039][I][BLE] adv raw payload len=30 hex=02 01 1A 05 03 0A 18 F3 FE 14 16 F3 FE 51 A2 00 00 10 02 00 00 03 00 90...
+[25039][I][BLE] adv svc=0x180a
+[25056][I][BLE] adv check addr=27:e5:04:98:4c:3a addrType=1 targetSvc=0 matchedBy=none rssi=-64
+[25057][I][BLE] adv raw name='' addr=27:e5:04:98:4c:3a addrType=1 rssi=-64 hasName=0 hasSvc=0 targetSvc=0 rawTargetSvc=0 svcCount=0 matchedBy=none
+[25058][I][BLE] adv raw payload len=31 hex=1E 16 F3 FE 4A 17 23 58 30 45 4E 11 32 C5 E1 53 9A 0C AC CD 21 D1 28 72...
+[25070][I][BLE] adv check addr=15:05:e3:76:c7:59 addrType=1 targetSvc=0 matchedBy=none rssi=-56
+[25070][I][BLE] adv raw name='' addr=15:05:e3:76:c7:59 addrType=1 rssi=-56 hasName=0 hasSvc=0 targetSvc=0 rawTargetSvc=0 svcCount=0 matchedBy=none
+[25071][I][BLE] adv raw payload len=31 hex=1E FF 06 00 01 09 20 22 4A E3 B7 AB 6F 72 AF 4F 30 C7 81 B5 23 55 3A 2F...
+[25073][I][BLE] scan stop; connect pending addr=56:7d:74:41:55:ef
+[25376][I][BLE] connect pending settled addr=56:7d:74:41:55:ef
+[25377][I][BLE] connect attempt addr=56:7d:74:41:55:ef name=SpectrePhone
+[25379][I][BLE] connect params timeoutMs=45000 scanItvl=16 scanWin=16 addrType=1
+[25620][I][BLE] connect result ok=1 err=0 addr=56:7d:74:41:55:ef
+[25621][I][BLE] BLE link connected; starting app-layer auth watchdog=50000ms
+[25621][I][BLE] remote service lookup begin core=1 internalFree=8116 largest=5620
+[25681][I][BLE] remote service lookup end found=1 err=0
+[25681][I][BLE] remote characteristic discovery begin
+[25860][I][BLE] remote characteristic discovery end count=13 err=0
+[25920][I][BLE] remote descriptor discovery char=auth count=2 err=0
+[25921][I][BLE] auth notify subscribe begin
+[25921][I][BLE] auth notify subscribe end ok=1 err=0
+[26465][I][BLE] auth challenge write bytes=163 mtu=247 attPayload=244 mode=no_response
+[30010][I][HEAP] heap free=7639KB min=7636KB largest=7552KB frag=1% internalFree=6KB internalLargest=5KB psramFree=7633KB core=0/0% owner=BLE_GPS nets=6 pendingUpload=4436 pendingEnrich=4437
+[HEALTH] time=2026-08-07 12:50:46 src=ntp
+[HEALTH] heap used=779/8418KB free=7639KB min=7636KB largest=7552KB frag=1%
+[HEALTH] internal used=220/226KB free=6KB min=2KB largest=5KB
+[HEALTH] psram used=559/8192KB free=7633KB largest=7552KB
+[HEALTH] stack free_min: core0=17KB/22KB core1=13KB/18KB
+[HEALTH] core usage: core0=0% core1=0%
+[HEALTH] power=usb state=usb batt=100% 4667mV trend=0mV/min runtime=0min cap=1100mAh charging=0
+[HEALTH] radio=BLE_GPS wifi=0 ble=1 gps=0 nets=6 pendingUpload=4436 pendingEnrich=4437
+[HEALTH] subghz=NONE mode=OFF pkts=0 nodes=0
+[30012][I][STORAGE] RAMSpool enq=11 cons=11 inflight=0/1024 high=5 pressure=0 drop[full=0 big=0 noise=0 p3Evict=0 p3Drop=0 p2Drop=0 p1Fail=0] free=1024
+[30013][I][STORAGE] RAMSpool enqueue probe[ok=9 drop=0] device[ok=2 drop=0]
+[30013][I][STORAGE] RAMSpool worker probe[ok=3 sup=6 drop=0 fail=0 slow=0] device[ok=2 sup=0 drop=0 fail=0 slow=0] slowTotal=0 maxMs=0
+[30014][I][STORAGE] RAMSpool prioEnq p0=0 p1=0 p2=11 p3=0
+[30014][I][STORAGE] RAMSpool lanes p1=0/0 p2=0/4 p3=0/0
+[30998][I][STACK] TaskDisplay watermark=13128B min=13128B
+[31027][I][STACK] TaskHardware watermark=17184B min=17184B
+[32650][W][BLE] auth response timeout
+[32651][E][BLE] remote auth failed: -
+[32652][W][BLE] connect failed at characteristic bind
+[32653][W][BLE] cleanup: dropping client and peer cache reason=connect_failed_bind
+[32654][I][BLE] clearing cached peer reason=connect_failed_bind addr=56:7d:74:41:55:ef svcCached=0 attempts=0
+[32782][W][BLE] connect failed -> return to scanning
+[33103][I][BLE] scan start
+[33104][I][BLE] scan start diag=1 deliverDuplicates=1 diagLeft=28199 state=1 window=8000ms weakRecent=0 lastRssi=-64
+[33147][I][BLE] adv check addr=58:d0:ba:b8:a6:69 addrType=1 targetSvc=0 matchedBy=none rssi=-57
+[33149][I][BLE] adv raw name='' addr=58:d0:ba:b8:a6:69 addrType=1 rssi=-57 hasName=0 hasSvc=1 targetSvc=0 rawTargetSvc=0 svcCount=2 matchedBy=none
+[33150][I][BLE] adv raw payload len=30 hex=02 01 1A 05 03 0A 18 F3 FE 14 16 F3 FE 51 A2 00 00 10 02 00 00 03 00 90...
+[33151][I][BLE] adv svc=0x180a
+[33165][I][BLE] adv check addr=6a:31:1d:90:8e:30 addrType=1 targetSvc=0 matchedBy=none rssi=-92
+[33165][I][BLE] adv raw name='' addr=6a:31:1d:90:8e:30 addrType=1 rssi=-92 hasName=0 hasSvc=0 targetSvc=0 rawTargetSvc=0 svcCount=0 matchedBy=none
+[33166][I][BLE] adv raw payload len=24 hex=17 2B 01 00 4C 17 8F 5A D6 7A 77 51 00 00 00 00 23 68 8D 3E C5 35 F9 58
+[33169][I][BLE] adv check addr=06:1a:f4:d9:3f:aa addrType=1 targetSvc=0 matchedBy=none rssi=-94
+[33169][I][BLE] adv raw name='' addr=06:1a:f4:d9:3f:aa addrType=1 rssi=-94 hasName=0 hasSvc=0 targetSvc=0 rawTargetSvc=0 svcCount=0 matchedBy=none
+[33170][I][BLE] adv raw payload len=31 hex=1E FF 06 00 01 09 20 02 B5 CD 2A 9F 0E 94 DF 12 21 3E F9 B3 E7 7E F0 A1...
+[33212][I][BLE] adv check addr=15:05:e3:76:c7:59 addrType=1 targetSvc=0 matchedBy=none rssi=-55
+[33213][I][BLE] adv raw name='' addr=15:05:e3:76:c7:59 addrType=1 rssi=-55 hasName=0 hasSvc=0 targetSvc=0 rawTargetSvc=0 svcCount=0 matchedBy=none
+[33214][I][BLE] adv raw payload len=31 hex=1E FF 06 00 01 09 20 22 4A E3 B7 AB 6F 72 AF 4F 30 C7 81 B5 23 55 3A 2F...
+[33218][I][BLE] adv check addr=5b:63:12:66:0f:62 addrType=1 targetSvc=1 matchedBy=service rssi=-65
+[33219][I][BLE] adv raw name='' addr=5b:63:12:66:0f:62 addrType=1 rssi=-65 hasName=0 hasSvc=1 targetSvc=1 rawTargetSvc=1 svcCount=1 matchedBy=service
+[33220][I][BLE] adv raw payload len=21 hex=02 01 02 11 07 01 00 3A 6F 2D 6B 64 9A 4D 4D 7B 6D 80 3A F0 84
+[33220][I][BLE] adv svc=84f03a80-6d7b-4d4d-9a64-6b2d6f3a0001
+[33220][I][BLE] target found matchedBy=service cachePeer=0 addr=5b:63:12:66:0f:62 name=SpectrePhone rssi=-65
+[33221][I][BLE] adv check addr=5b:63:12:66:0f:62 addrType=1 targetSvc=1 matchedBy=service rssi=-65
+[33222][I][BLE] adv raw name='' addr=5b:63:12:66:0f:62 addrType=1 rssi=-65 hasName=0 hasSvc=1 targetSvc=1 rawTargetSvc=1 svcCount=1 matchedBy=service
+[33222][I][BLE] adv raw payload len=21 hex=02 01 02 11 07 01 00 3A 6F 2D 6B 64 9A 4D 4D 7B 6D 80 3A F0 84
+[33223][I][BLE] adv svc=84f03a80-6d7b-4d4d-9a64-6b2d6f3a0001
+[33223][I][BLE] target found matchedBy=service cachePeer=0 addr=5b:63:12:66:0f:62 name=SpectrePhone rssi=-65
+[33255][I][BLE] adv check addr=58:d0:ba:b8:a6:69 addrType=1 targetSvc=0 matchedBy=none rssi=-57
+[33256][I][BLE] adv raw name='' addr=58:d0:ba:b8:a6:69 addrType=1 rssi=-57 hasName=0 hasSvc=1 targetSvc=0 rawTargetSvc=0 svcCount=2 matchedBy=none
+[33256][I][BLE] adv raw payload len=30 hex=02 01 1A 05 03 0A 18 F3 FE 14 16 F3 FE 51 A2 00 00 10 02 00 00 03 00 90...
+[33257][I][BLE] adv svc=0x180a
+[33259][I][BLE] scan stop; connect pending addr=5b:63:12:66:0f:62
+[33562][I][BLE] connect pending settled addr=5b:63:12:66:0f:62
+[33563][I][BLE] connect attempt addr=5b:63:12:66:0f:62 name=SpectrePhone
+[33563][I][BLE] connect params timeoutMs=45000 scanItvl=16 scanWin=16 addrType=1
+[33781][I][BLE] connect result ok=1 err=0 addr=5b:63:12:66:0f:62
+[33782][I][BLE] BLE link connected; starting app-layer auth watchdog=50000ms
+[33782][I][BLE] remote service lookup begin core=1 internalFree=8020 largest=5620
+[33842][I][BLE] remote service lookup end found=1 err=0
+[33842][I][BLE] remote characteristic discovery begin
+[34020][I][BLE] remote characteristic discovery end count=13 err=0
+[34080][I][BLE] remote descriptor discovery char=auth count=2 err=0
+[34081][I][BLE] auth notify subscribe begin
+[34081][I][BLE] auth notify subscribe end ok=1 err=0
+[34565][I][BLE] auth challenge write bytes=163 mtu=247 attPayload=244 mode=no_response
+[40751][W][BLE] auth response timeout
+[40752][E][BLE] remote auth failed: -
+[40752][W][BLE] connect failed at characteristic bind
+[40753][W][BLE] cleanup: dropping client and peer cache reason=connect_failed_bind
+[40753][I][BLE] clearing cached peer reason=connect_failed_bind addr=5b:63:12:66:0f:62 svcCached=0 attempts=0
+[40780][W][BLE] connect failed -> return to scanning
+[41091][I][BLE] scan start
+[41091][I][BLE] scan start diag=1 deliverDuplicates=1 diagLeft=20212 state=1 window=8000ms weakRecent=0 lastRssi=-65
+[41097][I][BLE] adv check addr=27:e5:04:98:4c:3a addrType=1 targetSvc=0 matchedBy=none rssi=-63
+[41098][I][BLE] adv raw name='' addr=27:e5:04:98:4c:3a addrType=1 rssi=-63 hasName=0 hasSvc=0 targetSvc=0 rawTargetSvc=0 svcCount=0 matchedBy=none
+[41098][I][BLE] adv raw payload len=31 hex=1E 16 F3 FE 4A 17 23 58 30 45 4E 11 32 C5 E1 53 9A 0C AC CD 21 D1 28 72...
+[41117][I][BLE] adv check addr=15:05:e3:76:c7:59 addrType=1 targetSvc=0 matchedBy=none rssi=-56
+[41118][I][BLE] adv raw name='' addr=15:05:e3:76:c7:59 addrType=1 rssi=-56 hasName=0 hasSvc=0 targetSvc=0 rawTargetSvc=0 svcCount=0 matchedBy=none
+[41118][I][BLE] adv raw payload len=31 hex=1E FF 06 00 01 09 20 22 4A E3 B7 AB 6F 72 AF 4F 30 C7 81 B5 23 55 3A 2F...
+[41133][I][BLE] adv check addr=06:1a:f4:d9:3f:aa addrType=1 targetSvc=0 matchedBy=none rssi=-94
+[41134][I][BLE] adv raw name='' addr=06:1a:f4:d9:3f:aa addrType=1 rssi=-94 hasName=0 hasSvc=0 targetSvc=0 rawTargetSvc=0 svcCount=0 matchedBy=none
+[41134][I][BLE] adv raw payload len=31 hex=1E FF 06 00 01 09 20 02 B5 CD 2A 9F 0E 94 DF 12 21 3E F9 B3 E7 7E F0 A1...
+[41189][I][BLE] adv check addr=58:d0:ba:b8:a6:69 addrType=1 targetSvc=0 matchedBy=none rssi=-55
+[41224][I][BLE] adv check addr=15:05:e3:76:c7:59 addrType=1 targetSvc=0 matchedBy=none rssi=-57
+[41229][I][BLE] adv check addr=4d:51:dd:59:c4:41 addrType=1 targetSvc=1 matchedBy=service rssi=-61
+[41230][I][BLE] adv raw name='' addr=4d:51:dd:59:c4:41 addrType=1 rssi=-61 hasName=0 hasSvc=1 targetSvc=1 rawTargetSvc=1 svcCount=1 matchedBy=service
+[41230][I][BLE] adv raw payload len=21 hex=02 01 02 11 07 01 00 3A 6F 2D 6B 64 9A 4D 4D 7B 6D 80 3A F0 84
+[41231][I][BLE] adv svc=84f03a80-6d7b-4d4d-9a64-6b2d6f3a0001
+[41231][I][BLE] target found matchedBy=service cachePeer=0 addr=4d:51:dd:59:c4:41 name=SpectrePhone rssi=-61
+[41232][I][BLE] adv check addr=4d:51:dd:59:c4:41 addrType=1 targetSvc=1 matchedBy=service rssi=-61
+[41232][I][BLE] adv raw name='' addr=4d:51:dd:59:c4:41 addrType=1 rssi=-61 hasName=0 hasSvc=1 targetSvc=1 rawTargetSvc=1 svcCount=1 matchedBy=service
+[41233][I][BLE] adv raw payload len=21 hex=02 01 02 11 07 01 00 3A 6F 2D 6B 64 9A 4D 4D 7B 6D 80 3A F0 84
+[41233][I][BLE] adv svc=84f03a80-6d7b-4d4d-9a64-6b2d6f3a0001
+[41234][I][BLE] target found matchedBy=service cachePeer=0 addr=4d:51:dd:59:c4:41 name=SpectrePhone rssi=-61
+[41243][I][BLE] adv check addr=06:1a:f4:d9:3f:aa addrType=1 targetSvc=0 matchedBy=none rssi=-93
+[41245][I][BLE] scan stop; connect pending addr=4d:51:dd:59:c4:41
+[41547][I][BLE] connect pending settled addr=4d:51:dd:59:c4:41
+[41548][I][BLE] connect attempt addr=4d:51:dd:59:c4:41 name=SpectrePhone
+[41548][I][BLE] connect params timeoutMs=45000 scanItvl=16 scanWin=16 addrType=1
+[41731][I][BLE] connect result ok=1 err=0 addr=4d:51:dd:59:c4:41
+[41732][I][BLE] BLE link connected; starting app-layer auth watchdog=50000ms
+[41732][I][BLE] remote service lookup begin core=1 internalFree=8016 largest=5620
+[41790][I][BLE] remote service lookup end found=1 err=0
+[41790][I][BLE] remote characteristic discovery begin
+[41970][I][BLE] remote characteristic discovery end count=13 err=0
+[42030][I][BLE] remote descriptor discovery char=auth count=2 err=0
+[42031][I][BLE] auth notify subscribe begin
+[42031][I][BLE] auth notify subscribe end ok=1 err=0
+[42390][I][BLE] auth challenge write bytes=163 mtu=247 attPayload=244 mode=no_response
+[46356][I][BLE] worker stack free=7292B min=7292B
+[48576][W][BLE] auth response timeout
+[48577][E][BLE] remote auth failed: -
+[48577][W][BLE] connect failed at characteristic bind
+[48578][W][BLE] cleanup: dropping client and peer cache reason=connect_failed_bind
+[48578][I][BLE] clearing cached peer reason=connect_failed_bind addr=4d:51:dd:59:c4:41 svcCached=0 attempts=0
+[48613][W][BLE] connect failed -> return to scanning
+[48924][I][BLE] scan start
+[48924][I][BLE] scan start diag=1 deliverDuplicates=1 diagLeft=12379 state=1 window=8000ms weakRecent=0 lastRssi=-61
+[48930][I][BLE] adv check addr=58:d0:ba:b8:a6:69 addrType=1 targetSvc=0 matchedBy=none rssi=-55
+[48947][I][BLE] adv check addr=15:05:e3:76:c7:59 addrType=1 targetSvc=0 matchedBy=none rssi=-55
+[48967][I][BLE] adv check addr=40:6b:a4:3a:e6:5d addrType=1 targetSvc=1 matchedBy=service rssi=-66
+[48968][I][BLE] adv raw name='' addr=40:6b:a4:3a:e6:5d addrType=1 rssi=-66 hasName=0 hasSvc=1 targetSvc=1 rawTargetSvc=1 svcCount=1 matchedBy=service
+[48968][I][BLE] adv raw payload len=21 hex=02 01 02 11 07 01 00 3A 6F 2D 6B 64 9A 4D 4D 7B 6D 80 3A F0 84
+[48969][I][BLE] adv svc=84f03a80-6d7b-4d4d-9a64-6b2d6f3a0001
+[48969][I][BLE] target found matchedBy=service cachePeer=0 addr=40:6b:a4:3a:e6:5d name=SpectrePhone rssi=-66
+[48970][I][BLE] adv check addr=40:6b:a4:3a:e6:5d addrType=1 targetSvc=1 matchedBy=service rssi=-66
+[48970][I][BLE] adv raw name='' addr=40:6b:a4:3a:e6:5d addrType=1 rssi=-66 hasName=0 hasSvc=1 targetSvc=1 rawTargetSvc=1 svcCount=1 matchedBy=service
+[48971][I][BLE] adv raw payload len=21 hex=02 01 02 11 07 01 00 3A 6F 2D 6B 64 9A 4D 4D 7B 6D 80 3A F0 84
+[48971][I][BLE] adv svc=84f03a80-6d7b-4d4d-9a64-6b2d6f3a0001
+[48972][I][BLE] target found matchedBy=service cachePeer=0 addr=40:6b:a4:3a:e6:5d name=SpectrePhone rssi=-66
+[48981][I][BLE] adv check addr=06:1a:f4:d9:3f:aa addrType=1 targetSvc=0 matchedBy=none rssi=-91
+[49031][I][BLE] adv check addr=58:d0:ba:b8:a6:69 addrType=1 targetSvc=0 matchedBy=none rssi=-55
+[49085][I][BLE] scan stop; connect pending addr=40:6b:a4:3a:e6:5d
+[49385][I][BLE] connect pending settled addr=40:6b:a4:3a:e6:5d
+[49386][I][BLE] connect attempt addr=40:6b:a4:3a:e6:5d name=SpectrePhone
+[49386][I][BLE] connect params timeoutMs=45000 scanItvl=16 scanWin=16 addrType=1
+[49621][I][BLE] connect result ok=1 err=0 addr=40:6b:a4:3a:e6:5d
+[49622][I][BLE] BLE link connected; starting app-layer auth watchdog=50000ms
+[49622][I][BLE] remote service lookup begin core=1 internalFree=7984 largest=5620
+[49680][I][BLE] remote service lookup end found=1 err=0
+[49681][I][BLE] remote characteristic discovery begin
+[49860][I][BLE] remote characteristic discovery end count=13 err=0
+[49920][I][BLE] remote descriptor discovery char=auth count=2 err=0
+[49921][I][BLE] auth notify subscribe begin
+[49921][I][BLE] auth notify subscribe end ok=1 err=0
+[50281][I][BLE] auth challenge write bytes=163 mtu=247 attPayload=244 mode=no_response
+[56466][W][BLE] auth response timeout
+[56467][E][BLE] remote auth failed: -
+[56467][W][BLE] connect failed at characteristic bind
+[56467][W][BLE] cleanup: dropping client and peer cache reason=connect_failed_bind
+[56468][I][BLE] clearing cached peer reason=connect_failed_bind addr=40:6b:a4:3a:e6:5d svcCached=0 attempts=0
+[56602][W][BLE] connect failed -> return to scanning
+[56913][I][BLE] scan start
+[56913][I][BLE] scan start diag=1 deliverDuplicates=1 diagLeft=4390 state=1 window=8000ms weakRecent=0 lastRssi=-66
+[56920][I][BLE] adv check addr=06:1a:f4:d9:3f:aa addrType=1 targetSvc=0 matchedBy=none rssi=-91
+[56949][I][BLE] adv check addr=15:05:e3:76:c7:59 addrType=1 targetSvc=0 matchedBy=none rssi=-57
+[56980][I][BLE] adv check addr=58:d0:ba:b8:a6:69 addrType=1 targetSvc=0 matchedBy=none rssi=-56
+[57022][I][BLE] adv check addr=06:1a:f4:d9:3f:aa addrType=1 targetSvc=0 matchedBy=none rssi=-90
+[57034][I][BLE] adv check addr=70:40:1d:36:fd:05 addrType=1 targetSvc=0 matchedBy=none rssi=-91
+[57050][I][BLE] adv check addr=15:05:e3:76:c7:59 addrType=1 targetSvc=0 matchedBy=none rssi=-57
+[57084][I][BLE] adv check addr=58:d0:ba:b8:a6:69 addrType=1 targetSvc=0 matchedBy=none rssi=-56
+[57113][I][BLE] adv check addr=52:72:f7:7a:72:1f addrType=1 targetSvc=1 matchedBy=service rssi=-68
+[57113][I][BLE] adv raw name='' addr=52:72:f7:7a:72:1f addrType=1 rssi=-68 hasName=0 hasSvc=1 targetSvc=1 rawTargetSvc=1 svcCount=1 matchedBy=service
+[57114][I][BLE] adv raw payload len=21 hex=02 01 02 11 07 01 00 3A 6F 2D 6B 64 9A 4D 4D 7B 6D 80 3A F0 84
+[57114][I][BLE] adv svc=84f03a80-6d7b-4d4d-9a64-6b2d6f3a0001
+[57114][I][BLE] target found matchedBy=service cachePeer=0 addr=52:72:f7:7a:72:1f name=SpectrePhone rssi=-68
+[57115][I][BLE] adv check addr=52:72:f7:7a:72:1f addrType=1 targetSvc=1 matchedBy=service rssi=-68
+[57116][I][BLE] adv raw name='' addr=52:72:f7:7a:72:1f addrType=1 rssi=-68 hasName=0 hasSvc=1 targetSvc=1 rawTargetSvc=1 svcCount=1 matchedBy=service
+[57116][I][BLE] adv raw payload len=21 hex=02 01 02 11 07 01 00 3A 6F 2D 6B 64 9A 4D 4D 7B 6D 80 3A F0 84
+[57116][I][BLE] adv svc=84f03a80-6d7b-4d4d-9a64-6b2d6f3a0001
+[57117][I][BLE] target found matchedBy=service cachePeer=0 addr=52:72:f7:7a:72:1f name=SpectrePhone rssi=-68
+[57129][I][BLE] adv check addr=06:1a:f4:d9:3f:aa addrType=1 targetSvc=0 matchedBy=none rssi=-91
+[57153][I][BLE] adv check addr=15:05:e3:76:c7:59 addrType=1 targetSvc=0 matchedBy=none rssi=-57
+[57186][I][BLE] adv check addr=58:d0:ba:b8:a6:69 addrType=1 targetSvc=0 matchedBy=none rssi=-58
+[57228][I][BLE] scan stop; connect pending addr=52:72:f7:7a:72:1f
+[57530][I][BLE] connect pending settled addr=52:72:f7:7a:72:1f
+[57531][I][BLE] connect attempt addr=52:72:f7:7a:72:1f name=SpectrePhone
+[57531][I][BLE] connect params timeoutMs=45000 scanItvl=16 scanWin=16 addrType=1
+[57781][I][BLE] connect result ok=1 err=0 addr=52:72:f7:7a:72:1f
+[57781][I][BLE] BLE link connected; starting app-layer auth watchdog=50000ms
+[57782][I][BLE] remote service lookup begin core=1 internalFree=7952 largest=5620
+[57840][I][BLE] remote service lookup end found=1 err=0
+[57840][I][BLE] remote characteristic discovery begin
+[60019][I][HEAP] heap free=7640KB min=7636KB largest=7552KB frag=1% internalFree=6KB internalLargest=5KB psramFree=7633KB core=0/0% owner=BLE_GPS nets=6 pendingUpload=4436 pendingEnrich=4437
+[HEALTH] time=2026-08-07 12:51:16 src=ntp
+[HEALTH] heap used=778/8418KB free=7640KB min=7636KB largest=7552KB frag=1%
+[HEALTH] internal used=220/226KB free=6KB min=2KB largest=5KB
+[HEALTH] psram used=559/8192KB free=7633KB largest=7552KB
+[HEALTH] stack free_min: core0=17KB/22KB core1=13KB/18KB
+[HEALTH] core usage: core0=0% core1=0%
+[HEALTH] power=usb state=usb batt=100% 4728mV trend=110mV/min runtime=0min cap=1100mAh charging=1
+[HEALTH] radio=BLE_GPS wifi=0 ble=1 gps=0 nets=6 pendingUpload=4436 pendingEnrich=4437
+[HEALTH] subghz=NONE mode=OFF pkts=0 nodes=0
+[60021][I][STORAGE] RAMSpool enq=11 cons=11 inflight=0/1024 high=5 pressure=0 drop[full=0 big=0 noise=0 p3Evict=0 p3Drop=0 p2Drop=0 p1Fail=0] free=1024
+[60022][I][STORAGE] RAMSpool enqueue probe[ok=9 drop=0] device[ok=2 drop=0]
+[60022][I][STORAGE] RAMSpool worker probe[ok=3 sup=6 drop=0 fail=0 slow=0] device[ok=2 sup=0 drop=0 fail=0 slow=0] slowTotal=0 maxMs=0
+[60022][I][STORAGE] RAMSpool prioEnq p0=0 p1=0 p2=11 p3=0
+[60022][I][STORAGE] RAMSpool lanes p1=0/0 p2=0/4 p3=0/0
+[61035][I][STACK] TaskHardware watermark=17184B min=17184B

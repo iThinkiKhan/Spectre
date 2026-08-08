@@ -1,0 +1,164 @@
+=== session opened 2026-08-07T13:51:33.7256301-05:00 ===
+=== send: companion status ===
+companion status
+[COMP] enabled=1
+[COMP] external accessory=0 bleProxy=0 phoneConnected=0 phone=unknown rssi=0 ageMs=0
+[COMP] wio link=idle sx1262=0 textInput=0
+[COMP] phone=UNKNOWN work=IDLE
+[COMP] bleBegun=0 bleRadio=0 bleState=IDLE
+[COMP] ready link=0 gps=0 freshGps=0 ctrl=0 enrich=0
+[COMP] bleInitAgeMs=0 scanStartAgeMs=0 disconnReason=0
+[COMP] pendingEnrichMission=0 pendingEnrichNoise=4516 pendingEnrichTotal=4516
+[COMP] lastProbeAgeMs=0 lastEnrichAgeMs=0
+[COMP] radioOwner=wifi_capture
+[37928][I][STORAGE] worker ui refresh serviced uiRefreshServiceCount=7 uiDeferred=40 uiFlush=7 pressure=0 usedPct=19 pending=4515
+=== send: companion enrich ===
+companion enrich
+[COMP] manual enrich queued
+[40153][I][COMP] Manual enrich request received; probe backoff bypassed
+[40154][I][WIFI] Radio paused
+[40315][I][WIFI] Radio suspended
+[40315][I][BLE] BLE payload buffers in PSRAM bytes=6204
+[40391][I][BLE] begin phase=nimble_pre bt=idle/0 heap=78720 largest=31732 stack=17208 devLen=14
+[40391][I][BLE] begin phase=nimble_init
+[40401][I][BLE] begin phase=nimble_init_ok bt=enabled/2 heap=15696 largest=7668 stack=17208
+[40402][I][BLE] BLE SM disabled; app-layer P-256/AES-GCM required
+[40403][I][BLE] begin phase=server_ok
+[40403][I][BLE] scanner configured legacy=1 active=0 interval=30 window=30 srTimeout=200
+[40404][I][BLE] begin phase=scanner_ok
+[40404][I][BLE] begin phase=worker_ok
+[40404][I][BLE] begin ready
+[40405][I][BLE] radio enabled settle=500ms
+[40405][I][BLE] companion link requested reason=manual_probe mode=fresh_scan timeout=15s settle=500ms cacheAge=0ms rssi=0
+[40410][I][BLE] Phone probe lease granted reason=manual_probe cachedFirst=0 hold=60000ms
+[40421][W][CORE] TaskHardware loop gap=269ms owner=BLE_GPS pendingUpload=4515 maintPending=1 suppressed=1
+[41015][I][BLE] scan start
+[41016][I][BLE] scan start diag=1 deliverDuplicates=1 diagLeft=44389 state=1 window=8000ms weakRecent=0 lastRssi=0
+[41022][I][BLE] adv check addr=fc:e9:d8:bb:8e:27 addrType=0 targetSvc=0 matchedBy=none rssi=-82
+[41023][I][BLE] adv raw name='AR' addr=fc:e9:d8:bb:8e:27 addrType=0 rssi=-82 hasName=1 hasSvc=1 targetSvc=0 rawTargetSvc=0 svcCount=1 matchedBy=none
+[41024][I][BLE] adv raw payload len=26 hex=02 01 04 03 03 12 18 03 19 80 01 03 09 41 52 0A FF 71 01 04 25 02 7D 00...
+[41024][I][BLE] adv svc=0x1812
+[41035][I][BLE] adv check addr=3f:8a:56:bd:23:17 addrType=1 targetSvc=0 matchedBy=none rssi=-97
+[41036][I][BLE] adv raw name='' addr=3f:8a:56:bd:23:17 addrType=1 rssi=-97 hasName=0 hasSvc=0 targetSvc=0 rawTargetSvc=0 svcCount=0 matchedBy=none
+[41036][I][BLE] adv raw payload len=31 hex=1E FF 06 00 01 09 20 02 E3 E5 5D 4A BD 72 F8 82 9B BB A7 66 A6 02 11 96...
+[41051][I][BLE] adv check addr=fc:e9:d8:bb:8e:27 addrType=0 targetSvc=0 matchedBy=none rssi=-78
+[41051][I][BLE] adv raw name='AR' addr=fc:e9:d8:bb:8e:27 addrType=0 rssi=-78 hasName=1 hasSvc=1 targetSvc=0 rawTargetSvc=0 svcCount=1 matchedBy=none
+[41052][I][BLE] adv raw payload len=26 hex=02 01 04 03 03 12 18 03 19 80 01 03 09 41 52 0A FF 71 01 04 25 02 7D 00...
+[41052][I][BLE] adv svc=0x1812
+[41060][I][BLE] adv check addr=71:b6:46:f1:9c:fb addrType=1 targetSvc=0 matchedBy=none rssi=-68
+[41060][I][BLE] adv raw name='' addr=71:b6:46:f1:9c:fb addrType=1 rssi=-68 hasName=0 hasSvc=1 targetSvc=0 rawTargetSvc=0 svcCount=2 matchedBy=none
+[41061][I][BLE] adv raw payload len=30 hex=02 01 1A 05 03 0A 18 F3 FE 14 16 F3 FE 51 20 04 00 30 06 20 00 03 00 04...
+[41061][I][BLE] adv svc=0x180a
+[41074][I][BLE] adv check addr=fc:e9:d8:bb:8e:27 addrType=0 targetSvc=0 matchedBy=none rssi=-78
+[41075][I][BLE] adv raw name='AR' addr=fc:e9:d8:bb:8e:27 addrType=0 rssi=-78 hasName=1 hasSvc=1 targetSvc=0 rawTargetSvc=0 svcCount=1 matchedBy=none
+[41075][I][BLE] adv raw payload len=26 hex=02 01 04 03 03 12 18 03 19 80 01 03 09 41 52 0A FF 71 01 04 25 02 7D 00...
+[41076][I][BLE] adv svc=0x1812
+[41091][I][BLE] adv check addr=56:16:e8:d0:02:e6 addrType=1 targetSvc=1 matchedBy=service rssi=-62
+[41091][I][BLE] adv raw name='' addr=56:16:e8:d0:02:e6 addrType=1 rssi=-62 hasName=0 hasSvc=1 targetSvc=1 rawTargetSvc=1 svcCount=1 matchedBy=service
+[41092][I][BLE] adv raw payload len=21 hex=02 01 02 11 07 01 00 3A 6F 2D 6B 64 9A 4D 4D 7B 6D 80 3A F0 84
+[41092][I][BLE] adv svc=84f03a80-6d7b-4d4d-9a64-6b2d6f3a0001
+[41093][I][BLE] target found matchedBy=service cachePeer=0 addr=56:16:e8:d0:02:e6 name=SpectrePhone rssi=-62
+[41093][I][BLE] adv check addr=56:16:e8:d0:02:e6 addrType=1 targetSvc=1 matchedBy=service rssi=-62
+[41094][I][BLE] adv raw name='' addr=56:16:e8:d0:02:e6 addrType=1 rssi=-62 hasName=0 hasSvc=1 targetSvc=1 rawTargetSvc=1 svcCount=1 matchedBy=service
+[41094][I][BLE] adv raw payload len=21 hex=02 01 02 11 07 01 00 3A 6F 2D 6B 64 9A 4D 4D 7B 6D 80 3A F0 84
+[41095][I][BLE] adv svc=84f03a80-6d7b-4d4d-9a64-6b2d6f3a0001
+[41095][I][BLE] target found matchedBy=service cachePeer=0 addr=56:16:e8:d0:02:e6 name=SpectrePhone rssi=-62
+[41099][I][BLE] adv check addr=fc:e9:d8:bb:8e:27 addrType=0 targetSvc=0 matchedBy=none rssi=-86
+[41100][I][BLE] adv raw name='AR' addr=fc:e9:d8:bb:8e:27 addrType=0 rssi=-86 hasName=1 hasSvc=1 targetSvc=0 rawTargetSvc=0 svcCount=1 matchedBy=none
+[41100][I][BLE] adv raw payload len=26 hex=02 01 04 03 03 12 18 03 19 80 01 03 09 41 52 0A FF 71 01 04 25 02 7D 00...
+[41100][I][BLE] adv svc=0x1812
+[41119][I][BLE] adv check addr=fc:e9:d8:bb:8e:27 addrType=0 targetSvc=0 matchedBy=none rssi=-81
+[41120][I][BLE] adv raw name='AR' addr=fc:e9:d8:bb:8e:27 addrType=0 rssi=-81 hasName=1 hasSvc=1 targetSvc=0 rawTargetSvc=0 svcCount=1 matchedBy=none
+[41120][I][BLE] adv raw payload len=26 hex=02 01 04 03 03 12 18 03 19 80 01 03 09 41 52 0A FF 71 01 04 25 02 7D 00...
+[41121][I][BLE] adv svc=0x1812
+[41144][I][BLE] adv check addr=3f:8a:56:bd:23:17 addrType=1 targetSvc=0 matchedBy=none rssi=-91
+[41144][I][BLE] adv raw name='' addr=3f:8a:56:bd:23:17 addrType=1 rssi=-91 hasName=0 hasSvc=0 targetSvc=0 rawTargetSvc=0 svcCount=0 matchedBy=none
+[41145][I][BLE] adv raw payload len=31 hex=1E FF 06 00 01 09 20 02 E3 E5 5D 4A BD 72 F8 82 9B BB A7 66 A6 02 11 96...
+[41149][I][BLE] adv check addr=fc:e9:d8:bb:8e:27 addrType=0 targetSvc=0 matchedBy=none rssi=-79
+[41150][I][BLE] adv raw name='AR' addr=fc:e9:d8:bb:8e:27 addrType=0 rssi=-79 hasName=1 hasSvc=1 targetSvc=0 rawTargetSvc=0 svcCount=1 matchedBy=none
+[41150][I][BLE] adv raw payload len=26 hex=02 01 04 03 03 12 18 03 19 80 01 03 09 41 52 0A FF 71 01 04 25 02 7D 00...
+[41150][I][BLE] adv svc=0x1812
+[41165][I][BLE] adv check addr=71:b6:46:f1:9c:fb addrType=1 targetSvc=0 matchedBy=none rssi=-68
+[41166][I][BLE] adv raw name='' addr=71:b6:46:f1:9c:fb addrType=1 rssi=-68 hasName=0 hasSvc=1 targetSvc=0 rawTargetSvc=0 svcCount=2 matchedBy=none
+[41166][I][BLE] adv raw payload len=30 hex=02 01 1A 05 03 0A 18 F3 FE 14 16 F3 FE 51 20 04 00 30 06 20 00 03 00 04...
+[41166][I][BLE] adv svc=0x180a
+[41168][I][BLE] scan stop; connect pending addr=56:16:e8:d0:02:e6
+[41470][I][BLE] connect pending settled addr=56:16:e8:d0:02:e6
+[41471][I][BLE] connect attempt addr=56:16:e8:d0:02:e6 name=SpectrePhone
+[41471][I][BLE] connect params timeoutMs=45000 scanItvl=16 scanWin=16 addrType=1
+[41744][I][BLE] connect result ok=1 err=0 addr=56:16:e8:d0:02:e6
+[41744][I][BLE] BLE link connected; starting app-layer auth watchdog=50000ms
+[41745][I][BLE] remote service lookup begin core=1 internalFree=14104 largest=7156
+[41803][I][BLE] remote service lookup end found=1 err=0
+[41803][I][BLE] remote characteristic discovery begin
+[41982][I][BLE] remote characteristic discovery end count=13 err=0
+[42043][I][BLE] remote descriptor discovery char=auth count=2 err=0
+[42043][I][BLE] auth notify subscribe begin
+[42102][I][BLE] auth notify subscribe end ok=1 err=0
+[42374][I][BLE] auth challenge write bytes=163 mtu=247 attPayload=244 mode=response
+[43356][I][BLE] app secure session ready alg=P-256+ECDH+AES-256-GCM
+[43357][I][BLE] phone auth confirmed; caching peer addr=56:16:e8:d0:02:e6 ttl=300000ms rssi=-62
+[43393][I][BLE] remote descriptor discovery char=enrichment count=2 err=0
+[43633][I][BLE] remote bound gps=1 ctrl=1 meta=1 batch=1 enrich=1 auth=1 authReq=1 storage=1 cmdReq=1 cmdResp=1 logStream=1 dashStream=1 notification=1 notify(gps=0 ctrl=0 enrich=1 auth=1 cmdReq=0) mtu=247 a
+[43633][I][BLE] probe_summary seen=1 matchedBy=service rssi=-62 scanMs=2343
+[43633][I][BLE] phone_session_summary auth=ok mtu=247 gps=1 ctrl=1 enrich=1 storage=1
+[43692][I][BLE] storage snapshot sent pendingUp=0/4515 pendingEnrich=0/4518 usedPct=19
+[43697][I][BLE] Phone probe succeeded ??? backoff reset
+[43701][I][BLE] Phone probe promoted to enrichment pendingEnrich=4518 maxBatch=18
+[43701][I][STORAGE] RAMSpool worker paused inflight=0 lastInflight=0
+[43702][I][STORAGE] Exclusive window begin kind=enrichment reason=manual_enrich_window workerPaused=1 displaySuspended=1
+[43703][I][STORAGE] prepare_assigned records=1024 freeInternal=11020 freePsram=7789272
+[43703][I][STORAGE] batch_load_ids_enter freeInternal=11020 segments=71
+[43704][I][STORAGE] load_ids_reserve count=912 freeInternal=11020 largest=7156
+[43704][I][STORAGE] load_ids_reserved freeInternal=11020
+[43704][I][STORAGE] load_ids_scan seg=308 enrichDeltas=78 freeInternal=11020 largest=7156
+[43792][I][STORAGE] load_ids_scan seg=314 enrichDeltas=66 freeInternal=10568 largest=7156
+[43879][I][STORAGE] load_ids_scan seg=315 enrichDeltas=64 freeInternal=10568 largest=7156
+[43967][I][STORAGE] load_ids_scan seg=316 enrichDeltas=64 freeInternal=10568 largest=7156
+[44054][I][STORAGE] load_ids_scan seg=317 enrichDeltas=64 freeInternal=10568 largest=7156
+[44140][I][STORAGE] load_ids_scan seg=318 enrichDeltas=64 freeInternal=10568 largest=7156
+[44225][I][STORAGE] load_ids_scan seg=319 enrichDeltas=64 freeInternal=10568 largest=7156
+[44311][I][STORAGE] load_ids_scan seg=320 enrichDeltas=64 freeInternal=10568 largest=7156
+[44396][I][STORAGE] load_ids_scan seg=321 enrichDeltas=64 freeInternal=10568 largest=7156
+[44481][I][STORAGE] load_ids_scan seg=322 enrichDeltas=64 freeInternal=10568 largest=7156
+[44565][I][STORAGE] load_ids_scan seg=323 enrichDeltas=64 freeInternal=10568 largest=7156
+[44649][I][STORAGE] load_ids_scan seg=324 enrichDeltas=64 freeInternal=10568 largest=7156
+[44733][I][STORAGE] load_ids_scan seg=325 enrichDeltas=64 freeInternal=10568 largest=7156
+[44817][I][STORAGE] load_ids_scan seg=326 enrichDeltas=64 freeInternal=10568 largest=7156
+[44900][I][STORAGE] load_ids_loop_done scanned=14 skipped=57 idsCollected=912 freeInternal=10568
+[44901][I][STORAGE] batch_load_ids_done count=824 capacity=912 freeInternal=10568
+[44901][I][STORAGE] batch_pending_loop_enter segments=71 maxCount=1024 streaming=0 freeInternal=10568
+[44902][I][STORAGE] batch_pending_scan seg=207 pending=10 events=10 freeInternal=10568 largest=7156 outCount=0
+[44949][I][STORAGE] batch_pending_scan seg=210 pending=13 events=13 freeInternal=10568 largest=7156 outCount=0
+[44997][I][STORAGE] batch_pending_scan seg=211 pending=8 events=8 freeInternal=10568 largest=7156 outCount=0
+[45045][I][STORAGE] batch_pending_scan seg=214 pending=5 events=5 freeInternal=10568 largest=7156 outCount=0
+[45091][I][STORAGE] batch_pending_scan seg=219 pending=51 events=51 freeInternal=10568 largest=7156 outCount=0
+[45144][I][STORAGE] batch_pending_scan seg=220 pending=138 events=138 freeInternal=10568 largest=7156 outCount=0
+[45208][I][STORAGE] batch_pending_scan seg=221 pending=154 events=154 freeInternal=10568 largest=7156 outCount=89
+[45273][I][STORAGE] batch_pending_scan seg=222 pending=8 events=8 freeInternal=10568 largest=7156 outCount=89
+[45319][I][STORAGE] batch_pending_scan seg=223 pending=9 events=9 freeInternal=10568 largest=7156 outCount=89
+[45365][I][STORAGE] batch_pending_scan seg=226 pending=13 events=13 freeInternal=10568 largest=7156 outCount=89
+[45410][I][STORAGE] batch_pending_scan seg=227 pending=3 events=3 freeInternal=10568 largest=7156 outCount=89
+[45454][I][STORAGE] batch_pending_scan seg=228 pending=15 events=15 freeInternal=10568 largest=7156 outCount=89
+[45500][I][STORAGE] batch_pending_scan seg=229 pending=11 events=11 freeInternal=10568 largest=7156 outCount=89
+[45545][I][STORAGE] batch_pending_scan seg=230 pending=10 events=10 freeInternal=10568 largest=7156 outCount=89
+[45589][I][STORAGE] batch_pending_scan seg=232 pending=200 events=200 freeInternal=10568 largest=7156 outCount=89
+[45658][I][STORAGE] batch_pending_scan seg=233 pending=197 events=197 freeInternal=10568 largest=7156 outCount=89
+[45733][I][STORAGE] batch_pending_scan seg=234 pending=194 events=194 freeInternal=10568 largest=7156 outCount=176
+[45809][I][STORAGE] batch_pending_scan seg=235 pending=198 events=198 freeInternal=10568 largest=7156 outCount=370
+[45881][I][STORAGE] batch_pending_scan seg=236 pending=147 events=147 freeInternal=10568 largest=7156 outCount=568
+[45947][I][STORAGE] batch_pending_scan seg=238 pending=443 events=443 freeInternal=10568 largest=7156 outCount=715
+[46094][I][STORAGE] batch_pending_scan seg=240 pending=397 events=397 freeInternal=10568 largest=7156 outCount=990
+[46233][I][STORAGE] batch_pending_loop_done scanned=21 skipped=0 outCount=1024 timeHit=1 elapsedMs=1331 freeInternal=10568
+[46233][I][STORAGE] prepare_batch_done ok=1 outCount=1024 freeInternal=10568
+[46233][I][STORAGE] Enrichment window ready records=1024 truncated=1 ms=2531
+[46234][I][BLE] Manual enrichment window batch count=18 active=1 noData=0 budgetExhausted=0 timeHit=0
+[46234][I][STORAGE] RAMSpool worker resumed
+[46234][I][STORAGE] Exclusive window end kind=enrichment result=manual_batch_built reason=manual_enrich_window
+[46235][I][BLE] enrichment request queued count=18 bytes=180
+[46235][I][BLE] Requested enrichment batch count=18 queued=0
+[46248][I][BLE] link ready state=4
+[46363][I][BLE] enrichment send mtu=247 attPayload=244 bytes=180 count=18
+[46399][W][BLE] gps decrypt failed: secure decrypt replay/stale counter
+[46400][I][BLE] enrichment batch sent plain=180 sealed=202 count=18 writeOk=1
+=== serial read failed 2026-08-07T13:51:44.7560761-05:00: Exception calling "ReadExisting" with "0" argument(s): "The port is closed." ===

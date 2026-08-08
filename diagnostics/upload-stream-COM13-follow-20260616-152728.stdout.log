@@ -1,0 +1,372 @@
+[206575][I][STORAGE] Upload index window full indexed=256 window=256 stopSeg=8
+[206575][I][STORAGE] Upload window rebuild accepted indexed=256 window=256 pending=1978 sessions=1 skipped=0 failedSegs=0 sidecarLoaded=0 sidecarStale=7 truncated=1 heapFree=7845808 largest=7733236
+[206576][I][STORAGE] Upload index prepare rebuilt=1 indexed=256 sessions=1 skipped=0 failedSegs=0 ms=6908 fallback=0
+[206576][I][MQTT] Upload stream fill begin bucket=1 max=64 indexWindow=256 indexed=256 truncated=1 sessions=1 sessionIndex=0 radioQuiet=1
+[206577][I][MQTT] Upload bucket session start idx=0 sess=33e864-3904-efca0434 bucket=0
+[206661][I][MQTT] Upload RAM bucket staged bucket=1 records=1 lastEvent=2625 heapFree=22916 psramFree=7803200
+[206784][I][MQTT] Upload RAM bucket staged bucket=1 records=64 lastEvent=2688 heapFree=22860 psramFree=7778544
+[206786][I][MQTT] Upload stream fill done bucket=1 records=64 complete=0 ms=210
+[206786][I][MQTT] Upload stream refill retry bucket=2 records=64 pending=1978 ms=210
+[206797][W][CORE] TaskHardware loop gap=9677ms owner=WIFI_UPLOAD pendingUpload=1978 maintPending=1 suppressed=2
+[207668][I][MQTT] Dump progress pub=2624 fail=0 session=0/1 since=2688 leaseMaxEvents=4538
+[207668][I][MQTT] Upload stream buffer drained; refilling remaining=1914 complete=0
+[207670][I][MQTT] Upload stream fill begin bucket=2 max=64 indexWindow=256 indexed=256 truncated=1 sessions=1 sessionIndex=0 radioQuiet=1
+[207755][I][MQTT] Upload RAM bucket staged bucket=2 records=1 lastEvent=2689 heapFree=22808 psramFree=7803200
+[207876][I][MQTT] Upload RAM bucket staged bucket=2 records=64 lastEvent=2752 heapFree=22632 psramFree=7778704
+[207878][I][MQTT] Upload stream fill done bucket=2 records=64 complete=0 ms=208
+[207878][I][MQTT] Upload stream refilled bucket=3 records=64 remaining=1914 ms=209
+[208746][I][MQTT] Dump progress pub=2688 fail=0 session=0/1 since=2752 leaseMaxEvents=4538
+[208746][I][MQTT] Upload stream buffer drained; refilling remaining=1850 complete=0
+[208748][I][MQTT] Upload stream fill begin bucket=3 max=64 indexWindow=256 indexed=256 truncated=1 sessions=1 sessionIndex=0 radioQuiet=1
+[208832][I][MQTT] Upload RAM bucket staged bucket=3 records=1 lastEvent=2753 heapFree=22088 psramFree=7803200
+[208953][I][MQTT] Upload RAM bucket staged bucket=3 records=64 lastEvent=2816 heapFree=22508 psramFree=7778904
+[208955][I][MQTT] Upload stream fill done bucket=3 records=64 complete=0 ms=207
+[208955][I][MQTT] Upload stream refilled bucket=4 records=64 remaining=1850 ms=208
+[209787][I][MQTT] Upload checkpoint deferred until radio quiet pub=2750
+[209818][I][MQTT] Dump progress pub=2752 fail=0 session=0/1 since=2816 leaseMaxEvents=4538
+[209818][I][MQTT] Upload stream buffer drained; refilling remaining=1786 complete=0
+[209820][I][MQTT] Upload stream fill begin bucket=4 max=64 indexWindow=256 indexed=256 truncated=1 sessions=1 sessionIndex=0 radioQuiet=1
+[209905][I][MQTT] Upload RAM bucket staged bucket=4 records=1 lastEvent=2817 heapFree=22904 psramFree=7803200
+[210025][I][MQTT] Upload RAM bucket staged bucket=4 records=64 lastEvent=2880 heapFree=22420 psramFree=7778880
+[210027][I][MQTT] Upload stream fill done bucket=4 records=64 complete=0 ms=207
+[210027][I][MQTT] Upload stream refilled bucket=5 records=64 remaining=1786 ms=208
+[210889][I][MQTT] Dump progress pub=2816 fail=0 session=0/1 since=2880 leaseMaxEvents=4538
+[210890][I][MQTT] Upload stream buffer drained; refilling remaining=1722 complete=0
+[211912][I][MQTT] Upload stream fill begin bucket=5 max=64 indexWindow=256 indexed=256 truncated=1 sessions=1 sessionIndex=0 radioQuiet=1
+[211913][I][MQTT] Upload RAM bucket session exhausted bucket=5 session=33e864-3904-efca0434 since=2880 idx=0/1
+[211914][I][MQTT] Upload stream fill done bucket=5 records=0 complete=1 ms=1
+[211914][I][MQTT] Upload stream refilled bucket=6 records=0 remaining=1722 ms=3
+[211914][I][MQTT] Upload index window exhausted; rebuilding next window pending=1722
+[211915][W][STORAGE] Upload index window reduced reason=heap_guard pending=1722 requested=1722 window=256 estimate=18432 maxAlloc=6404 psramLargest=7733236 psramFree=7803584 internalLargest=26612 internalFree=422
+[211916][I][STORAGE] Upload index rebuild begin pending=1722 window=256 heapFree=7870720 largest=7733236
+[218152][I][STORAGE] Maintenance requested reason=segment_audit source=upload_index_counter_drift flags=dirty_summary|segment_audit
+[218153][W][STORAGE] Upload index observed segment counter drift seg=7 old=0/132 scan=0/134; queued maintenance
+[219334][I][STORAGE] Upload index window full indexed=256 window=256 stopSeg=9
+[219335][I][STORAGE] Upload window rebuild accepted indexed=256 window=256 pending=1722 sessions=1 skipped=0 failedSegs=0 sidecarLoaded=0 sidecarStale=8 truncated=1 heapFree=7845852 largest=7733236
+[219335][I][STORAGE] Upload index prepare rebuilt=1 indexed=256 sessions=1 skipped=0 failedSegs=0 ms=7420 fallback=0
+[219336][I][MQTT] Upload stream fill begin bucket=1 max=64 indexWindow=256 indexed=256 truncated=1 sessions=1 sessionIndex=0 radioQuiet=1
+[219337][I][MQTT] Upload bucket session start idx=0 sess=33e864-3904-efca0434 bucket=0
+[219424][I][MQTT] Upload RAM bucket staged bucket=1 records=1 lastEvent=2881 heapFree=22376 psramFree=7803200
+[219546][I][MQTT] Upload RAM bucket staged bucket=1 records=64 lastEvent=2944 heapFree=22588 psramFree=7778768
+[219548][I][MQTT] Upload stream fill done bucket=1 records=64 complete=0 ms=212
+[219549][I][MQTT] Upload stream refill retry bucket=2 records=64 pending=1722 ms=212
+[219551][I][HEAP] heap free=7632KB min=7553KB largest=7552KB frag=1% psramFree=7596KB core=92/16% owner=WIFI_UPLOAD nets=10 pendingUpload=1722 pendingEnrich=1066
+[HEALTH] uptime=0h03m30s
+[HEALTH] heap used=790/8422KB free=7632KB min=7553KB largest=7552KB frag=1%
+[HEALTH] psram used=596/8192KB free=7596KB largest=7552KB
+[HEALTH] stack free_min: core0=14KB/22KB core1=13KB/18KB
+[HEALTH] core usage: core0=92% core1=16%
+[HEALTH] radio=WIFI_UPLOAD wifi=0 ble=0 gps=0 nets=10 pendingUpload=1722 pendingEnrich=1066
+[HEALTH] subghz=NONE mode=OFF pkts=0 nodes=0
+[219553][I][STORAGE] RAMSpool enq=10 cons=10 inflight=0/1024 high=3 pressure=0 drop[full=0 big=0 noise=0 p3Evict=0 p3Drop=0 p2Drop=0 p1Fail=0] free=1024
+[219553][I][STORAGE] RAMSpool enqueue probe[ok=7 drop=0] device[ok=3 drop=0]
+[219553][I][STORAGE] RAMSpool worker probe[ok=4 sup=3 drop=0 fail=0 slow=0] device[ok=3 sup=0 drop=0 fail=0 slow=0] slowTotal=0 maxMs=0
+[219554][I][STORAGE] RAMSpool prioEnq p0=0 p1=0 p2=10 p3=0
+[219554][I][STORAGE] RAMSpool lanes p1=0/0 p2=0/2 p3=0/0
+[219564][W][CORE] TaskHardware loop gap=8683ms owner=WIFI_UPLOAD pendingUpload=1722 maintPending=1 suppressed=0
+[222028][I][MQTT] Dump progress pub=2880 fail=0 session=0/1 since=2944 leaseMaxEvents=4538
+[222028][I][MQTT] Upload stream buffer drained; refilling remaining=1658 complete=0
+[222030][I][MQTT] Upload stream fill begin bucket=2 max=64 indexWindow=256 indexed=256 truncated=1 sessions=1 sessionIndex=0 radioQuiet=1
+[222117][I][MQTT] Upload RAM bucket staged bucket=2 records=1 lastEvent=2945 heapFree=23024 psramFree=7803192
+[222239][I][MQTT] Upload RAM bucket staged bucket=2 records=64 lastEvent=3008 heapFree=22612 psramFree=7778560
+[222241][I][MQTT] Upload stream fill done bucket=2 records=64 complete=0 ms=211
+[222241][I][MQTT] Upload stream refilled bucket=3 records=64 remaining=1658 ms=212
+[222998][I][STACK] TaskHardware watermark=14660B min=14660B
+[223146][I][MQTT] Dump progress pub=2944 fail=0 session=0/1 since=3008 leaseMaxEvents=4538
+[223146][I][MQTT] Upload stream buffer drained; refilling remaining=1594 complete=0
+[223148][I][MQTT] Upload stream fill begin bucket=3 max=64 indexWindow=256 indexed=256 truncated=1 sessions=1 sessionIndex=0 radioQuiet=1
+[223247][I][MQTT] Upload RAM bucket staged bucket=3 records=1 lastEvent=3009 heapFree=22612 psramFree=7803200
+[223366][I][MQTT] Upload RAM bucket staged bucket=3 records=64 lastEvent=3072 heapFree=22696 psramFree=7778704
+[223368][I][MQTT] Upload stream fill done bucket=3 records=64 complete=0 ms=220
+[223369][I][MQTT] Upload stream refilled bucket=4 records=64 remaining=1594 ms=222
+[223435][I][STORAGE] Segment lifecycle seg=7 partially_uploaded->fully_uploaded trust=trusted pending=0
+[223439][I][STORAGE] Maintenance requested reason=counter_untrusted source=upload_mark_counter_underflow flags=dirty_spool_index|dirty_summary|snapshot_lagged|upload_enrich_cursor_dirty|counter_untrusted|segment_
+[223441][W][STORAGE] markEventUploaded tolerated counter underflow session=33e864-3904-efca0434 event=3013 seg=7 lane=1 pending=1590
+[223448][W][STORAGE] markEventUploaded tolerated counter underflow session=33e864-3904-efca0434 event=3014 seg=7 lane=1 pending=1590
+[223449][E][CORE] Contract violation: repair pending owner=WIFI_UPLOAD flags=dirty_spool_index|dirty_summary|snapshot_lagged|upload_enrich_cursor_dirty|counter_untrusted|segment_audit
+[223469][I][STORAGE] Segment lifecycle seg=8 indexed->partially_uploaded trust=trusted pending=501
+[224148][I][MQTT] Upload checkpoint deferred until radio quiet pub=3000
+[224266][I][MQTT] Dump progress pub=3008 fail=0 session=0/1 since=3072 leaseMaxEvents=4538
+[224266][I][MQTT] Upload stream buffer drained; refilling remaining=1532 complete=0
+[224268][I][MQTT] Upload stream fill begin bucket=4 max=64 indexWindow=256 indexed=256 truncated=1 sessions=1 sessionIndex=0 radioQuiet=1
+[224356][I][MQTT] Upload RAM bucket staged bucket=4 records=1 lastEvent=3073 heapFree=22744 psramFree=7803200
+[224478][I][MQTT] Upload RAM bucket staged bucket=4 records=64 lastEvent=3136 heapFree=23048 psramFree=7778736
+[224480][I][MQTT] Upload stream fill done bucket=4 records=64 complete=0 ms=212
+[224480][I][MQTT] Upload stream refilled bucket=5 records=64 remaining=1532 ms=213
+[225386][I][MQTT] Dump progress pub=3072 fail=0 session=0/1 since=3136 leaseMaxEvents=4538
+[225387][I][MQTT] Upload stream buffer drained; refilling remaining=1468 complete=0
+[226399][I][STORAGE] worker ui refresh serviced uiRefreshServiceCount=12 uiDeferred=10 uiFlush=4 pressure=0 usedPct=16 pending=1468
+[227818][I][MQTT] Upload stream fill begin bucket=5 max=64 indexWindow=256 indexed=256 truncated=1 sessions=1 sessionIndex=0 radioQuiet=1
+[227819][I][MQTT] Upload RAM bucket session exhausted bucket=5 session=33e864-3904-efca0434 since=3136 idx=0/1
+[227819][I][MQTT] Upload stream fill done bucket=5 records=0 complete=1 ms=1
+[227819][I][MQTT] Upload stream refilled bucket=6 records=0 remaining=1468 ms=2
+[227820][I][MQTT] Upload index window exhausted; rebuilding next window pending=1468
+[227820][W][STORAGE] Upload index window reduced reason=heap_guard pending=1468 requested=1468 window=256 estimate=18432 maxAlloc=6404 psramLargest=7733236 psramFree=7803584 internalLargest=25588 internalFree=422
+[227822][I][STORAGE] Upload index rebuild begin pending=1468 window=256 heapFree=7870720 largest=7733236
+[235564][I][STORAGE] Upload index window full indexed=256 window=256 stopSeg=9
+[235564][I][STORAGE] Upload window rebuild accepted indexed=256 window=256 pending=1468 sessions=1 skipped=0 failedSegs=0 sidecarLoaded=0 sidecarStale=8 truncated=1 heapFree=7845852 largest=7733236
+[235565][I][STORAGE] Upload index prepare rebuilt=1 indexed=256 sessions=1 skipped=0 failedSegs=0 ms=7744 fallback=0
+[235566][I][MQTT] Upload stream fill begin bucket=1 max=64 indexWindow=256 indexed=256 truncated=1 sessions=1 sessionIndex=0 radioQuiet=1
+[235566][I][MQTT] Upload bucket session start idx=0 sess=33e864-3904-efca0434 bucket=0
+[235646][I][MQTT] Upload RAM bucket staged bucket=1 records=1 lastEvent=3137 heapFree=22716 psramFree=7803200
+[235769][I][MQTT] Upload RAM bucket staged bucket=1 records=64 lastEvent=3200 heapFree=22704 psramFree=7778848
+[235771][I][MQTT] Upload stream fill done bucket=1 records=64 complete=0 ms=206
+[235772][I][MQTT] Upload stream refill retry bucket=2 records=64 pending=1468 ms=206
+[235782][W][CORE] TaskHardware loop gap=10407ms owner=WIFI_UPLOAD pendingUpload=1468 maintPending=1 suppressed=1
+[236679][I][MQTT] Dump progress pub=3136 fail=0 session=0/1 since=3200 leaseMaxEvents=4538
+[236680][I][MQTT] Upload stream buffer drained; refilling remaining=1404 complete=0
+[236682][I][MQTT] Upload stream fill begin bucket=2 max=64 indexWindow=256 indexed=256 truncated=1 sessions=1 sessionIndex=0 radioQuiet=1
+[236762][I][MQTT] Upload RAM bucket staged bucket=2 records=1 lastEvent=3201 heapFree=22948 psramFree=7803200
+[236884][I][MQTT] Upload RAM bucket staged bucket=2 records=64 lastEvent=3264 heapFree=22800 psramFree=7778800
+[236886][I][MQTT] Upload stream fill done bucket=2 records=64 complete=0 ms=204
+[236887][I][MQTT] Upload stream refilled bucket=3 records=64 remaining=1404 ms=205
+[237789][I][MQTT] Dump progress pub=3200 fail=0 session=0/1 since=3264 leaseMaxEvents=4538
+[237789][I][MQTT] Upload stream buffer drained; refilling remaining=1340 complete=0
+[237791][I][MQTT] Upload stream fill begin bucket=3 max=64 indexWindow=256 indexed=256 truncated=1 sessions=1 sessionIndex=0 radioQuiet=1
+[237870][I][MQTT] Upload RAM bucket staged bucket=3 records=1 lastEvent=3265 heapFree=22788 psramFree=7803200
+[237992][I][MQTT] Upload RAM bucket staged bucket=3 records=64 lastEvent=3328 heapFree=23220 psramFree=7778808
+[237994][I][MQTT] Upload stream fill done bucket=3 records=64 complete=0 ms=203
+[237994][I][MQTT] Upload stream refilled bucket=4 records=64 remaining=1340 ms=204
+[238698][I][MQTT] Upload checkpoint deferred until radio quiet pub=3250
+[238901][I][MQTT] Dump progress pub=3264 fail=0 session=0/1 since=3328 leaseMaxEvents=4538
+[238901][I][MQTT] Upload stream buffer drained; refilling remaining=1276 complete=0
+[238903][I][MQTT] Upload stream fill begin bucket=4 max=64 indexWindow=256 indexed=256 truncated=1 sessions=1 sessionIndex=0 radioQuiet=1
+[238982][I][MQTT] Upload RAM bucket staged bucket=4 records=1 lastEvent=3329 heapFree=22812 psramFree=7803200
+[239104][I][MQTT] Upload RAM bucket staged bucket=4 records=64 lastEvent=3392 heapFree=23204 psramFree=7778808
+[239106][I][MQTT] Upload stream fill done bucket=4 records=64 complete=0 ms=204
+[239106][I][MQTT] Upload stream refilled bucket=5 records=64 remaining=1276 ms=205
+[240030][I][MQTT] Dump progress pub=3328 fail=0 session=0/1 since=3392 leaseMaxEvents=4538
+[240030][I][MQTT] Upload stream buffer drained; refilling remaining=1212 complete=0
+[241034][I][MQTT] Upload stream fill begin bucket=5 max=64 indexWindow=256 indexed=256 truncated=1 sessions=1 sessionIndex=0 radioQuiet=1
+[241035][I][MQTT] Upload RAM bucket session exhausted bucket=5 session=33e864-3904-efca0434 since=3392 idx=0/1
+[241035][I][MQTT] Upload stream fill done bucket=5 records=0 complete=1 ms=1
+[241035][I][MQTT] Upload stream refilled bucket=6 records=0 remaining=1212 ms=3
+[241036][I][MQTT] Upload index window exhausted; rebuilding next window pending=1212
+[241036][W][STORAGE] Upload index window reduced reason=heap_guard pending=1212 requested=1212 window=256 estimate=18432 maxAlloc=6404 psramLargest=7733236 psramFree=7803584 internalLargest=25588 internalFree=422
+[241037][I][STORAGE] Upload index rebuild begin pending=1212 window=256 heapFree=7870720 largest=7733236
+[249292][I][STORAGE] Upload index window full indexed=256 window=256 stopSeg=10
+[249292][I][STORAGE] Upload window rebuild accepted indexed=256 window=256 pending=1212 sessions=1 skipped=0 failedSegs=0 sidecarLoaded=0 sidecarStale=9 truncated=1 heapFree=7845836 largest=7733236
+[249293][I][STORAGE] Upload index prepare rebuilt=1 indexed=256 sessions=1 skipped=0 failedSegs=0 ms=8256 fallback=0
+[249293][I][MQTT] Upload stream fill begin bucket=1 max=64 indexWindow=256 indexed=256 truncated=1 sessions=1 sessionIndex=0 radioQuiet=1
+[249294][I][MQTT] Upload bucket session start idx=0 sess=33e864-3904-efca0434 bucket=0
+[249375][I][MQTT] Upload RAM bucket staged bucket=1 records=1 lastEvent=3393 heapFree=23036 psramFree=7803200
+[249498][I][MQTT] Upload RAM bucket staged bucket=1 records=64 lastEvent=3456 heapFree=22968 psramFree=7778880
+[249500][I][MQTT] Upload stream fill done bucket=1 records=64 complete=0 ms=207
+[249500][I][MQTT] Upload stream refill retry bucket=2 records=64 pending=1212 ms=207
+[HEAP] integrity check ok
+[249512][W][CORE] TaskHardware loop gap=9493ms owner=WIFI_UPLOAD pendingUpload=1212 maintPending=1 suppressed=0
+[249551][I][HEAP] heap free=7633KB min=7553KB largest=7552KB frag=1% psramFree=7597KB core=87/14% owner=WIFI_UPLOAD nets=10 pendingUpload=1209 pendingEnrich=1066
+[HEALTH] uptime=0h04m09s
+[HEALTH] heap used=790/8422KB free=7633KB min=7553KB largest=7552KB frag=1%
+[HEALTH] psram used=595/8192KB free=7597KB largest=7552KB
+[HEALTH] stack free_min: core0=14KB/22KB core1=13KB/18KB
+[HEALTH] core usage: core0=87% core1=14%
+[HEALTH] radio=WIFI_UPLOAD wifi=0 ble=0 gps=0 nets=10 pendingUpload=1209 pendingEnrich=1066
+[HEALTH] subghz=NONE mode=OFF pkts=0 nodes=0
+[249553][I][STORAGE] RAMSpool enq=10 cons=10 inflight=0/1024 high=3 pressure=0 drop[full=0 big=0 noise=0 p3Evict=0 p3Drop=0 p2Drop=0 p1Fail=0] free=1024
+[249553][I][STORAGE] RAMSpool enqueue probe[ok=7 drop=0] device[ok=3 drop=0]
+[249553][I][STORAGE] RAMSpool worker probe[ok=4 sup=3 drop=0 fail=0 slow=0] device[ok=3 sup=0 drop=0 fail=0 slow=0] slowTotal=0 maxMs=0
+[249554][I][STORAGE] RAMSpool prioEnq p0=0 p1=0 p2=10 p3=0
+[249554][I][STORAGE] RAMSpool lanes p1=0/0 p2=0/2 p3=0/0
+[250433][I][MQTT] Dump progress pub=3392 fail=0 session=0/1 since=3456 leaseMaxEvents=4538
+[250434][I][MQTT] Upload stream buffer drained; refilling remaining=1148 complete=0
+[250435][I][MQTT] Upload stream fill begin bucket=2 max=64 indexWindow=256 indexed=256 truncated=1 sessions=1 sessionIndex=0 radioQuiet=1
+[250518][I][MQTT] Upload RAM bucket staged bucket=2 records=1 lastEvent=3457 heapFree=22792 psramFree=7803200
+[250648][I][MQTT] Upload RAM bucket staged bucket=2 records=64 lastEvent=3520 heapFree=22816 psramFree=7778864
+[250650][I][MQTT] Upload stream fill done bucket=2 records=64 complete=0 ms=215
+[250650][I][MQTT] Upload stream refilled bucket=3 records=64 remaining=1148 ms=216
+[251539][I][STORAGE] Segment lifecycle seg=8 partially_uploaded->fully_uploaded trust=trusted pending=0
+[251547][I][STORAGE] Segment lifecycle seg=9 indexed->partially_uploaded trust=trusted pending=325
+[251601][I][MQTT] Upload stream buffer drained; refilling remaining=1084 complete=0
+[251603][I][MQTT] Upload stream fill begin bucket=3 max=64 indexWindow=256 indexed=256 truncated=1 sessions=1 sessionIndex=0 radioQuiet=1
+[251685][I][MQTT] Upload RAM bucket staged bucket=3 records=1 lastEvent=3521 heapFree=23104 psramFree=7803192
+[251807][I][MQTT] Upload RAM bucket staged bucket=3 records=64 lastEvent=3584 heapFree=22592 psramFree=7778880
+[251809][I][MQTT] Upload stream fill done bucket=3 records=64 complete=0 ms=206
+[251809][I][MQTT] Upload stream refilled bucket=4 records=64 remaining=1084 ms=207
+[252429][I][MQTT] Upload checkpoint deferred until radio quiet pub=3500
+[252712][I][MQTT] Dump progress pub=3520 fail=0 session=0/1 since=3584 leaseMaxEvents=4538
+[252712][I][MQTT] Upload stream buffer drained; refilling remaining=1020 complete=0
+[252714][I][MQTT] Upload stream fill begin bucket=4 max=64 indexWindow=256 indexed=256 truncated=1 sessions=1 sessionIndex=0 radioQuiet=1
+[252796][I][MQTT] Upload RAM bucket staged bucket=4 records=1 lastEvent=3585 heapFree=22764 psramFree=7803200
+[252918][I][MQTT] Upload RAM bucket staged bucket=4 records=64 lastEvent=3648 heapFree=22788 psramFree=7778880
+[252920][I][MQTT] Upload stream fill done bucket=4 records=64 complete=0 ms=206
+[252920][I][MQTT] Upload stream refilled bucket=5 records=64 remaining=1020 ms=207
+[253009][I][STACK] TaskHardware watermark=14660B min=14660B
+[253844][I][MQTT] Dump progress pub=3584 fail=0 session=0/1 since=3648 leaseMaxEvents=4538
+[253844][I][MQTT] Upload stream buffer drained; refilling remaining=956 complete=0
+[254898][I][STORAGE] worker ui refresh serviced uiRefreshServiceCount=13 uiDeferred=10 uiFlush=4 pressure=0 usedPct=16 pending=956
+[256181][I][MQTT] Upload stream fill begin bucket=5 max=64 indexWindow=256 indexed=256 truncated=1 sessions=1 sessionIndex=0 radioQuiet=1
+[256182][I][MQTT] Upload RAM bucket session exhausted bucket=5 session=33e864-3904-efca0434 since=3648 idx=0/1
+[256182][I][MQTT] Upload stream fill done bucket=5 records=0 complete=1 ms=1
+[256183][I][MQTT] Upload stream refilled bucket=6 records=0 remaining=956 ms=3
+[256183][I][MQTT] Upload index window exhausted; rebuilding next window pending=956
+[256184][W][STORAGE] Upload index window reduced reason=heap_guard pending=956 requested=956 window=256 estimate=18432 maxAlloc=6404 psramLargest=7733236 psramFree=7803584 internalLargest=25588 internalFree=42252
+[256185][I][STORAGE] Upload index rebuild begin pending=956 window=256 heapFree=7870720 largest=7733236
+[265281][I][STORAGE] Upload index window full indexed=256 window=256 stopSeg=11
+[265281][I][STORAGE] Upload window rebuild accepted indexed=256 window=256 pending=956 sessions=2 skipped=0 failedSegs=0 sidecarLoaded=0 sidecarStale=10 truncated=1 heapFree=7842472 largest=7733236
+[265282][I][STORAGE] Upload index prepare rebuilt=1 indexed=256 sessions=2 skipped=0 failedSegs=0 ms=9098 fallback=0
+[265283][I][MQTT] Upload stream fill begin bucket=1 max=64 indexWindow=256 indexed=256 truncated=1 sessions=2 sessionIndex=0 radioQuiet=1
+[265283][I][MQTT] Upload bucket session start idx=0 sess=33e864-3904-efca0434 bucket=0
+[265369][I][MQTT] Upload RAM bucket staged bucket=1 records=1 lastEvent=3649 heapFree=22040 psramFree=7800828
+[265489][I][MQTT] Upload RAM bucket staged bucket=1 records=64 lastEvent=3712 heapFree=21652 psramFree=7776516
+[265491][I][MQTT] Upload stream fill done bucket=1 records=64 complete=0 ms=209
+[265492][I][MQTT] Upload stream refill retry bucket=2 records=64 pending=956 ms=209
+[265502][W][CORE] TaskHardware loop gap=11669ms owner=WIFI_UPLOAD pendingUpload=956 maintPending=1 suppressed=0
+[266405][I][MQTT] Dump progress pub=3648 fail=0 session=0/2 since=3712 leaseMaxEvents=4538
+[266406][I][MQTT] Upload stream buffer drained; refilling remaining=892 complete=0
+[266408][I][MQTT] Upload stream fill begin bucket=2 max=64 indexWindow=256 indexed=256 truncated=1 sessions=2 sessionIndex=0 radioQuiet=1
+[266496][I][MQTT] Upload RAM bucket staged bucket=2 records=1 lastEvent=3713 heapFree=21236 psramFree=7800828
+[266619][I][MQTT] Upload RAM bucket staged bucket=2 records=64 lastEvent=3776 heapFree=21672 psramFree=7776268
+[266621][I][MQTT] Upload stream fill done bucket=2 records=64 complete=0 ms=214
+[266621][I][MQTT] Upload stream refilled bucket=3 records=64 remaining=892 ms=215
+[267517][I][MQTT] Dump progress pub=3712 fail=0 session=0/2 since=3776 leaseMaxEvents=4538
+[267517][I][MQTT] Upload stream buffer drained; refilling remaining=828 complete=0
+[267520][I][MQTT] Upload stream fill begin bucket=3 max=64 indexWindow=256 indexed=256 truncated=1 sessions=2 sessionIndex=0 radioQuiet=1
+[267606][I][MQTT] Upload RAM bucket staged bucket=3 records=1 lastEvent=3777 heapFree=22140 psramFree=7800828
+[267725][I][MQTT] Upload RAM bucket staged bucket=3 records=64 lastEvent=3840 heapFree=21892 psramFree=7776332
+[267727][I][MQTT] Upload stream fill done bucket=3 records=64 complete=0 ms=207
+[267727][I][MQTT] Upload stream refilled bucket=4 records=64 remaining=828 ms=209
+[268274][I][MQTT] Upload checkpoint deferred until radio quiet pub=3750
+[268640][I][MQTT] Dump progress pub=3776 fail=0 session=0/2 since=3840 leaseMaxEvents=4538
+[268640][I][MQTT] Upload stream buffer drained; refilling remaining=764 complete=0
+[268642][I][MQTT] Upload stream fill begin bucket=4 max=64 indexWindow=256 indexed=256 truncated=1 sessions=2 sessionIndex=0 radioQuiet=1
+[268668][I][MQTT] Upload RAM bucket staged bucket=4 records=1 lastEvent=3841 heapFree=31956 psramFree=7800820
+[268671][I][MQTT] Upload RAM bucket session exhausted bucket=4 session=33e864-3904-efca0434 since=3842 idx=0/2
+[268672][I][MQTT] Upload bucket session start idx=1 sess=33e864-5739-45321d18 bucket=2
+[268872][I][MQTT] Upload RAM bucket staged bucket=4 records=64 lastEvent=3912 heapFree=22080 psramFree=7776004
+[268874][I][MQTT] Upload stream fill done bucket=4 records=64 complete=0 ms=232
+[268874][I][MQTT] Upload stream refilled bucket=5 records=64 remaining=764 ms=233
+[268909][I][STORAGE] Segment lifecycle seg=9 partially_uploaded->fully_uploaded trust=trusted pending=0
+[268920][I][STORAGE] Segment lifecycle seg=10 indexed->partially_uploaded trust=trusted pending=99
+[269775][I][MQTT] Dump progress pub=3840 fail=0 session=1/2 since=3912 leaseMaxEvents=4538
+[269775][I][MQTT] Upload stream buffer drained; refilling remaining=700 complete=0
+[270892][I][STORAGE] worker ui refresh serviced uiRefreshServiceCount=14 uiDeferred=10 uiFlush=4 pressure=0 usedPct=16 pending=700
+[272411][I][MQTT] Upload stream fill begin bucket=5 max=64 indexWindow=256 indexed=256 truncated=1 sessions=2 sessionIndex=1 radioQuiet=1
+[272412][I][MQTT] Upload RAM bucket session exhausted bucket=5 session=33e864-5739-45321d18 since=3912 idx=1/2
+[272412][I][MQTT] Upload stream fill done bucket=5 records=0 complete=1 ms=2
+[272412][I][MQTT] Upload stream refilled bucket=6 records=0 remaining=700 ms=3
+[272412][I][MQTT] Upload index window exhausted; rebuilding next window pending=700
+[272413][W][STORAGE] Upload index window reduced reason=heap_guard pending=700 requested=700 window=256 estimate=18432 maxAlloc=6404 psramLargest=7733236 psramFree=7801212 internalLargest=24564 internalFree=41212
+[272414][I][STORAGE] Upload index rebuild begin pending=700 window=256 heapFree=7870672 largest=7733236
+[282631][I][STORAGE] Upload index window full indexed=256 window=256 stopSeg=12
+[282632][I][STORAGE] Upload window rebuild accepted indexed=256 window=256 pending=700 sessions=2 skipped=0 failedSegs=0 sidecarLoaded=0 sidecarStale=11 truncated=1 heapFree=7841992 largest=7733236
+[282632][I][STORAGE] Upload index prepare rebuilt=1 indexed=256 sessions=2 skipped=0 failedSegs=0 ms=10218 fallback=0
+[282633][I][MQTT] Upload stream fill begin bucket=1 max=64 indexWindow=256 indexed=256 truncated=1 sessions=2 sessionIndex=0 radioQuiet=1
+[282633][I][MQTT] Upload bucket session start idx=0 sess=33e864-5739-45321d18 bucket=0
+[282714][I][MQTT] Upload RAM bucket staged bucket=1 records=1 lastEvent=3913 heapFree=21668 psramFree=7800820
+[282758][I][MQTT] Upload RAM bucket session exhausted bucket=1 session=33e864-5739-45321d18 since=3950 idx=0/2
+[282759][I][MQTT] Upload bucket session start idx=1 sess=33e864-4065-f3b1bd43 bucket=38
+[282844][I][MQTT] Upload RAM bucket staged bucket=1 records=64 lastEvent=3980 heapFree=22852 psramFree=7776132
+[282846][I][MQTT] Upload stream fill done bucket=1 records=64 complete=0 ms=213
+[282846][I][MQTT] Upload stream refill retry bucket=2 records=64 pending=700 ms=213
+[282849][I][HEAP] heap free=7628KB min=7553KB largest=7552KB frag=1% psramFree=7594KB core=93/16% owner=WIFI_UPLOAD nets=10 pendingUpload=700 pendingEnrich=1066
+[HEALTH] uptime=0h04m29s
+[HEALTH] heap used=794/8422KB free=7628KB min=7553KB largest=7552KB frag=1%
+[HEALTH] psram used=598/8192KB free=7594KB largest=7552KB
+[HEALTH] stack free_min: core0=14KB/22KB core1=13KB/18KB
+[HEALTH] core usage: core0=93% core1=16%
+[HEALTH] radio=WIFI_UPLOAD wifi=0 ble=0 gps=0 nets=10 pendingUpload=700 pendingEnrich=1066
+[HEALTH] subghz=NONE mode=OFF pkts=0 nodes=0
+[282851][I][STORAGE] RAMSpool enq=10 cons=10 inflight=0/1024 high=3 pressure=0 drop[full=0 big=0 noise=0 p3Evict=0 p3Drop=0 p2Drop=0 p1Fail=0] free=1024
+[282851][I][STORAGE] RAMSpool enqueue probe[ok=7 drop=0] device[ok=3 drop=0]
+[282851][I][STORAGE] RAMSpool worker probe[ok=4 sup=3 drop=0 fail=0 slow=0] device[ok=3 sup=0 drop=0 fail=0 slow=0] slowTotal=0 maxMs=0
+[282852][I][STORAGE] RAMSpool prioEnq p0=0 p1=0 p2=10 p3=0
+[282852][I][STORAGE] RAMSpool lanes p1=0/0 p2=0/2 p3=0/0
+[282862][W][CORE] TaskHardware loop gap=13099ms owner=WIFI_UPLOAD pendingUpload=700 maintPending=1 suppressed=1
+[283016][I][STACK] TaskHardware watermark=14660B min=14660B
+[283382][I][STORAGE] Segment lifecycle seg=10 partially_uploaded->fully_uploaded trust=trusted pending=0
+[283403][I][STORAGE] Segment lifecycle seg=11 indexed->partially_uploaded trust=trusted pending=429
+[283746][I][MQTT] Dump progress pub=3904 fail=0 session=1/2 since=3980 leaseMaxEvents=4538
+[283747][I][MQTT] Upload stream buffer drained; refilling remaining=636 complete=0
+[283749][I][MQTT] Upload stream fill begin bucket=2 max=64 indexWindow=256 indexed=256 truncated=1 sessions=2 sessionIndex=1 radioQuiet=1
+[283831][I][MQTT] Upload RAM bucket staged bucket=2 records=1 lastEvent=3981 heapFree=21832 psramFree=7800828
+[283953][I][MQTT] Upload RAM bucket staged bucket=2 records=64 lastEvent=4044 heapFree=21364 psramFree=7776044
+[283955][I][MQTT] Upload stream fill done bucket=2 records=64 complete=0 ms=206
+[283955][I][MQTT] Upload stream refilled bucket=3 records=64 remaining=636 ms=207
+[284857][I][MQTT] Dump progress pub=3968 fail=0 session=1/2 since=4044 leaseMaxEvents=4538
+[284857][I][MQTT] Upload stream buffer drained; refilling remaining=572 complete=0
+[284859][I][MQTT] Upload stream fill begin bucket=3 max=64 indexWindow=256 indexed=256 truncated=1 sessions=2 sessionIndex=1 radioQuiet=1
+[284941][I][MQTT] Upload RAM bucket staged bucket=3 records=1 lastEvent=4045 heapFree=21000 psramFree=7800828
+[285061][I][MQTT] Upload RAM bucket staged bucket=3 records=64 lastEvent=4108 heapFree=21184 psramFree=7776196
+[285063][I][MQTT] Upload stream fill done bucket=3 records=64 complete=0 ms=204
+[285063][I][MQTT] Upload stream refilled bucket=4 records=64 remaining=572 ms=205
+[285511][I][MQTT] Upload checkpoint deferred until radio quiet pub=4000
+[285958][I][MQTT] Dump progress pub=4032 fail=0 session=1/2 since=4108 leaseMaxEvents=4538
+[285958][I][MQTT] Upload stream buffer drained; refilling remaining=508 complete=0
+[285960][I][MQTT] Upload stream fill begin bucket=4 max=64 indexWindow=256 indexed=256 truncated=1 sessions=2 sessionIndex=1 radioQuiet=1
+[286040][I][MQTT] Upload RAM bucket staged bucket=4 records=1 lastEvent=4109 heapFree=21220 psramFree=7800812
+[286161][I][MQTT] Upload RAM bucket staged bucket=4 records=64 lastEvent=4172 heapFree=21100 psramFree=7776356
+[286163][I][MQTT] Upload stream fill done bucket=4 records=64 complete=0 ms=204
+[286163][I][MQTT] Upload stream refilled bucket=5 records=64 remaining=508 ms=205
+[287085][I][MQTT] Dump progress pub=4096 fail=0 session=1/2 since=4172 leaseMaxEvents=4538
+[287086][I][MQTT] Upload stream buffer drained; refilling remaining=444 complete=0
+[288112][I][STORAGE] worker ui refresh serviced uiRefreshServiceCount=15 uiDeferred=10 uiFlush=4 pressure=0 usedPct=16 pending=444
+[289185][I][MQTT] Upload stream fill begin bucket=5 max=64 indexWindow=256 indexed=256 truncated=1 sessions=2 sessionIndex=1 radioQuiet=1
+[289186][I][MQTT] Upload RAM bucket session exhausted bucket=5 session=33e864-4065-f3b1bd43 since=4172 idx=1/2
+[289187][I][MQTT] Upload stream fill done bucket=5 records=0 complete=1 ms=1
+[289187][I][MQTT] Upload stream refilled bucket=6 records=0 remaining=444 ms=3
+[289187][I][MQTT] Upload index window exhausted; rebuilding next window pending=444
+[289188][W][STORAGE] Upload index window reduced reason=heap_guard pending=444 requested=444 window=256 estimate=18432 maxAlloc=6404 psramLargest=7733236 psramFree=7801212 internalLargest=25588 internalFree=40732
+[289189][I][STORAGE] Upload index rebuild begin pending=444 window=256 heapFree=7870624 largest=7733236
+[300416][I][STORAGE] Upload index window full indexed=256 window=256 stopSeg=15
+[300417][I][STORAGE] Upload window rebuild accepted indexed=256 window=256 pending=444 sessions=4 skipped=0 failedSegs=0 sidecarLoaded=0 sidecarStale=14 truncated=1 heapFree=7829844 largest=7733236
+[300417][I][STORAGE] Upload index prepare rebuilt=1 indexed=256 sessions=4 skipped=0 failedSegs=0 ms=11229 fallback=0
+[300418][I][MQTT] Upload stream fill begin bucket=1 max=64 indexWindow=256 indexed=256 truncated=1 sessions=4 sessionIndex=0 radioQuiet=1
+[300419][I][MQTT] Upload bucket session start idx=0 sess=33e864-4065-f3b1bd43 bucket=0
+[300509][I][MQTT] Upload RAM bucket staged bucket=1 records=1 lastEvent=4173 heapFree=11576 psramFree=7798456
+[300633][I][MQTT] Upload RAM bucket staged bucket=1 records=64 lastEvent=4236 heapFree=11260 psramFree=7773488
+[300635][I][MQTT] Upload stream fill done bucket=1 records=64 complete=0 ms=217
+[300636][I][MQTT] Upload stream refill retry bucket=2 records=64 pending=444 ms=217
+[300646][W][CORE] TaskHardware loop gap=13571ms owner=WIFI_UPLOAD pendingUpload=444 maintPending=1 suppressed=0
+[301505][I][MQTT] Dump progress pub=4160 fail=0 session=0/4 since=4236 leaseMaxEvents=4538
+[301506][I][MQTT] Upload stream buffer drained; refilling remaining=380 complete=0
+[301507][I][MQTT] Upload stream fill begin bucket=2 max=64 indexWindow=256 indexed=256 truncated=1 sessions=4 sessionIndex=0 radioQuiet=1
+[301594][I][MQTT] Upload RAM bucket staged bucket=2 records=1 lastEvent=4237 heapFree=11084 psramFree=7798448
+[301715][I][MQTT] Upload RAM bucket staged bucket=2 records=64 lastEvent=4300 heapFree=11320 psramFree=7774056
+[301717][I][MQTT] Upload stream fill done bucket=2 records=64 complete=0 ms=210
+[301717][I][MQTT] Upload stream refilled bucket=3 records=64 remaining=380 ms=211
+[302577][I][MQTT] Dump progress pub=4224 fail=0 session=0/4 since=4300 leaseMaxEvents=4538
+[302577][I][MQTT] Upload stream buffer drained; refilling remaining=316 complete=0
+[302579][I][MQTT] Upload stream fill begin bucket=3 max=64 indexWindow=256 indexed=256 truncated=1 sessions=4 sessionIndex=0 radioQuiet=1
+[302665][I][MQTT] Upload RAM bucket staged bucket=3 records=1 lastEvent=4301 heapFree=11240 psramFree=7798448
+[302788][I][MQTT] Upload RAM bucket staged bucket=3 records=64 lastEvent=4364 heapFree=10748 psramFree=7773912
+[302790][I][MQTT] Upload stream fill done bucket=3 records=64 complete=0 ms=211
+[302791][I][MQTT] Upload stream refilled bucket=4 records=64 remaining=316 ms=212
+[303144][I][MQTT] Upload checkpoint deferred until radio quiet pub=4250
+[303659][I][MQTT] Dump progress pub=4288 fail=0 session=0/4 since=4364 leaseMaxEvents=4538
+[303660][I][MQTT] Upload stream buffer drained; refilling remaining=252 complete=0
+[303662][I][MQTT] Upload stream fill begin bucket=4 max=64 indexWindow=256 indexed=256 truncated=1 sessions=4 sessionIndex=0 radioQuiet=1
+[303722][I][MQTT] Upload RAM bucket staged bucket=4 records=1 lastEvent=4365 heapFree=14972 psramFree=7798456
+[303739][I][MQTT] Upload RAM bucket session exhausted bucket=4 session=33e864-4065-f3b1bd43 since=4384 idx=0/4
+[303740][I][MQTT] Upload bucket session start idx=1 sess=33e864-3506-dbad3b0f bucket=20
+[303800][I][MQTT] Upload RAM bucket session exhausted bucket=4 session=33e864-3506-dbad3b0f since=4399 idx=1/4
+[303801][I][MQTT] Upload bucket session start idx=2 sess=33e864-3356-b2eb3677 bucket=35
+[303885][I][MQTT] Upload RAM bucket session exhausted bucket=4 session=33e864-3356-b2eb3677 since=4442 idx=2/4
+[303886][I][MQTT] Upload bucket session start idx=3 sess=33e864-3480-e0163c81 bucket=58
+[303919][I][MQTT] Upload RAM bucket staged bucket=4 records=64 lastEvent=4448 heapFree=20244 psramFree=7773472
+[303921][I][MQTT] Upload stream fill done bucket=4 records=64 complete=0 ms=260
+[303921][I][MQTT] Upload stream refilled bucket=5 records=64 remaining=252 ms=261
+[304206][I][STORAGE] Segment lifecycle seg=11 partially_uploaded->fully_uploaded trust=trusted pending=0
+[304228][I][STORAGE] Segment lifecycle seg=12 indexed->partially_uploaded trust=trusted pending=14
+[304413][I][STORAGE] Segment lifecycle seg=12 partially_uploaded->fully_uploaded trust=trusted pending=0
+[304433][I][STORAGE] Segment lifecycle seg=13 indexed->partially_uploaded trust=trusted pending=22
+[304743][I][STORAGE] Segment lifecycle seg=13 partially_uploaded->fully_uploaded trust=trusted pending=0
+[304756][I][STORAGE] Segment lifecycle seg=14 indexed->partially_uploaded trust=trusted pending=14
+[304826][I][MQTT] Dump progress pub=4352 fail=0 session=3/4 since=4448 leaseMaxEvents=4538
+[304827][I][MQTT] Upload stream buffer drained; refilling remaining=188 complete=0
+[306012][I][STORAGE] worker ui refresh serviced uiRefreshServiceCount=16 uiDeferred=10 uiFlush=4 pressure=0 usedPct=16 pending=188
+[307259][I][MQTT] Upload stream fill begin bucket=5 max=64 indexWindow=256 indexed=256 truncated=1 sessions=4 sessionIndex=3 radioQuiet=1
+[307260][I][MQTT] Upload RAM bucket session exhausted bucket=5 session=33e864-3480-e0163c81 since=4448 idx=3/4
+[307260][I][MQTT] Upload stream fill done bucket=5 records=0 complete=1 ms=1
+[307261][I][MQTT] Upload stream refilled bucket=6 records=0 remaining=188 ms=3
+[307261][I][MQTT] Upload index window exhausted; rebuilding next window pending=188
+[307263][I][STORAGE] Upload index rebuild begin pending=188 window=188 heapFree=7870296 largest=7733236
+[319352][I][STORAGE] Upload index rebuild progress segs=25 indexed=23 window=188 heapFree=7778416 largest=7733236
+[322479][I][STORAGE] Upload index rebuild progress segs=50 indexed=36 window=188 heapFree=7615720 largest=7602164
+[326426][I][STORAGE] Upload window rebuild accepted indexed=188 window=188 pending=188 sessions=8 skipped=0 failedSegs=0 sidecarLoaded=0 sidecarStale=72 truncated=1 heapFree=7465084 largest=7340020
+[326427][I][STORAGE] Upload index prepare rebuilt=1 indexed=188 sessions=8 skipped=0 failedSegs=0 ms=19165 fallback=0
+[326428][I][MQTT] Upload stream fill begin bucket=1 max=64 indexWindow=188 indexed=188 truncated=1 sessions=8 sessionIndex=0 radioQuiet=1
+[326428][I][MQTT] Upload bucket session start idx=0 sess=33e864-3480-e0163c81 bucket=0
+[326469][I][MQTT] Upload RAM bucket staged bucket=1 records=1 lastEvent=4449 heapFree=200 psramFree=7452588
+[326480][I][MQTT] Upload RAM bucket session exhausted bucket=1 session=33e864-3480-e0163c81 since=4544 idx=0/8
+[326481][I][MQTT] Upload bucket session start idx=1 sess=33e864-3550-9a8e1a67 bucket=9

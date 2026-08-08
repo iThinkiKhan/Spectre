@@ -16,7 +16,6 @@
 #include "../core/RuntimeContracts.h"
 #include "../core/CrashBreadcrumb.h"
 #include "RAMSpool.h"
-#include "EntityManager.h"
 #include "RadioArbiter.h"
 #include "SettingsManager.h"
 #include "StorageManager.h"
@@ -2615,8 +2614,7 @@ void MQTTManager::_prepareQueuedEvent(JsonDocument& doc) {
 }
 
 uint32_t MQTTManager::_appendSyncEvent(const char* eventType,
-                                       JsonDocument& doc,
-                                       QueueMetric metric) {
+                                       JsonDocument& doc) {
     // Exceptional synchronous append path. Normal capture types are routed
     // through RAMSpool::enqueue() at their capture site and never hit LittleFS
     // here.
@@ -2670,11 +2668,11 @@ uint32_t MQTTManager::_appendSyncEvent(const char* eventType,
         return 0;
     }
 
-    _noteQueuedRecord(metric);
+    _noteQueuedRecord();
     return result.eventId;
 }
 
-void MQTTManager::_noteQueuedRecord(QueueMetric metric) {
+void MQTTManager::_noteQueuedRecord() {
     const uint32_t totalPending =
         STORAGE.isReady() ? STORAGE.getAuthoritativePendingEventCount() : 0U;
     const bool backlogTrusted = STORAGE.isPendingEventCountAuthoritative();
@@ -2683,30 +2681,12 @@ void MQTTManager::_noteQueuedRecord(QueueMetric metric) {
     g_state.sessionFilesPending = static_cast<int>(totalPending);
     g_state.kaliSyncAvailable = backlogTrusted && (totalPending > 0);
     g_state.kaliSyncPending = backlogTrusted && (totalPending > 0);
-    switch (metric) {
-        case QUEUE_METRIC_PROBES:
-            g_state.sessionProbes++;
-            break;
-        case QUEUE_METRIC_DEVICES:
-            g_state.sessionDevices++;
-            break;
-        case QUEUE_METRIC_DRONES:
-            g_state.sessionDrones++;
-            break;
-        case QUEUE_METRIC_PMKIDS:
-            g_state.sessionPMKIDs++;
-            break;
-        case QUEUE_METRIC_NONE:
-        default:
-            break;
-    }
     STATE_WRITE_END();
 }
 
 bool MQTTManager::queueProbe(const char* mac, const char* ssid,
                               int8_t rssi, uint8_t channel,
                               const char* ieFingerprint) {
-    ENTITY_MGR.observeWifiClient(mac, ieFingerprint, rssi, channel, false);
     JsonDocument doc;
     _prepareQueuedEvent(doc);
     doc["mac"]           = mac;
@@ -2762,7 +2742,6 @@ void MQTTManager::queueDevice(const char* mac,
                                const char* ieFingerprint,
                                const char* probeSetHash,
                                int8_t rssi, bool isRandomMAC) {
-    ENTITY_MGR.observeWifiClient(mac, ieFingerprint, rssi, 0, isRandomMAC);
     JsonDocument doc;
     _prepareQueuedEvent(doc);
     doc["mac"]            = mac;
@@ -2788,7 +2767,6 @@ void MQTTManager::queueDrone(const char* droneID,
                               const char* mac, int8_t rssi,
                               uint8_t channel,
                               const char* protocol) {
-    ENTITY_MGR.observeDrone(droneID, mac, rssi, channel);
     JsonDocument doc;
     _prepareQueuedEvent(doc);
 
@@ -2805,7 +2783,7 @@ void MQTTManager::queueDrone(const char* droneID,
     doc["event_type"]  = "drone_remote_id";
     doc["severity"]    = "CRITICAL";
     doc["category"]    = "drone";
-    _appendSyncEvent("drone", doc, QUEUE_METRIC_DRONES);
+    _appendSyncEvent("drone", doc);
 }
 
 void MQTTManager::queuePMKID(const char* ssid,
@@ -2856,7 +2834,7 @@ void MQTTManager::queuePMKID(const char* ssid,
     doc["severity"]     = "WARN";
     doc["category"]     = "capture";
     const uint32_t eventId =
-        _appendSyncEvent("pmkid", doc, QUEUE_METRIC_PMKIDS);
+        _appendSyncEvent("pmkid", doc);
     if (!eventId) {
         return;
     }
@@ -2908,11 +2886,11 @@ void MQTTManager::queueEvent(const char* eventType,
     doc["ssid"]       = ssid   ? ssid   : "";
     doc["detail"]     = detail ? detail : "";
     doc["category"]   = category ? category : "detection";
-    _appendSyncEvent("event", doc, QUEUE_METRIC_NONE);
+    _appendSyncEvent("event", doc);
 }
 
 void MQTTManager::noteExternalQueuedRecord() {
-    _noteQueuedRecord(QUEUE_METRIC_NONE);
+    _noteQueuedRecord();
 }
 
 // ── Timestamp ─────────────────────────────────────────────────

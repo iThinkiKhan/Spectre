@@ -1,0 +1,566 @@
+[270791][I][HEAP] heap free=6252KB min=6227KB largest=6144KB frag=1% internalFree=66KB internalLargest=31KB psramFree=6186KB core=0/0% owner=WIFI_CAPTURE nets=6 pendingUpload=490 pendingEnrich=490
+[HEALTH] time=2026-08-08 06:18:59 src=ntp
+[HEALTH] heap used=2183/8435KB free=6252KB min=6227KB largest=6144KB frag=1%
+[HEALTH] internal used=178/243KB free=66KB min=40KB largest=31KB
+[HEALTH] psram used=2006/8192KB free=6186KB largest=6144KB
+[HEALTH] stack free_min: core0=15KB/22KB core1=13KB/18KB
+[HEALTH] core usage: core0=0% core1=0%
+[HEALTH] power=usb state=usb batt=100% 4762mV trend=0mV/min runtime=0min cap=1100mAh charging=0
+[HEALTH] radio=WIFI_CAPTURE wifi=0 ble=0 gps=0 nets=6 pendingUpload=490 pendingEnrich=490
+[HEALTH] subghz=NONE mode=OFF pkts=0 nodes=0
+[270793][I][STORAGE] RAMSpool enq=116 cons=116 inflight=0/1024 high=3 pressure=0 drop[full=0 big=0 noise=0 p3Evict=0 p3Drop=0 p2Drop=0 p1Fail=0] free=1024
+[270794][I][STORAGE] RAMSpool enqueue probe[ok=108 drop=0] device[ok=8 drop=0]
+[270794][I][STORAGE] RAMSpool worker probe[ok=9 sup=99 drop=0 fail=0 slow=0] device[ok=8 sup=0 drop=0 fail=0 slow=0] slowTotal=0 maxMs=0
+[270794][I][STORAGE] RAMSpool prioEnq p0=0 p1=0 p2=116 p3=0
+[270794][I][STORAGE] RAMSpool lanes p1=0/0 p2=0/2 p3=0/0
+[271046][I][STACK] TaskHardware watermark=14916B min=14916B
+[272458][I][STORAGE] worker ui refresh serviced uiRefreshServiceCount=42 uiDeferred=118 uiFlush=41 pressure=0 usedPct=5 pending=490
+[289758][I][STORAGE] worker ui refresh serviced uiRefreshServiceCount=43 uiDeferred=120 uiFlush=42 pressure=0 usedPct=5 pending=490
+[295732][I][STORAGE] worker ui refresh serviced uiRefreshServiceCount=44 uiDeferred=122 uiFlush=43 pressure=0 usedPct=5 pending=490
+[297446][I][STORAGE] Routine maintenance requests coalesced count=5 latest=dirty_summary source=ramspool_idle flags=dirty_summary|snapshot_lagged
+[300733][I][STORAGE] worker ui refresh serviced uiRefreshServiceCount=45 uiDeferred=123 uiFlush=44 pressure=0 usedPct=5 pending=490
+[300796][I][HEAP] heap free=6252KB min=6227KB largest=6144KB frag=1% internalFree=66KB internalLargest=31KB psramFree=6186KB core=0/0% owner=WIFI_CAPTURE nets=6 pendingUpload=490 pendingEnrich=490
+[HEALTH] time=2026-08-08 06:19:29 src=ntp
+[HEALTH] heap used=2183/8435KB free=6252KB min=6227KB largest=6144KB frag=1%
+[HEALTH] internal used=178/243KB free=66KB min=40KB largest=31KB
+[HEALTH] psram used=2006/8192KB free=6186KB largest=6144KB
+[HEALTH] stack free_min: core0=15KB/22KB core1=13KB/18KB
+[HEALTH] core usage: core0=0% core1=0%
+[HEALTH] power=usb state=usb batt=100% 4761mV trend=0mV/min runtime=0min cap=1100mAh charging=0
+[HEALTH] radio=WIFI_CAPTURE wifi=0 ble=0 gps=0 nets=6 pendingUpload=490 pendingEnrich=490
+[HEALTH] subghz=NONE mode=OFF pkts=0 nodes=0
+[300798][I][STORAGE] RAMSpool enq=123 cons=123 inflight=0/1024 high=3 pressure=0 drop[full=0 big=0 noise=0 p3Evict=0 p3Drop=0 p2Drop=0 p1Fail=0] free=1024
+[300799][I][STORAGE] RAMSpool enqueue probe[ok=115 drop=0] device[ok=8 drop=0]
+[300799][I][STORAGE] RAMSpool worker probe[ok=9 sup=106 drop=0 fail=0 slow=0] device[ok=8 sup=0 drop=0 fail=0 slow=0] slowTotal=0 maxMs=0
+[300799][I][STORAGE] RAMSpool prioEnq p0=0 p1=0 p2=123 p3=0
+[300799][I][STORAGE] RAMSpool lanes p1=0/0 p2=0/2 p3=0/0
+[301050][I][STACK] TaskHardware watermark=14916B min=14916B
+[305742][I][STORAGE] worker ui refresh serviced uiRefreshServiceCount=46 uiDeferred=124 uiFlush=45 pressure=0 usedPct=5 pending=490
+[310749][I][STORAGE] worker ui refresh serviced uiRefreshServiceCount=47 uiDeferred=129 uiFlush=46 pressure=0 usedPct=5 pending=491
+[315749][I][STORAGE] worker ui refresh serviced uiRefreshServiceCount=48 uiDeferred=133 uiFlush=47 pressure=0 usedPct=5 pending=491
+[320749][I][STORAGE] worker ui refresh serviced uiRefreshServiceCount=49 uiDeferred=135 uiFlush=48 pressure=0 usedPct=5 pending=491
+[326545][I][STORAGE] worker ui refresh serviced uiRefreshServiceCount=50 uiDeferred=137 uiFlush=49 pressure=0 usedPct=5 pending=491
+[330799][I][HEAP] heap free=6247KB min=6227KB largest=6144KB frag=1% internalFree=60KB internalLargest=31KB psramFree=6186KB core=1/0% owner=WIFI_CAPTURE nets=6 pendingUpload=491 pendingEnrich=491
+[HEALTH] time=2026-08-08 06:19:59 src=ntp
+[HEALTH] heap used=2189/8435KB free=6247KB min=6227KB largest=6144KB frag=1%
+[HEALTH] internal used=183/243KB free=60KB min=40KB largest=31KB
+[HEALTH] psram used=2006/8192KB free=6186KB largest=6144KB
+[HEALTH] stack free_min: core0=15KB/22KB core1=13KB/18KB
+[HEALTH] core usage: core0=1% core1=0%
+[HEALTH] power=usb state=usb batt=100% 4761mV trend=0mV/min runtime=0min cap=1100mAh charging=0
+[HEALTH] radio=WIFI_CAPTURE wifi=0 ble=0 gps=0 nets=6 pendingUpload=491 pendingEnrich=491
+[HEALTH] subghz=NONE mode=OFF pkts=0 nodes=0
+[330802][I][STORAGE] RAMSpool enq=137 cons=137 inflight=0/1024 high=3 pressure=0 drop[full=0 big=0 noise=0 p3Evict=0 p3Drop=0 p2Drop=0 p1Fail=0] free=1024
+[330802][I][STORAGE] RAMSpool enqueue probe[ok=129 drop=0] device[ok=8 drop=0]
+[330802][I][STORAGE] RAMSpool worker probe[ok=10 sup=119 drop=0 fail=0 slow=0] device[ok=8 sup=0 drop=0 fail=0 slow=0] slowTotal=0 maxMs=0
+[330803][I][STORAGE] RAMSpool prioEnq p0=0 p1=0 p2=137 p3=0
+[330803][I][STORAGE] RAMSpool lanes p1=0/0 p2=0/2 p3=0/0
+[331055][I][STACK] TaskHardware watermark=14916B min=14916B
+[332578][I][STORAGE] worker ui refresh serviced uiRefreshServiceCount=51 uiDeferred=140 uiFlush=50 pressure=0 usedPct=5 pending=491
+[450466][I][STORAGE] worker ui refresh serviced uiRefreshServiceCount=70 uiDeferred=208 uiFlush=69 pressure=0 usedPct=5 pending=498
+[450822][I][HEAP] heap free=6247KB min=6226KB largest=6144KB frag=1% internalFree=60KB internalLargest=31KB psramFree=6186KB core=0/0% owner=WIFI_CAPTURE nets=6 pendingUpload=499 pendingEnrich=498
+[HEALTH] time=2026-08-08 06:21:58 src=ntp
+[HEALTH] heap used=2189/8435KB free=6247KB min=6226KB largest=6144KB frag=1%
+[HEALTH] internal used=183/243KB free=60KB min=40KB largest=31KB
+[HEALTH] psram used=2006/8192KB free=6186KB largest=6144KB
+[HEALTH] stack free_min: core0=15KB/22KB core1=13KB/18KB
+[HEALTH] core usage: core0=0% core1=0%
+[HEALTH] power=usb state=usb batt=100% 4763mV trend=0mV/min runtime=0min cap=1100mAh charging=0
+[HEALTH] radio=WIFI_CAPTURE wifi=0 ble=0 gps=0 nets=6 pendingUpload=499 pendingEnrich=498
+[HEALTH] subghz=NONE mode=OFF pkts=0 nodes=0
+[450825][I][STORAGE] RAMSpool enq=210 cons=210 inflight=0/1024 high=3 pressure=0 drop[full=0 big=0 noise=0 p3Evict=0 p3Drop=0 p2Drop=0 p1Fail=0] free=1024
+[450825][I][STORAGE] RAMSpool enqueue probe[ok=200 drop=0] device[ok=10 drop=0]
+[450826][I][STORAGE] RAMSpool worker probe[ok=16 sup=184 drop=0 fail=0 slow=0] device[ok=10 sup=0 drop=0 fail=0 slow=0] slowTotal=0 maxMs=0
+[450826][I][STORAGE] RAMSpool prioEnq p0=0 p1=0 p2=210 p3=0
+[450826][I][STORAGE] RAMSpool lanes p1=0/0 p2=0/2 p3=0/0
+[451072][I][STACK] TaskHardware watermark=14916B min=14916B
+[455473][I][STORAGE] worker ui refresh serviced uiRefreshServiceCount=71 uiDeferred=210 uiFlush=70 pressure=0 usedPct=5 pending=499
+[460481][I][STORAGE] worker ui refresh serviced uiRefreshServiceCount=72 uiDeferred=212 uiFlush=71 pressure=0 usedPct=5 pending=499
+[467440][I][STORAGE] worker ui refresh serviced uiRefreshServiceCount=73 uiDeferred=214 uiFlush=72 pressure=0 usedPct=5 pending=499
+[474302][I][STORAGE] worker ui refresh serviced uiRefreshServiceCount=74 uiDeferred=217 uiFlush=73 pressure=0 usedPct=5 pending=499
+[479308][I][STORAGE] worker ui refresh serviced uiRefreshServiceCount=75 uiDeferred=218 uiFlush=74 pressure=0 usedPct=5 pending=499
+[480828][I][HEAP] heap free=6247KB min=6226KB largest=6144KB frag=1% internalFree=60KB internalLargest=31KB psramFree=6186KB core=0/0% owner=WIFI_CAPTURE nets=6 pendingUpload=499 pendingEnrich=499
+[HEALTH] time=2026-08-08 06:22:29 src=ntp
+[HEALTH] heap used=2189/8435KB free=6247KB min=6226KB largest=6144KB frag=1%
+[HEALTH] internal used=183/243KB free=60KB min=40KB largest=31KB
+[HEALTH] psram used=2006/8192KB free=6186KB largest=6144KB
+[HEALTH] stack free_min: core0=15KB/22KB core1=13KB/18KB
+[HEALTH] core usage: core0=0% core1=0%
+[HEALTH] power=usb state=usb batt=100% 4762mV trend=0mV/min runtime=0min cap=1100mAh charging=0
+[HEALTH] radio=WIFI_CAPTURE wifi=0 ble=0 gps=0 nets=6 pendingUpload=499 pendingEnrich=499
+[HEALTH] subghz=NONE mode=OFF pkts=0 nodes=0
+[480830][I][STORAGE] RAMSpool enq=219 cons=219 inflight=0/1024 high=3 pressure=0 drop[full=0 big=0 noise=0 p3Evict=0 p3Drop=0 p2Drop=0 p1Fail=0] free=1024
+[480831][I][STORAGE] RAMSpool enqueue probe[ok=209 drop=0] device[ok=10 drop=0]
+[480831][I][STORAGE] RAMSpool worker probe[ok=16 sup=193 drop=0 fail=0 slow=0] device[ok=10 sup=0 drop=0 fail=0 slow=0] slowTotal=0 maxMs=0
+[480831][I][STORAGE] RAMSpool prioEnq p0=0 p1=0 p2=219 p3=0
+[480831][I][STORAGE] RAMSpool lanes p1=0/0 p2=0/2 p3=0/0
+[481031][I][STORAGE] Routine maintenance requests coalesced count=7 latest=dirty_summary source=ramspool_idle flags=dirty_spool_index|dirty_summary|snapshot_lagged
+[481073][I][STACK] TaskHardware watermark=14916B min=14916B
+[484311][I][STORAGE] worker ui refresh serviced uiRefreshServiceCount=76 uiDeferred=219 uiFlush=75 pressure=0 usedPct=5 pending=499
+[493028][I][STORAGE] worker ui refresh serviced uiRefreshServiceCount=77 uiDeferred=220 uiFlush=76 pressure=0 usedPct=5 pending=499
+[503152][I][STORAGE] capture write allowed owner=WIFI_CAPTURE path=/events/counter.txt reason=capture_micro_idle ms=107 ok=1
+[503335][I][STORAGE] capture write allowed owner=WIFI_CAPTURE path=/events/meta.json reason=capture_micro_idle ms=182 ok=1
+[503576][I][STORAGE] capture write allowed owner=WIFI_CAPTURE path=/spool/index.json reason=capture_micro_idle ms=235 ok=1
+[503576][I][STORAGE] worker ui refresh serviced uiRefreshServiceCount=78 uiDeferred=221 uiFlush=77 pressure=0 usedPct=5 pending=499
+[503577][W][CORE] TaskHardware slow section=capture_storage_maintenance ms=533 owner=WIFI_CAPTURE pendingUpload=499 maintPending=1
+[503587][W][CORE] TaskHardware loop gap=543ms owner=WIFI_CAPTURE pendingUpload=499 maintPending=1 suppressed=0
+[508052][I][STORAGE] worker ui refresh serviced uiRefreshServiceCount=79 uiDeferred=225 uiFlush=78 pressure=0 usedPct=5 pending=499
+[510830][I][HEAP] heap free=6247KB min=6226KB largest=6144KB frag=1% internalFree=60KB internalLargest=31KB psramFree=6186KB core=3/2% owner=WIFI_CAPTURE nets=6 pendingUpload=499 pendingEnrich=499
+[HEALTH] time=2026-08-08 06:22:59 src=ntp
+[HEALTH] heap used=2189/8435KB free=6247KB min=6226KB largest=6144KB frag=1%
+[HEALTH] internal used=183/243KB free=60KB min=40KB largest=31KB
+[HEALTH] psram used=2006/8192KB free=6186KB largest=6144KB
+[HEALTH] stack free_min: core0=15KB/22KB core1=13KB/18KB
+[HEALTH] core usage: core0=3% core1=2%
+[HEALTH] power=usb state=usb batt=100% 4762mV trend=0mV/min runtime=0min cap=1100mAh charging=0
+[HEALTH] radio=WIFI_CAPTURE wifi=0 ble=0 gps=0 nets=6 pendingUpload=499 pendingEnrich=499
+[HEALTH] subghz=NONE mode=OFF pkts=0 nodes=0
+[510832][I][STORAGE] RAMSpool enq=225 cons=225 inflight=0/1024 high=3 pressure=0 drop[full=0 big=0 noise=0 p3Evict=0 p3Drop=0 p2Drop=0 p1Fail=0] free=1024
+[510833][I][STORAGE] RAMSpool enqueue probe[ok=215 drop=0] device[ok=10 drop=0]
+[510833][I][STORAGE] RAMSpool worker probe[ok=16 sup=199 drop=0 fail=0 slow=0] device[ok=10 sup=0 drop=0 fail=0 slow=0] slowTotal=0 maxMs=0
+[510833][I][STORAGE] RAMSpool prioEnq p0=0 p1=0 p2=225 p3=0
+[510833][I][STORAGE] RAMSpool lanes p1=0/0 p2=0/2 p3=0/0
+[511075][I][STACK] TaskHardware watermark=14916B min=14916B
+[513052][I][STORAGE] worker ui refresh serviced uiRefreshServiceCount=80 uiDeferred=228 uiFlush=79 pressure=0 usedPct=5 pending=499
+[627556][I][STORAGE] worker ui refresh serviced uiRefreshServiceCount=98 uiDeferred=283 uiFlush=97 pressure=0 usedPct=5 pending=499
+[630844][I][HEAP] heap free=6247KB min=6226KB largest=6144KB frag=1% internalFree=60KB internalLargest=31KB psramFree=6186KB core=1/0% owner=WIFI_CAPTURE nets=6 pendingUpload=499 pendingEnrich=499
+[HEALTH] time=2026-08-08 06:24:59 src=ntp
+[HEALTH] heap used=2189/8435KB free=6247KB min=6226KB largest=6144KB frag=1%
+[HEALTH] internal used=183/243KB free=60KB min=40KB largest=31KB
+[HEALTH] psram used=2006/8192KB free=6186KB largest=6144KB
+[HEALTH] stack free_min: core0=15KB/22KB core1=13KB/18KB
+[HEALTH] core usage: core0=1% core1=0%
+[HEALTH] power=usb state=usb batt=100% 4763mV trend=0mV/min runtime=0min cap=1100mAh charging=0
+[HEALTH] radio=WIFI_CAPTURE wifi=0 ble=0 gps=0 nets=6 pendingUpload=499 pendingEnrich=499
+[HEALTH] subghz=NONE mode=OFF pkts=0 nodes=0
+[630847][I][STORAGE] RAMSpool enq=285 cons=285 inflight=0/1024 high=3 pressure=0 drop[full=0 big=0 noise=0 p3Evict=0 p3Drop=0 p2Drop=0 p1Fail=0] free=1024
+[630847][I][STORAGE] RAMSpool enqueue probe[ok=275 drop=0] device[ok=10 drop=0]
+[630847][I][STORAGE] RAMSpool worker probe[ok=16 sup=259 drop=0 fail=0 slow=0] device[ok=10 sup=0 drop=0 fail=0 slow=0] slowTotal=0 maxMs=0
+[630847][I][STORAGE] RAMSpool prioEnq p0=0 p1=0 p2=285 p3=0
+[630848][I][STORAGE] RAMSpool lanes p1=0/0 p2=0/2 p3=0/0
+[631099][I][STACK] TaskHardware watermark=14916B min=14916B
+[632563][I][STORAGE] worker ui refresh serviced uiRefreshServiceCount=99 uiDeferred=285 uiFlush=98 pressure=0 usedPct=5 pending=499
+[637567][I][STORAGE] worker ui refresh serviced uiRefreshServiceCount=100 uiDeferred=287 uiFlush=99 pressure=0 usedPct=5 pending=499
+[642572][I][STORAGE] worker ui refresh serviced uiRefreshServiceCount=101 uiDeferred=290 uiFlush=100 pressure=0 usedPct=5 pending=499
+[648058][I][STORAGE] worker ui refresh serviced uiRefreshServiceCount=102 uiDeferred=294 uiFlush=101 pressure=0 usedPct=5 pending=499
+[656514][I][STORAGE] worker ui refresh serviced uiRefreshServiceCount=103 uiDeferred=295 uiFlush=102 pressure=0 usedPct=5 pending=499
+[660847][I][HEAP] heap free=6247KB min=6226KB largest=6144KB frag=1% internalFree=60KB internalLargest=31KB psramFree=6186KB core=0/0% owner=WIFI_CAPTURE nets=6 pendingUpload=499 pendingEnrich=499
+[HEALTH] time=2026-08-08 06:25:29 src=ntp
+[HEALTH] heap used=2189/8435KB free=6247KB min=6226KB largest=6144KB frag=1%
+[HEALTH] internal used=183/243KB free=60KB min=40KB largest=31KB
+[HEALTH] psram used=2006/8192KB free=6186KB largest=6144KB
+[HEALTH] stack free_min: core0=15KB/22KB core1=13KB/18KB
+[HEALTH] core usage: core0=0% core1=0%
+[HEALTH] power=usb state=usb batt=100% 4763mV trend=0mV/min runtime=0min cap=1100mAh charging=0
+[HEALTH] radio=WIFI_CAPTURE wifi=0 ble=0 gps=0 nets=6 pendingUpload=499 pendingEnrich=499
+[HEALTH] subghz=NONE mode=OFF pkts=0 nodes=0
+[660849][I][STORAGE] RAMSpool enq=297 cons=297 inflight=0/1024 high=3 pressure=0 drop[full=0 big=0 noise=0 p3Evict=0 p3Drop=0 p2Drop=0 p1Fail=0] free=1024
+[660850][I][STORAGE] RAMSpool enqueue probe[ok=287 drop=0] device[ok=10 drop=0]
+[660850][I][STORAGE] RAMSpool worker probe[ok=16 sup=271 drop=0 fail=0 slow=0] device[ok=10 sup=0 drop=0 fail=0 slow=0] slowTotal=0 maxMs=0
+[660850][I][STORAGE] RAMSpool prioEnq p0=0 p1=0 p2=297 p3=0
+[660850][I][STORAGE] RAMSpool lanes p1=0/0 p2=0/2 p3=0/0
+[661102][I][STACK] TaskHardware watermark=14916B min=14916B
+[661250][I][STORAGE] Routine maintenance requests coalesced count=9 latest=dirty_summary source=ramspool_idle flags=dirty_summary|snapshot_lagged
+[661515][I][STORAGE] worker ui refresh serviced uiRefreshServiceCount=104 uiDeferred=297 uiFlush=103 pressure=0 usedPct=5 pending=499
+[666115][I][BTN] evt=B_SHORT consumed as display wake
+[BTN] evt=B_SHORT consumed as display wake
+[666294][I][CORE] Display resumed and refreshed
+[666295][I][STACK] TaskDisplay watermark=13128B min=13128B
+[666623][I][STORAGE] worker ui refresh serviced uiRefreshServiceCount=105 uiDeferred=299 uiFlush=104 pressure=0 usedPct=5 pending=499
+[669856][I][BTN] evt=B_SHORT screen=LORA overlay=NONE action=SCREEN_NEXT label=NEXT handled=1
+[BTN] evt=B_SHORT screen=LORA overlay=NONE action=SCREEN_NEXT label=NEXT handled=1
+[671687][I][BTN] evt=B_SHORT screen=MESHTASTIC overlay=NONE action=SCREEN_NEXT label=NEXT handled=1
+[BTN] evt=B_SHORT screen=MESHTASTIC overlay=NONE action=SCREEN_NEXT label=NEXT handled=1
+[675016][I][STORAGE] worker ui refresh serviced uiRefreshServiceCount=106 uiDeferred=307 uiFlush=105 pressure=0 usedPct=5 pending=503
+[678891][I][STORAGE] Maintenance requested reason=binary_checkpoint source=checkpoint_deferred_worker_batch flags=dirty_spool_index|snapshot_lagged|binary_checkpoint
+[680022][I][WIFI] Radio paused
+[680181][I][WIFI] Radio suspended
+[680325][W][CORE] TaskHardware slow section=capture_storage_maintenance ms=304 owner=STORAGE_MAINT pendingUpload=505 maintPending=1
+[680336][W][CORE] TaskHardware loop gap=316ms owner=STORAGE_MAINT pendingUpload=505 maintPending=1 suppressed=0
+[680440][I][STORAGE] RAMSpool worker paused inflight=0 lastInflight=0
+[680440][I][STORAGE] Exclusive window begin kind=maintenance reason=radio_owner_window workerPaused=1 displaySuspended=1
+[680441][I][STORAGE] Maintenance start reason=radio_owner_window budgetMs=5000 flags=dirty_spool_index|dirty_summary|snapshot_lagged|binary_checkpoint captureSafe=1
+[681014][I][STORAGE] worker ui refresh serviced uiRefreshServiceCount=107 uiDeferred=315 uiFlush=106 pressure=0 usedPct=5 pending=505
+[681015][W][STORAGE] worker metadata flush reason=radio_owner_window ms=437 ok=1 dirty=0
+[681015][I][STORAGE] worker metadata flush metadataFlushCount=6 reason=radio_owner_window entryMetadataDirtyPending=1 entryUiRefreshPending=1 metadataDirtyPending=0 uiDeferred=315 uiFlush=106 uiRefreshServiceCoun
+[681477][I][STORAGE] Maintenance continuity log wrote clean=1 reason=radio_owner_window completed=dirty_spool_index|dirty_summary|boot_safe_deferred_persist|snapshot_lagged|upload_enrich_cursor_dirty|binary_check
+[681478][I][STORAGE] Maintenance done reason=radio_owner_window actions=dirty_spool_index|dirty_summary|boot_safe_deferred_persist|snapshot_lagged|upload_enrich_cursor_dirty|binary_checkpoint|continuity_pass skip
+[681478][I][STORAGE] RAMSpool worker resumed
+[681479][I][STORAGE] Exclusive window end kind=maintenance result=capture_safe reason=radio_owner_window
+[681479][I][STORAGE] maintenance owner window ms=1040 captureSafe=1 remaining=none
+[681547][I][WIFI] Promiscuous: YES
+[681548][I][WIFI] Promiscuous mode started data=0
+[682852][I][BTN] evt=B_SHORT screen=WIFI overlay=NONE action=SCREEN_NEXT label=NEXT handled=1
+[BTN] evt=B_SHORT screen=WIFI overlay=NONE action=SCREEN_NEXT label=NEXT handled=1
+[685022][I][STORAGE] worker ui refresh serviced uiRefreshServiceCount=108 uiDeferred=317 uiFlush=107 pressure=0 usedPct=5 pending=505
+[686255][I][BTN] evt=B_SHORT screen=BADUSB overlay=NONE action=SCREEN_NEXT label=NEXT handled=1
+[BTN] evt=B_SHORT screen=BADUSB overlay=NONE action=SCREEN_NEXT label=NEXT handled=1
+[690853][I][HEAP] heap free=6247KB min=6226KB largest=6144KB frag=1% internalFree=60KB internalLargest=31KB psramFree=6186KB core=7/27% owner=WIFI_CAPTURE nets=6 pendingUpload=505 pendingEnrich=505
+[HEALTH] time=2026-08-08 06:25:59 src=ntp
+[HEALTH] heap used=2189/8435KB free=6247KB min=6226KB largest=6144KB frag=1%
+[HEALTH] internal used=183/243KB free=60KB min=40KB largest=31KB
+[HEALTH] psram used=2006/8192KB free=6186KB largest=6144KB
+[HEALTH] stack free_min: core0=15KB/22KB core1=13KB/18KB
+[HEALTH] core usage: core0=7% core1=27%
+[HEALTH] power=usb state=usb batt=100% 4696mV trend=-22mV/min runtime=0min cap=1100mAh charging=0
+[HEALTH] radio=WIFI_CAPTURE wifi=0 ble=0 gps=0 nets=6 pendingUpload=505 pendingEnrich=505
+[HEALTH] subghz=NONE mode=OFF pkts=0 nodes=0
+[690856][I][STORAGE] RAMSpool enq=319 cons=319 inflight=0/1024 high=4 pressure=0 drop[full=0 big=0 noise=0 p3Evict=0 p3Drop=0 p2Drop=0 p1Fail=0] free=1024
+[690856][I][STORAGE] RAMSpool enqueue probe[ok=308 drop=0] device[ok=11 drop=0]
+[690856][I][STORAGE] RAMSpool worker probe[ok=21 sup=287 drop=0 fail=0 slow=0] device[ok=11 sup=0 drop=0 fail=0 slow=0] slowTotal=0 maxMs=0
+[690857][I][STORAGE] RAMSpool prioEnq p0=0 p1=0 p2=319 p3=0
+[690857][I][STORAGE] RAMSpool lanes p1=0/0 p2=0/3 p3=0/0
+[690919][I][STORAGE] worker ui refresh serviced uiRefreshServiceCount=109 uiDeferred=319 uiFlush=108 pressure=0 usedPct=5 pending=505
+[691112][I][STACK] TaskHardware watermark=14916B min=14916B
+[691424][I][BTN] evt=B_SHORT screen=RECON overlay=NONE action=SCREEN_NEXT label=NEXT handled=1
+[BTN] evt=B_SHORT screen=RECON overlay=NONE action=SCREEN_NEXT label=NEXT handled=1
+[693480][I][BTN] evt=B_SHORT screen=SYSTEM overlay=NONE action=SCREEN_NEXT label=NEXT handled=1
+[BTN] evt=B_SHORT screen=SYSTEM overlay=NONE action=SCREEN_NEXT label=NEXT handled=1
+[696200][I][STACK] TaskDisplay watermark=12760B min=12760B
+[697934][I][BTN] evt=B_SHORT screen=BOOT_SUMMARY overlay=NONE action=SCREEN_NEXT label=NEXT handled=1
+[BTN] evt=B_SHORT screen=BOOT_SUMMARY overlay=NONE action=SCREEN_NEXT label=NEXT handled=1
+[807448][I][STORAGE] worker ui refresh serviced uiRefreshServiceCount=127 uiDeferred=379 uiFlush=126 pressure=0 usedPct=5 pending=506
+[808793][I][STORAGE] Routine maintenance requests coalesced count=8 latest=dirty_summary source=ramspool_idle flags=dirty_spool_index|dirty_summary|snapshot_lagged
+[810873][I][HEAP] heap free=6246KB min=6226KB largest=6144KB frag=1% internalFree=60KB internalLargest=31KB psramFree=6186KB core=0/0% owner=WIFI_CAPTURE nets=6 pendingUpload=506 pendingEnrich=506
+[HEALTH] time=2026-08-08 06:27:59 src=ntp
+[HEALTH] heap used=2189/8435KB free=6246KB min=6226KB largest=6144KB frag=1%
+[HEALTH] internal used=183/243KB free=60KB min=40KB largest=31KB
+[HEALTH] psram used=2006/8192KB free=6186KB largest=6144KB
+[HEALTH] stack free_min: core0=15KB/22KB core1=12KB/18KB
+[HEALTH] core usage: core0=0% core1=0%
+[HEALTH] power=usb state=usb batt=100% 4768mV trend=2mV/min runtime=0min cap=1100mAh charging=0
+[HEALTH] radio=WIFI_CAPTURE wifi=0 ble=0 gps=0 nets=6 pendingUpload=506 pendingEnrich=506
+[HEALTH] subghz=NONE mode=OFF pkts=0 nodes=0
+[810875][I][STORAGE] RAMSpool enq=381 cons=381 inflight=0/1024 high=4 pressure=0 drop[full=0 big=0 noise=0 p3Evict=0 p3Drop=0 p2Drop=0 p1Fail=0] free=1024
+[810876][I][STORAGE] RAMSpool enqueue probe[ok=370 drop=0] device[ok=11 drop=0]
+[810876][I][STORAGE] RAMSpool worker probe[ok=22 sup=348 drop=0 fail=0 slow=0] device[ok=11 sup=0 drop=0 fail=0 slow=0] slowTotal=0 maxMs=0
+[810876][I][STORAGE] RAMSpool prioEnq p0=0 p1=0 p2=381 p3=0
+[810876][I][STORAGE] RAMSpool lanes p1=0/0 p2=0/3 p3=0/0
+[811139][I][STACK] TaskHardware watermark=14916B min=14916B
+[817558][I][STORAGE] capture write allowed owner=WIFI_CAPTURE path=/events/counter.txt reason=capture_micro_idle ms=106 ok=1
+[817742][I][STORAGE] capture write allowed owner=WIFI_CAPTURE path=/events/meta.json reason=capture_micro_idle ms=183 ok=1
+[818054][I][STORAGE] capture write allowed owner=WIFI_CAPTURE path=/spool/index.json reason=capture_micro_idle ms=307 ok=1
+[818055][I][STORAGE] worker ui refresh serviced uiRefreshServiceCount=128 uiDeferred=383 uiFlush=127 pressure=0 usedPct=5 pending=506
+[818055][W][STORAGE] worker metadata flush reason=capture_micro_idle ms=603 ok=1 dirty=0
+[818055][I][STORAGE] worker metadata flush metadataFlushCount=7 reason=capture_micro_idle entryMetadataDirtyPending=1 entryUiRefreshPending=1 metadataDirtyPending=0 uiDeferred=383 uiFlush=127 uiRefreshServiceCoun
+[818056][W][CORE] TaskHardware slow section=capture_storage_maintenance ms=605 owner=WIFI_CAPTURE pendingUpload=506 maintPending=1
+[818066][W][CORE] TaskHardware loop gap=615ms owner=WIFI_CAPTURE pendingUpload=506 maintPending=1 suppressed=1
+[822457][I][STORAGE] worker ui refresh serviced uiRefreshServiceCount=129 uiDeferred=385 uiFlush=128 pressure=0 usedPct=5 pending=506
+[827464][I][STORAGE] worker ui refresh serviced uiRefreshServiceCount=130 uiDeferred=389 uiFlush=129 pressure=0 usedPct=5 pending=506
+[832779][I][STORAGE] worker ui refresh serviced uiRefreshServiceCount=131 uiDeferred=395 uiFlush=130 pressure=0 usedPct=5 pending=506
+[837780][I][STORAGE] worker ui refresh serviced uiRefreshServiceCount=132 uiDeferred=396 uiFlush=131 pressure=0 usedPct=5 pending=506
+[840881][I][HEAP] heap free=6246KB min=6226KB largest=6144KB frag=1% internalFree=60KB internalLargest=31KB psramFree=6186KB core=3/2% owner=WIFI_CAPTURE nets=6 pendingUpload=506 pendingEnrich=506
+[HEALTH] time=2026-08-08 06:28:29 src=ntp
+[HEALTH] heap used=2189/8435KB free=6246KB min=6226KB largest=6144KB frag=1%
+[HEALTH] internal used=183/243KB free=60KB min=40KB largest=31KB
+[HEALTH] psram used=2006/8192KB free=6186KB largest=6144KB
+[HEALTH] stack free_min: core0=15KB/22KB core1=12KB/18KB
+[HEALTH] core usage: core0=3% core1=2%
+[HEALTH] power=usb state=usb batt=100% 4767mV trend=1mV/min runtime=0min cap=1100mAh charging=0
+[HEALTH] radio=WIFI_CAPTURE wifi=0 ble=0 gps=0 nets=6 pendingUpload=506 pendingEnrich=506
+[HEALTH] subghz=NONE mode=OFF pkts=0 nodes=0
+[840883][I][STORAGE] RAMSpool enq=397 cons=397 inflight=0/1024 high=4 pressure=0 drop[full=0 big=0 noise=0 p3Evict=0 p3Drop=0 p2Drop=0 p1Fail=0] free=1024
+[840884][I][STORAGE] RAMSpool enqueue probe[ok=386 drop=0] device[ok=11 drop=0]
+[840884][I][STORAGE] RAMSpool worker probe[ok=22 sup=364 drop=0 fail=0 slow=0] device[ok=11 sup=0 drop=0 fail=0 slow=0] slowTotal=0 maxMs=0
+[840885][I][STORAGE] RAMSpool prioEnq p0=0 p1=0 p2=397 p3=0
+[840885][I][STORAGE] RAMSpool lanes p1=0/0 p2=0/3 p3=0/0
+[841148][I][STACK] TaskHardware watermark=14916B min=14916B
+[842780][I][STORAGE] worker ui refresh serviced uiRefreshServiceCount=133 uiDeferred=397 uiFlush=132 pressure=0 usedPct=5 pending=506
+[847783][I][STORAGE] worker ui refresh serviced uiRefreshServiceCount=134 uiDeferred=399 uiFlush=133 pressure=0 usedPct=5 pending=506
+[852784][I][STORAGE] worker ui refresh serviced uiRefreshServiceCount=135 uiDeferred=402 uiFlush=134 pressure=0 usedPct=5 pending=506
+[857787][I][STORAGE] worker ui refresh serviced uiRefreshServiceCount=136 uiDeferred=405 uiFlush=135 pressure=0 usedPct=5 pending=506
+[863587][I][STORAGE] worker ui refresh serviced uiRefreshServiceCount=137 uiDeferred=409 uiFlush=136 pressure=0 usedPct=5 pending=506
+[869563][I][STORAGE] worker ui refresh serviced uiRefreshServiceCount=138 uiDeferred=412 uiFlush=137 pressure=0 usedPct=5 pending=506
+[870889][I][HEAP] heap free=6246KB min=6226KB largest=6144KB frag=1% internalFree=60KB internalLargest=31KB psramFree=6186KB core=0/0% owner=WIFI_CAPTURE nets=6 pendingUpload=506 pendingEnrich=506
+[HEALTH] time=2026-08-08 06:28:59 src=ntp
+[HEALTH] heap used=2189/8435KB free=6246KB min=6226KB largest=6144KB frag=1%
+[HEALTH] internal used=183/243KB free=60KB min=40KB largest=31KB
+[HEALTH] psram used=2006/8192KB free=6186KB largest=6144KB
+[HEALTH] stack free_min: core0=15KB/22KB core1=12KB/18KB
+[HEALTH] core usage: core0=0% core1=0%
+[HEALTH] power=usb state=usb batt=100% 4766mV trend=23mV/min runtime=0min cap=1100mAh charging=1
+[HEALTH] radio=WIFI_CAPTURE wifi=0 ble=0 gps=0 nets=6 pendingUpload=506 pendingEnrich=506
+[HEALTH] subghz=NONE mode=OFF pkts=0 nodes=0
+[870891][I][STORAGE] RAMSpool enq=412 cons=412 inflight=0/1024 high=4 pressure=0 drop[full=0 big=0 noise=0 p3Evict=0 p3Drop=0 p2Drop=0 p1Fail=0] free=1024
+[870892][I][STORAGE] RAMSpool enqueue probe[ok=401 drop=0] device[ok=11 drop=0]
+[870892][I][STORAGE] RAMSpool worker probe[ok=22 sup=379 drop=0 fail=0 slow=0] device[ok=11 sup=0 drop=0 fail=0 slow=0] slowTotal=0 maxMs=0
+[870892][I][STORAGE] RAMSpool prioEnq p0=0 p1=0 p2=412 p3=0
+[870892][I][STORAGE] RAMSpool lanes p1=0/0 p2=0/3 p3=0/0
+[871155][I][STACK] TaskHardware watermark=14916B min=14916B
+[875567][I][STORAGE] worker ui refresh serviced uiRefreshServiceCount=139 uiDeferred=414 uiFlush=138 pressure=0 usedPct=5 pending=506
+[882029][I][STORAGE] worker ui refresh serviced uiRefreshServiceCount=140 uiDeferred=420 uiFlush=139 pressure=0 usedPct=5 pending=506
+[990911][I][HEAP] heap free=6246KB min=6226KB largest=6144KB frag=1% internalFree=60KB internalLargest=31KB psramFree=6186KB core=0/0% owner=WIFI_CAPTURE nets=6 pendingUpload=506 pendingEnrich=506
+[HEALTH] time=2026-08-08 06:30:59 src=ntp
+[HEALTH] heap used=2189/8435KB free=6246KB min=6226KB largest=6144KB frag=1%
+[HEALTH] internal used=183/243KB free=60KB min=40KB largest=31KB
+[HEALTH] psram used=2006/8192KB free=6186KB largest=6144KB
+[HEALTH] stack free_min: core0=15KB/22KB core1=12KB/18KB
+[HEALTH] core usage: core0=0% core1=0%
+[HEALTH] power=usb state=usb batt=100% 4772mV trend=1mV/min runtime=0min cap=1100mAh charging=0
+[HEALTH] radio=WIFI_CAPTURE wifi=0 ble=0 gps=0 nets=6 pendingUpload=506 pendingEnrich=506
+[HEALTH] subghz=NONE mode=OFF pkts=0 nodes=0
+[990913][I][STORAGE] RAMSpool enq=448 cons=448 inflight=0/1024 high=4 pressure=0 drop[full=0 big=0 noise=0 p3Evict=0 p3Drop=0 p2Drop=0 p1Fail=0] free=1024
+[990913][I][STORAGE] RAMSpool enqueue probe[ok=437 drop=0] device[ok=11 drop=0]
+[990914][I][STORAGE] RAMSpool worker probe[ok=22 sup=415 drop=0 fail=0 slow=0] device[ok=11 sup=0 drop=0 fail=0 slow=0] slowTotal=0 maxMs=0
+[990914][I][STORAGE] RAMSpool prioEnq p0=0 p1=0 p2=448 p3=0
+[990914][I][STORAGE] RAMSpool lanes p1=0/0 p2=0/3 p3=0/0
+[991177][I][STACK] TaskHardware watermark=14916B min=14916B
+[995916][I][STORAGE] worker ui refresh serviced uiRefreshServiceCount=154 uiDeferred=449 uiFlush=153 pressure=0 usedPct=5 pending=506
+[1000644][I][STORAGE] Routine maintenance requests coalesced count=7 latest=dirty_summary source=ramspool_idle flags=dirty_summary|snapshot_lagged
+[1000920][I][STORAGE] worker ui refresh serviced uiRefreshServiceCount=155 uiDeferred=455 uiFlush=154 pressure=0 usedPct=5 pending=506
+[1005924][I][STORAGE] worker ui refresh serviced uiRefreshServiceCount=156 uiDeferred=456 uiFlush=155 pressure=0 usedPct=5 pending=506
+[1010926][I][STORAGE] worker ui refresh serviced uiRefreshServiceCount=157 uiDeferred=459 uiFlush=156 pressure=0 usedPct=5 pending=506
+[1015930][I][STORAGE] worker ui refresh serviced uiRefreshServiceCount=158 uiDeferred=460 uiFlush=157 pressure=0 usedPct=5 pending=506
+[1020915][I][HEAP] heap free=6246KB min=6226KB largest=6144KB frag=1% internalFree=60KB internalLargest=31KB psramFree=6186KB core=0/0% owner=WIFI_CAPTURE nets=6 pendingUpload=506 pendingEnrich=506
+[HEALTH] time=2026-08-08 06:31:29 src=ntp
+[HEALTH] heap used=2189/8435KB free=6246KB min=6226KB largest=6144KB frag=1%
+[HEALTH] internal used=183/243KB free=60KB min=40KB largest=31KB
+[HEALTH] psram used=2006/8192KB free=6186KB largest=6144KB
+[HEALTH] stack free_min: core0=15KB/22KB core1=12KB/18KB
+[HEALTH] core usage: core0=0% core1=0%
+[HEALTH] power=usb state=usb batt=100% 4770mV trend=1mV/min runtime=0min cap=1100mAh charging=0
+[HEALTH] radio=WIFI_CAPTURE wifi=0 ble=0 gps=0 nets=6 pendingUpload=506 pendingEnrich=506
+[HEALTH] subghz=NONE mode=OFF pkts=0 nodes=0
+[1020917][I][STORAGE] RAMSpool enq=462 cons=462 inflight=0/1024 high=4 pressure=0 drop[full=0 big=0 noise=0 p3Evict=0 p3Drop=0 p2Drop=0 p1Fail=0] free=1024
+[1020918][I][STORAGE] RAMSpool enqueue probe[ok=451 drop=0] device[ok=11 drop=0]
+[1020918][I][STORAGE] RAMSpool worker probe[ok=22 sup=429 drop=0 fail=0 slow=0] device[ok=11 sup=0 drop=0 fail=0 slow=0] slowTotal=0 maxMs=0
+[1020918][I][STORAGE] RAMSpool prioEnq p0=0 p1=0 p2=462 p3=0
+[1020918][I][STORAGE] RAMSpool lanes p1=0/0 p2=0/3 p3=0/0
+[1020939][I][STORAGE] worker ui refresh serviced uiRefreshServiceCount=159 uiDeferred=462 uiFlush=158 pressure=0 usedPct=5 pending=506
+[1021181][I][STACK] TaskHardware watermark=14916B min=14916B
+[1025944][I][STORAGE] worker ui refresh serviced uiRefreshServiceCount=160 uiDeferred=464 uiFlush=159 pressure=0 usedPct=5 pending=506
+[1030952][I][STORAGE] worker ui refresh serviced uiRefreshServiceCount=161 uiDeferred=467 uiFlush=160 pressure=0 usedPct=5 pending=506
+[1035958][I][STORAGE] worker ui refresh serviced uiRefreshServiceCount=162 uiDeferred=469 uiFlush=161 pressure=0 usedPct=5 pending=506
+[1041341][I][STORAGE] worker ui refresh serviced uiRefreshServiceCount=163 uiDeferred=473 uiFlush=162 pressure=0 usedPct=5 pending=506
+[1046343][I][STORAGE] worker ui refresh serviced uiRefreshServiceCount=164 uiDeferred=475 uiFlush=163 pressure=0 usedPct=5 pending=506
+[1050917][I][HEAP] heap free=6246KB min=6226KB largest=6144KB frag=1% internalFree=60KB internalLargest=31KB psramFree=6186KB core=1/0% owner=WIFI_CAPTURE nets=6 pendingUpload=506 pendingEnrich=506
+[HEALTH] time=2026-08-08 06:31:59 src=ntp
+[HEALTH] heap used=2189/8435KB free=6246KB min=6226KB largest=6144KB frag=1%
+[HEALTH] internal used=183/243KB free=60KB min=40KB largest=31KB
+[HEALTH] psram used=2006/8192KB free=6186KB largest=6144KB
+[HEALTH] stack free_min: core0=15KB/22KB core1=12KB/18KB
+[HEALTH] core usage: core0=1% core1=0%
+[HEALTH] power=usb state=usb batt=100% 4767mV trend=0mV/min runtime=0min cap=1100mAh charging=0
+[HEALTH] radio=WIFI_CAPTURE wifi=0 ble=0 gps=0 nets=6 pendingUpload=506 pendingEnrich=506
+[HEALTH] subghz=NONE mode=OFF pkts=0 nodes=0
+[1050919][I][STORAGE] RAMSpool enq=476 cons=476 inflight=0/1024 high=4 pressure=0 drop[full=0 big=0 noise=0 p3Evict=0 p3Drop=0 p2Drop=0 p1Fail=0] free=1024
+[1050920][I][STORAGE] RAMSpool enqueue probe[ok=465 drop=0] device[ok=11 drop=0]
+[1050920][I][STORAGE] RAMSpool worker probe[ok=22 sup=443 drop=0 fail=0 slow=0] device[ok=11 sup=0 drop=0 fail=0 slow=0] slowTotal=0 maxMs=0
+[1050920][I][STORAGE] RAMSpool prioEnq p0=0 p1=0 p2=476 p3=0
+[1050920][I][STORAGE] RAMSpool lanes p1=0/0 p2=0/3 p3=0/0
+[1051184][I][STACK] TaskHardware watermark=14916B min=14916B
+[1051346][I][STORAGE] worker ui refresh serviced uiRefreshServiceCount=165 uiDeferred=478 uiFlush=164 pressure=0 usedPct=5 pending=506
+[1056672][I][STORAGE] worker ui refresh serviced uiRefreshServiceCount=166 uiDeferred=482 uiFlush=165 pressure=0 usedPct=5 pending=506
+[1168188][I][STORAGE] worker ui refresh serviced uiRefreshServiceCount=186 uiDeferred=544 uiFlush=185 pressure=0 usedPct=5 pending=506
+[1170938][I][HEAP] heap free=6246KB min=6226KB largest=6144KB frag=1% internalFree=60KB internalLargest=31KB psramFree=6186KB core=0/0% owner=WIFI_CAPTURE nets=6 pendingUpload=506 pendingEnrich=506
+[HEALTH] time=2026-08-08 06:33:59 src=ntp
+[HEALTH] heap used=2189/8435KB free=6246KB min=6226KB largest=6144KB frag=1%
+[HEALTH] internal used=183/243KB free=60KB min=40KB largest=31KB
+[HEALTH] psram used=2006/8192KB free=6186KB largest=6144KB
+[HEALTH] stack free_min: core0=15KB/22KB core1=12KB/18KB
+[HEALTH] core usage: core0=0% core1=0%
+[HEALTH] power=usb state=usb batt=100% 4766mV trend=-2mV/min runtime=0min cap=1100mAh charging=0
+[HEALTH] radio=WIFI_CAPTURE wifi=0 ble=0 gps=0 nets=6 pendingUpload=506 pendingEnrich=506
+[HEALTH] subghz=NONE mode=OFF pkts=0 nodes=0
+[1170940][I][STORAGE] RAMSpool enq=544 cons=544 inflight=0/1024 high=4 pressure=0 drop[full=0 big=0 noise=0 p3Evict=0 p3Drop=0 p2Drop=0 p1Fail=0] free=1024
+[1170941][I][STORAGE] RAMSpool enqueue probe[ok=533 drop=0] device[ok=11 drop=0]
+[1170941][I][STORAGE] RAMSpool worker probe[ok=22 sup=511 drop=0 fail=0 slow=0] device[ok=11 sup=0 drop=0 fail=0 slow=0] slowTotal=0 maxMs=0
+[1170941][I][STORAGE] RAMSpool prioEnq p0=0 p1=0 p2=544 p3=0
+[1170941][I][STORAGE] RAMSpool lanes p1=0/0 p2=0/3 p3=0/0
+[1171195][I][STACK] TaskHardware watermark=14916B min=14916B
+[1173189][I][STORAGE] worker ui refresh serviced uiRefreshServiceCount=187 uiDeferred=546 uiFlush=186 pressure=0 usedPct=5 pending=506
+[1180622][I][STORAGE] worker ui refresh serviced uiRefreshServiceCount=188 uiDeferred=550 uiFlush=187 pressure=0 usedPct=5 pending=506
+[1196714][I][STORAGE] worker ui refresh serviced uiRefreshServiceCount=189 uiDeferred=551 uiFlush=188 pressure=0 usedPct=5 pending=506
+[1199848][I][STORAGE] Routine maintenance requests coalesced count=3 latest=dirty_summary source=ramspool_idle flags=dirty_summary|snapshot_lagged
+[1200941][I][HEAP] heap free=6246KB min=6226KB largest=6144KB frag=1% internalFree=60KB internalLargest=31KB psramFree=6186KB core=0/0% owner=WIFI_CAPTURE nets=6 pendingUpload=506 pendingEnrich=506
+[HEALTH] time=2026-08-08 06:34:29 src=ntp
+[HEALTH] heap used=2189/8435KB free=6246KB min=6226KB largest=6144KB frag=1%
+[HEALTH] internal used=183/243KB free=60KB min=40KB largest=31KB
+[HEALTH] psram used=2006/8192KB free=6186KB largest=6144KB
+[HEALTH] stack free_min: core0=15KB/22KB core1=12KB/18KB
+[HEALTH] core usage: core0=0% core1=0%
+[HEALTH] power=usb state=usb batt=100% 4767mV trend=-1mV/min runtime=0min cap=1100mAh charging=0
+[HEALTH] radio=WIFI_CAPTURE wifi=0 ble=0 gps=0 nets=6 pendingUpload=506 pendingEnrich=506
+[HEALTH] subghz=NONE mode=OFF pkts=0 nodes=0
+[1200943][I][STORAGE] RAMSpool enq=554 cons=554 inflight=0/1024 high=4 pressure=0 drop[full=0 big=0 noise=0 p3Evict=0 p3Drop=0 p2Drop=0 p1Fail=0] free=1024
+[1200944][I][STORAGE] RAMSpool enqueue probe[ok=543 drop=0] device[ok=11 drop=0]
+[1200944][I][STORAGE] RAMSpool worker probe[ok=22 sup=521 drop=0 fail=0 slow=0] device[ok=11 sup=0 drop=0 fail=0 slow=0] slowTotal=0 maxMs=0
+[1200944][I][STORAGE] RAMSpool prioEnq p0=0 p1=0 p2=554 p3=0
+[1200944][I][STORAGE] RAMSpool lanes p1=0/0 p2=0/3 p3=0/0
+[1201195][I][STACK] TaskHardware watermark=14916B min=14916B
+[1201721][I][STORAGE] worker ui refresh serviced uiRefreshServiceCount=190 uiDeferred=554 uiFlush=189 pressure=0 usedPct=5 pending=506
+[1206727][I][STORAGE] worker ui refresh serviced uiRefreshServiceCount=191 uiDeferred=556 uiFlush=190 pressure=0 usedPct=5 pending=506
+[1211731][I][STORAGE] worker ui refresh serviced uiRefreshServiceCount=192 uiDeferred=557 uiFlush=191 pressure=0 usedPct=5 pending=506
+[1217521][I][STORAGE] worker ui refresh serviced uiRefreshServiceCount=193 uiDeferred=559 uiFlush=192 pressure=0 usedPct=5 pending=506
+[1223521][I][STORAGE] worker ui refresh serviced uiRefreshServiceCount=194 uiDeferred=561 uiFlush=193 pressure=0 usedPct=5 pending=506
+[1229459][I][STORAGE] worker ui refresh serviced uiRefreshServiceCount=195 uiDeferred=563 uiFlush=194 pressure=0 usedPct=5 pending=506
+[1230947][I][HEAP] heap free=6246KB min=6226KB largest=6144KB frag=1% internalFree=60KB internalLargest=31KB psramFree=6186KB core=0/0% owner=WIFI_CAPTURE nets=6 pendingUpload=506 pendingEnrich=506
+[HEALTH] time=2026-08-08 06:34:59 src=ntp
+[HEALTH] heap used=2189/8435KB free=6246KB min=6226KB largest=6144KB frag=1%
+[HEALTH] internal used=183/243KB free=60KB min=40KB largest=31KB
+[HEALTH] psram used=2006/8192KB free=6186KB largest=6144KB
+[HEALTH] stack free_min: core0=15KB/22KB core1=12KB/18KB
+[HEALTH] core usage: core0=0% core1=0%
+[HEALTH] power=usb state=usb batt=100% 4766mV trend=0mV/min runtime=0min cap=1100mAh charging=0
+[HEALTH] radio=WIFI_CAPTURE wifi=0 ble=0 gps=0 nets=6 pendingUpload=506 pendingEnrich=506
+[HEALTH] subghz=NONE mode=OFF pkts=0 nodes=0
+[1230949][I][STORAGE] RAMSpool enq=563 cons=563 inflight=0/1024 high=4 pressure=0 drop[full=0 big=0 noise=0 p3Evict=0 p3Drop=0 p2Drop=0 p1Fail=0] free=1024
+[1230949][I][STORAGE] RAMSpool enqueue probe[ok=552 drop=0] device[ok=11 drop=0]
+[1230950][I][STORAGE] RAMSpool worker probe[ok=22 sup=530 drop=0 fail=0 slow=0] device[ok=11 sup=0 drop=0 fail=0 slow=0] slowTotal=0 maxMs=0
+[1230950][I][STORAGE] RAMSpool prioEnq p0=0 p1=0 p2=563 p3=0
+[1230950][I][STORAGE] RAMSpool lanes p1=0/0 p2=0/3 p3=0/0
+[1231201][I][STACK] TaskHardware watermark=14916B min=14916B
+[1235891][I][STORAGE] worker ui refresh serviced uiRefreshServiceCount=196 uiDeferred=565 uiFlush=195 pressure=0 usedPct=5 pending=506
+[1241921][I][STORAGE] worker ui refresh serviced uiRefreshServiceCount=197 uiDeferred=566 uiFlush=196 pressure=0 usedPct=5 pending=506
+[1350667][I][STORAGE] worker ui refresh serviced uiRefreshServiceCount=215 uiDeferred=608 uiFlush=214 pressure=0 usedPct=5 pending=507
+[1350969][I][HEAP] heap free=6246KB min=6226KB largest=6144KB frag=1% internalFree=60KB internalLargest=31KB psramFree=6186KB core=1/0% owner=WIFI_CAPTURE nets=6 pendingUpload=507 pendingEnrich=507
+[HEALTH] time=2026-08-08 06:36:59 src=ntp
+[HEALTH] heap used=2189/8435KB free=6246KB min=6226KB largest=6144KB frag=1%
+[HEALTH] internal used=183/243KB free=60KB min=40KB largest=31KB
+[HEALTH] psram used=2006/8192KB free=6186KB largest=6144KB
+[HEALTH] stack free_min: core0=15KB/22KB core1=12KB/18KB
+[HEALTH] core usage: core0=1% core1=0%
+[HEALTH] power=usb state=usb batt=100% 4764mV trend=-1mV/min runtime=0min cap=1100mAh charging=0
+[HEALTH] radio=WIFI_CAPTURE wifi=0 ble=0 gps=0 nets=6 pendingUpload=507 pendingEnrich=507
+[HEALTH] subghz=NONE mode=OFF pkts=0 nodes=0
+[1350971][I][STORAGE] RAMSpool enq=608 cons=608 inflight=0/1024 high=4 pressure=0 drop[full=0 big=0 noise=0 p3Evict=0 p3Drop=0 p2Drop=0 p1Fail=0] free=1024
+[1350972][I][STORAGE] RAMSpool enqueue probe[ok=597 drop=0] device[ok=11 drop=0]
+[1350972][I][STORAGE] RAMSpool worker probe[ok=23 sup=574 drop=0 fail=0 slow=0] device[ok=11 sup=0 drop=0 fail=0 slow=0] slowTotal=0 maxMs=0
+[1350972][I][STORAGE] RAMSpool prioEnq p0=0 p1=0 p2=608 p3=0
+[1350972][I][STORAGE] RAMSpool lanes p1=0/0 p2=0/3 p3=0/0
+[1351225][I][STACK] TaskHardware watermark=14916B min=14916B
+[1356520][I][STORAGE] worker ui refresh serviced uiRefreshServiceCount=216 uiDeferred=612 uiFlush=215 pressure=0 usedPct=5 pending=507
+[1361527][I][STORAGE] worker ui refresh serviced uiRefreshServiceCount=217 uiDeferred=616 uiFlush=216 pressure=0 usedPct=5 pending=507
+[1366531][I][STORAGE] worker ui refresh serviced uiRefreshServiceCount=218 uiDeferred=623 uiFlush=217 pressure=0 usedPct=5 pending=507
+[1372465][I][STORAGE] worker ui refresh serviced uiRefreshServiceCount=219 uiDeferred=625 uiFlush=218 pressure=0 usedPct=5 pending=507
+[1377472][I][STORAGE] worker ui refresh serviced uiRefreshServiceCount=220 uiDeferred=628 uiFlush=219 pressure=0 usedPct=5 pending=507
+[1380970][I][HEAP] heap free=6246KB min=6226KB largest=6144KB frag=1% internalFree=60KB internalLargest=31KB psramFree=6186KB core=0/0% owner=WIFI_CAPTURE nets=6 pendingUpload=507 pendingEnrich=507
+[HEALTH] time=2026-08-08 06:37:29 src=ntp
+[HEALTH] heap used=2189/8435KB free=6246KB min=6226KB largest=6144KB frag=1%
+[HEALTH] internal used=183/243KB free=60KB min=40KB largest=31KB
+[HEALTH] psram used=2006/8192KB free=6186KB largest=6144KB
+[HEALTH] stack free_min: core0=15KB/22KB core1=12KB/18KB
+[HEALTH] core usage: core0=0% core1=0%
+[HEALTH] power=usb state=usb batt=100% 4764mV trend=-1mV/min runtime=0min cap=1100mAh charging=0
+[HEALTH] radio=WIFI_CAPTURE wifi=0 ble=0 gps=0 nets=6 pendingUpload=507 pendingEnrich=507
+[HEALTH] subghz=NONE mode=OFF pkts=0 nodes=0
+[1380973][I][STORAGE] RAMSpool enq=628 cons=628 inflight=0/1024 high=4 pressure=0 drop[full=0 big=0 noise=0 p3Evict=0 p3Drop=0 p2Drop=0 p1Fail=0] free=1024
+[1380973][I][STORAGE] RAMSpool enqueue probe[ok=617 drop=0] device[ok=11 drop=0]
+[1380973][I][STORAGE] RAMSpool worker probe[ok=23 sup=594 drop=0 fail=0 slow=0] device[ok=11 sup=0 drop=0 fail=0 slow=0] slowTotal=0 maxMs=0
+[1380974][I][STORAGE] RAMSpool prioEnq p0=0 p1=0 p2=628 p3=0
+[1380974][I][STORAGE] RAMSpool lanes p1=0/0 p2=0/3 p3=0/0
+[1381225][I][STACK] TaskHardware watermark=14916B min=14916B
+[1383176][I][STORAGE] worker ui refresh serviced uiRefreshServiceCount=221 uiDeferred=629 uiFlush=220 pressure=0 usedPct=5 pending=507
+[1389623][I][STORAGE] worker ui refresh serviced uiRefreshServiceCount=222 uiDeferred=631 uiFlush=221 pressure=0 usedPct=5 pending=507
+[1399795][I][STORAGE] capture write allowed owner=WIFI_CAPTURE path=/events/counter.txt reason=capture_micro_idle ms=75 ok=1
+[1399889][I][STORAGE] capture write allowed owner=WIFI_CAPTURE path=/events/meta.json reason=capture_micro_idle ms=94 ok=1
+[1400453][I][STORAGE] capture write allowed owner=WIFI_CAPTURE path=/spool/index.json reason=capture_micro_idle ms=559 ok=1
+[1400454][W][STORAGE] worker metadata flush reason=capture_micro_idle ms=734 ok=1 dirty=0
+[1400454][I][STORAGE] worker metadata flush metadataFlushCount=8 reason=capture_micro_idle entryMetadataDirtyPending=1 entryUiRefreshPending=0 metadataDirtyPending=0 uiDeferred=631 uiFlush=221 uiRefreshServiceCoun
+[1400455][W][CORE] TaskHardware slow section=capture_storage_maintenance ms=736 owner=WIFI_CAPTURE pendingUpload=507 maintPending=0
+[1400465][W][CORE] TaskHardware loop gap=746ms owner=WIFI_CAPTURE pendingUpload=507 maintPending=0 suppressed=0
+[1401615][I][STORAGE] Routine maintenance requests coalesced count=6 latest=snapshot_lagged source=ramspool_batch flags=snapshot_lagged
+[1404729][I][STORAGE] worker ui refresh serviced uiRefreshServiceCount=223 uiDeferred=633 uiFlush=222 pressure=0 usedPct=5 pending=507
+[1409734][I][STORAGE] worker ui refresh serviced uiRefreshServiceCount=224 uiDeferred=634 uiFlush=223 pressure=0 usedPct=5 pending=507
+[1410975][I][HEAP] heap free=6246KB min=6226KB largest=6144KB frag=1% internalFree=60KB internalLargest=31KB psramFree=6186KB core=3/2% owner=WIFI_CAPTURE nets=6 pendingUpload=507 pendingEnrich=507
+[HEALTH] time=2026-08-08 06:37:59 src=ntp
+[HEALTH] heap used=2189/8435KB free=6246KB min=6226KB largest=6144KB frag=1%
+[HEALTH] internal used=183/243KB free=60KB min=39KB largest=31KB
+[HEALTH] psram used=2006/8192KB free=6186KB largest=6144KB
+[HEALTH] stack free_min: core0=15KB/22KB core1=12KB/18KB
+[HEALTH] core usage: core0=3% core1=2%
+[HEALTH] power=usb state=usb batt=100% 4764mV trend=-1mV/min runtime=0min cap=1100mAh charging=0
+[HEALTH] radio=WIFI_CAPTURE wifi=0 ble=0 gps=0 nets=6 pendingUpload=507 pendingEnrich=507
+[HEALTH] subghz=NONE mode=OFF pkts=0 nodes=0
+[1410977][I][STORAGE] RAMSpool enq=637 cons=637 inflight=0/1024 high=4 pressure=0 drop[full=0 big=0 noise=0 p3Evict=0 p3Drop=0 p2Drop=0 p1Fail=0] free=1024
+[1410977][I][STORAGE] RAMSpool enqueue probe[ok=626 drop=0] device[ok=11 drop=0]
+[1410978][I][STORAGE] RAMSpool worker probe[ok=23 sup=603 drop=0 fail=0 slow=0] device[ok=11 sup=0 drop=0 fail=0 slow=0] slowTotal=0 maxMs=0
+[1410978][I][STORAGE] RAMSpool prioEnq p0=0 p1=0 p2=637 p3=0
+[1410978][I][STORAGE] RAMSpool lanes p1=0/0 p2=0/3 p3=0/0
+[1411230][I][STACK] TaskHardware watermark=14916B min=14916B
+[1414740][I][STORAGE] worker ui refresh serviced uiRefreshServiceCount=225 uiDeferred=637 uiFlush=224 pressure=0 usedPct=5 pending=507
+[1419747][I][STORAGE] worker ui refresh serviced uiRefreshServiceCount=226 uiDeferred=638 uiFlush=225 pressure=0 usedPct=5 pending=508
+[1424749][I][STORAGE] worker ui refresh serviced uiRefreshServiceCount=227 uiDeferred=647 uiFlush=226 pressure=0 usedPct=5 pending=510
+[1530983][I][HEAP] heap free=6246KB min=6226KB largest=6144KB frag=1% internalFree=60KB internalLargest=31KB psramFree=6186KB core=0/0% owner=WIFI_CAPTURE nets=6 pendingUpload=512 pendingEnrich=512
+[HEALTH] time=2026-08-08 06:39:59 src=ntp
+[HEALTH] heap used=2189/8435KB free=6246KB min=6226KB largest=6144KB frag=1%
+[HEALTH] internal used=183/243KB free=60KB min=39KB largest=31KB
+[HEALTH] psram used=2006/8192KB free=6186KB largest=6144KB
+[HEALTH] stack free_min: core0=15KB/22KB core1=12KB/18KB
+[HEALTH] core usage: core0=0% core1=0%
+[HEALTH] power=usb state=usb batt=100% 4763mV trend=0mV/min runtime=0min cap=1100mAh charging=0
+[HEALTH] radio=WIFI_CAPTURE wifi=0 ble=0 gps=0 nets=6 pendingUpload=512 pendingEnrich=512
+[HEALTH] subghz=NONE mode=OFF pkts=0 nodes=0
+[1530985][I][STORAGE] RAMSpool enq=693 cons=693 inflight=0/1024 high=4 pressure=0 drop[full=0 big=0 noise=0 p3Evict=0 p3Drop=0 p2Drop=0 p1Fail=0] free=1024
+[1530986][I][STORAGE] RAMSpool enqueue probe[ok=681 drop=0] device[ok=12 drop=0]
+[1530986][I][STORAGE] RAMSpool worker probe[ok=27 sup=654 drop=0 fail=0 slow=0] device[ok=12 sup=0 drop=0 fail=0 slow=0] slowTotal=0 maxMs=0
+[1530986][I][STORAGE] RAMSpool prioEnq p0=0 p1=0 p2=693 p3=0
+[1530986][I][STORAGE] RAMSpool lanes p1=0/0 p2=0/3 p3=0/0
+[1531240][I][STACK] TaskHardware watermark=14916B min=14916B
+[1531834][I][STORAGE] worker ui refresh serviced uiRefreshServiceCount=245 uiDeferred=695 uiFlush=244 pressure=0 usedPct=5 pending=512
+[1539253][I][STORAGE] worker ui refresh serviced uiRefreshServiceCount=246 uiDeferred=697 uiFlush=245 pressure=0 usedPct=5 pending=512
+[1551614][I][STORAGE] worker ui refresh serviced uiRefreshServiceCount=247 uiDeferred=698 uiFlush=246 pressure=0 usedPct=5 pending=512
+[1556620][I][STORAGE] worker ui refresh serviced uiRefreshServiceCount=248 uiDeferred=699 uiFlush=247 pressure=0 usedPct=5 pending=512
+[1558406][I][STORAGE] Routine maintenance requests coalesced count=4 latest=dirty_summary source=ramspool_idle flags=dirty_summary|snapshot_lagged
+[1560992][I][HEAP] heap free=6246KB min=6226KB largest=6144KB frag=1% internalFree=60KB internalLargest=31KB psramFree=6186KB core=0/0% owner=WIFI_CAPTURE nets=6 pendingUpload=512 pendingEnrich=512
+[HEALTH] time=2026-08-08 06:40:29 src=ntp
+[HEALTH] heap used=2189/8435KB free=6246KB min=6226KB largest=6144KB frag=1%
+[HEALTH] internal used=183/243KB free=60KB min=39KB largest=31KB
+[HEALTH] psram used=2006/8192KB free=6186KB largest=6144KB
+[HEALTH] stack free_min: core0=15KB/22KB core1=12KB/18KB
+[HEALTH] core usage: core0=0% core1=0%
+[HEALTH] power=usb state=usb batt=100% 4764mV trend=0mV/min runtime=0min cap=1100mAh charging=0
+[HEALTH] radio=WIFI_CAPTURE wifi=0 ble=0 gps=0 nets=6 pendingUpload=512 pendingEnrich=512
+[HEALTH] subghz=NONE mode=OFF pkts=0 nodes=0
+[1560994][I][STORAGE] RAMSpool enq=700 cons=700 inflight=0/1024 high=4 pressure=0 drop[full=0 big=0 noise=0 p3Evict=0 p3Drop=0 p2Drop=0 p1Fail=0] free=1024
+[1560995][I][STORAGE] RAMSpool enqueue probe[ok=688 drop=0] device[ok=12 drop=0]
+[1560995][I][STORAGE] RAMSpool worker probe[ok=27 sup=661 drop=0 fail=0 slow=0] device[ok=12 sup=0 drop=0 fail=0 slow=0] slowTotal=0 maxMs=0
+[1560995][I][STORAGE] RAMSpool prioEnq p0=0 p1=0 p2=700 p3=0
+[1560995][I][STORAGE] RAMSpool lanes p1=0/0 p2=0/3 p3=0/0
+[1561246][I][STACK] TaskHardware watermark=14916B min=14916B
+[1561622][I][STORAGE] worker ui refresh serviced uiRefreshServiceCount=249 uiDeferred=700 uiFlush=248 pressure=0 usedPct=5 pending=512
+[1566630][I][STORAGE] worker ui refresh serviced uiRefreshServiceCount=250 uiDeferred=701 uiFlush=249 pressure=0 usedPct=5 pending=512
+[1571639][I][STORAGE] worker ui refresh serviced uiRefreshServiceCount=251 uiDeferred=705 uiFlush=250 pressure=0 usedPct=5 pending=512
+[1576646][I][STORAGE] worker ui refresh serviced uiRefreshServiceCount=252 uiDeferred=706 uiFlush=251 pressure=0 usedPct=5 pending=512
+[1581653][I][STORAGE] worker ui refresh serviced uiRefreshServiceCount=253 uiDeferred=707 uiFlush=252 pressure=0 usedPct=5 pending=512
+[1586661][I][STORAGE] worker ui refresh serviced uiRefreshServiceCount=254 uiDeferred=708 uiFlush=253 pressure=0 usedPct=5 pending=512
+[1590996][I][HEAP] heap free=6246KB min=6226KB largest=6144KB frag=1% internalFree=60KB internalLargest=31KB psramFree=6186KB core=0/0% owner=WIFI_CAPTURE nets=6 pendingUpload=512 pendingEnrich=512
+[HEALTH] time=2026-08-08 06:40:59 src=ntp
+[HEALTH] heap used=2189/8435KB free=6246KB min=6226KB largest=6144KB frag=1%
+[HEALTH] internal used=183/243KB free=60KB min=39KB largest=31KB
+[HEALTH] psram used=2006/8192KB free=6186KB largest=6144KB
+[HEALTH] stack free_min: core0=15KB/22KB core1=12KB/18KB
+[HEALTH] core usage: core0=0% core1=0%
+[HEALTH] power=usb state=usb batt=100% 4762mV trend=-1mV/min runtime=0min cap=1100mAh charging=0
+[HEALTH] radio=WIFI_CAPTURE wifi=0 ble=0 gps=0 nets=6 pendingUpload=512 pendingEnrich=512
+[HEALTH] subghz=NONE mode=OFF pkts=0 nodes=0
+[1590998][I][STORAGE] RAMSpool enq=712 cons=712 inflight=0/1024 high=4 pressure=0 drop[full=0 big=0 noise=0 p3Evict=0 p3Drop=0 p2Drop=0 p1Fail=0] free=1024
+[1590999][I][STORAGE] RAMSpool enqueue probe[ok=700 drop=0] device[ok=12 drop=0]
+[1590999][I][STORAGE] RAMSpool worker probe[ok=27 sup=673 drop=0 fail=0 slow=0] device[ok=12 sup=0 drop=0 fail=0 slow=0] slowTotal=0 maxMs=0
+[1590999][I][STORAGE] RAMSpool prioEnq p0=0 p1=0 p2=712 p3=0
+[1590999][I][STORAGE] RAMSpool lanes p1=0/0 p2=0/3 p3=0/0
+[1591251][I][STACK] TaskHardware watermark=14916B min=14916B
+[1591667][I][STORAGE] worker ui refresh serviced uiRefreshServiceCount=255 uiDeferred=712 uiFlush=254 pressure=0 usedPct=5 pending=512
+[1596673][I][STORAGE] worker ui refresh serviced uiRefreshServiceCount=256 uiDeferred=714 uiFlush=255 pressure=0 usedPct=5 pending=512
+[1717744][I][STORAGE] worker ui refresh serviced uiRefreshServiceCount=275 uiDeferred=757 uiFlush=274 pressure=0 usedPct=5 pending=512
+[1730185][I][STORAGE] worker ui refresh serviced uiRefreshServiceCount=276 uiDeferred=759 uiFlush=275 pressure=0 usedPct=5 pending=512
+[1736197][I][STORAGE] worker ui refresh serviced uiRefreshServiceCount=277 uiDeferred=761 uiFlush=276 pressure=0 usedPct=5 pending=512
+[1737371][I][STORAGE] Routine maintenance requests coalesced count=5 latest=dirty_summary source=ramspool_idle flags=dirty_summary|snapshot_lagged
+[1741028][I][HEAP] heap free=6246KB min=6226KB largest=6144KB frag=1% internalFree=60KB internalLargest=31KB psramFree=6186KB core=0/0% owner=WIFI_CAPTURE nets=6 pendingUpload=512 pendingEnrich=512
+[HEALTH] time=2026-08-08 06:43:29 src=ntp
+[HEALTH] heap used=2189/8435KB free=6246KB min=6226KB largest=6144KB frag=1%
+[HEALTH] internal used=183/243KB free=60KB min=39KB largest=31KB
+[HEALTH] psram used=2006/8192KB free=6186KB largest=6144KB
+[HEALTH] stack free_min: core0=15KB/22KB core1=12KB/18KB
+[HEALTH] core usage: core0=0% core1=0%
+[HEALTH] power=usb state=usb batt=100% 4762mV trend=-1mV/min runtime=0min cap=1100mAh charging=0
+[HEALTH] radio=WIFI_CAPTURE wifi=0 ble=0 gps=0 nets=6 pendingUpload=512 pendingEnrich=512
+[HEALTH] subghz=NONE mode=OFF pkts=0 nodes=0
+[1741031][I][STORAGE] RAMSpool enq=762 cons=762 inflight=0/1024 high=4 pressure=0 drop[full=0 big=0 noise=0 p3Evict=0 p3Drop=0 p2Drop=0 p1Fail=0] free=1024
+[1741031][I][STORAGE] RAMSpool enqueue probe[ok=750 drop=0] device[ok=12 drop=0]
+[1741031][I][STORAGE] RAMSpool worker probe[ok=27 sup=723 drop=0 fail=0 slow=0] device[ok=12 sup=0 drop=0 fail=0 slow=0] slowTotal=0 maxMs=0
+[1741032][I][STORAGE] RAMSpool prioEnq p0=0 p1=0 p2=762 p3=0
+[1741032][I][STORAGE] RAMSpool lanes p1=0/0 p2=0/3 p3=0/0
+[1741203][I][STORAGE] worker ui refresh serviced uiRefreshServiceCount=278 uiDeferred=762 uiFlush=277 pressure=0 usedPct=5 pending=512
+[1741264][I][STACK] TaskHardware watermark=14916B min=14916B
+[1746204][I][STORAGE] worker ui refresh serviced uiRefreshServiceCount=279 uiDeferred=764 uiFlush=278 pressure=0 usedPct=5 pending=512

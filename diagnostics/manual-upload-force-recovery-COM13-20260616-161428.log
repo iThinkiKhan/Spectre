@@ -1,0 +1,54 @@
+SERIAL_OPENED COM13
+WROTE upload now
+upload now
+[UPLOAD] pending count not authoritative; forcing indexed recovery drain pending=217
+[29102][I][WIFI] Radio paused
+[29109][I][STORAGE] RAMSpool worker paused inflight=0 lastInflight=0
+[29109][I][STORAGE] Exclusive window begin kind=upload reason=upload_index workerPaused=1 displaySuspended=1
+[29110][W][STORAGE] Upload index window reduced reason=heap_guard pending=217 requested=217 window=64 estimate=4608 maxAlloc=6404 psramLargest=7733236 psramFree=7822560 internalLargest=31732 internalFree=48484 m
+[29169][I][STORAGE] Upload index rebuild begin pending=217 window=64 heapFree=7876412 largest=7733236
+NO_DATA_10S
+[41383][I][STORAGE] Upload index rebuild progress segs=25 indexed=23 window=64 heapFree=7784480 largest=7733236
+[44770][I][STORAGE] Upload index rebuild progress segs=50 indexed=36 window=64 heapFree=7621452 largest=7602164
+[48691][I][STORAGE] Upload index window full indexed=64 window=64 stopSeg=72
+[48694][I][STORAGE] Upload window rebuild accepted indexed=64 window=64 pending=217 sessions=6 skipped=0 failedSegs=0 sidecarLoaded=0 sidecarStale=71 truncated=1 heapFree=7489236 largest=7471092
+[48695][I][STORAGE] Upload index prepare rebuilt=1 indexed=64 sessions=6 skipped=0 failedSegs=0 ms=19585 fallback=0
+[48700][I][MQTT] Dump start � pendingUpload=217 lease=150s leaseMaxEvents=217
+[48701][I][MQTT] Upload stream fill begin bucket=1 max=4 requested=64 internalFree=5296 indexWindow=64 indexed=64 truncated=1 sessions=6 sessionIndex=0 radioQuiet=1
+[48701][I][MQTT] Upload bucket session start idx=0 sess=33e864-3480-e0163c81 bucket=0
+[48702][I][MQTT] First event batch fetch session=33e864-3480-e0163c81 since=4448 radioQuiet=1
+[48727][I][MQTT] Upload RAM bucket staged bucket=1 records=1 lastEvent=4449 heapFree=280 psramFree=7477752
+[48731][I][MQTT] First event batch fetched ok=1 count=4 ms=23 radioQuiet=1
+[48732][I][MQTT] Upload stream fill done bucket=1 records=4 complete=0 ms=31
+[48732][I][STORAGE] Upload batch open � deferring watermark flush
+[48733][I][MQTT] Upload lease granted � pending=217 window=217 lease=150s
+[UPLOAD] manual upload queued pending=217
+[48737][I][MQTT] Connecting to upload network: Nothing But Net timeout=30s txPowerQdbm=32
+[48737][E][CORE] Contract violation: repair pending owner=WIFI_UPLOAD flags=dirty_spool_index|dirty_summary|boot_safe_deferred_persist|snapshot_lagged|counter_untrusted|segment_audit|fs_audit
+[48739][I][STACK] TaskHardware watermark=14800B min=14800B
+[48746][I][HEAP] heap free=7306KB min=7301KB largest=7296KB frag=0% psramFree=7302KB core=0/0% owner=WIFI_UPLOAD nets=10 pendingUpload=? pendingEnrich=0
+[HEALTH] uptime=0h00m48s
+[HEALTH] heap used=1116/8422KB free=7306KB min=7301KB largest=7296KB frag=0%
+[HEALTH] psram used=890/8192KB free=7302KB largest=7296KB
+[HEALTH] stack free_min: core0=14KB/22KB core1=13KB/18KB
+[HEALTH] core usage: core0=0% core1=0%
+[HEALTH] radio=WIFI_UPLOAD wifi=0 ble=0 gps=0 nets=10 pendingUpload=? pendingEnrich=0
+[HEALTH] subghz=NONE mode=OFF pkts=0 nodes=0
+[48748][I][STORAGE] RAMSpool enq=16 cons=16 inflight=0/1024 high=3 pressure=0 drop[full=0 big=0 noise=0 p3Evict=0 p3Drop=0 p2Drop=0 p1Fail=0] free=1024
+[48748][I][STORAGE] RAMSpool enqueue probe[ok=13 drop=0] device[ok=3 drop=0]
+[48749][I][STORAGE] RAMSpool worker probe[ok=5 sup=8 drop=0 fail=0 slow=0] device[ok=3 sup=0 drop=0 fail=0 slow=0] slowTotal=0 maxMs=0
+[48749][I][STORAGE] RAMSpool prioEnq p0=0 p1=0 p2=16 p3=0
+[48749][I][STORAGE] RAMSpool lanes p1=0/0 p2=0/2 p3=0/0
+[48759][W][CORE] TaskHardware loop gap=19659ms owner=WIFI_UPLOAD pendingUpload=217 maintPending=1 suppressed=1
+[50875][I][MQTT] WiFi connected, connecting broker
+[50886][I][MQTT] Broker connect settling after WiFi association ms=300
+[51197][I][MQTT] Broker connect attempt host=192.168.0.11 port=1883 client=spectre_33e864-3
+[51219][I][MQTT] Broker connect result ok=1 state=0 ms=22
+[51220][I][MQTT] Broker connected, resuming dump
+[51230][I][MQTT] Health publish begin
+[52018][I][MQTT] Health publish end
+[52033][I][MQTT] Upload events phase sessions=6 bucketRecords=4 radioHot=1
+[52033][I][MQTT] First event payload staged event=4449 bytes=296
+[52034][I][MQTT] First event publish begin event=4449 bytes=296 stack=14800B
+[52038][I][MQTT] First event publish end event=4449 stack=14800B
+SERIAL_READ_ERROR SerialException("ClearCommError failed (PermissionError(13, 'The device does not recognize the command.', None, 22))")

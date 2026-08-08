@@ -1,0 +1,85 @@
+# opened COM13 DTR=1 RTS=0 2026-07-03T19:12:39.2104871-05:00
+[60017][I][HEAP] heap free=7694KB min=7688KB largest=7552KB frag=1% internalFree=42KB internalLargest=27KB psramFree=7652KB core=0/0% owner=WIFI_CAPTURE nets=7 pendingUpload=458 pendingEnrich=460
+[HEALTH] uptime=0h01m00s
+[HEALTH] CLOCK=UNSYNCED records-this-boot-unenrichable lastNtp=wifi_connect_failed age=34s
+[HEALTH] heap used=724/8418KB free=7694KB min=7688KB largest=7552KB frag=1%
+[HEALTH] internal used=184/226KB free=42KB min=36KB largest=27KB
+[HEALTH] psram used=540/8192KB free=7652KB largest=7552KB
+[HEALTH] stack free_min: core0=17KB/22KB core1=13KB/18KB
+[HEALTH] core usage: core0=0% core1=0%
+[HEALTH] power=usb state=usb batt=100% 4896mV trend=144mV/min runtime=0min cap=1100mAh charging=1
+[HEALTH] radio=WIFI_CAPTURE wifi=0 ble=0 gps=0 nets=7 pendingUpload=458 pendingEnrich=460
+[HEALTH] subghz=WIO_SX1262 mode=MON pkts=0 nodes=0
+[60020][I][STORAGE] RAMSpool enq=38 cons=38 inflight=0/1024 high=3 pressure=0 drop[full=0 big=0 noise=0 p3Evict=0 p3Drop=0 p2Drop=0 p1Fail=0] free=1024
+[60020][I][STORAGE] RAMSpool enqueue probe[ok=31 drop=0] device[ok=7 drop=0]
+[60021][I][STORAGE] RAMSpool worker probe[ok=6 sup=25 drop=0 fail=0 slow=0] device[ok=7 sup=0 drop=0 fail=0 slow=0] slowTotal=0 maxMs=0
+[60021][I][STORAGE] RAMSpool prioEnq p0=0 p1=0 p2=38 p3=0
+[60021][I][STORAGE] RAMSpool lanes p1=0/0 p2=0/2 p3=0/0
+[61033][I][STACK] TaskHardware watermark=17120B min=17120B
+[61376][I][STORAGE] worker ui refresh serviced uiRefreshServiceCount=6 uiDeferred=42 uiFlush=6 pressure=0 usedPct=4 pending=458
+>>> status
+status
+[USB] unknown command: status
+[USB] Commands:
+[USB]   debug on | debug off
+[USB]   debug status | debug dump
+[USB]   debug level d|i|w|e
+[USB]   debug focus ops|all|radio,wifi,mqtt
+[USB]   debug focus add <areas> | remove <areas>
+[USB]   debug focus +wifi -ble (mixed +/-)
+[USB]   debug focus list
+[USB]   wio status
+[USB]   wio hello | wio ble start | wio ble status | wio drop
+[USB]   wio probe | wio enrich
+[USB]   wio text <prompt> | wio text cancel
+[USB]   wio raw <line>  (send exact UART line to WIO)
+[USB]   companion status
+[USB]   companion probe   (one-shot manual BLE probe)
+[USB]   companion enrich  (manual enrichment; probes first if needed)
+[USB]   companion cancel  (clear all pending companion requests)
+[USB]   time | time sync   (clock status; 'sync' forces NTP now)
+[USB]   heap status      (internal/PSRAM heap snapshot)
+[USB]   spool audit       (read-only spool scan, prints mismatches)
+[USB]   spool count       (exact total record count + spool stats)
+[USB]   spool enrich      (pending vs already enriched counts)
+[USB]   spool repair      (audit + repair counters, quarantine bad segs)
+[USB]   spool diag        (segment list, counters, flags)
+[USB]   spool quarantine list  (list /spool_bad files)
+[USB]   spool quarantine meta  (print quarantine JSON records)
+[USB]   spool quarantine clear (delete all quarantine files)
+[USB]   fieldvault dump    (print FieldVault records, keep them)
+[USB]   fieldvault clear   (delete retained FieldVault records)
+[USB]   fieldvault upload  (upload pending FieldVault records only)
+[USB]   upload now         (manual MQTT upload of pending records)
+[USB]   upload stop        (safely stop the active MQTT upload)
+[USB]   upload resume      (allow MQTT uploads again)
+[USB]   mesh status        (Meshtastic client state + counters)
+[USB]   mesh on | mesh off (take/release SX1262 for Meshtastic)
+[USB]   mesh nodes         (list heard mesh nodes)
+[USB]   mesh send <text>   (broadcast a text message)
+[USB]   ble smoke         (suspend WiFi, init/deinit NimBLE, resume promisc)
+[66384][I][STORAGE] worker ui refresh serviced uiRefreshServiceCount=7 uiDeferred=47 uiFlush=7 pressure=0 usedPct=4 pending=459
+>>> wio status
+wio status
+[WIO] available=1 bleProxy=1 sx1262=1 link=idle lastSeenAgeMs=4424
+[WIO] phoneConnected=0 phone=unknown rssi=0
+[WIO] gpsFresh=0 lat=0.000000 lon=0.000000 acc=0.0 timeTrusted=0 epoch=0
+[WIO] textPending=0 textReady=0 prompt=
+[XPORT] active=wio_ble previous=none ageMs=66353 transitions=0
+[69873][I][STORAGE] Routine maintenance requests coalesced count=3 latest=dirty_summary source=ramspool_idle flags=dirty_spool_index|dirty_summary|snapshot_lagged
+>>> wio hello
+wio hello
+[WIO] HELLO sent
+[71141][I][WIO] CAPS BLE_PROXY UART BLE_WRITE_BIN UART_FLOWCTRL SX1262_PRESENT ver=0.4.0
+[71141][I][WIO] BLE proxy capability present
+[71141][I][WIO] UART flow control capability present
+[71384][I][STORAGE] worker ui refresh serviced uiRefreshServiceCount=8 uiDeferred=61 uiFlush=8 pressure=0 usedPct=4 pending=462
+>>> wio ble status
+wio ble status
+[WIO] BLE_STATUS requested
+[74241][I][WIO] BLE status phone=idle connected=0 rssi=-43 state=idle seq=0 ageMs=74240 raw="phone=idle connected=0 rssi=-43 ble_ready=1 ble_init_started=1"
+[75859][I][WIFI] Radio paused
+>>> wio raw SPECTRE/1 SUBGHZ_STATUS
+>>> wio status
+>>> companion status
+# closing 2026-07-03T19:13:04.8283629-05:00

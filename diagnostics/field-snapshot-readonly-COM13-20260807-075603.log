@@ -1,0 +1,7 @@
+=== READ-ONLY FIELD SNAPSHOT 2026-08-07T07:56:03.3082839-05:00 DTR=0 RTS=0 ===
+=== send: spool diag ===
+=== send: spool enrich ===
+=== send: companion status ===
+=== send: wio status ===
+=== send: time ===
+=== send: fieldvault dump ===

@@ -1,0 +1,196 @@
+=== upload/resume session opened 2026-08-07T14:59:33.7752328-05:00 ===
+=== send: upload resume ===
+upload resume
+[254318][I][MQTT] Upload auto-start resumed reason=usb_serial wasPaused=0
+[UPLOAD] automatic uploads already enabled
+=== send: upload now (first leg) ===
+upload now
+[UPLOAD] pending count not authoritative; forcing indexed recovery drain pending=4549
+[255876][I][WIO] External BLE link dropped reason=manual_upload_start
+[256212][E][WIFI] Radio init failed: modeOk=0 setMode=ESP_ERR_WIFI_NOT_INIT start=ESP_ERR_WIFI_NOT_INIT promOff=ESP_ERR_WIFI_NOT_INIT country=ESP_ERR_WIFI_NOT_INIT getMode=ESP_ERR_WIFI_NOT_INIT current=0
+[256213][W][WIFI] Failed to ready STA mode for upload
+[UPLOAD] request unavailable state=idle owner=NONE pending=4549
+[256223][W][CORE] TaskHardware loop gap=348ms owner=NONE pendingUpload=4549 maintPending=1 suppressed=0
+[270668][I][HEAP] heap free=7642KB min=7565KB largest=7552KB frag=1% internalFree=14KB internalLargest=7KB psramFree=7628KB core=0/0% owner=NONE nets=0 pendingUpload=? pendingEnrich=0
+[HEALTH] time=2026-08-07 14:59:45 src=gps
+[HEALTH] heap used=782/8424KB free=7642KB min=7565KB largest=7552KB frag=1%
+[HEALTH] internal used=218/232KB free=14KB min=0KB largest=7KB
+[HEALTH] psram used=564/8192KB free=7628KB largest=7552KB
+[HEALTH] stack free_min: core0=11KB/22KB core1=13KB/18KB
+[HEALTH] core usage: core0=0% core1=0%
+[HEALTH] power=usb state=usb batt=100% 4734mV trend=1mV/min runtime=0min cap=1100mAh charging=0
+[HEALTH] radio=NONE wifi=0 ble=0 gps=0 nets=0 pendingUpload=? pendingEnrich=0
+[HEALTH] subghz=NONE mode=OFF pkts=0 nodes=0
+[270670][I][STORAGE] RAMSpool enq=0 cons=0 inflight=0/1024 high=0 pressure=0 drop[full=0 big=0 noise=0 p3Evict=0 p3Drop=0 p2Drop=0 p1Fail=0] free=1024
+[270670][I][STORAGE] RAMSpool enqueue probe[ok=0 drop=0] device[ok=0 drop=0]
+[270671][I][STORAGE] RAMSpool worker probe[ok=0 sup=0 drop=0 fail=0 slow=0] device[ok=0 sup=0 drop=0 fail=0 slow=0] slowTotal=0 maxMs=0
+[270671][I][STORAGE] RAMSpool prioEnq p0=0 p1=0 p2=0 p3=0
+[270671][I][STORAGE] RAMSpool lanes p1=0/0 p2=0/0 p3=0/0
+[274531][I][WIFI] Radio suspended
+[274642][I][STORAGE] RAMSpool worker paused inflight=0 lastInflight=0
+[274642][I][STORAGE] Exclusive window begin kind=maintenance reason=radio_owner_window workerPaused=1 displaySuspended=1
+[274643][I][STORAGE] Maintenance start reason=radio_owner_window budgetMs=30000 flags=counter_untrusted|segment_audit captureSafe=0
+[274644][W][STORAGE] Maintenance skip action=bounded_repair reason=heap_guard freeInternal=14476 largestInternal=7156 minFree=65536 minLargest=24576 flags=counter_untrusted|segment_audit
+[274644][I][STORAGE] Maintenance skip action=counter_recount reason=repair_in_progress flags=counter_untrusted|segment_audit
+[274741][W][STORAGE] maintenance deferred reason=heap_guard backoffMs=30000 remaining=counter_untrusted|segment_audit
+[274741][I][STORAGE] Maintenance done reason=radio_owner_window actions=none skipped=counter_untrusted|segment_audit remaining=counter_untrusted|segment_audit elapsedMs=99 captureSafe=0
+[274742][I][STORAGE] RAMSpool worker resumed
+[274742][I][STORAGE] Exclusive window end kind=maintenance result=pending reason=radio_owner_window
+[274742][I][STORAGE] maintenance owner window ms=100 captureSafe=0 remaining=counter_untrusted|segment_audit
+[275078][E][WIFI] Radio init failed: modeOk=0 setMode=ESP_ERR_WIFI_NOT_INIT start=ESP_ERR_WIFI_NOT_INIT promOff=ESP_ERR_WIFI_NOT_INIT country=ESP_ERR_WIFI_NOT_INIT getMode=ESP_ERR_WIFI_NOT_INIT current=0
+[275079][W][CORE] TaskHardware loop gap=538ms owner=NONE pendingUpload=4549 maintPending=1 suppressed=0
+[275083][I][STACK] TaskHardware watermark=10824B min=10824B
+[300670][I][HEAP] heap free=7642KB min=7565KB largest=7552KB frag=1% internalFree=14KB internalLargest=7KB psramFree=7628KB core=0/0% owner=NONE nets=0 pendingUpload=? pendingEnrich=0
+[HEALTH] time=2026-08-07 15:00:16 src=gps
+[HEALTH] heap used=782/8424KB free=7642KB min=7565KB largest=7552KB frag=1%
+[HEALTH] internal used=218/232KB free=14KB min=0KB largest=7KB
+[HEALTH] psram used=564/8192KB free=7628KB largest=7552KB
+[HEALTH] stack free_min: core0=11KB/22KB core1=13KB/18KB
+[HEALTH] core usage: core0=0% core1=0%
+[HEALTH] power=usb state=usb batt=100% 4734mV trend=1mV/min runtime=0min cap=1100mAh charging=0
+[HEALTH] radio=NONE wifi=0 ble=0 gps=0 nets=0 pendingUpload=? pendingEnrich=0
+[HEALTH] subghz=NONE mode=OFF pkts=0 nodes=0
+[300672][I][STORAGE] RAMSpool enq=0 cons=0 inflight=0/1024 high=0 pressure=0 drop[full=0 big=0 noise=0 p3Evict=0 p3Drop=0 p2Drop=0 p1Fail=0] free=1024
+[300672][I][STORAGE] RAMSpool enqueue probe[ok=0 drop=0] device[ok=0 drop=0]
+[300673][I][STORAGE] RAMSpool worker probe[ok=0 sup=0 drop=0 fail=0 slow=0] device[ok=0 sup=0 drop=0 fail=0 slow=0] slowTotal=0 maxMs=0
+[300673][I][STORAGE] RAMSpool prioEnq p0=0 p1=0 p2=0 p3=0
+[300673][I][STORAGE] RAMSpool lanes p1=0/0 p2=0/0 p3=0/0
+[304903][I][WIFI] Radio suspended
+[304913][I][STORAGE] RAMSpool worker paused inflight=0 lastInflight=0
+[304914][I][STORAGE] Exclusive window begin kind=maintenance reason=radio_owner_window workerPaused=1 displaySuspended=1
+[304914][I][STORAGE] Maintenance start reason=radio_owner_window budgetMs=30000 flags=counter_untrusted|segment_audit captureSafe=0
+[304915][W][STORAGE] Maintenance skip action=bounded_repair reason=heap_guard freeInternal=14476 largestInternal=7156 minFree=65536 minLargest=24576 flags=counter_untrusted|segment_audit
+[304916][I][STORAGE] Maintenance skip action=counter_recount reason=repair_in_progress flags=counter_untrusted|segment_audit
+[305013][W][STORAGE] maintenance deferred reason=heap_guard backoffMs=30000 remaining=counter_untrusted|segment_audit
+[305013][I][STORAGE] Maintenance done reason=radio_owner_window actions=none skipped=counter_untrusted|segment_audit remaining=counter_untrusted|segment_audit elapsedMs=99 captureSafe=0
+[305014][I][STORAGE] RAMSpool worker resumed
+[305014][I][STORAGE] Exclusive window end kind=maintenance result=pending reason=radio_owner_window
+[305014][I][STORAGE] maintenance owner window ms=101 captureSafe=0 remaining=counter_untrusted|segment_audit
+[305350][E][WIFI] Radio init failed: modeOk=0 setMode=ESP_ERR_WIFI_NOT_INIT start=ESP_ERR_WIFI_NOT_INIT promOff=ESP_ERR_WIFI_NOT_INIT country=ESP_ERR_WIFI_NOT_INIT getMode=ESP_ERR_WIFI_NOT_INIT current=0
+[305351][W][CORE] TaskHardware loop gap=438ms owner=NONE pendingUpload=4549 maintPending=1 suppressed=0
+[305355][I][STACK] TaskHardware watermark=10824B min=10824B
+[330672][I][HEAP] heap free=7642KB min=7565KB largest=7552KB frag=1% internalFree=14KB internalLargest=7KB psramFree=7628KB core=0/0% owner=NONE nets=0 pendingUpload=? pendingEnrich=0
+[HEALTH] time=2026-08-07 15:00:46 src=gps
+[HEALTH] heap used=782/8424KB free=7642KB min=7565KB largest=7552KB frag=1%
+[HEALTH] internal used=218/232KB free=14KB min=0KB largest=7KB
+[HEALTH] psram used=564/8192KB free=7628KB largest=7552KB
+[HEALTH] stack free_min: core0=11KB/22KB core1=13KB/18KB
+[HEALTH] core usage: core0=0% core1=0%
+[HEALTH] power=usb state=usb batt=100% 4733mV trend=0mV/min runtime=0min cap=1100mAh charging=0
+[HEALTH] radio=NONE wifi=0 ble=0 gps=0 nets=0 pendingUpload=? pendingEnrich=0
+[HEALTH] subghz=NONE mode=OFF pkts=0 nodes=0
+[330674][I][STORAGE] RAMSpool enq=0 cons=0 inflight=0/1024 high=0 pressure=0 drop[full=0 big=0 noise=0 p3Evict=0 p3Drop=0 p2Drop=0 p1Fail=0] free=1024
+[330674][I][STORAGE] RAMSpool enqueue probe[ok=0 drop=0] device[ok=0 drop=0]
+[330675][I][STORAGE] RAMSpool worker probe[ok=0 sup=0 drop=0 fail=0 slow=0] device[ok=0 sup=0 drop=0 fail=0 slow=0] slowTotal=0 maxMs=0
+[330675][I][STORAGE] RAMSpool prioEnq p0=0 p1=0 p2=0 p3=0
+[330675][I][STORAGE] RAMSpool lanes p1=0/0 p2=0/0 p3=0/0
+[335178][I][WIFI] Radio suspended
+[335188][I][STORAGE] RAMSpool worker paused inflight=0 lastInflight=0
+[335189][I][STORAGE] Exclusive window begin kind=maintenance reason=radio_owner_window workerPaused=1 displaySuspended=1
+[335189][I][STORAGE] Maintenance start reason=radio_owner_window budgetMs=30000 flags=counter_untrusted|segment_audit captureSafe=0
+[335190][W][STORAGE] Maintenance skip action=bounded_repair reason=heap_guard freeInternal=14476 largestInternal=7156 minFree=65536 minLargest=24576 flags=counter_untrusted|segment_audit
+[335191][I][STORAGE] Maintenance skip action=counter_recount reason=repair_in_progress flags=counter_untrusted|segment_audit
+[335288][W][STORAGE] maintenance deferred reason=heap_guard backoffMs=30000 remaining=counter_untrusted|segment_audit
+[335288][I][STORAGE] Maintenance done reason=radio_owner_window actions=none skipped=counter_untrusted|segment_audit remaining=counter_untrusted|segment_audit elapsedMs=99 captureSafe=0
+[335289][I][STORAGE] RAMSpool worker resumed
+[335289][I][STORAGE] Exclusive window end kind=maintenance result=pending reason=radio_owner_window
+[335289][I][STORAGE] maintenance owner window ms=101 captureSafe=0 remaining=counter_untrusted|segment_audit
+[335625][E][WIFI] Radio init failed: modeOk=0 setMode=ESP_ERR_WIFI_NOT_INIT start=ESP_ERR_WIFI_NOT_INIT promOff=ESP_ERR_WIFI_NOT_INIT country=ESP_ERR_WIFI_NOT_INIT getMode=ESP_ERR_WIFI_NOT_INIT current=0
+[335626][W][CORE] TaskHardware loop gap=438ms owner=NONE pendingUpload=4549 maintPending=1 suppressed=0
+[335630][I][STACK] TaskHardware watermark=10824B min=10824B
+[HEAP] integrity check ok
+[360675][I][HEAP] heap free=7642KB min=7565KB largest=7552KB frag=1% internalFree=14KB internalLargest=7KB psramFree=7628KB core=0/0% owner=NONE nets=0 pendingUpload=? pendingEnrich=0
+[HEALTH] time=2026-08-07 15:01:15 src=gps
+[HEALTH] heap used=782/8424KB free=7642KB min=7565KB largest=7552KB frag=1%
+[HEALTH] internal used=218/232KB free=14KB min=0KB largest=7KB
+[HEALTH] psram used=564/8192KB free=7628KB largest=7552KB
+[HEALTH] stack free_min: core0=11KB/22KB core1=13KB/18KB
+[HEALTH] core usage: core0=0% core1=0%
+[HEALTH] power=usb state=usb batt=100% 4734mV trend=1mV/min runtime=0min cap=1100mAh charging=0
+[HEALTH] radio=NONE wifi=0 ble=0 gps=0 nets=0 pendingUpload=? pendingEnrich=0
+[HEALTH] subghz=NONE mode=OFF pkts=0 nodes=0
+[360820][I][STORAGE] RAMSpool enq=0 cons=0 inflight=0/1024 high=0 pressure=0 drop[full=0 big=0 noise=0 p3Evict=0 p3Drop=0 p2Drop=0 p1Fail=0] free=1024
+[360820][I][STORAGE] RAMSpool enqueue probe[ok=0 drop=0] device[ok=0 drop=0]
+[360820][I][STORAGE] RAMSpool worker probe[ok=0 sup=0 drop=0 fail=0 slow=0] device[ok=0 sup=0 drop=0 fail=0 slow=0] slowTotal=0 maxMs=0
+[360821][I][STORAGE] RAMSpool prioEnq p0=0 p1=0 p2=0 p3=0
+[360821][I][STORAGE] RAMSpool lanes p1=0/0 p2=0/0 p3=0/0
+[360834][I][BLE] Phone availability expired
+[365454][I][WIFI] Radio suspended
+[365464][I][STORAGE] RAMSpool worker paused inflight=0 lastInflight=0
+[365465][I][STORAGE] Exclusive window begin kind=maintenance reason=radio_owner_window workerPaused=1 displaySuspended=1
+[365465][I][STORAGE] Maintenance start reason=radio_owner_window budgetMs=30000 flags=counter_untrusted|segment_audit captureSafe=0
+[365466][W][STORAGE] Maintenance skip action=bounded_repair reason=heap_guard freeInternal=14476 largestInternal=7156 minFree=65536 minLargest=24576 flags=counter_untrusted|segment_audit
+[365467][I][STORAGE] Maintenance skip action=counter_recount reason=repair_in_progress flags=counter_untrusted|segment_audit
+[365564][W][STORAGE] maintenance deferred reason=heap_guard backoffMs=30000 remaining=counter_untrusted|segment_audit
+[365564][I][STORAGE] Maintenance done reason=radio_owner_window actions=none skipped=counter_untrusted|segment_audit remaining=counter_untrusted|segment_audit elapsedMs=99 captureSafe=0
+[365565][I][STORAGE] RAMSpool worker resumed
+[365565][I][STORAGE] Exclusive window end kind=maintenance result=pending reason=radio_owner_window
+[365565][I][STORAGE] maintenance owner window ms=101 captureSafe=0 remaining=counter_untrusted|segment_audit
+[365901][E][WIFI] Radio init failed: modeOk=0 setMode=ESP_ERR_WIFI_NOT_INIT start=ESP_ERR_WIFI_NOT_INIT promOff=ESP_ERR_WIFI_NOT_INIT country=ESP_ERR_WIFI_NOT_INIT getMode=ESP_ERR_WIFI_NOT_INIT current=0
+[365902][W][CORE] TaskHardware loop gap=438ms owner=NONE pendingUpload=4549 maintPending=1 suppressed=0
+[365906][I][STACK] TaskHardware watermark=10824B min=10824B
+[390680][I][HEAP] heap free=7642KB min=7565KB largest=7552KB frag=1% internalFree=14KB internalLargest=7KB psramFree=7628KB core=0/0% owner=NONE nets=0 pendingUpload=? pendingEnrich=0
+[HEALTH] time=2026-08-07 15:01:45 src=gps
+[HEALTH] heap used=782/8424KB free=7642KB min=7565KB largest=7552KB frag=1%
+[HEALTH] internal used=218/232KB free=14KB min=0KB largest=7KB
+[HEALTH] psram used=564/8192KB free=7628KB largest=7552KB
+[HEALTH] stack free_min: core0=11KB/22KB core1=13KB/18KB
+[HEALTH] core usage: core0=0% core1=0%
+[HEALTH] power=usb state=usb batt=100% 4733mV trend=0mV/min runtime=0min cap=1100mAh charging=0
+[HEALTH] radio=NONE wifi=0 ble=0 gps=0 nets=0 pendingUpload=? pendingEnrich=0
+[HEALTH] subghz=NONE mode=OFF pkts=0 nodes=0
+[390682][I][STORAGE] RAMSpool enq=0 cons=0 inflight=0/1024 high=0 pressure=0 drop[full=0 big=0 noise=0 p3Evict=0 p3Drop=0 p2Drop=0 p1Fail=0] free=1024
+[390682][I][STORAGE] RAMSpool enqueue probe[ok=0 drop=0] device[ok=0 drop=0]
+[390683][I][STORAGE] RAMSpool worker probe[ok=0 sup=0 drop=0 fail=0 slow=0] device[ok=0 sup=0 drop=0 fail=0 slow=0] slowTotal=0 maxMs=0
+[390683][I][STORAGE] RAMSpool prioEnq p0=0 p1=0 p2=0 p3=0
+[390683][I][STORAGE] RAMSpool lanes p1=0/0 p2=0/0 p3=0/0
+[395726][I][WIFI] Radio suspended
+[395841][I][STORAGE] RAMSpool worker paused inflight=0 lastInflight=0
+[395842][I][STORAGE] Exclusive window begin kind=maintenance reason=radio_owner_window workerPaused=1 displaySuspended=1
+[395842][I][STORAGE] Maintenance start reason=radio_owner_window budgetMs=30000 flags=counter_untrusted|segment_audit captureSafe=0
+[395843][W][STORAGE] Maintenance skip action=bounded_repair reason=heap_guard freeInternal=14476 largestInternal=7156 minFree=65536 minLargest=24576 flags=counter_untrusted|segment_audit
+[395844][I][STORAGE] Maintenance skip action=counter_recount reason=repair_in_progress flags=counter_untrusted|segment_audit
+[395941][W][STORAGE] maintenance deferred reason=heap_guard backoffMs=30000 remaining=counter_untrusted|segment_audit
+[395942][I][STORAGE] Maintenance done reason=radio_owner_window actions=none skipped=counter_untrusted|segment_audit remaining=counter_untrusted|segment_audit elapsedMs=100 captureSafe=0
+[395942][I][STORAGE] RAMSpool worker resumed
+[395942][I][STORAGE] Exclusive window end kind=maintenance result=pending reason=radio_owner_window
+[395943][I][STORAGE] maintenance owner window ms=102 captureSafe=0 remaining=counter_untrusted|segment_audit
+[396278][E][WIFI] Radio init failed: modeOk=0 setMode=ESP_ERR_WIFI_NOT_INIT start=ESP_ERR_WIFI_NOT_INIT promOff=ESP_ERR_WIFI_NOT_INIT country=ESP_ERR_WIFI_NOT_INIT getMode=ESP_ERR_WIFI_NOT_INIT current=0
+[396279][W][CORE] TaskHardware loop gap=543ms owner=NONE pendingUpload=4549 maintPending=1 suppressed=0
+[396283][I][STACK] TaskHardware watermark=10824B min=10824B
+[420687][I][HEAP] heap free=7642KB min=7565KB largest=7552KB frag=1% internalFree=14KB internalLargest=7KB psramFree=7628KB core=0/0% owner=NONE nets=0 pendingUpload=? pendingEnrich=0
+[HEALTH] time=2026-08-07 15:02:16 src=gps
+[HEALTH] heap used=782/8424KB free=7642KB min=7565KB largest=7552KB frag=1%
+[HEALTH] internal used=218/232KB free=14KB min=0KB largest=7KB
+[HEALTH] psram used=564/8192KB free=7628KB largest=7552KB
+[HEALTH] stack free_min: core0=11KB/22KB core1=13KB/18KB
+[HEALTH] core usage: core0=0% core1=0%
+[HEALTH] power=usb state=usb batt=100% 4733mV trend=0mV/min runtime=0min cap=1100mAh charging=0
+[HEALTH] radio=NONE wifi=0 ble=0 gps=0 nets=0 pendingUpload=? pendingEnrich=0
+[HEALTH] subghz=NONE mode=OFF pkts=0 nodes=0
+[420689][I][STORAGE] RAMSpool enq=0 cons=0 inflight=0/1024 high=0 pressure=0 drop[full=0 big=0 noise=0 p3Evict=0 p3Drop=0 p2Drop=0 p1Fail=0] free=1024
+[420689][I][STORAGE] RAMSpool enqueue probe[ok=0 drop=0] device[ok=0 drop=0]
+[420690][I][STORAGE] RAMSpool worker probe[ok=0 sup=0 drop=0 fail=0 slow=0] device[ok=0 sup=0 drop=0 fail=0 slow=0] slowTotal=0 maxMs=0
+[420690][I][STORAGE] RAMSpool prioEnq p0=0 p1=0 p2=0 p3=0
+[420690][I][STORAGE] RAMSpool lanes p1=0/0 p2=0/0 p3=0/0
+[426103][I][WIFI] Radio suspended
+[426113][I][STORAGE] RAMSpool worker paused inflight=0 lastInflight=0
+[426114][I][STORAGE] Exclusive window begin kind=maintenance reason=radio_owner_window workerPaused=1 displaySuspended=1
+[426114][I][STORAGE] Maintenance start reason=radio_owner_window budgetMs=30000 flags=counter_untrusted|segment_audit captureSafe=0
+[426115][W][STORAGE] Maintenance skip action=bounded_repair reason=heap_guard freeInternal=14476 largestInternal=7156 minFree=65536 minLargest=24576 flags=counter_untrusted|segment_audit
+[426116][I][STORAGE] Maintenance skip action=counter_recount reason=repair_in_progress flags=counter_untrusted|segment_audit
+[426213][W][STORAGE] maintenance deferred reason=heap_guard backoffMs=30000 remaining=counter_untrusted|segment_audit
+[426213][I][STORAGE] Maintenance done reason=radio_owner_window actions=none skipped=counter_untrusted|segment_audit remaining=counter_untrusted|segment_audit elapsedMs=99 captureSafe=0
+[426214][I][STORAGE] RAMSpool worker resumed
+[426214][I][STORAGE] Exclusive window end kind=maintenance result=pending reason=radio_owner_window
+[426214][I][STORAGE] maintenance owner window ms=101 captureSafe=0 remaining=counter_untrusted|segment_audit
+[426550][E][WIFI] Radio init failed: modeOk=0 setMode=ESP_ERR_WIFI_NOT_INIT start=ESP_ERR_WIFI_NOT_INIT promOff=ESP_ERR_WIFI_NOT_INIT country=ESP_ERR_WIFI_NOT_INIT getMode=ESP_ERR_WIFI_NOT_INIT current=0
+[426551][W][CORE] TaskHardware loop gap=438ms owner=NONE pendingUpload=4549 maintPending=1 suppressed=0
+[426555][I][STACK] TaskHardware watermark=10824B min=10824B
+=== send: spool count ===
+spool count
+[436091][I][WIFI] Radio suspended
+[436091][I][STORAGE] RAMSpool worker paused inflight=0 lastInflight=0
+[436092][I][STORAGE] Exclusive window begin kind=maintenance reason=manual_spool_count workerPaused=1 displaySuspended=1
+[SPOOL] count starting...
+=== upload/resume session closing 2026-08-07T15:02:36.6767815-05:00 ===
