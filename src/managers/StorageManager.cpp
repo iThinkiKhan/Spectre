@@ -6741,6 +6741,33 @@ bool StorageManager::_auditAndRepairSpool(const char* reason,
     audit.oldNextEventId = _nextEventId;
     const uint32_t _auditStartMs = millis();
 
+    // The audit scans segment files straight off LittleFS, and a segment's
+    // record count lives in its header — which _flushWorkerAppendFile() only
+    // rewrites when the header is dirty. Records already appended to the open
+    // worker file are therefore invisible to this scan, and the callers that
+    // reconcile counters from the result will "correct" pendingUpload down to
+    // the visible count. Running `spool count` during active capture was enough
+    // to zero a real backlog and make `upload now` report no pending records.
+    // Flush first so the scan sees everything that has actually been written.
+    if (_workerAppendFile) {
+        if (RAMSpool::isWorkerPaused()) {
+            if (!_flushWorkerAppendFile(reason ? reason : "audit", true)) {
+                audit.scanIncomplete = true;
+                DLOG_WARN("STORAGE",
+                          "Spool audit[%s] worker append flush failed; counts are a floor",
+                          reason ? reason : "-");
+            }
+        } else {
+            // Cannot touch the file under a live writer. Scan anyway for
+            // diagnostics, but mark the result so nothing reconciles down.
+            audit.scanIncomplete = true;
+            DLOG_WARN("STORAGE",
+                      "Spool audit[%s] worker active with open append file;"
+                      " counts are a floor, reconcile suppressed",
+                      reason ? reason : "-");
+        }
+    }
+
     std::vector<SpoolSegmentInfo> repairedSegments;
     repairedSegments.reserve(_spoolIndex.segments.size());
     std::vector<String> rebuiltSessions;
@@ -6836,7 +6863,10 @@ bool StorageManager::_auditAndRepairSpool(const char* reason,
 
     const bool metadataOnlyReconcile =
         reason && strcmp(reason, "manual_count") == 0;
-    if ((repair || metadataOnlyReconcile) && audit.hadMismatch) {
+    // An incomplete scan yields a floor, not a total — never rebuild counters
+    // from it (see the flush note at the top of this function).
+    if ((repair || metadataOnlyReconcile) && audit.hadMismatch &&
+        !audit.scanIncomplete) {
         if (RADIO_ARB.currentOwner() == RADIO_WIFI_CAPTURE &&
             _selectRepairMode() != REPAIR_EMERGENCY) {
             _spoolAuditRepairRequired = true;
@@ -7518,7 +7548,7 @@ bool StorageManager::_finalizeRepairJob() {
         sessionsChanged;
 
     bool persistOk = true;
-    if (job.audit.hadMismatch) {
+    if (job.audit.hadMismatch && !job.audit.scanIncomplete) {
         if (RADIO_ARB.currentOwner() == RADIO_WIFI_CAPTURE &&
             _selectRepairMode() != REPAIR_EMERGENCY) {
             _spoolAuditRepairRequired = true;
@@ -16345,7 +16375,19 @@ void StorageManager::spoolCountToSerial() {
                   static_cast<unsigned long>(storedEvents),
                   static_cast<unsigned long>(uploadedRetainedEstimate));
 
-    if (ok && !audit.hadFatalSegmentError) {
+    if (audit.scanIncomplete) {
+        // A diagnostic command must never be able to strand a backlog. The
+        // scan saw only part of what is on disk, so its total is a floor —
+        // adopting it would drop pendingUpload below the real figure and make
+        // the upload trigger refuse to run.
+        Serial.printf("[SPOOL] scan incomplete (worker append unflushed);"
+                      " counts shown are a floor, pendingUpload left at %lu\r\n",
+                      static_cast<unsigned long>(_pendingEventCount));
+        DLOG_WARN("STORAGE",
+                  "Manual count reconcile skipped: scan incomplete pending=%lu scanned=%lu",
+                  static_cast<unsigned long>(_pendingEventCount),
+                  static_cast<unsigned long>(audit.rebuiltPendingTotal));
+    } else if (ok && !audit.hadFatalSegmentError) {
         const bool summaryPending =
             _spoolSummaryRebuildPending || _hasInvalidSpoolSummaries();
         _spoolIndex.pendingTotal = audit.rebuiltPendingTotal;

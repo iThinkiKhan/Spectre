@@ -54,6 +54,11 @@ struct SpoolAuditResult {
     bool hadMismatch          = false;
     bool hadFatalSegmentError = false;
     bool repaired             = false;
+    // True when the scan could not see the full on-disk picture — currently
+    // only when the RAMSpool worker held an unflushed append file that could
+    // not be flushed safely. The counts below are then a floor, not a total,
+    // and callers must not reconcile counters downward from them.
+    bool scanIncomplete       = false;
 
     uint32_t totalValidRecords() const {
         return validEventRecords + validEnrichDeltas;

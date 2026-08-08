@@ -32,7 +32,17 @@ LV_FONT_DECLARE(sharetech_uncompressed_14);
 #define CLR_NAVY        0x000F
 #define CLR_ORANGE      0xFD20
 #define CLR_BLACK       0x000000
-#define CLR_DARKGREY    0x2A2A2A
+
+// ─── Semantic UI tokens ───────────────────────────────────────
+// Named roles so screens stop repeating raw hex. Change the look here,
+// not in 40 call sites. Keep values in sync with displayAccentColor().
+#define CLR_ACCENT      CLR_YELLOW      // primary chrome / headers
+#define CLR_ACCENT_DIM  0xA07800       // inactive accent (2/5 of accent)
+#define CLR_BORDER      0xD09000       // steady panel border (amber)
+#define CLR_BORDER_WARN 0xC02020       // critical-power border (steady)
+#define CLR_PANEL_BG    0x111111       // chrome panels (status/action bar)
+#define CLR_SELECT_BG   0x1A1A00       // highlighted list row background
+#define CLR_BARTRACK    0x1A1A1A       // empty signal-bar / meter track
 
 // ─── LVGL color helpers ───────────────────────────────────────
 #define LV_CLR(hex)     lv_color_hex(hex)

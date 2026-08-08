@@ -351,7 +351,6 @@ void DisplayManager::_buildNotifPanel() {
     lv_obj_set_style_bg_color(_notifPanel,
         lv_color_hex(0x000000), 0);
     lv_obj_set_style_bg_opa(_notifPanel, LV_OPA_COVER, 0);
-    lv_obj_set_style_border_width(_notifPanel, 0, 0);
     lv_obj_set_style_border_width(_notifPanel, 2, 0);
     lv_obj_set_style_border_side(_notifPanel,
         LV_BORDER_SIDE_BOTTOM, 0);
