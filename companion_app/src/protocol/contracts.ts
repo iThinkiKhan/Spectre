@@ -11,6 +11,8 @@ export const ENRICHMENT_RECORD_SIZE = 47;
 export const PHONE_COMMAND_VERSION = 1;
 export const PHONE_COMMAND_REQ_HEADER_SIZE = 4;
 export const PHONE_COMMAND_RESP_HEADER_SIZE = 8;
+// Matches the native S3 single-write ceiling; larger values require explicit
+// application-level fragmentation rather than an ATT long write.
 export const PHONE_COMMAND_PAYLOAD_MAX = 192;
 export const PHONE_COMMAND_REQ_FRAME_MAX =
   PHONE_COMMAND_REQ_HEADER_SIZE + PHONE_COMMAND_PAYLOAD_MAX;
@@ -42,6 +44,22 @@ export const CMD_OP_TAG_SESSION     = 0x22;
 export const CMD_OP_SAVE_LOCATION   = 0x23;
 export const CMD_OP_SCREEN_CHANGE   = 0x24;
 export const CMD_OP_DEBRIEF_REQUEST = 0x25;
+
+// Slice #8 — authenticated, durable phone offload.
+export const CMD_OP_OFFLOAD_BEGIN = 0x30;
+export const CMD_OP_OFFLOAD_NEXT = 0x31;
+export const CMD_OP_OFFLOAD_ACK = 0x32;
+export const CMD_OP_OFFLOAD_END = 0x33;
+export const CMD_OP_WIFI_OFFLOAD_BEGIN = 0x34;
+export const PHONE_OFFLOAD_VERSION = 1;
+export const PHONE_OFFLOAD_FLAG_END = 0x01;
+export const PHONE_OFFLOAD_FLAG_RECORD = 0x02;
+export const PHONE_OFFLOAD_FLAG_INDEX_TRUNCATED = 0x04;
+export const PHONE_OFFLOAD_BEGIN_RESPONSE_SIZE = 12;
+export const PHONE_OFFLOAD_NEXT_REQUEST_SIZE = 8;
+export const PHONE_OFFLOAD_CHUNK_HEADER_SIZE = 16;
+export const PHONE_OFFLOAD_ACK_REQUEST_SIZE = 8;
+export const PHONE_OFFLOAD_ACK_RESPONSE_SIZE = 4;
 
 export const CMD_TAG_PAYLOAD_MAX_LEN = 31;
 

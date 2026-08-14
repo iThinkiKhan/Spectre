@@ -3,6 +3,7 @@ param(
   [string]$LogFile = 'C:\PlatformIO\Projects\Spectre\diagnostics\companion-enrich-session.log',
   [int]$MaxEnrichMs = 1200000,
   [switch]$PreDumpFieldVault,
+  [switch]$OneBatchCancel,
   [int]$HoldAfterMs = 0
 )
 
@@ -50,6 +51,7 @@ try {
   $deadline = (Get-Date).AddMilliseconds($MaxEnrichMs)
   $tail = ''
   $probeRetries = 0
+  $cancelSent = $false
   while ((Get-Date) -lt $deadline) {
     try {
       $chunk = $sp.ReadExisting()
@@ -59,7 +61,18 @@ try {
         if ($tail.Length -gt 12000) {
           $tail = $tail.Substring($tail.Length - 12000)
         }
-        if ($tail -match 'Phone enrichment finished successfully|Manual enrich complete: backlog resolved|Phone enrichment failed') {
+        if ($OneBatchCancel -and -not $cancelSent -and
+            $tail -match 'Enrichment batch received count=') {
+          $cancelSent = $true
+          $tail = ''
+          $out.WriteLine('=== send: companion cancel after first admitted batch ===')
+          $sp.WriteLine('companion cancel')
+        }
+        if ($cancelSent -and $tail -match 'Enrich drain done') {
+          break
+        }
+        if (-not $cancelSent -and
+            $tail -match 'Phone enrichment finished successfully|Manual enrich complete: backlog resolved|Phone enrichment failed') {
           break
         }
         if ($tail -match 'probe timeout: phone not seen' -and $probeRetries -lt 10) {
@@ -92,10 +105,8 @@ try {
   $out.WriteLine("=== session closing $(Get-Date -Format o) ===")
 } finally {
   $out.Close()
-  try {
-    $sp.DtrEnable = $false
-    Start-Sleep -Milliseconds 100
-  } catch {}
+  # Keep DTR asserted through Close(). Deasserting it while the native USB
+  # CDC port closes can strand this S3 revision on its ROM COM port.
   $sp.Close()
   $sp.Dispose()
 }

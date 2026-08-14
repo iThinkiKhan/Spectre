@@ -125,6 +125,12 @@ private:
     // Mirrors wio_nrf_firmware UART_PAYLOAD_MAX.
     static constexpr size_t WIO_RELAY_PAYLOAD_MAX = 256;
     static constexpr size_t BLE_WRITE_VALUE_MAX = WIO_RELAY_PAYLOAD_MAX;
+    // The native S3 path can use ATT long writes up to the 512-byte GATT cap.
+    // The optional WIO relay remains a single 256-byte UART/BLE payload and
+    // therefore keeps the original command response ceiling.
+    static constexpr size_t WIO_COMMAND_PAYLOAD_MAX = 192;
+    static constexpr size_t WIO_COMMAND_RESP_FRAME_MAX =
+        PHONE_COMMAND_RESP_HEADER_SIZE + WIO_COMMAND_PAYLOAD_MAX;
     static constexpr size_t EVENT_BATCH_SECURE_FRAME_MAX =
         PHONE_EVENT_BATCH_HEADER_V2_SIZE +
         PHONE_COMPANION_ENRICH_BATCH_MAX * EVENT_BATCH_RECORD_SIZE +
@@ -133,7 +139,7 @@ private:
                   "AUTH frame exceeds WIO relay payload");
     static_assert(EVENT_BATCH_SECURE_FRAME_MAX <= BLE_WRITE_VALUE_MAX,
                   "Event batch envelope exceeds WIO relay payload");
-    static_assert(PHONE_COMMAND_RESP_FRAME_MAX + PHONE_SECURE_ENVELOPE_OVERHEAD <=
+    static_assert(WIO_COMMAND_RESP_FRAME_MAX + PHONE_SECURE_ENVELOPE_OVERHEAD <=
                       BLE_WRITE_VALUE_MAX,
                   "Command response envelope exceeds WIO relay payload");
     static_assert(LOG_STREAM_CHUNK_FRAME_MAX + PHONE_SECURE_ENVELOPE_OVERHEAD <=
@@ -299,8 +305,8 @@ private:
     uint8_t   _storageSecureTxBuf[PHONE_STORAGE_FRAME_SIZE + PHONE_SECURE_ENVELOPE_OVERHEAD] = {};
 
     // Command/control buffers mirror BLEManager.
-    uint8_t   _commandRespPlainBuf[PHONE_COMMAND_RESP_FRAME_MAX] = {};
-    uint8_t   _commandRespSecureBuf[PHONE_COMMAND_RESP_FRAME_MAX +
+    uint8_t   _commandRespPlainBuf[WIO_COMMAND_RESP_FRAME_MAX] = {};
+    uint8_t   _commandRespSecureBuf[WIO_COMMAND_RESP_FRAME_MAX +
                                     PHONE_SECURE_ENVELOPE_OVERHEAD] = {};
     uint8_t   _logStreamSecureBuf[LOG_STREAM_CHUNK_FRAME_MAX +
                                   PHONE_SECURE_ENVELOPE_OVERHEAD] = {};
@@ -322,4 +328,5 @@ private:
     int             _subghzLastSnr = 0;
 };
 
-extern WioNrfAccessory WIO_NRF;
+WioNrfAccessory& getWioNrfAccessory();
+#define WIO_NRF getWioNrfAccessory()

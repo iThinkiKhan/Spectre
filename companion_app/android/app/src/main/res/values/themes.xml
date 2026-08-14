@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources>
+<resources xmlns:tools="http://schemas.android.com/tools">
     <style name="AppTheme" parent="Theme.AppCompat.DayNight.NoActionBar">
         <!-- Pure black so the safe-area padding behind the system bars matches
              the app background (theme.colors.bg = #000000). -->
         <item name="android:windowBackground">@android:color/black</item>
         <!-- Light icons on the dark bars (edge-to-edge under targetSdk 36). -->
         <item name="android:windowLightStatusBar">false</item>
-        <item name="android:windowLightNavigationBar">false</item>
+        <item name="android:windowLightNavigationBar" tools:targetApi="27">false</item>
     </style>
 </resources>

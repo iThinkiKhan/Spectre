@@ -15,10 +15,14 @@ static constexpr uint8_t OFF = 0;
 // Main switches
 
 #define PHONE_COMPANION_ENABLED     ON
+// Stability-first field profile: the experimental Wi-Fi bulk path performs a
+// deliberate BLE -> AP reboot. Keep it disabled until the reboot/resume path
+// has a non-retrying completion handshake; Android safely falls back to BLE.
+#define PHONE_WIFI_BULK_ENABLED     OFF
 
 // Auto-enrich starts when pending events cross these thresholds. WIO is cheaper
 // to wake, so its threshold is lower. Manual ENRICH bypasses both.
-#define PHONE_COMPANION_ENRICH_THRESHOLD     270UL
+#define PHONE_COMPANION_ENRICH_THRESHOLD      25UL
 #define PHONE_COMPANION_ENRICH_THRESHOLD_WIO 25UL
 #define PHONE_COMPANION_ENRICH_BATCH_MAX     18
 
@@ -205,6 +209,15 @@ static constexpr uint8_t OFF = 0;
 #define DEDUP_WINDOW_SEC       600UL
 #define DEDUP_WINDOW_MS        SPECTRE_SECONDS_TO_MS(DEDUP_WINDOW_SEC)
 #define DEDUP_WINDOW_MAX       256
+
+// Localization observations are intentionally different from ordinary
+// inventory deduplication. A moving receiver needs repeated RSSI measurements
+// from separated positions, but writing every beacon/probe would overwhelm
+// storage. Emit one bounded sample per target at this cadence, or sooner when
+// signal changes materially after the minimum gap.
+#define LOCALIZATION_SAMPLE_INTERVAL_MS 30000UL
+#define LOCALIZATION_SAMPLE_MIN_GAP_MS  10000UL
+#define LOCALIZATION_RSSI_DELTA_DB       8
 
 // Handshake-completion window: holds 4-way frame state long enough to
 // recognize a finished capture and drop replays after that.

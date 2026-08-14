@@ -2,8 +2,7 @@ import React from 'react';
 import {Pressable, StyleSheet, Text, View} from 'react-native';
 
 import {theme} from '../theme/theme';
-
-type TabKey = 'link' | 'enrich' | 'console' | 'ops';
+import type {TabKey} from '../state/SpectreContext';
 
 type Props = {
   activeTab: TabKey;
@@ -11,10 +10,9 @@ type Props = {
 };
 
 const tabs: Array<{key: TabKey; label: string}> = [
-  {key: 'link', label: 'Link'},
-  {key: 'enrich', label: 'Enrich'},
-  {key: 'console', label: 'Console'},
-  {key: 'ops', label: 'Vault'},
+  {key: 'mission', label: 'Mission'},
+  {key: 'targets', label: 'Targets'},
+  {key: 'map', label: 'Map'},
 ];
 
 export function BottomTabs({activeTab, onSelect}: Props) {

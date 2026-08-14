@@ -309,7 +309,9 @@ void EntityManager::observeStoredEvent(uint32_t eventId, JsonObjectConst event,
         if (inSession) _session.networks++;
     } else if (strcmp(type, "probe") == 0 || strcmp(type, "device") == 0) {
         const char* mac = event["mac"] | "";
-        primary = _observe(ENTITY_WIFI_CLIENT, mac, mac, nullptr, rssi, channel,
+        const char* trackId = event["track_id"] | "";
+        const char* stable = trackId[0] ? trackId : mac;
+        primary = _observe(ENTITY_WIFI_CLIENT, stable, mac, nullptr, rssi, channel,
                            (event["is_random_mac"] | false) ||
                                _isRandomMacString(mac),
                            recovered);

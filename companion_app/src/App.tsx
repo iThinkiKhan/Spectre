@@ -3,10 +3,9 @@ import {StatusBar, StyleSheet, Text, View} from 'react-native';
 
 import {BottomTabs} from './components/BottomTabs';
 import {PromptOverlay} from './components/PromptOverlay';
-import {ConsoleScreen} from './screens/ConsoleScreen';
-import {EnrichScreen} from './screens/EnrichScreen';
-import {LinkScreen} from './screens/LinkScreen';
-import {OpsScreen} from './screens/OpsScreen';
+import {MapScreen} from './screens/MapScreen';
+import {MissionScreen} from './screens/MissionScreen';
+import {TargetsScreen} from './screens/TargetsScreen';
 import {SpectreProvider, useSpectre} from './state/SpectreContext';
 import {theme} from './theme/theme';
 
@@ -25,18 +24,12 @@ function AppShell() {
   const promptVisible =
     spectre.promptState.awaitingReply &&
     spectre.promptState.token !== dismissedPromptToken;
-  const pocketReady =
-    spectre.peripheralState.running && spectre.peripheralState.advertising;
-  const fieldModeReady = pocketReady && spectre.nativeRecorderActive;
+  const collecting = spectre.gpsRecording && spectre.peripheralState.running;
+  const needsAttention = collecting && !spectre.activeLocation;
 
-  let screen = <LinkScreen />;
-  if (spectre.activeTab === 'enrich') {
-    screen = <EnrichScreen />;
-  } else if (spectre.activeTab === 'console') {
-    screen = <ConsoleScreen />;
-  } else if (spectre.activeTab === 'ops') {
-    screen = <OpsScreen />;
-  }
+  let screen = <MissionScreen />;
+  if (spectre.activeTab === 'targets') screen = <TargetsScreen />;
+  else if (spectre.activeTab === 'map') screen = <MapScreen />;
 
   return (
     <View style={styles.safe}>
@@ -47,34 +40,34 @@ function AppShell() {
           <View style={styles.chromeGlow} />
           <View style={styles.chromeHeader}>
             <View style={styles.brandBlock}>
-              <Text style={styles.brandEyebrow}>Spectre // Field Companion</Text>
-              <Text style={styles.brandTitle}>Phone Link</Text>
+              <Text style={styles.brandEyebrow}>Aetherguard network</Text>
+              <Text style={styles.brandTitle}>Spectre Locator</Text>
             </View>
 
             <View
               style={[
                 styles.livePill,
-                promptVisible ? styles.livePillWarn : null,
-                !promptVisible && (spectre.connectedDevice || fieldModeReady)
+                promptVisible || needsAttention ? styles.livePillWarn : null,
+                !promptVisible && !needsAttention && collecting
                   ? styles.livePillSuccess
                   : null,
               ]}>
               <Text
                 style={[
                   styles.livePillText,
-                  promptVisible || spectre.connectedDevice
+                  promptVisible || collecting
                     ? styles.livePillTextActive
                     : null,
                 ]}>
                 {promptVisible
-                  ? 'Prompt waiting'
-                  : spectre.connectedDevice
-                    ? 'Mission link live'
-                    : fieldModeReady
-                      ? 'Field mode live'
-                      : pocketReady
-                        ? 'BLE live, GPS starting'
-                        : 'Standby'}
+                  ? 'Action needed'
+                  : needsAttention
+                    ? 'Finding GPS'
+                    : collecting
+                      ? spectre.peripheralState.secureSessionReady
+                        ? 'Spectre linked'
+                        : 'Collecting'
+                      : 'Standby'}
               </Text>
             </View>
           </View>

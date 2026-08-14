@@ -48,9 +48,6 @@ static bool _restoreCrashLog() {
 RTC_NOINIT_ATTR CrashLog g_crashLog;
 
 void crashLogPrint() {
-#if !BOOT_SEQUENCE_VERBOSE_ACTIVE
-    return;
-#else
     bool restoredFromNvs = false;
 
     if (!_logReady()) {
@@ -121,7 +118,6 @@ void crashLogPrint() {
                       static_cast<unsigned long>(e.uptimeMs / 1000));
         }
     }
-#endif
 }
 
 

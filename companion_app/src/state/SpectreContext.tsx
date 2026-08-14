@@ -51,6 +51,16 @@ import {
 } from '../services/peripheral/SpectrePeripheralBridge';
 import {SpectreCommandService} from '../services/peripheral/SpectreCommandService';
 import {
+  SpectreRelayService,
+  type PhoneNetworkStatus,
+  type RelayQueueStatus,
+} from '../services/relay/SpectreRelayService';
+import {
+  buildLocalizationSnapshot,
+  EMPTY_LOCALIZATION_SNAPSHOT,
+  type LocalizationSnapshot,
+} from '../services/localization/LocalizationService';
+import {
   EnrichmentService,
   type FinalizedEventBatch,
 } from '../services/enrichment/EnrichmentService';
@@ -72,8 +82,12 @@ import {
   stopSpectreLocationRecorder,
   subscribeToSpectreLocationFixes,
 } from '../services/enrichment/SpectreLocationRecorder';
+import {
+  getStoredString,
+  setStoredString,
+} from '../services/storage/NativeKeyValueStore';
 
-type TabKey = 'link' | 'enrich' | 'console' | 'ops';
+export type TabKey = 'mission' | 'targets' | 'map';
 type LocationMode = 'device' | 'manual' | 'off';
 type LogLevel = 'info' | 'warn' | 'error';
 type BatchStatus = 'waiting' | 'ready' | 'sent';
@@ -131,6 +145,12 @@ export type SpectreStatusSummary = {
   token: number | null;
 };
 
+export type FieldTransferState = {
+  phase: 'idle' | 'copying' | 'relaying' | 'complete' | 'error';
+  message: string;
+  copied: number;
+};
+
 type SpectreContextValue = {
   activeTab: TabKey;
   setActiveTab: (tab: TabKey) => void;
@@ -145,6 +165,13 @@ type SpectreContextValue = {
   statusSummary: SpectreStatusSummary;
   peripheralState: PeripheralState;
   storageSnapshot: PeripheralStorageSnapshot | null;
+  relayStatus: RelayQueueStatus;
+  networkStatus: PhoneNetworkStatus;
+  fieldTransfer: FieldTransferState;
+  localization: LocalizationSnapshot;
+  selectedTargetId: string | null;
+  setSelectedTargetId: (targetId: string | null) => void;
+  refreshLocalization: () => Promise<void>;
   commandService: SpectreCommandService | null;
   notifications: PhoneNotificationV1[];
   clearNotifications: () => void;
@@ -186,8 +213,9 @@ type SpectreContextValue = {
   refreshDeviceLocation: () => Promise<void>;
   queueDumpRequest: () => void;
   queueCancelRequest: () => void;
-  setWireGuardActive: (value: boolean) => void;
   sendBatchNow: (batchId: string) => Promise<void>;
+  offloadToPhone: (maxRecords?: number) => Promise<void>;
+  relayHome: () => Promise<void>;
   injectMockBatch: () => void;
 };
 
@@ -236,12 +264,40 @@ const EMPTY_MANUAL_LOCATION: ManualLocationDraft = {
   accuracy: '10',
 };
 
+const EMPTY_RELAY_STATUS: RelayQueueStatus = {
+  pending: 0,
+  published: 0,
+  pendingBytes: 0,
+  running: false,
+  publishedThisPass: 0,
+  endpoint: '192.168.0.11:1883',
+};
+
+const EMPTY_NETWORK_STATUS: PhoneNetworkStatus = {
+  vpnActive: false,
+  vpnValidated: false,
+  vpnInterface: '',
+  cellularAvailable: false,
+};
+
+const MISSION_INTENT_KEY = 'spectre.mission.enabled';
+const WIFI_BULK_ENRICH_THRESHOLD = 128;
+// A Wi-Fi handoff includes a deliberate Spectre radio reboot. Below one full
+// bulk batch, the authenticated BLE link is faster and avoids making a couple
+// of newly captured observations bounce the device between radio modes.
+const WIFI_BULK_OFFLOAD_THRESHOLD = 64;
+const WIFI_BULK_TIMEOUT_MS = 10 * 60_000;
+
 function nowId(prefix: string) {
   return `${prefix}-${Date.now()}-${Math.round(Math.random() * 1000)}`;
 }
 
 function swallowPromise(task: Promise<unknown> | null | undefined) {
   task?.catch(() => {});
+}
+
+function pause(ms: number) {
+  return new Promise<void>(resolve => setTimeout(resolve, ms));
 }
 
 function appendUniqueLog(
@@ -464,6 +520,7 @@ export function SpectreProvider({children}: {children: React.ReactNode}) {
   const bleRef = useRef<BleClientService | null>(null);
   const peripheralRef = useRef<SpectrePeripheralBridge | null>(null);
   const commandServiceRef = useRef<SpectreCommandService | null>(null);
+  const relayRef = useRef<SpectreRelayService | null>(null);
   const enrichmentRef = useRef<EnrichmentService | null>(null);
   const activeTagRef = useRef('FIELD');
   const autoApplyRef = useRef(true);
@@ -482,8 +539,13 @@ export function SpectreProvider({children}: {children: React.ReactNode}) {
     ((payload: FinalizedEventBatch) => Promise<void>) | null
   >(null);
   const refreshDeviceLocationRef = useRef<(() => Promise<void>) | null>(null);
+  const offloadToPhoneRef = useRef<((maxRecords?: number) => Promise<void>) | null>(null);
+  const automaticEnrichKeyRef = useRef('');
+  const automaticOffloadKeyRef = useRef('');
+  const automaticRelayKeyRef = useRef('');
+  const fieldStartInFlightRef = useRef(false);
 
-  const [activeTab, setActiveTab] = useState<TabKey>('link');
+  const [activeTab, setActiveTab] = useState<TabKey>('mission');
   const [permissions, setPermissions] =
     useState<AndroidBlePermissionState>(EMPTY_PERMISSIONS);
   const [adapterState, setAdapterState] = useState('Unknown');
@@ -513,6 +575,17 @@ export function SpectreProvider({children}: {children: React.ReactNode}) {
   );
   const [storageSnapshot, setStorageSnapshot] =
     useState<PeripheralStorageSnapshot | null>(null);
+  const [relayStatus, setRelayStatus] = useState(EMPTY_RELAY_STATUS);
+  const [networkStatus, setNetworkStatus] = useState(EMPTY_NETWORK_STATUS);
+  const [localization, setLocalization] = useState(
+    EMPTY_LOCALIZATION_SNAPSHOT,
+  );
+  const [selectedTargetId, setSelectedTargetId] = useState<string | null>(null);
+  const [fieldTransfer, setFieldTransfer] = useState<FieldTransferState>({
+    phase: 'idle',
+    message: 'Ready',
+    copied: 0,
+  });
   const [notifications, setNotifications] = useState<PhoneNotificationV1[]>([]);
   const [appState, setAppState] = useState<AppStateStatus>(
     AppState.currentState,
@@ -533,6 +606,8 @@ export function SpectreProvider({children}: {children: React.ReactNode}) {
   // GPS recording intent is independent of the BLE link.
   const [gpsRecording, setGpsRecording] = useState(false);
   const gpsRecordingRef = useRef(false);
+  const [missionIntentLoaded, setMissionIntentLoaded] = useState(false);
+  const [missionDesired, setMissionDesired] = useState(false);
   const [eventBatches, setEventBatches] = useState<EventBatchView[]>([]);
   const [lastPublishedBatch, setLastPublishedBatch] =
     useState<BatchTransferSummary | null>(null);
@@ -570,6 +645,23 @@ export function SpectreProvider({children}: {children: React.ReactNode}) {
 
   const appendLog = (message: string, level: LogLevel = 'info') => {
     setLogs(previous => appendUniqueLog(previous, message, level));
+  };
+
+  const refreshLocalization = async () => {
+    const relay = relayRef.current;
+    if (!relay) return;
+    try {
+      const records = await relay.recentRecords();
+      const next = buildLocalizationSnapshot(records);
+      setLocalization(next);
+      setSelectedTargetId(previous =>
+        previous && next.targets.some(target => target.id === previous)
+          ? previous
+          : next.targets[0]?.id ?? null,
+      );
+    } catch (error: any) {
+      appendLog(error?.message || 'Could not read the phone target archive', 'warn');
+    }
   };
 
   const refreshPermissions = async () => {
@@ -889,11 +981,15 @@ export function SpectreProvider({children}: {children: React.ReactNode}) {
   };
 
   const startFieldMode = async () => {
+    setMissionDesired(true);
+    await setStoredString(MISSION_INTENT_KEY, '1');
     await startGpsRecording();
     await startBleLink();
   };
 
   const stopFieldMode = async () => {
+    setMissionDesired(false);
+    await setStoredString(MISSION_INTENT_KEY, '0');
     await stopGpsRecording();
     await stopBleLink();
   };
@@ -946,10 +1042,21 @@ export function SpectreProvider({children}: {children: React.ReactNode}) {
   }, []);
 
   useEffect(() => {
-    if (!SPECTRE_LOCATION_RECORDER_AVAILABLE) {
-      return;
-    }
-    swallowPromise(stopSpectreLocationRecorder());
+    let cancelled = false;
+    swallowPromise(
+      getStoredString(MISSION_INTENT_KEY).then(stored => {
+        if (cancelled) {
+          return;
+        }
+        // Spectre is a field instrument: on first launch, collection is on.
+        // An explicit Stop Mission is persisted and always wins thereafter.
+        setMissionDesired(stored !== '0');
+        setMissionIntentLoaded(true);
+      }),
+    );
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   useEffect(() => {
@@ -1100,6 +1207,7 @@ export function SpectreProvider({children}: {children: React.ReactNode}) {
 
     peripheralRef.current = new SpectrePeripheralBridge();
     commandServiceRef.current = new SpectreCommandService(peripheralRef.current);
+    relayRef.current = new SpectreRelayService();
     peripheralRef.current.setListener({
       onStateChange: state => {
         setPeripheralState(state);
@@ -1145,6 +1253,16 @@ export function SpectreProvider({children}: {children: React.ReactNode}) {
 
     swallowPromise(bleRef.current.initialize());
     swallowPromise(refreshPermissions());
+    swallowPromise(
+      relayRef.current.status().then(status => setRelayStatus(status)),
+    );
+    swallowPromise(
+      relayRef.current.networkStatus().then(status => {
+        setNetworkStatus(status);
+        setWireGuardActiveState(status.vpnValidated);
+      }),
+    );
+    swallowPromise(refreshLocalization());
 
     return () => {
       const ble = bleRef.current;
@@ -1156,15 +1274,49 @@ export function SpectreProvider({children}: {children: React.ReactNode}) {
       peripheralRef.current = null;
       enrichmentRef.current = null;
       commandServiceRef.current = null;
+      relayRef.current = null;
 
       commandService?.cancelAllPending('Bridge teardown');
       ble?.destroy();
       enrichment?.destroy();
       peripheral?.destroy();
-      swallowPromise(peripheral?.stop());
-      swallowPromise(stopSpectreLocationRecorder());
     };
   }, []);
+
+  // Restore the operator's mission intent after a process/UI restart. Native
+  // foreground services are intentionally stopped only by Stop Mission.
+  useEffect(() => {
+    if (
+      !missionIntentLoaded ||
+      !missionDesired ||
+      !permissions.allGranted ||
+      !peripheralRef.current ||
+      (gpsRecording && peripheralState.running) ||
+      fieldStartInFlightRef.current
+    ) {
+      return;
+    }
+
+    fieldStartInFlightRef.current = true;
+    swallowPromise(
+      (async () => {
+        if (!gpsRecording) {
+          await startGpsRecording();
+        }
+        if (!peripheralState.running) {
+          await startBleLink();
+        }
+      })().finally(() => {
+        fieldStartInFlightRef.current = false;
+      }),
+    );
+  }, [
+    gpsRecording,
+    missionDesired,
+    missionIntentLoaded,
+    peripheralState.running,
+    permissions.allGranted,
+  ]);
 
   useEffect(() => {
     const subscription = AppState.addEventListener('change', next => {
@@ -1184,6 +1336,22 @@ export function SpectreProvider({children}: {children: React.ReactNode}) {
       }
     };
   }, []);
+
+  useEffect(() => {
+    if (appState !== 'active') return;
+    const refreshNetwork = () => {
+      swallowPromise(
+        relayRef.current?.networkStatus().then(status => {
+          setNetworkStatus(status);
+          setWireGuardActiveState(status.vpnValidated);
+        }),
+      );
+    };
+    refreshNetwork();
+    swallowPromise(refreshLocalization());
+    const timer = setInterval(refreshNetwork, 10_000);
+    return () => clearInterval(timer);
+  }, [appState]);
 
   // JS GPS polling is foreground fallback only; native service owns field runs.
   useEffect(() => {
@@ -1258,6 +1426,13 @@ export function SpectreProvider({children}: {children: React.ReactNode}) {
     statusSummary,
     peripheralState,
     storageSnapshot,
+    relayStatus,
+    networkStatus,
+    fieldTransfer,
+    localization,
+    selectedTargetId,
+    setSelectedTargetId,
+    refreshLocalization,
     commandService: commandServiceRef.current,
     notifications,
     clearNotifications: () => setNotifications([]),
@@ -1388,9 +1563,6 @@ export function SpectreProvider({children}: {children: React.ReactNode}) {
       queueControlPulse('cancel');
       appendLog('Queued companion cancel pulse');
     },
-    setWireGuardActive: nextValue => {
-      setWireGuardActiveState(nextValue);
-    },
     sendBatchNow: async batchId => {
       const batch = eventBatches.find(entry => entry.id === batchId);
       if (!batch) {
@@ -1398,11 +1570,300 @@ export function SpectreProvider({children}: {children: React.ReactNode}) {
       }
       await publishBatch(batch.id, batch.events, batch.source);
     },
+    offloadToPhone: async maxRecords => {
+      const command = commandServiceRef.current;
+      const relay = relayRef.current;
+      if (!command || !relay || !peripheralState.secureSessionReady) {
+        const message = 'Secure Spectre companion session is not ready';
+        setFieldTransfer({phase: 'error', message, copied: 0});
+        appendLog(message, 'warn');
+        throw new Error(message);
+      }
+      setFieldTransfer({
+        phase: 'copying',
+        message: maxRecords
+          ? `Copying up to ${maxRecords} records into the phone durable queue`
+          : 'Copying all available records into the phone durable queue',
+        copied: 0,
+      });
+      try {
+        let copied = 0;
+        let pendingAfter = Number.MAX_SAFE_INTEGER;
+        let indexTruncated = false;
+        let usedWifiBulk = false;
+
+        const pendingForTransport = storageSnapshot
+          ? storageSnapshot.pendingUploadMission + storageSnapshot.pendingUploadNoise
+          : 0;
+        if (
+          !maxRecords &&
+          Platform.OS === 'android' &&
+          pendingForTransport >= WIFI_BULK_OFFLOAD_THRESHOLD
+        ) {
+          let receiverStarted = false;
+          let deviceAccepted = false;
+          try {
+            const endpoint = await relay.startBulkReceiver();
+            receiverStarted = true;
+            const begin = await command.startWifiOffload(endpoint);
+            deviceAccepted = begin.started;
+            pendingAfter = begin.pendingAtStart;
+            if (!begin.started) {
+              usedWifiBulk = true;
+              pendingAfter = 0;
+            }
+            const deadline = Date.now() + WIFI_BULK_TIMEOUT_MS;
+            let lastProgressAt = 0;
+            while (begin.started && Date.now() < deadline) {
+              const bulk = await relay.bulkStatus();
+              if (bulk.phase === 'error') {
+                throw new Error(bulk.error || 'Phone Wi-Fi receiver failed');
+              }
+              copied = bulk.copied;
+              pendingAfter = Math.max(0, begin.pendingAtStart - copied);
+              const now = Date.now();
+              if (now - lastProgressAt >= 500 || bulk.phase === 'complete') {
+                const seconds = Math.max(0.001, bulk.elapsedMs / 1000);
+                const rate = copied / seconds;
+                setFieldTransfer({
+                  phase: 'copying',
+                  message: `Wi-Fi copied ${copied}; ${pendingAfter} remain on Spectre (${rate.toFixed(0)}/s)`,
+                  copied,
+                });
+                lastProgressAt = now;
+              }
+              if (bulk.phase === 'complete') {
+                usedWifiBulk = true;
+                indexTruncated = pendingAfter > 0;
+                break;
+              }
+              await pause(250);
+            }
+            if (!usedWifiBulk) {
+              throw new Error('Phone Wi-Fi handoff timed out');
+            }
+          } catch (bulkError: any) {
+            // Once Spectre accepts the endpoint it releases BLE and owns the
+            // Wi-Fi radio. Preserve its records and surface that failure; a
+            // BLE fallback is only safe before the device changes transports.
+            if (deviceAccepted) throw bulkError;
+            appendLog(
+              `Fast Wi-Fi handoff unavailable; using BLE (${bulkError?.message ?? 'startup failed'})`,
+              'warn',
+            );
+          } finally {
+            if (receiverStarted) {
+              await relay.stopBulkReceiver().catch(() => {});
+            }
+          }
+        }
+
+        if (!usedWifiBulk) {
+          do {
+            const summary = await command.offloadToPhone({
+              commit: record => relay.enqueue(record),
+              maxRecords,
+              onProgress: (passCopied, passPending) => {
+                setFieldTransfer({
+                  phase: 'copying',
+                  message: `Drained ${copied + passCopied}; ${passPending} remain on Spectre`,
+                  copied: copied + passCopied,
+                });
+              },
+            });
+            copied += summary.copied;
+            pendingAfter = summary.pendingAfter;
+            indexTruncated = summary.indexTruncated;
+          } while (!maxRecords && indexTruncated && pendingAfter > 0);
+        }
+
+        let status = await relay.status();
+        setRelayStatus(status);
+        const network = await relay.networkStatus();
+        setNetworkStatus(network);
+        setWireGuardActiveState(network.vpnValidated);
+        let message = maxRecords && indexTruncated && pendingAfter > 0
+          ? `Diagnostic copy drained ${copied}; ${pendingAfter} remain on Spectre`
+          : pendingAfter > 0
+            ? `Fast handoff saved ${copied} records; ${pendingAfter} remain for the next automatic window`
+            : `Drained ${copied} records safely to the phone`;
+
+        if (!maxRecords) {
+          // The phone relay no longer needs BLE. Release the persistent device
+          // link immediately so Spectre can resume radio capture while Android
+          // forwards its durable queue over cellular/WireGuard.
+          queueControlPulse('cancel');
+          appendLog('Spectre drain committed; releasing the transfer link for capture');
+        }
+
+        if (!maxRecords && network.vpnValidated && status.pending > 0) {
+          setFieldTransfer({
+            phase: 'relaying',
+            message: `${pendingAfter > 0 ? 'Handoff window saved' : 'Spectre is clear'}; relaying ${status.pending} phone records home`,
+            copied,
+          });
+          try {
+            status = await relay.relayHome();
+            setRelayStatus(status);
+            message = `Drained ${copied}; home acknowledged ${status.publishedThisPass}; ${status.pending} remain on phone`;
+            if (pendingAfter > 0) message += `; ${pendingAfter} remain on Spectre`;
+          } catch (relayError: any) {
+            status = await relay.status();
+            setRelayStatus(status);
+            message = `${pendingAfter > 0 ? 'Handoff window is saved' : 'Spectre is clear'}; ${status.pending} records remain safely on phone (${relayError?.message ?? 'home relay unavailable'})`;
+            appendLog(message, 'warn');
+          }
+        } else if (!maxRecords && status.pending > 0) {
+          message += `; ${status.pending} await a phone VPN route`;
+        }
+
+        setFieldTransfer({phase: 'complete', message, copied});
+        appendLog(message);
+        await refreshLocalization();
+      } catch (error: any) {
+        const message = error?.message || 'Phone offload failed';
+        setFieldTransfer({phase: 'error', message, copied: 0});
+        appendLog(message, 'error');
+        throw error;
+      }
+    },
+    relayHome: async () => {
+      const relay = relayRef.current;
+      if (!relay) throw new Error('Native relay is unavailable');
+      setFieldTransfer({
+        phase: 'relaying',
+        message: 'Relaying durable queue to home over the active phone route',
+        copied: fieldTransfer.copied,
+      });
+      try {
+        const status = await relay.relayHome();
+        setRelayStatus(status);
+        const message = `Home acknowledged ${status.publishedThisPass}; ${status.pending} remain queued`;
+        setFieldTransfer({phase: 'complete', message, copied: fieldTransfer.copied});
+        appendLog(message);
+      } catch (error: any) {
+        const message = error?.message || 'Home relay failed';
+        setFieldTransfer({phase: 'error', message, copied: fieldTransfer.copied});
+        appendLog(message, 'error');
+        throw error;
+      }
+    },
     injectMockBatch: () => {
       const payload = encodeEventBatchRecords(demoBatch());
       peripheralRef.current?.emitMockEventBatch(payload);
     },
   };
+
+  offloadToPhoneRef.current = value.offloadToPhone;
+
+  // A secure visit must resolve GPS correlation before any observation is
+  // acknowledged off Spectre. Once an event crosses the device upload
+  // watermark, a later enrichment delta cannot be emitted as a normal replay,
+  // so "save first, locate later" silently creates permanently unmapped data.
+  // Request one enrichment pass per authenticated visit; the normal batch
+  // listener above publishes GPS matches, and the refreshed storage snapshot
+  // then unlocks automatic offload below.
+  useEffect(() => {
+    const pendingEnrichment = storageSnapshot
+      ? storageSnapshot.pendingEnrichMission + storageSnapshot.pendingEnrichNoise
+      : 0;
+    const visitMarker =
+      peripheralState.lastConnectedAt ?? storageSnapshot?.receivedAt ?? 0;
+    const key = `${visitMarker}:enrich`;
+    if (
+      !gpsRecording ||
+      !peripheralState.secureSessionReady ||
+      pendingEnrichment <= 0 ||
+      pendingEnrichment >= WIFI_BULK_ENRICH_THRESHOLD ||
+      fieldTransfer.phase === 'copying' ||
+      fieldTransfer.phase === 'relaying' ||
+      automaticEnrichKeyRef.current === key
+    ) {
+      return;
+    }
+
+    const command = commandServiceRef.current;
+    if (!command) return;
+
+    automaticEnrichKeyRef.current = key;
+    setFieldTransfer(previous => ({
+      phase: 'idle',
+      message: `Locating ${pendingEnrichment} Spectre observations before safe handoff`,
+      copied: previous.copied,
+    }));
+    swallowPromise(
+      command.enrichNow().then(
+        () => appendLog(`Automatic localization requested for ${pendingEnrichment} observations`),
+        (error: any) => {
+          appendLog(error?.message || 'Automatic localization request failed', 'warn');
+        },
+      ),
+    );
+  }, [
+    fieldTransfer.phase,
+    gpsRecording,
+    peripheralState.lastConnectedAt,
+    peripheralState.secureSessionReady,
+    storageSnapshot,
+  ]);
+
+  // A secure Spectre visit is a handoff opportunity, not an engineering task.
+  // Drain automatically only after the storage snapshot proves GPS correlation
+  // has reached a terminal state for every pending observation. The key
+  // prevents a failed attempt from spinning until connection/backlog state
+  // materially changes.
+  useEffect(() => {
+    const pending = storageSnapshot
+      ? storageSnapshot.pendingUploadMission + storageSnapshot.pendingUploadNoise
+      : 0;
+    const pendingEnrichment = storageSnapshot
+      ? storageSnapshot.pendingEnrichMission + storageSnapshot.pendingEnrichNoise
+      : 0;
+    // A fresh storage frame is a stronger attempt boundary than the Android
+    // connection timestamp and changes on every authenticated device visit.
+    const connectionMarker = storageSnapshot?.receivedAt ?? 0;
+    const key = `${connectionMarker}:${pending}`;
+    if (
+      !gpsRecording ||
+      !peripheralState.secureSessionReady ||
+      pending <= 0 ||
+      (pendingEnrichment > 0 && pending < WIFI_BULK_ENRICH_THRESHOLD) ||
+      fieldTransfer.phase === 'copying' ||
+      fieldTransfer.phase === 'relaying' ||
+      automaticOffloadKeyRef.current === key
+    ) {
+      return;
+    }
+    automaticOffloadKeyRef.current = key;
+    swallowPromise(offloadToPhoneRef.current?.());
+  }, [
+    fieldTransfer.phase,
+    gpsRecording,
+    peripheralState.secureSessionReady,
+    storageSnapshot,
+  ]);
+
+  // Likewise, a validated home route should empty the already-durable phone
+  // queue without making the operator press a transport-specific button.
+  useEffect(() => {
+    const key = `${relayStatus.pending}:${networkStatus.vpnInterface}`;
+    if (
+      !networkStatus.vpnValidated ||
+      relayStatus.pending <= 0 ||
+      fieldTransfer.phase === 'copying' ||
+      fieldTransfer.phase === 'relaying' ||
+      automaticRelayKeyRef.current === key
+    ) {
+      return;
+    }
+    automaticRelayKeyRef.current = key;
+    swallowPromise(value.relayHome());
+  }, [
+    fieldTransfer.phase,
+    networkStatus.vpnInterface,
+    networkStatus.vpnValidated,
+    relayStatus.pending,
+  ]);
 
   return (
     <SpectreContext.Provider value={value}>{children}</SpectreContext.Provider>

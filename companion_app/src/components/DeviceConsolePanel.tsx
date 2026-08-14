@@ -59,6 +59,8 @@ const SCREEN_NAMES: Record<string, number> = {
   system: 6,
   mission_summary: 7,
   summary: 7,
+  ble: 8,
+  phone: 8,
 };
 
 const HELP_LINES = [

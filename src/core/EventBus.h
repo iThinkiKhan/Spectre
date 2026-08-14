@@ -1,6 +1,7 @@
 
 #pragma once
 #include <Arduino.h>
+#include <esp_heap_caps.h>
 #include <freertos/FreeRTOS.h>
 #include <freertos/queue.h>
 
@@ -117,6 +118,17 @@ private:
     static constexpr uint8_t QUEUE_DEPTH = 64;
 
     EventBus() {
+        _queueBuffer = static_cast<uint8_t*>(heap_caps_calloc(
+            1,
+            QUEUE_DEPTH * sizeof(Event),
+            MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT));
+        if (!_queueBuffer) {
+            _queueBuffer = static_cast<uint8_t*>(heap_caps_calloc(
+                1,
+                QUEUE_DEPTH * sizeof(Event),
+                MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT));
+        }
+        if (!_queueBuffer) return;
         _queue = xQueueCreateStatic(
             QUEUE_DEPTH,
             sizeof(Event),
@@ -126,7 +138,7 @@ private:
 
     QueueHandle_t _queue = nullptr;
     StaticQueue_t _queueStorage {};
-    uint8_t _queueBuffer[QUEUE_DEPTH * sizeof(Event)] = {};
+    uint8_t* _queueBuffer = nullptr;
     mutable portMUX_TYPE _dropCountMux = portMUX_INITIALIZER_UNLOCKED;
     uint32_t _dropCount = 0;
 };

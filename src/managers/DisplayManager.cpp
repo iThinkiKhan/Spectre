@@ -303,6 +303,7 @@ void DisplayManager::begin() {
     _buildScreenPwny();
     _buildScreenMeshtastic();
     _buildScreenWifi();
+    _buildScreenBle();
     _buildScreenBadUsb();
     _buildScreenRecon();
     _buildScreenSystem();
@@ -486,6 +487,9 @@ void DisplayManager::syncFromState() {
         case SCREEN_SYSTEM:
             drawSystem(battV, uptimeMs, storage);
             break;
+        case SCREEN_BLE:
+            drawBle();
+            break;
         case SCREEN_MISSION_SUMMARY:
             drawMissionSummary(uptimeMs);
             break;
@@ -532,6 +536,7 @@ void DisplayManager::setScreen(Screen s) {
             case SCREEN_LORA:       return _loraContent;
             case SCREEN_MESHTASTIC: return _meshContent;
             case SCREEN_WIFI:       return _wifiContent;
+            case SCREEN_BLE:        return _bleContent;
             case SCREEN_BADUSB:     return _badUsbContent;
             case SCREEN_RECON:      return _reconContent;
             case SCREEN_MISSION:    return _pwnyContent;
@@ -563,6 +568,7 @@ void DisplayManager::setScreen(Screen s) {
     if (_loraContent  && _loraContent  != nextContent) lv_obj_add_flag(_loraContent,  LV_OBJ_FLAG_HIDDEN);
     if (_meshContent  && _meshContent  != nextContent) lv_obj_add_flag(_meshContent,  LV_OBJ_FLAG_HIDDEN);
     if (_wifiContent  && _wifiContent  != nextContent) lv_obj_add_flag(_wifiContent,  LV_OBJ_FLAG_HIDDEN);
+    if (_bleContent   && _bleContent   != nextContent) lv_obj_add_flag(_bleContent,   LV_OBJ_FLAG_HIDDEN);
     if (_badUsbContent && _badUsbContent != nextContent) lv_obj_add_flag(_badUsbContent, LV_OBJ_FLAG_HIDDEN);
     if (_reconContent && _reconContent != nextContent) lv_obj_add_flag(_reconContent, LV_OBJ_FLAG_HIDDEN);
     if (_pwnyContent  && _pwnyContent  != nextContent) lv_obj_add_flag(_pwnyContent,  LV_OBJ_FLAG_HIDDEN);
@@ -1192,6 +1198,47 @@ void DisplayManager::_buildScreenWifi() {
     _wifiLastMACValue = makeClippedLabel(_wifiContent, "--", CLR_GREY, FONT_SMALL, 4, 100, THEME_CONTENT_W - 8);
     _wifiChannelValue = makeClippedLabel(_wifiContent, "CH: 0", CLR_DIMYELLOW, FONT_SMALL, 4, 114, 72);
     lv_obj_add_flag(_wifiContent, LV_OBJ_FLAG_HIDDEN);
+}
+
+void DisplayManager::_buildScreenBle() {
+    _bleContent = _makePanel(lv_screen_active(),
+                             THEME_CONTENT_X, THEME_CONTENT_Y,
+                             THEME_CONTENT_W, THEME_CONTENT_H,
+                             CLR_BLACK, CLR_BLACK);
+
+    const uint32_t accent = displayAccentColor();
+    _makeLabel(_bleContent, "BLE / PHONE", accent, FONT_HEADER,
+               LV_ALIGN_TOP_LEFT, 4, 4);
+    _bleHeaderStatus = makeClippedLabel(_bleContent, "IDLE", CLR_GREY,
+                                        FONT_SMALL, 142, 8, 98,
+                                        LV_TEXT_ALIGN_RIGHT);
+
+    static lv_point_precise_t sep[] = {{0,26},{THEME_CONTENT_W,26}};
+    lv_obj_t* line = lv_line_create(_bleContent);
+    lv_line_set_points(line, sep, 2);
+    lv_obj_set_style_line_color(line, lv_color_hex(accent), 0);
+    lv_obj_set_style_line_width(line, 1, 0);
+
+    auto makeBleRow = [&](int y, const char* leftLabel, lv_obj_t** leftValue,
+                          const char* rightLabel, lv_obj_t** rightValue) {
+        makeClippedLabel(_bleContent, leftLabel, CLR_GREY, FONT_SMALL, 4, y, 42);
+        *leftValue = makeClippedLabel(_bleContent, "--", CLR_WHITE, FONT_SMALL,
+                                      48, y, 78);
+        makeClippedLabel(_bleContent, rightLabel, CLR_GREY, FONT_SMALL, 128, y, 42);
+        *rightValue = makeClippedLabel(_bleContent, "--", CLR_WHITE, FONT_SMALL,
+                                       172, y, 72);
+    };
+
+    makeBleRow(30, "XPORT", &_bleTransportValue, "RADIO", &_bleRadioValue);
+    makeBleRow(48, "OUT", &_bleOutboundValue, "IN", &_bleInboundValue);
+    makeBleRow(66, "SECURE", &_bleSecurityValue, "GPS", &_bleGpsValue);
+    makeBleRow(84, "WORK", &_bleWorkValue, "PEND", &_blePendingValue);
+
+    makeClippedLabel(_bleContent,
+                     "LINK opens scan + inbound discovery",
+                     CLR_DIMYELLOW, FONT_SMALL, 4, 106,
+                     THEME_CONTENT_W - 8);
+    lv_obj_add_flag(_bleContent, LV_OBJ_FLAG_HIDDEN);
 }
 
 void DisplayManager::_buildScreenPwny() {
@@ -1991,6 +2038,126 @@ void DisplayManager::drawWifi(const char* ssid, int networks,
     char chStr[16];
     snprintf(chStr, sizeof(chStr), "CH: %d", ch);
     lv_label_set_text(_wifiChannelValue, chStr);
+}
+
+void DisplayManager::drawBle() {
+    if (!_bleContent) return;
+    _setActionHints(spectreScreenBindings(SCREEN_BLE));
+
+    bool radioEnabled = false;
+    bool advertising = false;
+    bool inboundConnected = false;
+    bool secureReady = false;
+    bool gpsReady = false;
+    bool enrichmentReady = false;
+    bool freshGps = false;
+    uint8_t linkState = 0;
+    uint8_t authFail = 0;
+    uint8_t transportKind = 0;
+    int8_t peerRssi = -127;
+    int disconnectReason = 0;
+    uint8_t phoneState = 0;
+    uint8_t workState = 0;
+    uint32_t pending = 0;
+
+    STATE_READ_BEGIN();
+    radioEnabled = g_state.bleRadioEnabled;
+    advertising = g_state.bleAdvertising;
+    inboundConnected = g_state.bleInboundConnected;
+    secureReady = g_state.bleSecureReady;
+    gpsReady = g_state.bleGpsReady;
+    enrichmentReady = g_state.bleEnrichmentReady;
+    freshGps = g_state.bleFreshGps;
+    linkState = g_state.bleLinkState;
+    authFail = g_state.bleAuthFailReason;
+    transportKind = g_state.phoneTransportKind;
+    peerRssi = g_state.blePeerRssi;
+    disconnectReason = g_state.bleLastDisconnectReason;
+    phoneState = g_state.companionPhone;
+    workState = g_state.companionWork;
+    pending = g_state.companionPending;
+    STATE_READ_END();
+
+    const char* stateText = "IDLE";
+    uint32_t stateColor = CLR_GREY;
+    switch (linkState) {
+        case 1: stateText = "SCANNING"; stateColor = CLR_CYAN; break;
+        case 2: stateText = "CONNECTING"; stateColor = CLR_YELLOW; break;
+        case 3: stateText = "GATT LINK"; stateColor = CLR_YELLOW; break;
+        case 4: stateText = "SECURE READY"; stateColor = CLR_GREEN; break;
+        default:
+            if (!radioEnabled) stateText = "RADIO OFF";
+            break;
+    }
+    lv_label_set_text(_bleHeaderStatus, stateText);
+    lv_obj_set_style_text_color(_bleHeaderStatus, lv_color_hex(stateColor), 0);
+
+    const char* transport = transportKind == 2 ? "NATIVE S3" :
+                            transportKind == 1 ? "WIO PROXY" : "NONE";
+    lv_label_set_text(_bleTransportValue, transport);
+    lv_obj_set_style_text_color(_bleTransportValue,
+                                lv_color_hex(transportKind == 2 ? CLR_GREEN : CLR_GREY), 0);
+
+    lv_label_set_text(_bleRadioValue, radioEnabled ? "ON" : "OFF");
+    lv_obj_set_style_text_color(_bleRadioValue,
+                                lv_color_hex(radioEnabled ? CLR_CYAN : CLR_GREY), 0);
+
+    char outbound[28] = {};
+    if (secureReady) {
+        snprintf(outbound, sizeof(outbound), "READY %ddB", static_cast<int>(peerRssi));
+    } else if (linkState == 1) {
+        strlcpy(outbound, "SCANNING", sizeof(outbound));
+    } else if (linkState == 2 || linkState == 3) {
+        strlcpy(outbound, "CONNECT", sizeof(outbound));
+    } else if (phoneState == 2) {
+        strlcpy(outbound, "NOT SEEN", sizeof(outbound));
+    } else {
+        strlcpy(outbound, "IDLE", sizeof(outbound));
+    }
+    lv_label_set_text(_bleOutboundValue, outbound);
+    lv_obj_set_style_text_color(_bleOutboundValue,
+                                lv_color_hex(secureReady ? CLR_GREEN :
+                                             (linkState == 1 || linkState == 2 ? CLR_CYAN : CLR_GREY)), 0);
+
+    const char* inbound = inboundConnected ? "CONNECTED" :
+                          advertising ? "DISCOVER" : "CLOSED";
+    lv_label_set_text(_bleInboundValue, inbound);
+    lv_obj_set_style_text_color(_bleInboundValue,
+                                lv_color_hex(inboundConnected ? CLR_GREEN :
+                                             advertising ? CLR_CYAN : CLR_GREY), 0);
+
+    char security[28] = {};
+    if (secureReady) {
+        strlcpy(security, enrichmentReady ? "AUTH + ENR" : "AUTH", sizeof(security));
+    } else if (authFail != 0) {
+        snprintf(security, sizeof(security), "AUTH ERR %u", authFail);
+    } else if (disconnectReason != 0) {
+        snprintf(security, sizeof(security), "WAIT D%X", disconnectReason & 0xFF);
+    } else {
+        strlcpy(security, "WAITING", sizeof(security));
+    }
+    lv_label_set_text(_bleSecurityValue, security);
+    lv_obj_set_style_text_color(_bleSecurityValue,
+                                lv_color_hex(secureReady ? CLR_GREEN :
+                                             authFail ? CLR_RED : CLR_GREY), 0);
+
+    const char* gps = freshGps ? "FRESH" : gpsReady ? "READY" : "WAIT";
+    lv_label_set_text(_bleGpsValue, gps);
+    lv_obj_set_style_text_color(_bleGpsValue,
+                                lv_color_hex(freshGps ? CLR_GREEN : gpsReady ? CLR_CYAN : CLR_GREY), 0);
+
+    const char* work = workState == 2 ? "ENRICH" :
+                       workState == 1 ? "PROBE" : "IDLE";
+    lv_label_set_text(_bleWorkValue, work);
+    lv_obj_set_style_text_color(_bleWorkValue,
+                                lv_color_hex(workState ? CLR_YELLOW : CLR_GREY), 0);
+
+    char pendingText[20] = {};
+    snprintf(pendingText, sizeof(pendingText), "%lu",
+             static_cast<unsigned long>(pending));
+    lv_label_set_text(_blePendingValue, pendingText);
+    lv_obj_set_style_text_color(_blePendingValue,
+                                lv_color_hex(pending ? CLR_YELLOW : CLR_GREEN), 0);
 }
 
 void DisplayManager::_buildWifiList() {

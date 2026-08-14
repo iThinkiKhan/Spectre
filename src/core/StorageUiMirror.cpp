@@ -63,6 +63,17 @@ void publishCounters(uint32_t pending,
     STATE_WRITE_END();
 }
 
+void publishPendingEnrichment(uint32_t pendingMission,
+                              uint32_t pendingNoise,
+                              uint32_t nowMs) {
+    STATE_WRITE_BEGIN();
+    g_state.storagePendingEnrichMission = pendingMission;
+    g_state.storagePendingEnrichNoise = pendingNoise;
+    g_state.storageSummaryUpdatedMs = nowMs;
+    g_state.dataRefresh = true;
+    STATE_WRITE_END();
+}
+
 void publishReadyState(bool storageOk,
                        const char* usedStr,
                        uint32_t pending,

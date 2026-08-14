@@ -58,6 +58,69 @@ void _queueWiFiNotification(uint8_t type, const char* text) {
                   static_cast<unsigned>(type));
     }
 }
+
+template <typename T>
+void _noteLocalizationRssi(T& target, int8_t rssi) {
+    if (target.localizationFrames != UINT16_MAX) {
+        target.localizationFrames++;
+    }
+    target.localizationRssiSum += rssi;
+    if (target.localizationRssiMin == 127 || rssi < target.localizationRssiMin) {
+        target.localizationRssiMin = rssi;
+    }
+    if (target.localizationRssiMax == -127 || rssi > target.localizationRssiMax) {
+        target.localizationRssiMax = rssi;
+    }
+}
+
+template <typename T>
+bool _localizationSampleDue(const T& target, int8_t rssi, uint32_t now,
+                            bool identityChanged = false) {
+    if (target.localizationSampleSeq == 0) return true;
+    const uint32_t elapsed = now - target.localizationLastSample;
+    if (identityChanged && elapsed >= LOCALIZATION_SAMPLE_MIN_GAP_MS) return true;
+    if (elapsed >= LOCALIZATION_SAMPLE_INTERVAL_MS) return true;
+    return elapsed >= LOCALIZATION_SAMPLE_MIN_GAP_MS &&
+           abs(static_cast<int>(rssi) -
+               static_cast<int>(target.localizationLastRssi)) >=
+               LOCALIZATION_RSSI_DELTA_DB;
+}
+
+template <typename T>
+int8_t _localizationAverageRssi(const T& target, int8_t fallback) {
+    if (target.localizationFrames == 0) return fallback;
+    return static_cast<int8_t>(target.localizationRssiSum /
+                               static_cast<int32_t>(target.localizationFrames));
+}
+
+template <typename T>
+const char* _localizationSampleReason(const T& target, int8_t rssi,
+                                      uint32_t now, bool identityChanged = false) {
+    if (target.localizationSampleSeq == 0) return "new";
+    if (identityChanged) return "identity";
+    if (now - target.localizationLastSample >= LOCALIZATION_SAMPLE_INTERVAL_MS) {
+        return "interval";
+    }
+    if (abs(static_cast<int>(rssi) -
+            static_cast<int>(target.localizationLastRssi)) >=
+            LOCALIZATION_RSSI_DELTA_DB) {
+        return "signal_delta";
+    }
+    return "interval";
+}
+
+template <typename T>
+void _finishLocalizationSample(T& target, int8_t averageRssi, uint32_t now) {
+    target.localizationLastSample = now;
+    target.localizationLastRssi = averageRssi;
+    if (target.localizationSampleSeq != UINT16_MAX) {
+        target.localizationSampleSeq++;
+    }
+    target.localizationRssiSum = 0;
+    target.localizationFrames = 0;
+    target.localizationRssiMin = 127;
+    target.localizationRssiMax = -127;
+}
 }
 
 // ── Known DJI OUIs ───────────────────────────────────────────
@@ -702,7 +765,9 @@ void WiFiManager::_processProbeRequest(const uint8_t* p,
         TrackedDevice* dev = _findOrCreateDevice(macStr, srcMAC,
                                                   ieFP, rssi);
         if (dev) {
+            const uint8_t previousProbeCount = dev->probeCount;
             _addProbedSSID(dev, ssid);
+            const bool newProbeIdentity = dev->probeCount != previousProbeCount;
             _updateBehavior(dev);
             _updateRSSIHistory(dev, rssi);
             _classifyVendor(dev, tags, tagLen);
@@ -724,12 +789,42 @@ void WiFiManager::_processProbeRequest(const uint8_t* p,
             }
         }
     }
+            char trackId[40] = {};
+            if (dev->ieFingerprint[0]) {
+                snprintf(trackId, sizeof(trackId), "IE:%s",
+                         dev->ieFingerprint);
+            } else {
+                snprintf(trackId, sizeof(trackId), "MAC:%s", dev->mac);
+            }
+
+            // Inventory and measurement are separate: inventory describes the
+            // radio identity; the probe observation is the bounded RSSI/GPS
+            // sample used by the localization solver.
+            if (dev->frameCount == 1) {
+                MQTT_MGR.queueDevice(dev->mac, dev->ieFingerprint, "",
+                                     rssi, dev->isRandomMAC, trackId,
+                                     dev->physicalDeviceID);
+            }
+
+            const uint32_t now = millis();
+            if (_localizationSampleDue(*dev, rssi, now, newProbeIdentity)) {
+                const int8_t averageRssi = _localizationAverageRssi(*dev, rssi);
+                const char* reason = _localizationSampleReason(
+                    *dev, rssi, now, newProbeIdentity);
+                MQTT_MGR.queueProbe(
+                    macStr, ssid[0] ? ssid : nullptr,
+                    averageRssi, ch, ieFP, trackId,
+                    dev->physicalDeviceID,
+                    static_cast<uint16_t>(dev->localizationSampleSeq + 1U),
+                    dev->localizationFrames,
+                    dev->localizationRssiMin,
+                    dev->localizationRssiMax,
+                    reason);
+                _finishLocalizationSample(*dev, averageRssi, now);
+            }
         }
 
         _probePacketCount++;
-
-        MQTT_MGR.queueProbe(macStr, ssid[0] ? ssid : nullptr,
-                             rssi, ch, ieFP);
 
         STATE_WRITE_BEGIN();
         strlcpy(g_state.lastProbedSSID, ssid,
@@ -814,7 +909,7 @@ void WiFiManager::_processBeacon(const uint8_t* p,
     WiFiNetwork* net = _findOrCreateNetwork(ssid, bssid,
                                              rssi, ch);
     if (net) {
-        const bool isNewNetwork = (net->firstSeen == millis());
+        const bool isNewNetwork = net->localizationSampleSeq == 0;
 
         net->isHidden = isHidden;
         net->hasWPS   = hasWPS;
@@ -822,13 +917,26 @@ void WiFiManager::_processBeacon(const uint8_t* p,
                 sizeof(net->security));
         net->lastSeen = millis();
 
-        // Publish the AP once, after security/hidden/WPS are populated —
-        // _findOrCreateNetwork() only carries ssid/bssid/rssi/channel.
-        if (isNewNetwork && SPECTRE_PUBLISH_NETWORKS) {
+        // Publish bounded, localization-ready AP observations. This preserves
+        // inventory semantics while allowing the moving receiver and fixed
+        // home anchor to contribute repeated spatial measurements.
+        const uint32_t now = millis();
+        if (SPECTRE_PUBLISH_NETWORKS &&
+            _localizationSampleDue(*net, rssi, now)) {
             char bssidStr[18];
+            char trackId[24];
             _macToStr(bssid, bssidStr);
-            MQTT_MGR.queueNetwork(bssidStr, ssid, rssi, ch,
-                                  security, isHidden, hasWPS);
+            snprintf(trackId, sizeof(trackId), "AP:%s", bssidStr);
+            const int8_t averageRssi = _localizationAverageRssi(*net, rssi);
+            MQTT_MGR.queueNetwork(
+                bssidStr, ssid, averageRssi, ch,
+                security, isHidden, hasWPS, trackId,
+                static_cast<uint16_t>(net->localizationSampleSeq + 1U),
+                net->localizationFrames,
+                net->localizationRssiMin,
+                net->localizationRssiMax,
+                _localizationSampleReason(*net, rssi, now));
+            _finishLocalizationSample(*net, averageRssi, now);
         }
 
         _checkKarma(ssid, bssid, rssi, isNewNetwork);
@@ -2330,6 +2438,7 @@ TrackedDevice* WiFiManager::_findOrCreateDevice(
             _devices[i].rssi     = rssi;
             _devices[i].lastSeen = millis();
             _devices[i].frameCount++;
+            _noteLocalizationRssi(_devices[i], rssi);
             return &_devices[i];
         }
     }
@@ -2348,10 +2457,10 @@ TrackedDevice* WiFiManager::_findOrCreateDevice(
     dev.firstSeen   = millis();
     dev.lastSeen    = millis();
     dev.frameCount  = 1;
-
-    // Queue new device to MQTT
-    MQTT_MGR.queueDevice(mac, ieFingerprint, "",
-                          rssi, dev.isRandomMAC);
+    dev.localizationRssiMin = 127;
+    dev.localizationRssiMax = -127;
+    dev.localizationLastRssi = -127;
+    _noteLocalizationRssi(dev, rssi);
 
     return &dev;
 }
@@ -2385,6 +2494,7 @@ WiFiNetwork* WiFiManager::_findOrCreateNetwork(
         if (_macsEqual(_networks[i].bssid, bssid)) {
             _networks[i].rssi    = rssi;
             _networks[i].lastSeen = millis();
+            _noteLocalizationRssi(_networks[i], rssi);
             return &_networks[i];
         }
     }
@@ -2404,6 +2514,10 @@ WiFiNetwork* WiFiManager::_findOrCreateNetwork(
         net.channel   = ch;
         net.firstSeen = millis();
         net.lastSeen  = millis();
+        net.localizationRssiMin = 127;
+        net.localizationRssiMax = -127;
+        net.localizationLastRssi = -127;
+        _noteLocalizationRssi(net, rssi);
         STATE_WRITE_BEGIN();
         g_state.wifiNetworkCount = _networkCount;
         STATE_WRITE_END();
@@ -2418,6 +2532,10 @@ WiFiNetwork* WiFiManager::_findOrCreateNetwork(
     net.channel   = ch;
     net.firstSeen = millis();
     net.lastSeen  = millis();
+    net.localizationRssiMin = 127;
+    net.localizationRssiMax = -127;
+    net.localizationLastRssi = -127;
+    _noteLocalizationRssi(net, rssi);
     strlcpy(net.security, "OPEN", sizeof(net.security));
 
     STATE_WRITE_BEGIN();

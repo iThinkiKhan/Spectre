@@ -187,9 +187,9 @@ static constexpr uint8_t PHONE_COMMAND_VERSION = 1;
 static constexpr size_t PHONE_COMMAND_REQ_HEADER_SIZE  = 4;
 static constexpr size_t PHONE_COMMAND_RESP_HEADER_SIZE = 8;
 
-// Maximum payload bytes (post-decrypt) on either direction.  Sized so the
-// encrypted envelope still fits inside a single 244-byte BLE notification
-// after PHONE_SECURE_ENVELOPE_OVERHEAD (22 bytes).
+// Maximum payload bytes (post-decrypt) on either direction. Keep the encrypted
+// envelope below the negotiated single-write ATT payload. NimBLE's client
+// writeValue path does not perform a reliable ATT long write for this channel.
 static constexpr size_t PHONE_COMMAND_PAYLOAD_MAX = 192;
 
 static constexpr size_t PHONE_COMMAND_REQ_FRAME_MAX  =
@@ -241,6 +241,89 @@ static constexpr uint8_t CMD_OP_TAG_SESSION      = 0x22;
 static constexpr uint8_t CMD_OP_SAVE_LOCATION    = 0x23;
 static constexpr uint8_t CMD_OP_SCREEN_CHANGE    = 0x24;
 static constexpr uint8_t CMD_OP_DEBRIEF_REQUEST  = 0x25;
+
+// Slice #8 — durable field offload. Spectre keeps its existing MQTT path;
+// these commands copy pending publish records over the authenticated command
+// channel so the phone can durably queue and relay them through its own
+// network (normally WireGuard). A record is acknowledged on Spectre only
+// after the phone has committed it to native durable storage.
+static constexpr uint8_t CMD_OP_OFFLOAD_BEGIN = 0x30;
+static constexpr uint8_t CMD_OP_OFFLOAD_NEXT  = 0x31;
+static constexpr uint8_t CMD_OP_OFFLOAD_ACK   = 0x32;
+static constexpr uint8_t CMD_OP_OFFLOAD_END   = 0x33;
+static constexpr uint8_t CMD_OP_WIFI_OFFLOAD_BEGIN = 0x34;
+
+static constexpr uint8_t PHONE_OFFLOAD_VERSION = 1;
+static constexpr uint8_t PHONE_OFFLOAD_FLAG_END = 0x01;
+static constexpr uint8_t PHONE_OFFLOAD_FLAG_RECORD = 0x02;
+static constexpr uint8_t PHONE_OFFLOAD_FLAG_INDEX_TRUNCATED = 0x04;
+static constexpr size_t PHONE_OFFLOAD_RECORD_MAX = 1792;
+
+struct __attribute__((packed)) CmdOffloadBeginResponseV1 {
+    uint8_t  version;
+    uint8_t  transferId;
+    uint8_t  flags;
+    uint8_t  reserved;
+    uint32_t pendingTotal;
+    uint32_t indexedTotal;
+};
+
+struct __attribute__((packed)) CmdOffloadNextRequestV1 {
+    uint8_t  transferId;
+    uint8_t  reserved;
+    uint16_t offset;
+    // At offset zero the phone may durably ACK the previous record and fetch
+    // the next record in one ordered request. Zero means no piggyback ACK.
+    uint32_t ackEventId;
+};
+
+// The streamed record body is: sessionId bytes | topic bytes | JSON payload.
+// Metadata repeats on every chunk so retries are stateless on the phone side.
+struct __attribute__((packed)) CmdOffloadChunkV1 {
+    uint8_t  version;
+    uint8_t  transferId;
+    uint8_t  flags;
+    uint8_t  lane;
+    uint32_t eventId;
+    uint16_t totalLen;
+    uint16_t offset;
+    uint16_t chunkLen;
+    uint8_t  sessionLen;
+    uint8_t  topicLen;
+};
+
+struct __attribute__((packed)) CmdOffloadAckRequestV1 {
+    uint8_t  transferId;
+    uint8_t  reserved[3];
+    uint32_t eventId;
+};
+
+struct __attribute__((packed)) CmdOffloadAckResponseV1 {
+    uint32_t pendingTotal;
+};
+
+struct __attribute__((packed)) CmdOffloadEndRequestV1 {
+    uint8_t transferId;
+};
+
+struct __attribute__((packed)) CmdWifiOffloadBeginHeaderV1 {
+    uint8_t version;
+    uint8_t transferId;
+    uint8_t ssidLen;
+    uint8_t passwordLen;
+    uint8_t tokenLen;
+    uint8_t reserved;
+    uint16_t port;
+    // ssid | password | token follow
+};
+
+static_assert(sizeof(CmdOffloadBeginResponseV1) == 12);
+static_assert(sizeof(CmdOffloadNextRequestV1) == 8);
+static_assert(sizeof(CmdOffloadChunkV1) == 16);
+static_assert(sizeof(CmdOffloadAckRequestV1) == 8);
+static_assert(sizeof(CmdOffloadAckResponseV1) == 4);
+static_assert(sizeof(CmdOffloadEndRequestV1) == 1);
+static_assert(sizeof(CmdWifiOffloadBeginHeaderV1) == 8);
 
 // CMD_OP_TAG_SESSION / CMD_OP_SAVE_LOCATION request payload: 1-byte length
 // + UTF-8 bytes (no null terminator on the wire).  Tag truncated to 31 chars
@@ -514,6 +597,7 @@ static constexpr const char* TEXT_PROMPT_CHAR_UUID = "84f03a80-6d7b-4d4d-9a64-6b
 static constexpr const char* TEXT_INPUT_CHAR_UUID = "84f03a80-6d7b-4d4d-9a64-6b2d6f3a1003";
 static constexpr const char* TEXT_RECEIPT_CHAR_UUID = "84f03a80-6d7b-4d4d-9a64-6b2d6f3a1004";
 static constexpr const char* TEXT_STATUS_CHAR_UUID = "84f03a80-6d7b-4d4d-9a64-6b2d6f3a1005";
+static constexpr const char* TEXT_LINK_REQUEST_CHAR_UUID = "84f03a80-6d7b-4d4d-9a64-6b2d6f3a1006";
 
 #endif // SPECTRE_COMPANION_PROTOCOL_H
 

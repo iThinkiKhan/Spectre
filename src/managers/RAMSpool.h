@@ -27,7 +27,10 @@ enum EventPrio : uint8_t {
 };
 
 constexpr size_t POOL_SIZE   = 1024;
-constexpr size_t MAX_PAYLOAD = 336;  // binary field-map payload bytes per slot
+// Localization samples carry a stable track id plus a compact RSSI window.
+// The extra 48 bytes live in PSRAM (about 48 KB across the full pool) and keep
+// those bounded measurements on the normal asynchronous storage path.
+constexpr size_t MAX_PAYLOAD = 384;  // binary field-map payload bytes per slot
 
 struct EventSlot {
     uint32_t enqueueSeq;

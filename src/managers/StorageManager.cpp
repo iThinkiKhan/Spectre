@@ -3915,8 +3915,10 @@ bool StorageManager::endUploadBatch() {
 
     CONTRACT_WARN_ONCE(CONTRACT_UPLOAD_BATCH_OWNER_SYNC,
                        "STORAGE",
-                       !_uploadBatchActive || !RADIO_ARB.isOwner(RADIO_WIFI_UPLOAD),
-                       "upload batch closing while radio owner still=%s",
+                       !_uploadBatchActive ||
+                           RADIO_ARB.isOwner(RADIO_WIFI_UPLOAD) ||
+                           RADIO_ARB.isOwner(RADIO_BLE_GPS),
+                       "upload batch closing without upload owner; owner=%s",
                        RadioArbiter::ownerName(RADIO_ARB.currentOwner()));
 
     const bool wasActive = _uploadBatchActive;
@@ -13968,7 +13970,43 @@ bool StorageManager::_getNextUploadEventForSessionFromIndex(const String& sessio
     }
 
     EventStatus status = EVT_RAW;
-    if (_eventRecordPendingEnrichment(rec.doc.as<JsonObjectConst>())) {
+
+    // Enrichment is persisted as a separate delta record. Phone offload uses
+    // this single-record reader, so it must resolve the delta just like the
+    // indexed batch/MQTT reader below. Otherwise the phone receives the
+    // original observation body with no coordinates even after a successful
+    // GPS match.
+    const SpoolEnrichmentDelta* enrichment = nullptr;
+    auto enrichSessionIt = _backlog.uploadEnrichBySession.find(sessionId);
+    if (enrichSessionIt != _backlog.uploadEnrichBySession.end()) {
+        auto deltaIt = enrichSessionIt->second.find(rec.eventId);
+        if (deltaIt != enrichSessionIt->second.end()) {
+            enrichment = &deltaIt->second;
+        }
+    }
+
+    if (enrichment) {
+        if (enrichment->noData) {
+            dst[F_ENRICH_STATE] =
+                static_cast<uint8_t>(STORAGE_ENRICH_NO_DATA);
+            dst["enriched_ts"] = enrichment->ts;
+        } else {
+            dst["lat"] = enrichment->lat;
+            dst["lon"] = enrichment->lon;
+            dst["alt"] = enrichment->alt;
+            dst["acc"] = enrichment->acc;
+            if (enrichment->tag.length()) {
+                dst["tag"] = enrichment->tag;
+            }
+            dst["enriched_ts"] = enrichment->ts;
+            if (enrichment->gpsTs >= MIN_ENRICH_GPS_EPOCH) {
+                dst[F_GPS_TS] = enrichment->gpsTs;
+            }
+            dst[F_ENRICH_STATE] =
+                static_cast<uint8_t>(STORAGE_ENRICH_DONE);
+            status = EVT_ENRICHED;
+        }
+    } else if (_eventRecordPendingEnrichment(rec.doc.as<JsonObjectConst>())) {
         dst[F_ENRICH_STATE] =
             static_cast<uint8_t>(STORAGE_ENRICH_PENDING);
     }

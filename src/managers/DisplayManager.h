@@ -51,6 +51,7 @@ public:
                         uint32_t lastFrom, const char* lastText);
     void drawMission(MissionProfile profile);
     void drawWifi(const char* ssid, int networks, const char* probeActivity);
+    void drawBle();
     void drawRecon(MissionProfile selectedProfile);
     void drawSystem(float battV, unsigned long uptimeMs, const char* storage);
     void drawMissionSummary(unsigned long uptimeMs);
@@ -131,6 +132,7 @@ private:
     lv_obj_t*   _pwnyEapolQuads[4] = {};
     lv_obj_t*   _pwnyEapolNums[4]  = {};
     lv_obj_t*   _wifiContent  = nullptr;
+    lv_obj_t*   _bleContent   = nullptr;
     lv_obj_t*   _reconContent = nullptr;
     lv_obj_t*   _sysContent   = nullptr;
     lv_obj_t*   _sysLivePanel = nullptr;
@@ -181,6 +183,15 @@ private:
     lv_obj_t*   _wifiLastSSIDValue = nullptr;
     lv_obj_t*   _wifiLastMACValue = nullptr;
     lv_obj_t*   _wifiChannelValue = nullptr;
+    lv_obj_t*   _bleHeaderStatus = nullptr;
+    lv_obj_t*   _bleTransportValue = nullptr;
+    lv_obj_t*   _bleRadioValue = nullptr;
+    lv_obj_t*   _bleOutboundValue = nullptr;
+    lv_obj_t*   _bleInboundValue = nullptr;
+    lv_obj_t*   _bleSecurityValue = nullptr;
+    lv_obj_t*   _bleWorkValue = nullptr;
+    lv_obj_t*   _blePendingValue = nullptr;
+    lv_obj_t*   _bleGpsValue = nullptr;
     lv_obj_t*   _reconModeValue = nullptr;
     lv_obj_t*   _reconScriptLabel = nullptr;
     lv_obj_t*   _reconScriptValue = nullptr;
@@ -275,6 +286,7 @@ private:
     void _buildScreenBadUsb();
     void _buildScreenPwny();
     void _buildScreenWifi();
+    void _buildScreenBle();
     void _buildScreenRecon();
     void _buildScreenSystem();
     void _buildScreenMissionSummary();

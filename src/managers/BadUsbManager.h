@@ -4,6 +4,8 @@
 #pragma once
 
 #include <Arduino.h>
+#include <new>
+#include "../core/PsramObject.h"
 #include "StorageManager.h"
 
 enum BadUsbExecState : uint8_t {
@@ -24,8 +26,12 @@ enum BadUsbStepResult : uint8_t {
 class BadUsbManager {
 public:
     static BadUsbManager& getInstance() {
-        static BadUsbManager instance;
-        return instance;
+        static BadUsbManager* instance = []() {
+            void* storage = allocateManagerStorage(sizeof(BadUsbManager));
+            configASSERT(storage);
+            return new (storage) BadUsbManager();
+        }();
+        return *instance;
     }
 
     bool begin();

@@ -27,6 +27,7 @@ import {
   SPECTRE_BADUSB_UPLOAD_DATA_UUID,
   SPECTRE_BADUSB_UPLOAD_STATUS_UUID,
   SPECTRE_TEXT_INPUT_UUID,
+  SPECTRE_TEXT_LINK_REQUEST_UUID,
   SPECTRE_TEXT_PROMPT_UUID,
   SPECTRE_TEXT_RECEIPT_UUID,
   SPECTRE_TEXT_SERVICE_UUID,
@@ -373,6 +374,15 @@ export class BleClientService {
 
       this.attachCharacteristicMonitors(connected, generation);
 
+      try {
+        await this.requestCompanionLink();
+        this.listener?.onLog?.('Requested secure companion link from Spectre');
+      } catch (error: any) {
+        this.listener?.onLog?.(
+          `Phone-side companion request unavailable: ${error?.message ?? 'unknown'}`,
+        );
+      }
+
       this.reconnectAttempt = 0;
       this.emitConnection(
         'connected',
@@ -464,6 +474,17 @@ export class BleClientService {
       this.rebuildPromptState({});
       throw error;
     }
+  }
+
+  async requestCompanionLink() {
+    if (!this.device) {
+      throw new Error('No Spectre device connected');
+    }
+    await this.device.writeCharacteristicWithResponseForService(
+      SPECTRE_TEXT_SERVICE_UUID,
+      SPECTRE_TEXT_LINK_REQUEST_UUID,
+      utf8ToBase64('LINK1'),
+    );
   }
 
   async uploadBadUsbScript(draft: BadUsbScriptDraft) {

@@ -5,6 +5,7 @@
 #include <TFT_eSPI.h>
 #include <lvgl.h>
 #include <freertos/FreeRTOS.h>
+#include <freertos/queue.h>
 #include <freertos/task.h>
 #include <esp_heap_caps.h>
 #include <esp_wifi.h>
@@ -52,6 +53,7 @@
 #include "managers/DashboardStreamer.h"
 #include "managers/LogStreamer.h"
 #include "managers/NotificationCenter.h"
+#include "managers/PhoneOffloadManager.h"
 #include "managers/PhoneTransportRouter.h"
 #include "managers/RadioArbiter.h"
 #include "managers/WioNrfAccessory.h"
@@ -63,6 +65,12 @@
 #include "ui/LVGLDriver.h"
 #include "ui/Theme.h"
 #include "ui/PrebootFallback.h"
+
+// setup() peaks at 2044 bytes on the normal boot path. The early field-link
+// AP resume also runs here, so retain more than 3 KB of additional headroom
+// while avoiding an otherwise permanently parked 8 KB framework stack.
+static constexpr size_t SPECTRE_LOOP_TASK_STACK_BYTES = 5120;
+SET_LOOP_TASK_STACK_SIZE(SPECTRE_LOOP_TASK_STACK_BYTES);
 
 // ── Hardware objects ──
 TFT_eSPI        tft = TFT_eSPI();
@@ -93,6 +101,8 @@ namespace {
     constexpr uint32_t DISPLAY_FRAME_INTERVAL_MS = 50;
     constexpr uint32_t DISPLAY_MASCOT_INTERVAL_MS = 140;
     constexpr uint32_t PWNY_SCREEN_REFRESH_MS = 750;
+    constexpr uint32_t BUTTON_POLL_INTERVAL_MS = 10;
+    constexpr UBaseType_t BUTTON_EVENT_QUEUE_DEPTH = 8;
 
     constexpr size_t USB_CONSOLE_BUF_SIZE = 128;
     char g_usbConsoleBuf[USB_CONSOLE_BUF_SIZE] = {};
@@ -289,15 +299,23 @@ static void _updateCoreLoad(uint32_t nowMs) {
 // ── Task handles ──
 TaskHandle_t taskDisplayHandle  = nullptr;
 TaskHandle_t taskHardwareHandle = nullptr;
+TaskHandle_t taskButtonHandle   = nullptr;
+extern TaskHandle_t loopTaskHandle;
+
+StaticQueue_t s_buttonEventQueueStorage;
+uint8_t s_buttonEventQueueBuffer[BUTTON_EVENT_QUEUE_DEPTH * sizeof(ButtonEvent)] = {};
+QueueHandle_t s_buttonEventQueue = nullptr;
 
 
-// Stack high-water marks (2026-04-26): TaskDisplay min_free=20 KB, TaskHardware min_free=25 KB.
+// Stack high-water marks (2026-08-11, after phone bulk/localization field runs):
+// TaskDisplay min_free=13 KB of 18 KB, TaskHardware min_free=15 KB of 22 KB.
 // FreeRTOS reports the minimum free stack ever observed for the task; this
 // watermark can fall after deep MQTT/WiFi call paths and will not rebound.
-// Reduced from 24/32 KB to 18/22 KB — still leaves >10 KB headroom on each task.
+// Keep 6-8 KB above the measured peak while returning scarce internal SRAM.
 // Revisit if min_free ever drops below 4 KB on either task.
-static constexpr uint32_t TASK_DISPLAY_STACK_BYTES  = 18432;
-static constexpr uint32_t TASK_HARDWARE_STACK_BYTES = 22528;
+static constexpr uint32_t TASK_DISPLAY_STACK_BYTES  = 10240;
+static constexpr uint32_t TASK_HARDWARE_STACK_BYTES = 14336;
+static constexpr uint32_t TASK_BUTTON_STACK_BYTES   = 4096;
 static constexpr uint32_t STACK_LOG_INTERVAL_MS     = 30000UL;
 static constexpr uint32_t HEALTH_LOG_INTERVAL_MS    = 30000UL;
 static constexpr uint32_t HEAP_CHECK_INTERVAL_MS    = 120000UL;
@@ -489,6 +507,7 @@ static void _sendSubGhzTestPing() {
 }
 
 // ── Forward declarations ──
+void TaskButtons(void* pvParameters);
 void TaskDisplay(void* pvParameters);
 void TaskHardware(void* pvParameters);
 void _checkLocationTag();
@@ -534,7 +553,6 @@ static void _publishBootHeapTriageState(uint32_t pending,
 void _loadKnownLocationsIntoState();
 static void _clearStorageSummaryMirror();
 static bool _refreshStorageSummaryMirror(bool force);
-static bool _runPostMaintenanceUtcAcquisition();
 static bool _forceQuickNtp(const char* reason);
 static const char* _resetReasonName(esp_reset_reason_t r);
 static const char* _fieldVaultPowerSourceName(PowerSource source);
@@ -619,9 +637,15 @@ struct CompanionScheduler {
     uint32_t pendingNoiseItems = 0;
     uint32_t lastPendingRefreshMs = 0;
     bool manualProbeRequested = false;   // one-shot: bypasses gap check once
+    bool manualLinkHold = false;         // device BLE page LINK; held until RELEASE
     bool manualEnrichRequested = false;
     bool manualEnrichProbeBypass = false; // one-shot probe bypass for manual enrich
     bool offloadPrepRequested = false;
+    bool automaticOffloadHold = false;
+    bool automaticOffloadWasActive = false;
+    bool automaticOffloadPrepObserved = false;
+    uint32_t automaticOffloadDeadlineMs = 0;
+    uint32_t automaticOffloadRetryNotBeforeMs = 0;
     bool timeSyncRequested = false;
     bool enrichmentRequestIssued = false;
     size_t lastRequestedEnrichmentCount = 0;
@@ -685,6 +709,12 @@ static constexpr uint32_t PROBE_BACKOFF_INTERVAL_MS[PROBE_BACKOFF_STAGES] = {
      5UL * 60000UL,           // stage 3: 5 min floor
 };
 static constexpr uint32_t ENRICH_MIN_GAP_MS = 60000UL;
+// Automatic BLE offload is a bounded handoff, not a persistent link. Android
+// gets a short command window and one longer index-preparation window. Failure
+// backs off so a stranded backlog cannot churn the radio/reboot watchdog.
+static constexpr uint32_t OFFLOAD_COMMAND_WINDOW_MS = 30000UL;
+static constexpr uint32_t OFFLOAD_PREP_WINDOW_MS    = 60000UL;
+static constexpr uint32_t OFFLOAD_RETRY_BACKOFF_MS  = 5UL * 60000UL;
 static constexpr size_t PHONE_ENRICH_BATCH_MAX   = PHONE_COMPANION_ENRICH_BATCH_MAX;
 static constexpr size_t ENRICH_QUEUE_DEPTH       = 2;
 static constexpr size_t ENRICH_CLAIM_MAX         = ENRICH_QUEUE_DEPTH * PHONE_ENRICH_BATCH_MAX;
@@ -713,6 +743,10 @@ struct QueuedEnrichBatch {
     uint32_t  queuedMs  = 0;
 };
 
+// Keep the queue in internal RAM.  PendingEnrichment batches are copied out of
+// the NimBLE receive path and immediately consumed by the flash writer; placing
+// this hot handoff buffer in PSRAM caused a reproducible panic between
+// consumeEnrichmentBatch() and enqueueEnrichBatch() on the S3.
 static QueuedEnrichBatch enrichQueue[ENRICH_QUEUE_DEPTH];
 static size_t    enrichQueueHead  = 0;
 static size_t    enrichQueueTail  = 0;
@@ -723,7 +757,6 @@ static size_t    enrichClaimedCount = 0;
 static bool companionHasPriorityReason(const CompanionScheduler& cs) {
     return cs.manualProbeRequested ||
            cs.manualEnrichRequested ||
-           cs.offloadPrepRequested ||
            cs.timeSyncRequested;
 }
 
@@ -741,23 +774,51 @@ static const char* companionTransportTag(const CompanionScheduler& cs) {
 static bool companionHasEnrichmentWork(const CompanionScheduler& cs) {
     return cs.pendingItems > 0 ||
            cs.manualEnrichRequested ||
-           cs.offloadPrepRequested ||
            cs.timeSyncRequested;
 }
 
 static bool companionHasAutomaticEnrichmentWork(const CompanionScheduler& cs,
                                                 uint32_t pendingThreshold) {
     return cs.manualEnrichRequested ||
-           cs.offloadPrepRequested ||
            cs.timeSyncRequested ||
            cs.pendingItems >= pendingThreshold;
+}
+
+static bool companionHasAutomaticOffloadWork(const CompanionScheduler& cs) {
+    // Retry a phone handoff even when enrichment is already complete (for
+    // example after a reboot or a phone disconnect between the final GPS delta
+    // and offload). Without this, upload-only backlog has no reason to reopen
+    // the companion link and can remain stranded indefinitely.
+    if (cs.pendingItems > 0) {
+        return false;
+    }
+    if (cs.automaticOffloadHold ||
+        (cs.automaticOffloadRetryNotBeforeMs != 0 &&
+         static_cast<int32_t>(millis() -
+                              cs.automaticOffloadRetryNotBeforeMs) < 0)) {
+        return false;
+    }
+
+    bool storageReady = false;
+    uint32_t pendingUpload = 0;
+    STATE_READ_BEGIN();
+    storageReady = g_state.storageReady;
+    pendingUpload =
+        g_state.storagePendingUploadMission + g_state.storagePendingUploadNoise;
+    STATE_READ_END();
+    return storageReady && pendingUpload > 0;
 }
 
 static bool automaticCompanionShouldYieldToUpload() {
     if (MQTT_MGR.uploadStoppedBySerial()) {
         return false;
     }
-    return MQTT_MGR.backlogDrainActive() || MQTT_MGR.uploadReadyCount() > 0;
+    // Pending enrichment records are also pending upload records. Treating any
+    // upload-ready count as higher priority therefore prevents the automatic
+    // phone probe from ever starting precisely when localization work exists.
+    // Yield only to an upload that has actually acquired the pipeline; idle
+    // backlog must be GPS-resolved before it is allowed to leave the device.
+    return MQTT_MGR.backlogDrainActive();
 }
 
 static void resetEnrichmentSessionStats(CompanionScheduler& cs) {
@@ -893,6 +954,7 @@ static const char* radioOwnerName(RadioOwner owner) {
 
 // USB console writes commands; TaskHardware drains them and publishes status.
 struct CompanionCmd {
+    volatile bool link   = false;
     volatile bool probe  = false;
     volatile bool enrich = false;
     volatile bool cancel = false;
@@ -905,6 +967,14 @@ static CompanionCmd g_companionCmd;
 // the next hardware tick.
 void companionRequestEnrichNow() {
     g_companionCmd.enrich = true;
+}
+
+// The authenticated phone control channel uses the same scheduler-owned
+// cancellation path as USB and the device BLE page. BLEManager only parses
+// the transport frame; TaskHardware remains the sole owner that tears down
+// the persistent lease and returns the radio to capture.
+void companionRequestCancel() {
+    g_companionCmd.cancel = true;
 }
 
 struct CompanionStatusSnapshot {
@@ -925,6 +995,12 @@ struct CompanionStatusSnapshot {
     uint32_t pendingMission  = 0;
     uint32_t pendingNoise    = 0;
     uint32_t pendingTotal    = 0;
+    bool manualLinkHold      = false;
+    bool automaticOffloadHold = false;
+    bool offloadManagerActive = false;
+    bool offloadPreparationPending = false;
+    uint32_t offloadDeadlineInMs = 0;
+    uint32_t offloadRetryInMs = 0;
     uint32_t lastProbeAgeMs       = 0;
     uint32_t lastEnrichAgeMs      = 0;
     RadioOwner radioOwner         = RADIO_NONE;
@@ -1025,6 +1101,20 @@ static void publishCompanionState(const CompanionScheduler& companion) {
     snapshot.pendingMission = companion.pendingMissionItems;
     snapshot.pendingNoise = companion.pendingNoiseItems;
     snapshot.pendingTotal = companion.pendingItems;
+    snapshot.manualLinkHold = companion.manualLinkHold;
+    snapshot.automaticOffloadHold = companion.automaticOffloadHold;
+    snapshot.offloadManagerActive = PHONE_OFFLOAD.active();
+    snapshot.offloadPreparationPending = PHONE_OFFLOAD.preparationPending();
+    snapshot.offloadDeadlineInMs =
+        companion.automaticOffloadDeadlineMs != 0 &&
+        static_cast<int32_t>(companion.automaticOffloadDeadlineMs - now) > 0
+            ? companion.automaticOffloadDeadlineMs - now
+            : 0;
+    snapshot.offloadRetryInMs =
+        companion.automaticOffloadRetryNotBeforeMs != 0 &&
+        static_cast<int32_t>(companion.automaticOffloadRetryNotBeforeMs - now) > 0
+            ? companion.automaticOffloadRetryNotBeforeMs - now
+            : 0;
     snapshot.lastProbeAgeMs = companion.lastProbeMs ? now - companion.lastProbeMs : 0;
     snapshot.lastEnrichAgeMs = companion.lastEnrichMs ? now - companion.lastEnrichMs : 0;
     snapshot.radioOwner = RADIO_ARB.currentOwner();
@@ -1049,12 +1139,50 @@ static void publishCompanionState(const CompanionScheduler& companion) {
     snapshot.transportTransitions      = xport.transitions;
     g_companionStatus = snapshot;
 
+    const bool bleAdvertising = BLE_MGR.isAdvertising();
+    const bool bleInboundConnected = BLE_MGR.isInboundConnected();
+    const uint8_t bleAuthFail =
+        static_cast<uint8_t>(BLE_MGR.getLastAuthFailReason());
+    const uint8_t transportKind = static_cast<uint8_t>(xport.kind);
+    const int8_t blePeerRssi = BLE_MGR.getLastTargetRssi();
+
     STATE_WRITE_BEGIN();
+    const bool bleUiChanged =
+        g_state.bleRadioEnabled != snapshot.bleRadioEnabled ||
+        g_state.bleAdvertising != bleAdvertising ||
+        g_state.bleInboundConnected != bleInboundConnected ||
+        g_state.bleSecureReady != snapshot.phoneLinkReady ||
+        g_state.bleGpsReady != snapshot.phoneGpsReady ||
+        g_state.bleEnrichmentReady != snapshot.phoneEnrichmentReady ||
+        g_state.bleFreshGps != snapshot.phoneFreshGps ||
+        g_state.bleLinkState != static_cast<uint8_t>(snapshot.bleState) ||
+        g_state.bleAuthFailReason != bleAuthFail ||
+        g_state.phoneTransportKind != transportKind ||
+        g_state.blePeerRssi != blePeerRssi ||
+        g_state.bleLastDisconnectReason != snapshot.lastDisconnectReason ||
+        g_state.companionPhone != static_cast<uint8_t>(phoneState) ||
+        g_state.companionWork != static_cast<uint8_t>(workState) ||
+        g_state.companionPending != companion.pendingItems;
+    g_state.bleRadioEnabled = snapshot.bleRadioEnabled;
+    g_state.bleAdvertising = bleAdvertising;
+    g_state.bleInboundConnected = bleInboundConnected;
+    g_state.bleSecureReady = snapshot.phoneLinkReady;
+    g_state.bleGpsReady = snapshot.phoneGpsReady;
+    g_state.bleEnrichmentReady = snapshot.phoneEnrichmentReady;
+    g_state.bleFreshGps = snapshot.phoneFreshGps;
+    g_state.bleLinkState = static_cast<uint8_t>(snapshot.bleState);
+    g_state.bleAuthFailReason = bleAuthFail;
+    g_state.phoneTransportKind = transportKind;
+    g_state.blePeerRssi = blePeerRssi;
+    g_state.bleLastDisconnectReason = snapshot.lastDisconnectReason;
     g_state.companionEnabled = companion.enabled ? 1 : 0;
     g_state.companionPhone = static_cast<uint8_t>(phoneState);
     g_state.companionWork = static_cast<uint8_t>(workState);
     g_state.companionPending = companion.pendingItems;
     g_state.companionLastSeenMs = lastSeenMs;
+    if (bleUiChanged && g_state.currentScreen == SCREEN_BLE) {
+        g_state.dataRefresh = true;
+    }
     if (externalProxy) {
         g_state.bleConnected = externalPhone;
         strlcpy(g_state.bleDeviceName,
@@ -1151,18 +1279,16 @@ static bool canRunStorageMaintenance(const CompanionScheduler& companion,
 static void _applyCompanionPendingFromMirror(CompanionScheduler& companion) {
     uint32_t mission = 0;
     uint32_t noise = 0;
-    bool valid = false;
 
     STATE_READ_BEGIN();
-    valid = g_state.storageSummaryValid;
     mission = g_state.storagePendingEnrichMission;
     noise = g_state.storagePendingEnrichNoise;
     STATE_READ_END();
 
-    if (!valid) {
-        return;
-    }
-
+    // The lane counters are updated incrementally and remain the best-known
+    // scheduler input while the expensive full storage summary is marked
+    // maintenance-pending during continuous capture. Requiring summaryValid
+    // here makes automatic localization wait forever for a radio-idle audit.
     companion.pendingMissionItems = mission;
     companion.pendingNoiseItems = noise;
     companion.pendingItems = mission + noise;
@@ -1274,6 +1400,119 @@ static void publishPhoneStorageSnapshotIfDue(CompanionScheduler& cs, bool force 
     if (ok) {
         cs.lastStoragePublishMs = now;
     }
+}
+
+static void finishAutomaticOffloadHold(CompanionScheduler& cs,
+                                       const char* reason) {
+    if (!cs.automaticOffloadHold) {
+        return;
+    }
+
+    const bool transferStarted = cs.automaticOffloadWasActive;
+    cs.automaticOffloadHold = false;
+    cs.automaticOffloadWasActive = false;
+    cs.automaticOffloadPrepObserved = false;
+    cs.automaticOffloadDeadlineMs = 0;
+    cs.automaticOffloadRetryNotBeforeMs = millis() + OFFLOAD_RETRY_BACKOFF_MS;
+    cs.offloadPrepRequested = false;
+    cs.phoneState = COMPANION_PHONE_UNKNOWN;
+    PHONE_OFFLOAD.abandonPreparation(reason);
+
+    DLOG_INFO("OFFLOAD",
+              "automatic handoff ended reason=%s started=%u retryIn=%lus",
+              reason ? reason : "unknown",
+              transferStarted ? 1U : 0U,
+              static_cast<unsigned long>(OFFLOAD_RETRY_BACKOFF_MS / 1000UL));
+
+    if (RADIO_ARB.isOwner(RADIO_BLE_GPS) && !cs.manualLinkHold) {
+        RADIO_ARB.release(RADIO_BLE_GPS,
+                          reason ? reason : "automatic_offload_done");
+    }
+}
+
+static void deferAutomaticOffloadRecovery(CompanionScheduler& cs,
+                                          const char* reason) {
+    if (!cs.offloadPrepRequested) {
+        return;
+    }
+    cs.offloadPrepRequested = false;
+    cs.automaticOffloadRetryNotBeforeMs = millis() + OFFLOAD_RETRY_BACKOFF_MS;
+    DLOG_INFO("OFFLOAD",
+              "automatic recovery deferred reason=%s retryIn=%lus",
+              reason ? reason : "unknown",
+              static_cast<unsigned long>(OFFLOAD_RETRY_BACKOFF_MS / 1000UL));
+}
+
+static void beginAutomaticOffloadHold(CompanionScheduler& cs,
+                                      const char* reason) {
+    if (cs.externalTransportActive || cs.automaticOffloadHold) {
+        return;
+    }
+
+    const uint32_t now = millis();
+    cs.offloadPrepRequested = false;
+    cs.automaticOffloadHold = true;
+    cs.automaticOffloadWasActive = PHONE_OFFLOAD.active();
+    cs.automaticOffloadPrepObserved = false;
+    cs.automaticOffloadDeadlineMs = now + OFFLOAD_COMMAND_WINDOW_MS;
+    cs.workState = COMPANION_WORK_IDLE;
+    publishPhoneStorageSnapshotIfDue(cs, true);
+
+    if (RADIO_ARB.isOwner(RADIO_BLE_GPS)) {
+        RADIO_ARB.refreshLease(RADIO_BLE_GPS,
+                               RadioArbiter::BLE_PHONE_ENRICH_HOLD_MS,
+                               "automatic_offload_handoff");
+    }
+    DLOG_INFO("OFFLOAD",
+              "automatic handoff opened reason=%s commandWindow=%lus active=%u",
+              reason ? reason : "unknown",
+              static_cast<unsigned long>(OFFLOAD_COMMAND_WINDOW_MS / 1000UL),
+              cs.automaticOffloadWasActive ? 1U : 0U);
+}
+
+static void serviceAutomaticOffloadHold(CompanionScheduler& cs) {
+    if (!cs.automaticOffloadHold) {
+        return;
+    }
+
+    if (PHONE_OFFLOAD.wifiBulkActive()) {
+        return; // the manager now owns the controlled BLE -> Wi-Fi transition
+    }
+
+    if (!RADIO_ARB.isOwner(RADIO_BLE_GPS)) {
+        finishAutomaticOffloadHold(cs, "automatic_offload_owner_lost");
+        return;
+    }
+
+    if (PHONE_OFFLOAD.active()) {
+        cs.automaticOffloadWasActive = true;
+        RADIO_ARB.refreshLease(RADIO_BLE_GPS,
+                               RadioArbiter::BLE_PHONE_ENRICH_HOLD_MS,
+                               "automatic_offload_active");
+        return;
+    }
+
+    if (cs.automaticOffloadWasActive) {
+        finishAutomaticOffloadHold(cs, "automatic_offload_complete");
+        return;
+    }
+
+    if (PHONE_OFFLOAD.preparationPending() &&
+        !cs.automaticOffloadPrepObserved) {
+        cs.automaticOffloadPrepObserved = true;
+        cs.automaticOffloadDeadlineMs = millis() + OFFLOAD_PREP_WINDOW_MS;
+        DLOG_INFO("OFFLOAD", "index preparation observed; extending handoff window");
+    }
+
+    if (static_cast<int32_t>(millis() -
+                             cs.automaticOffloadDeadlineMs) >= 0) {
+        finishAutomaticOffloadHold(cs, "automatic_offload_timeout");
+        return;
+    }
+
+    RADIO_ARB.refreshLease(RADIO_BLE_GPS,
+                           RadioArbiter::BLE_PHONE_ENRICH_HOLD_MS,
+                           "automatic_offload_wait");
 }
 
 static bool shouldRunPhoneProbe(const CompanionScheduler& cs) {
@@ -2152,13 +2391,36 @@ static void _finishPhoneEnrichment(CompanionScheduler& cs, bool success) {
         }
     } else {
         // Pending counts are unchanged on failure; the next probe will refresh.
+        cs.manualLinkHold = false;
         cs.phoneState = COMPANION_PHONE_UNAVAILABLE;
         DLOG_WARN(companionTransportTag(cs), "Phone enrichment failed");
     }
 
-    if (RADIO_ARB.isOwner(RADIO_BLE_GPS)) {
+    // Successful internal localization is immediately followed by durable
+    // phone offload. Keep the authenticated GATT session only for the bounded
+    // handoff/transfer window; OFFLOAD_END, disconnect, inactivity, or timeout
+    // returns the radio to capture without relying on a separate cancel pulse.
+    if (success &&
+        !cs.externalTransportActive &&
+        PHONE_XPORT.isPhoneStorageReady()) {
+        const PhoneStorageFrameV1 handoff = _buildPhoneStorageFrame();
+        const uint32_t pendingUpload =
+            handoff.pendingUploadMission + handoff.pendingUploadNoise;
+        if (pendingUpload > 0) {
+            beginAutomaticOffloadHold(cs, "localization_complete");
+            DLOG_INFO("OFFLOAD",
+                      "localization complete; bounded handoff pending=%lu",
+                      static_cast<unsigned long>(pendingUpload));
+        }
+    }
+
+    const bool keepPersistentLink =
+        success && (cs.manualLinkHold || cs.automaticOffloadHold);
+    if (RADIO_ARB.isOwner(RADIO_BLE_GPS) && !keepPersistentLink) {
         RADIO_ARB.release(RADIO_BLE_GPS,
                           success ? "enrich_done" : "enrich_fail");
+    } else if (keepPersistentLink) {
+        DLOG_INFO("BLE", "Enrichment complete; persistent companion link retained");
     }
 
     endManualEnrichmentExclusive(cs, success ? "enrich_done"
@@ -2234,6 +2496,15 @@ static void applyEnrichmentProgressToScheduler(CompanionScheduler& cs,
                            ? cs.pendingNoiseItems - applied : 0;
     cs.pendingItems = cs.pendingMissionItems + cs.pendingNoiseItems;
     cs.lastPendingRefreshMs = millis();
+}
+
+static void markCompanionEnrichmentAuthoritativelyEmpty(CompanionScheduler& cs) {
+    const uint32_t now = millis();
+    cs.pendingMissionItems = 0;
+    cs.pendingNoiseItems = 0;
+    cs.pendingItems = 0;
+    cs.lastPendingRefreshMs = now;
+    StorageUiMirror::publishPendingEnrichment(0, 0, now);
 }
 
 static bool enrichQueueHasRoom() {
@@ -2505,16 +2776,6 @@ static void serviceEnrichmentPipeline(CompanionScheduler& cs) {
             }
         }
 
-        if (!cs.enrichmentRequestIssued &&
-            enrichQueueSize == 0 &&
-            enrichClaimedCount == 0 &&
-            cs.pendingItems == 0 &&
-            !companionHasPriorityReason(cs)) {
-            enrichClearAllClaims();
-            _finishPhoneEnrichment(cs, true);
-            return;
-        }
-
         // Issue next request if the queue has room and no request is in flight.
         // Skip if we just drained — separates the storage write from the spool
         // scan by one 10ms tick, giving the heap one breath between them.
@@ -2553,6 +2814,11 @@ static void serviceEnrichmentPipeline(CompanionScheduler& cs) {
                                    "Manual enrich continuing active=%u",
                                    cs.enrichmentWindowActive ? 1U : 0U);
                     } else {
+                        // Both the automatic spool walk and the completed
+                        // manual window are authoritative at this point. Keep
+                        // the scheduler and phone storage frame from retaining
+                        // a stale pre-enrichment segment summary.
+                        markCompanionEnrichmentAuthoritativelyEmpty(cs);
                         enrichClearAllClaims();
                         _finishPhoneEnrichment(cs, true);
                     }
@@ -2727,6 +2993,7 @@ static void serviceExternalEnrichmentPipeline(CompanionScheduler& cs) {
                                cs.enrichmentWindowActive ? 1U : 0U);
                 } else {
                     // Auto session, or manual drain fully complete: finish.
+                    markCompanionEnrichmentAuthoritativelyEmpty(cs);
                     enrichClearAllClaims();
                     _finishPhoneEnrichment(cs, true);
                     WIO_NRF.disconnectPhone("external_enrich_empty");
@@ -2789,6 +3056,7 @@ void _printUsbConsoleHelp() {
     Serial.println("[USB]   wio text <prompt> | wio text cancel");
     Serial.println("[USB]   wio raw <line>  (send exact UART line to WIO)");
     Serial.println("[USB]   companion status");
+    Serial.println("[USB]   companion link    (hold secure BLE link until cancel)");
     Serial.println("[USB]   companion probe   (one-shot manual BLE probe)");
     Serial.println("[USB]   companion enrich  (manual enrichment; probes first if needed)");
     Serial.println("[USB]   companion cancel  (clear all pending companion requests)");
@@ -2806,6 +3074,8 @@ void _printUsbConsoleHelp() {
     Serial.println("[USB]   fieldvault dump    (print FieldVault records, keep them)");
     Serial.println("[USB]   fieldvault clear   (delete retained FieldVault records)");
     Serial.println("[USB]   fieldvault upload  (upload pending FieldVault records only)");
+    Serial.println("[USB]   crash log         (print retained crash breadcrumb ring)");
+    Serial.println("[USB]   ble rxdiag        (print retained BLE receive crash stage)");
     Serial.println("[USB]   upload now         (manual MQTT upload of pending records)");
     Serial.println("[USB]   upload stop        (safely stop the active MQTT upload)");
     Serial.println("[USB]   upload resume      (allow MQTT uploads again)");
@@ -3421,6 +3691,13 @@ void _handleUsbConsoleLine(const char* rawLine) {
                       static_cast<unsigned long>(s.pendingMission),
                       static_cast<unsigned long>(s.pendingNoise),
                       static_cast<unsigned long>(s.pendingTotal));
+        Serial.printf("[COMP] hold manual=%d autoOffload=%d managerActive=%d prep=%d deadlineInMs=%lu retryInMs=%lu\r\n",
+                      s.manualLinkHold ? 1 : 0,
+                      s.automaticOffloadHold ? 1 : 0,
+                      s.offloadManagerActive ? 1 : 0,
+                      s.offloadPreparationPending ? 1 : 0,
+                      static_cast<unsigned long>(s.offloadDeadlineInMs),
+                      static_cast<unsigned long>(s.offloadRetryInMs));
         Serial.printf("[COMP] lastProbeAgeMs=%lu lastEnrichAgeMs=%lu\r\n",
                       static_cast<unsigned long>(s.lastProbeAgeMs),
                       static_cast<unsigned long>(s.lastEnrichAgeMs));
@@ -3436,6 +3713,16 @@ void _handleUsbConsoleLine(const char* rawLine) {
         }
         g_companionCmd.probe = true;
         Serial.println("[COMP] manual probe queued");
+        return;
+    }
+
+    if (lower == "companion link") {
+        if (!PHONE_COMPANION_ENABLED) {
+            Serial.println("[COMP] companion not enabled (PHONE_COMPANION_ENABLED=false)");
+            return;
+        }
+        g_companionCmd.link = true;
+        Serial.println("[COMP] persistent link queued");
         return;
     }
 
@@ -3685,6 +3972,16 @@ void _handleUsbConsoleLine(const char* rawLine) {
         } else {
             Serial.println("[FIELD] upload unavailable");
         }
+        return;
+    }
+
+    if (lower == "crash log" || lower == "crash ring") {
+        crashLogPrint();
+        return;
+    }
+
+    if (lower == "ble rxdiag") {
+        BLE_MGR.printRxCrashDiag();
         return;
     }
 
@@ -4077,37 +4374,9 @@ void _publishStorageState(bool storageOk, const String& storageUsed) {
                                          RADIO_ARB.isOwner(RADIO_STORAGE_MAINTENANCE));
 }
 
-static bool _runPostMaintenanceUtcAcquisition() {
-    if (TIME_SVC.hasAccurateUtc()) {
-        return true;
-    }
-    if (!STORAGE.isCaptureSafeToResume()) {
-        // Silent before: the retry would just skip and the health block still
-        // said UNSYNCED with a stale reason. Record it so the operator can see
-        // storage safety — not a network fault — is what's blocking the clock.
-        TIME_SVC.recordAttempt("capture_unsafe_skip");
-        DLOG_WARN("TIME", "Quick NTP skipped: storage not capture-safe flags=%s",
-                  STORAGE.maintenanceFlagsText());
-        return false;
-    }
-    if (!RADIO_ARB.requestUploadLease(12000UL, "quick_ntp_after_maintenance", true)) {
-        TIME_SVC.recordAttempt("lease_denied");
-        DLOG_WARN("TIME", "Quick NTP lease denied owner=%s",
-                  RadioArbiter::ownerName(RADIO_ARB.currentOwner()));
-        return false;
-    }
-
-    const bool ok = TIME_SVC.acquireUtcFromSavedWiFi(12000UL);
-    RADIO_ARB.release(RADIO_WIFI_UPLOAD,
-                      ok ? "quick_ntp_done" : "quick_ntp_failed",
-                      false);
-    return ok;
-}
-
-// Forced NTP grab that bypasses the capture-safety gate. Used at boot (where we
-// want a trusted clock before steady-state capture can strand records) and from
-// the `time sync` serial command. force=true on the lease so it preempts
-// capture; the caller restores default capture afterward.
+// Explicit, operator-requested NTP grab. This may block for up to 12 seconds,
+// so automatic boot/runtime paths must not call it. Passive TimeService::tick()
+// still accepts phone GPS immediately and NTP whenever WiFi is already online.
 static bool _forceQuickNtp(const char* reason) {
     if (TIME_SVC.hasAccurateUtc()) {
         return true;
@@ -4562,6 +4831,13 @@ void _initializeHardwareManagers(uint32_t& lastWifiTick) {
     WIFI_MGR.begin();
     RADIO_ARB.begin();
 
+    // A phone bulk transfer may have deliberately rebooted between its BLE
+    // command phase and private Wi-Fi phase. Adopt and prepare that AP before
+    // any scheduler path can allocate BLE or start capture again.
+    if (PHONE_OFFLOAD.wifiBulkActive()) {
+        PHONE_OFFLOAD.tickWifiBulk();
+    }
+
     STATE_WRITE_BEGIN();
     SESS.getId().toCharArray(g_state.sessionId, sizeof(g_state.sessionId));
     g_state.runContext = RUN_CONTEXT_GENERAL;
@@ -4619,7 +4895,9 @@ void _initializeHardwareManagers(uint32_t& lastWifiTick) {
     DLOG_INFO("WIFI", "Allocation: %s",
               WIFI_MGR.isAllocated() ? "OK" : "FAIL");
     lastWifiTick = millis();
-    RADIO_ARB.ensureDefaultCapture("boot");
+    if (!PHONE_OFFLOAD.wifiBulkActive()) {
+        RADIO_ARB.ensureDefaultCapture("boot");
+    }
 }
 
 void _publishHardwareReadyState() {
@@ -4753,6 +5031,11 @@ bool _visibleDisplayDataChanged(const DisplayFrameState& previous,
                    previous.badUsbArmed != next.badUsbArmed ||
                    previous.badUsbRunning != next.badUsbRunning;
 
+        case SCREEN_BLE:
+            // BLEManager mirrors state into g_state and raises dataRefresh only
+            // when one of the visible BLE fields changes.
+            return next.dataRefresh;
+
         case SCREEN_SYSTEM:
         case SCREEN_MISSION_SUMMARY:
             return next.dataRefresh ||
@@ -4785,7 +5068,9 @@ void _checkRuntimeContracts() {
 
     CONTRACT_WARN_ONCE(CONTRACT_UPLOAD_BATCH_OWNER_SYNC,
                        "CORE",
-                       !STORAGE.isUploadBatchActive() || owner == RADIO_WIFI_UPLOAD,
+                       !STORAGE.isUploadBatchActive() ||
+                           owner == RADIO_WIFI_UPLOAD ||
+                           owner == RADIO_BLE_GPS,
                        "batch active with owner=%s mqtt_state=%d",
                        RadioArbiter::ownerName(owner),
                        static_cast<int>(mqttState));
@@ -4855,6 +5140,8 @@ const char* _buttonActionName(SpectreButtonAction action) {
         case BUTTON_ACTION_BLE_TEST:          return "BLE_TEST";
         case BUTTON_ACTION_MESH_TOGGLE:       return "MESH_TOGGLE";
         case BUTTON_ACTION_MESH_SEND:         return "MESH_SEND";
+        case BUTTON_ACTION_BLE_LINK:          return "BLE_LINK";
+        case BUTTON_ACTION_BLE_RELEASE:       return "BLE_RELEASE";
         default:                             return "UNKNOWN";
     }
 }
@@ -4879,7 +5166,8 @@ static Screen _nextGeneralScreen(Screen screen) {
     switch (screen) {
         case SCREEN_LORA:       return SCREEN_MESHTASTIC;
         case SCREEN_MESHTASTIC: return SCREEN_WIFI;
-        case SCREEN_WIFI:       return SCREEN_BADUSB;
+        case SCREEN_WIFI:       return SCREEN_BLE;
+        case SCREEN_BLE:        return SCREEN_BADUSB;
         case SCREEN_BADUSB:     return SCREEN_RECON;
         case SCREEN_RECON:      return SCREEN_SYSTEM;
         case SCREEN_SYSTEM:     return SCREEN_MISSION_SUMMARY;
@@ -5068,6 +5356,8 @@ void _logRuntimeHealth(uint32_t nowMs) {
             taskDisplayHandle ? uxTaskGetStackHighWaterMark(taskDisplayHandle) : 0;
         const UBaseType_t hardwareStackWords =
             taskHardwareHandle ? uxTaskGetStackHighWaterMark(taskHardwareHandle) : 0;
+        const UBaseType_t loopStackWords =
+            loopTaskHandle ? uxTaskGetStackHighWaterMark(loopTaskHandle) : 0;
         
         _updateCoreLoad(nowMs);
 
@@ -5126,6 +5416,9 @@ void _logRuntimeHealth(uint32_t nowMs) {
                       static_cast<unsigned long>(kb(TASK_HARDWARE_STACK_BYTES)),
                       static_cast<unsigned long>(kb(hb(displayStackWords))),
                       static_cast<unsigned long>(kb(TASK_DISPLAY_STACK_BYTES)));
+        Serial.printf("[HEALTH] loopTask free_min=%luB/%luB\r\n",
+                      static_cast<unsigned long>(hb(loopStackWords)),
+                      static_cast<unsigned long>(SPECTRE_LOOP_TASK_STACK_BYTES));
         Serial.printf("[HEALTH] core usage: core0=%u%% core1=%u%%\r\n",
                       static_cast<unsigned>(g_coreLoad.busyPct[0]),
                       static_cast<unsigned>(g_coreLoad.busyPct[1]));
@@ -5486,6 +5779,29 @@ bool _runButtonAction(SpectreButtonAction action, bool storageOk) {
         case BUTTON_ACTION_BLE_TEST: {
             return requestManualBleTest("ble_test");
         }
+        case BUTTON_ACTION_BLE_LINK:
+            if (!PHONE_COMPANION_ENABLED) {
+                _queueNotification(NOTIF_DEVICE_NEW, "BLE COMPANION OFF");
+                return false;
+            }
+            g_companionCmd.link = true;
+            _queueNotification(NOTIF_DEVICE_NEW, "BLE LINK QUEUED");
+            DLOG_INFO("BLE", "Device BLE page requested bidirectional link window");
+            return true;
+        case BUTTON_ACTION_BLE_RELEASE: {
+            g_companionCmd.cancel = true;
+            const RadioOwner owner = RADIO_ARB.currentOwner();
+            if (owner == RADIO_BLE_TEXT) {
+                PHONE_XPORT.cancelTextInput("device_ble_release");
+                RADIO_ARB.release(RADIO_BLE_TEXT, "device_ble_release");
+            } else if (owner == RADIO_BLE_GPS) {
+                RADIO_ARB.release(RADIO_BLE_GPS, "device_ble_release");
+            }
+            _queueNotification(NOTIF_DEVICE_NEW, "BLE RELEASED");
+            DLOG_INFO("BLE", "Device BLE page released owner=%s",
+                      RadioArbiter::ownerName(owner));
+            return true;
+        }
         default:
             return false;
     }
@@ -5599,6 +5915,48 @@ static ButtonBindingSet _displayBindingsForSnapshot(const DisplayFrameState& sna
     }
 
 static bool _syncDisplayFromSnapshot(const DisplayFrameState& snapshot);
+
+// ── Core 1: TaskButtons ──
+
+void TaskButtons(void* pvParameters) {
+    (void)pvParameters;
+    DLOG_INFO("CORE", "Button input task started");
+
+    TickType_t lastWake = xTaskGetTickCount();
+    uint32_t lastStackLogMs = millis();
+    UBaseType_t minStackWords = uxTaskGetStackHighWaterMark(nullptr);
+    DLOG_INFO("STACK", "TaskButtons watermark=%luB",
+              static_cast<unsigned long>(
+                  uxTaskGetStackHighWaterMark(nullptr) * sizeof(StackType_t)));
+    for (;;) {
+        const ButtonEvent evt = buttons.getEvent();
+        if (evt != BTN_NONE && s_buttonEventQueue) {
+            if (xQueueSend(s_buttonEventQueue, &evt, 0) != pdPASS) {
+                DLOG_WARN("BTN", "input queue full; dropping evt=%s",
+                          _buttonEventName(evt));
+            }
+        }
+
+        vTaskDelayUntil(&lastWake, pdMS_TO_TICKS(BUTTON_POLL_INTERVAL_MS));
+
+        const uint32_t now = millis();
+        if (now - lastStackLogMs >= STACK_LOG_INTERVAL_MS) {
+            lastStackLogMs = now;
+            const UBaseType_t freeWords = uxTaskGetStackHighWaterMark(nullptr);
+            if (freeWords < minStackWords) minStackWords = freeWords;
+            const uint32_t freeBytes = freeWords * sizeof(StackType_t);
+            if (freeBytes < 1536U) {
+                DLOG_WARN("STACK", "TaskButtons low watermark=%luB min=%luB",
+                          static_cast<unsigned long>(freeBytes),
+                          static_cast<unsigned long>(minStackWords * sizeof(StackType_t)));
+            } else {
+                DLOG_INFO("STACK", "TaskButtons watermark=%luB min=%luB",
+                          static_cast<unsigned long>(freeBytes),
+                          static_cast<unsigned long>(minStackWords * sizeof(StackType_t)));
+            }
+        }
+    }
+}
 
 // ── Core 1: TaskDisplay ──
 
@@ -5884,6 +6242,10 @@ static bool _syncDisplayFromSnapshot(const DisplayFrameState& s) {
                     s.wifiSSID,
                     s.wifiNetworkCount,
                     s.probePacketCount > 0 ? s.lastProbedMAC : "--");
+                break;
+
+            case SCREEN_BLE:
+                display.drawBle();
                 break;
 
             case SCREEN_BADUSB:
@@ -6219,17 +6581,13 @@ void TaskHardware(void* pvParameters) {
 
     DLOG_INFO("CORE", "Hardware ready");
 
-    // Boot-time trusted-clock acquisition. A boot that reaches steady-state
-    // capture without a clock stamps every record epochUtc==0 (unenrichable),
-    // and the opportunistic retries can be starved for the whole boot by a
-    // wedged enrich session or capture-safety gate. Grab NTP here, up front,
-    // while workState is guaranteed IDLE and nothing can wedge it. Bounded by
-    // acquireUtcFromSavedWiFi's own timeout so a dead AP can't hang boot.
+    // Do not stop field capture for a blocking saved-WiFi/NTP search. In the
+    // field the phone supplies trusted GPS time over BLE; when WiFi is already
+    // connected TimeService::tick() requests NTP without a connect loop. The
+    // serial `time sync` command remains available for an explicit 12 s attempt.
     if (storageOk && !TIME_SVC.hasAccurateUtc()) {
-        DLOG_INFO("TIME", "Boot NTP acquisition starting");
-        const bool bootUtcOk = _forceQuickNtp("boot_ntp");
-        DLOG_INFO("TIME", "Boot NTP acquisition %s reason=%s",
-                  bootUtcOk ? "ok" : "failed", TIME_SVC.lastAttemptReason());
+        TIME_SVC.recordAttempt("passive_wait");
+        DLOG_INFO("TIME", "Trusted clock deferred; waiting for phone GPS or connected WiFi");
     }
 
     for (;;) {
@@ -6482,7 +6840,18 @@ void TaskHardware(void* pvParameters) {
             }
         }
 
-        ButtonEvent evt = buttons.getEvent();
+        // Button GPIO edges are sampled by TaskButtons so a blocking storage,
+        // WiFi, MQTT, or enrichment slice cannot make a short press vanish.
+        // TaskHardware remains the sole action owner and drains the queued
+        // semantic events here, preserving every existing routing contract.
+        ButtonEvent evt = BTN_NONE;
+        if (s_buttonEventQueue) {
+            xQueueReceive(s_buttonEventQueue, &evt, 0);
+        } else {
+            // Boot-time allocation/task failure fallback. This retains the
+            // previous behavior instead of leaving the unit with no input.
+            evt = buttons.getEvent();
+        }
 
         // Global sleep chord: holding both buttons ~1.5s requests deep sleep
         // from ANY screen, and even when the display has blanked. Handled
@@ -6606,6 +6975,7 @@ void TaskHardware(void* pvParameters) {
         // Otherwise a multi-window audit can reacquire the storage lease before
         // the companion scheduler has a chance to consume the request.
         if (storageOk && RADIO_ARB.isOwner(RADIO_STORAGE_MAINTENANCE) &&
+            !g_companionCmd.link &&
             !g_companionCmd.probe &&
             !g_companionCmd.enrich &&
             !g_companionCmd.cancel &&
@@ -6644,18 +7014,9 @@ void TaskHardware(void* pvParameters) {
                       static_cast<unsigned long>(maintMs),
                       captureSafe ? 1 : 0,
                       STORAGE.maintenanceFlagsText());
-            if (captureSafe && !TIME_SVC.hasAccurateUtc()) {
-                RADIO_ARB.release(RADIO_STORAGE_MAINTENANCE,
-                                  "storage_maintenance_done_ntp",
-                                  false);
-                const bool utcOk = _runPostMaintenanceUtcAcquisition();
-                RADIO_ARB.ensureDefaultCapture(utcOk ? "quick_ntp_done"
-                                                     : "quick_ntp_unavailable");
-            } else {
-                RADIO_ARB.release(RADIO_STORAGE_MAINTENANCE,
-                                  captureSafe ? "storage_maintenance_done"
-                                              : "storage_maintenance_pending");
-            }
+            RADIO_ARB.release(RADIO_STORAGE_MAINTENANCE,
+                              captureSafe ? "storage_maintenance_done"
+                                          : "storage_maintenance_pending");
             continue;
         }
 
@@ -6673,28 +7034,6 @@ void TaskHardware(void* pvParameters) {
                 (MQTT_MGR.backlogDrainActive() ||
                  uploadReady >= MQTT_UPLOAD_READY_THRESHOLD)) {
                 MQTT_MGR.requestDump(false);
-            }
-        }
-
-        // Keep this boot's captures enrichable by acquiring UTC unless a live
-        // WIO-proxy enrichment exchange is actually in flight.
-        const bool enrichActuallyInFlight =
-            companion.workState == COMPANION_WORK_ENRICHING &&
-            PHONE_XPORT.isWioActive() &&
-            (WIO_NRF.isCompanionLinkBusy() ||
-             WIO_NRF.isEnrichmentExchangeActive());
-        static uint32_t lastUtcAcquireMs = 0;
-        if (storageOk && !TIME_SVC.hasAccurateUtc() &&
-            RADIO_ARB.isOwner(RADIO_WIFI_CAPTURE) &&
-            !enrichActuallyInFlight &&
-            (lastUtcAcquireMs == 0 ||
-             millis() - lastUtcAcquireMs > UTC_ACQUIRE_RETRY_MS)) {
-            lastUtcAcquireMs = millis();
-            // Force-grab bypasses capture-safety; the gate above protects enrich.
-            const bool utcOk = _forceQuickNtp("utc_acquire");
-            if (utcOk) {
-                DLOG_INFO("TIME",
-                          "Trusted clock acquired via proactive quick-NTP retry");
             }
         }
 
@@ -6786,9 +7125,15 @@ void TaskHardware(void* pvParameters) {
             _checkLocationTag();
         }
 
+        // Command traffic is not guaranteed after Android is backgrounded.
+        // Expire abandoned transfers from the hardware loop even when the
+        // companion scheduler is disabled or no more commands arrive.
+        PHONE_OFFLOAD.expireIfStale();
+
         if (!companion.enabled) {
             // Companion disabled: discard any console-queued requests so they
             // can't fire if the feature is later re-enabled at runtime.
+            g_companionCmd.link   = false;
             g_companionCmd.probe  = false;
             g_companionCmd.enrich = false;
             g_companionCmd.cancel = false;
@@ -6796,9 +7141,15 @@ void TaskHardware(void* pvParameters) {
             companion.workState = COMPANION_WORK_IDLE;
             companion.enrichmentRequestIssued = false;
             companion.manualProbeRequested = false;
+            companion.manualLinkHold = false;
             companion.manualEnrichRequested = false;
             companion.manualEnrichProbeBypass = false;
             companion.offloadPrepRequested = false;
+            companion.automaticOffloadHold = false;
+            companion.automaticOffloadWasActive = false;
+            companion.automaticOffloadPrepObserved = false;
+            companion.automaticOffloadDeadlineMs = 0;
+            companion.automaticOffloadRetryNotBeforeMs = 0;
             companion.timeSyncRequested = false;
             companion.externalTransportActive = false;
         } else {
@@ -6806,12 +7157,13 @@ void TaskHardware(void* pvParameters) {
 
             // Drain console-issued companion commands into the scheduler.
             // The console (also running on TaskHardware via _pollUsbSerialConsole)
-            // writes g_companionCmd.{probe,enrich,cancel}; we read-and-clear here
+            // writes g_companionCmd.{link,probe,enrich,cancel}; we read-and-clear here
             // so the priority flags are visible to companionHasPriorityReason()
             // for the rest of this same tick. Cancel is processed first so a
             // simultaneously-queued probe/enrich is also wiped.
             if (g_companionCmd.cancel) {
                 g_companionCmd.cancel = false;
+                g_companionCmd.link   = false;
                 g_companionCmd.probe  = false;
                 g_companionCmd.enrich = false;
                 if (companion.manualProbeRequested ||
@@ -6821,10 +7173,31 @@ void TaskHardware(void* pvParameters) {
                     DLOG_INFO("COMP",
                               "Cancel: clearing pending companion requests");
                 }
+                // A response may already have passed authentication and been
+                // admitted to the bounded FIFO while the cancel command was
+                // waiting in the console queue.  Commit every admitted batch
+                // before resetting claims/indices so cancel cannot silently
+                // discard valid phone enrichment.
+                while (enrichQueueSize > 0) {
+                    const size_t drained = runEnrichDrain(companion, "COMP");
+                    if (drained == 0) {
+                        DLOG_WARN("COMP",
+                                  "Cancel deferred: admitted enrichment queue cannot drain size=%u",
+                                  static_cast<unsigned>(enrichQueueSize));
+                        break;
+                    }
+                }
                 companion.manualProbeRequested  = false;
+                companion.manualLinkHold = false;
                 companion.manualEnrichRequested = false;
                 companion.manualEnrichProbeBypass = false;
                 companion.offloadPrepRequested  = false;
+                companion.automaticOffloadHold = false;
+                companion.automaticOffloadWasActive = false;
+                companion.automaticOffloadPrepObserved = false;
+                companion.automaticOffloadDeadlineMs = 0;
+                companion.automaticOffloadRetryNotBeforeMs =
+                    millis() + OFFLOAD_RETRY_BACKOFF_MS;
                 companion.timeSyncRequested     = false;
                 companion.workState = COMPANION_WORK_IDLE;
                 companion.enrichmentRequestIssued = false;
@@ -6834,10 +7207,27 @@ void TaskHardware(void* pvParameters) {
                     STORAGE.releaseEnrichmentIndexMemory("companion_cancel");
                     companion.enrichmentWindowActive = false;
                 }
-                initEnrichQueue();
-                enrichClearAllClaims();
+                if (enrichQueueSize == 0) {
+                    initEnrichQueue();
+                    enrichClearAllClaims();
+                }
+                if (RADIO_ARB.isOwner(RADIO_BLE_GPS)) {
+                    RADIO_ARB.release(RADIO_BLE_GPS, "companion_cancel");
+                }
                 companion.externalTransportActive = false;
             }
+            if (g_companionCmd.link) {
+                g_companionCmd.link = false;
+                companion.manualLinkHold = true;
+                companion.manualProbeRequested = true;
+                companion.nextProbeMs = 0;
+                companion.probeBackoffStage = 0;
+                companion.probeBackoffMissCount = 0;
+                DLOG_INFO("COMP",
+                          "Persistent link request received; holding until release");
+            }
+
+            serviceAutomaticOffloadHold(companion);
             if (g_companionCmd.probe) {
                 g_companionCmd.probe = false;
                 companion.manualProbeRequested = true;
@@ -6929,7 +7319,8 @@ void TaskHardware(void* pvParameters) {
                     requestExternalPhoneProbe(
                         companion,
                         companion.offloadPrepRequested ? PHONE_PROBE_OFFLOAD_PREP :
-                        companion.manualEnrichRequested ? PHONE_PROBE_MANUAL :
+                        (companion.manualProbeRequested ||
+                         companion.manualEnrichRequested) ? PHONE_PROBE_MANUAL :
                         companion.timeSyncRequested ? PHONE_PROBE_TIME_SYNC :
                                                       PHONE_PROBE_BACKLOG
                     );
@@ -6957,6 +7348,31 @@ void TaskHardware(void* pvParameters) {
             // which causes pointless BLE leases after enrichment catches up.
             refreshCompanionPending(companion, false);
 
+            // Capture can add new raw records while an upload-only probe is in
+            // flight. Once enrichment work exists, this is no longer an
+            // offload-preparation request; normal threshold/backoff scheduling
+            // must decide when to contact the phone.
+            if (companion.offloadPrepRequested &&
+                companion.pendingItems > 0) {
+                deferAutomaticOffloadRecovery(companion,
+                                              "new_enrichment_work");
+            }
+
+            if (!externalProxy &&
+                companion.workState == COMPANION_WORK_IDLE &&
+                companion.phoneState != COMPANION_PHONE_AVAILABLE &&
+                !companion.manualProbeRequested &&
+                !companion.manualEnrichRequested &&
+                !companion.offloadPrepRequested &&
+                !companion.timeSyncRequested &&
+                companionHasAutomaticOffloadWork(companion)) {
+                companion.offloadPrepRequested = true;
+                companion.phoneState = COMPANION_PHONE_UNKNOWN;
+                companion.nextProbeMs = 0;
+                DLOG_INFO("COMP",
+                          "Automatic phone offload recovery requested");
+            }
+
             if (!externalProxy &&
                 companion.workState == COMPANION_WORK_IDLE &&
                 RADIO_ARB.isOwner(RADIO_BLE_GPS) &&
@@ -6967,36 +7383,48 @@ void TaskHardware(void* pvParameters) {
                 RADIO_ARB.refreshLease(RADIO_BLE_GPS,
                                        RadioArbiter::BLE_PHONE_ENRICH_HOLD_MS,
                                        "linked_manual_enrich");
-                companion.workState = COMPANION_WORK_ENRICHING;
-                resetEnrichmentSessionStats(companion);
-                companion.enrichmentRequestIssued = false;
-                companion.lastRequestedEnrichmentCount = 0;
-                crashCheckpoint(CrashPhase::BACKLOG_ENRICH,
-                                static_cast<uint8_t>(RADIO_ARB.currentOwner()),
-                                static_cast<uint32_t>(companion.pendingItems));
-                DLOG_INFO("BLE",
-                          "Active BLE link promoted to enrichment pendingEnrich=%lu manual=%u offload=%u timeSync=%u",
-                          static_cast<unsigned long>(companion.pendingItems),
-                          companion.manualEnrichRequested ? 1u : 0u,
-                          companion.offloadPrepRequested ? 1u : 0u,
-                          companion.timeSyncRequested ? 1u : 0u);
+                if (companion.offloadPrepRequested &&
+                    companion.pendingItems == 0) {
+                    beginAutomaticOffloadHold(companion,
+                                              "upload_only_link_ready");
+                } else {
+                    companion.workState = COMPANION_WORK_ENRICHING;
+                    resetEnrichmentSessionStats(companion);
+                    companion.enrichmentRequestIssued = false;
+                    companion.lastRequestedEnrichmentCount = 0;
+                    crashCheckpoint(CrashPhase::BACKLOG_ENRICH,
+                                    static_cast<uint8_t>(RADIO_ARB.currentOwner()),
+                                    static_cast<uint32_t>(companion.pendingItems));
+                    DLOG_INFO("BLE",
+                              "Active BLE link promoted to enrichment pendingEnrich=%lu manual=%u timeSync=%u",
+                              static_cast<unsigned long>(companion.pendingItems),
+                              companion.manualEnrichRequested ? 1u : 0u,
+                              companion.timeSyncRequested ? 1u : 0u);
+                }
             }
 
             // Opportunistic probe if work exists but phone is not known available yet.
             if (!externalProxy &&
                 companion.phoneState != COMPANION_PHONE_AVAILABLE &&
                 companion.workState == COMPANION_WORK_IDLE &&
-                companionHasAutomaticEnrichmentWork(
-                    companion, ENRICH_PENDING_THRESHOLD_INTERNAL)) {
+                (companion.manualLinkHold ||
+                 companion.manualProbeRequested ||
+                 companion.offloadPrepRequested ||
+                 companionHasAutomaticEnrichmentWork(
+                     companion, ENRICH_PENDING_THRESHOLD_INTERNAL))) {
 
                 if (shouldRunPhoneProbe(companion)) {
-                    requestPhoneProbeLease(
-                        companion,
+                    const PhoneProbeReason reason =
                         companion.offloadPrepRequested ? PHONE_PROBE_OFFLOAD_PREP :
-                        companion.manualEnrichRequested ? PHONE_PROBE_MANUAL :
+                        (companion.manualProbeRequested ||
+                         companion.manualEnrichRequested) ? PHONE_PROBE_MANUAL :
                         companion.timeSyncRequested ? PHONE_PROBE_TIME_SYNC :
-                                                      PHONE_PROBE_BACKLOG
-                    );
+                                                      PHONE_PROBE_BACKLOG;
+                    if (!requestPhoneProbeLease(companion, reason) &&
+                        reason == PHONE_PROBE_OFFLOAD_PREP) {
+                        deferAutomaticOffloadRecovery(
+                            companion, "probe_lease_failed");
+                    }
                 }
             }
 
@@ -7037,7 +7465,12 @@ void TaskHardware(void* pvParameters) {
         if (RADIO_ARB.isOwner(RADIO_BLE_TEXT)) {
     bleTickMs = 100;
         } else if (RADIO_ARB.isOwner(RADIO_BLE_GPS)) {
-    bleTickMs = 150;
+    // The phone command channel is an ordered request/response transport.
+    // At 150 ms every offload chunk paid one or two scheduler periods, which
+    // capped a healthy MTU-247 link at roughly two records/second. Capture is
+    // already paused while BLE_GPS owns the radio, so service the brief field
+    // handoff aggressively and return to capture sooner.
+    bleTickMs = 20;
         }
 
         if (PHONE_XPORT.isWioActive() && RADIO_ARB.isBleOwner()) {
@@ -7119,7 +7552,15 @@ void TaskHardware(void* pvParameters) {
                     crashBreadcrumbClear(CrashPhase::BACKLOG_PROBE);
                     DLOG_INFO("BLE", "Phone probe succeeded — backoff reset");
 
-                    if (companionHasEnrichmentWork(companion) &&
+                    if (companion.manualLinkHold) {
+                        companion.workState = COMPANION_WORK_IDLE;
+                        DLOG_INFO("BLE", "Persistent companion link established");
+                    } else if (companion.offloadPrepRequested &&
+                               companion.pendingItems == 0 &&
+                               RADIO_ARB.isOwner(RADIO_BLE_GPS)) {
+                        beginAutomaticOffloadHold(companion,
+                                                  "upload_only_probe_ready");
+                    } else if (companionHasEnrichmentWork(companion) &&
                         RADIO_ARB.isOwner(RADIO_BLE_GPS)) {
                         companion.workState = COMPANION_WORK_ENRICHING;
                         resetEnrichmentSessionStats(companion);
@@ -7137,13 +7578,22 @@ void TaskHardware(void* pvParameters) {
                     }
 
                     if (companion.workState == COMPANION_WORK_IDLE &&
-                        RADIO_ARB.isOwner(RADIO_BLE_GPS)) {
+                        RADIO_ARB.isOwner(RADIO_BLE_GPS) &&
+                        !companion.manualLinkHold &&
+                        !companion.automaticOffloadHold) {
                         RADIO_ARB.release(RADIO_BLE_GPS, "probe_success");
                     }
                 } else if (!RADIO_ARB.isOwner(RADIO_BLE_GPS)) {
                     companion.phoneState = COMPANION_PHONE_UNAVAILABLE;
                     companion.workState = COMPANION_WORK_IDLE;
                     crashBreadcrumbClear(CrashPhase::BACKLOG_PROBE);
+
+                    // An upload-only recovery probe is one bounded attempt.
+                    // Leaving this priority flag set bypasses nextProbeMs and
+                    // immediately reacquires BLE_GPS forever when the phone is
+                    // absent.
+                    deferAutomaticOffloadRecovery(companion,
+                                                  "phone_not_seen");
 
                     // Advance backoff stage if we've exhausted this stage's
                     // miss budget.  Stage 3 is the indefinite floor.
@@ -7207,7 +7657,8 @@ void TaskHardware(void* pvParameters) {
         }
         lastTextPending = textPending;
 
-        if (RADIO_ARB.isOwner(RADIO_WIFI_UPLOAD)) {
+        PHONE_OFFLOAD.tickWifiBulk();
+        if (RADIO_ARB.isOwner(RADIO_WIFI_UPLOAD) && !PHONE_OFFLOAD.wifiBulkActive()) {
             MQTT_MGR.tick();
         }
 
@@ -7559,6 +8010,17 @@ void setup() {
     DebugLog::applyProfile(static_cast<DebugProfile>(SPECTRE_DEBUG_PROFILE),
                            kDebugSubsystemMask);
 
+    // Recovery input takes priority over an RTC-retained field-offload resume.
+    // Normal boots consume the one-time AP material before the regular
+    // UI/storage/radio allocation path; a held recovery button discards it so
+    // a bad early Wi-Fi transition cannot survive every reset.
+    g_bootRecoveryMode = _detectBootRecoveryRequest();
+    if (g_bootRecoveryMode) {
+        PHONE_OFFLOAD.discardRetainedWifiBulkResume();
+    } else {
+        PHONE_OFFLOAD.resumeWifiBulkEarly();
+    }
+
     // Bring up the physical UI before touching NVS or LittleFS. If a prior run
     // left storage in a bad state, the user still gets a visible recovery path.
     pinMode(LCD_POWER, OUTPUT);
@@ -7574,7 +8036,6 @@ void setup() {
     tft.setRotation(3);
     tft.fillScreen(0x0000);
 
-    g_bootRecoveryMode = _detectBootRecoveryRequest();
     if (g_bootRecoveryMode) {
         PrebootFallback::showFatal(tft, "RECOVERY MODE", "USB FLASH READY");
     }
@@ -7650,6 +8111,24 @@ void setup() {
 
     DLOG_INFO("SYS", "Starting tasks");
 
+    s_buttonEventQueue = xQueueCreateStatic(
+        BUTTON_EVENT_QUEUE_DEPTH,
+        sizeof(ButtonEvent),
+        s_buttonEventQueueBuffer,
+        &s_buttonEventQueueStorage);
+    if (!s_buttonEventQueue) {
+        DLOG_ERROR("BTN", "Failed to create button event queue");
+    } else {
+        const BaseType_t buttonTaskCreated = xTaskCreatePinnedToCore(
+            TaskButtons, "TaskButtons",
+            TASK_BUTTON_STACK_BYTES, nullptr, 3,
+            &taskButtonHandle, 1);
+        if (buttonTaskCreated != pdPASS) {
+            DLOG_ERROR("BTN", "Failed to create button input task");
+            s_buttonEventQueue = nullptr;
+        }
+    }
+
     xTaskCreatePinnedToCore(
         TaskDisplay, "TaskDisplay",
         TASK_DISPLAY_STACK_BYTES, nullptr, 2,
@@ -7661,8 +8140,14 @@ void setup() {
         &taskHardwareHandle, 0);
 
     DLOG_INFO("SYS", "Tasks launched");
+    DLOG_INFO("STACK", "loopTask setup watermark=%luB",
+              static_cast<unsigned long>(
+                  uxTaskGetStackHighWaterMark(nullptr) * sizeof(StackType_t)));
 }
 
 void loop() {
+    // Arduino owns the lifecycle of loopTask. Deleting it reclaimed 8 KB, but
+    // caused a repeatable delayed reset after BLE authentication on this core.
+    // Keep the framework task parked; the dedicated Spectre tasks do the work.
     vTaskDelay(portMAX_DELAY);
 }

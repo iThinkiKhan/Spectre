@@ -4,8 +4,10 @@
 #pragma once
 
 #include <Arduino.h>
+#include <new>
 
 #include "../core/SpectreState.h"
+#include "../core/PsramObject.h"
 
 struct PowerSnapshot {
     uint16_t voltageMv = 0;
@@ -27,8 +29,12 @@ struct PowerSnapshot {
 class PowerManager {
 public:
     static PowerManager& getInstance() {
-        static PowerManager instance;
-        return instance;
+        static PowerManager* instance = []() {
+            void* storage = allocateManagerStorage(sizeof(PowerManager));
+            configASSERT(storage);
+            return new (storage) PowerManager();
+        }();
+        return *instance;
     }
 
     bool begin();

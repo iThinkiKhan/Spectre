@@ -3,7 +3,6 @@ import {
   Pressable,
   ScrollView,
   StyleSheet,
-  Switch,
   Text,
   TextInput,
   View,
@@ -107,6 +106,12 @@ function progressFraction(current: number, total: number) {
   return Math.max(0, Math.min(1, current / total));
 }
 
+function formatBytes(value: number) {
+  if (value < 1024) return `${Math.round(value)} B`;
+  if (value < 1024 * 1024) return `${(value / 1024).toFixed(1)} KiB`;
+  return `${(value / (1024 * 1024)).toFixed(1)} MiB`;
+}
+
 function stemFromImportedFileName(fileName: string) {
   const trimmed = fileName.trim();
   if (!trimmed.length) {
@@ -199,6 +204,111 @@ export function OpsScreen() {
       style={styles.scroll}
       contentContainerStyle={styles.content}
       showsVerticalScrollIndicator={false}>
+      <FieldPanel
+        title="Field Offload"
+        eyebrow="Spectre → phone vault → WireGuard → home"
+        tone={spectre.fieldTransfer.phase === 'error' ? 'danger' : 'accent'}>
+        <Text style={styles.bodyText}>
+          Copy pending records through the authenticated BLE command channel.
+          Spectre acknowledges each record only after Android commits it to the
+          durable queue; home relay then uses MQTT QoS 1 over the phone route.
+        </Text>
+
+        <View style={styles.summaryRow}>
+          <View style={styles.summaryChip}>
+            <Text style={styles.summaryLabel}>Phone queued</Text>
+            <Text style={styles.summaryValue}>{spectre.relayStatus.pending}</Text>
+          </View>
+          <View style={styles.summaryChip}>
+            <Text style={styles.summaryLabel}>Queue bytes</Text>
+            <Text style={styles.summaryValue}>
+              {formatBytes(spectre.relayStatus.pendingBytes)}
+            </Text>
+          </View>
+          <View style={styles.summaryChipWide}>
+            <Text style={styles.summaryLabel}>Home endpoint</Text>
+            <Text style={styles.summaryValue}>{spectre.relayStatus.endpoint}</Text>
+          </View>
+        </View>
+
+        <Text
+          style={
+            spectre.fieldTransfer.phase === 'error'
+              ? styles.errorText
+              : styles.uploadMessage
+          }>
+          {spectre.fieldTransfer.message}
+        </Text>
+
+        {!spectre.peripheralState.secureSessionReady ? (
+          <Text style={styles.warnText}>
+            Start Field Mode and establish the secure companion link first.
+          </Text>
+        ) : null}
+        {!spectre.wireGuardActive ? (
+          <Text style={styles.warnText}>
+            No phone VPN route is detected. Drain remains safe; records will
+            stay in the phone queue until the route returns.
+          </Text>
+        ) : null}
+
+        <View style={styles.buttonRow}>
+          <Pressable
+            style={[
+              styles.primaryButton,
+              !spectre.peripheralState.secureSessionReady ||
+              spectre.fieldTransfer.phase === 'copying' ||
+              spectre.fieldTransfer.phase === 'relaying'
+                ? styles.buttonDisabled
+                : null,
+            ]}
+            disabled={
+              !spectre.peripheralState.secureSessionReady ||
+              spectre.fieldTransfer.phase === 'copying' ||
+              spectre.fieldTransfer.phase === 'relaying'
+            }
+            onPress={() => spectre.offloadToPhone().catch(() => {})}>
+            <Text style={styles.primaryText}>Drain Spectre</Text>
+          </Pressable>
+          <Pressable
+            style={[
+              styles.secondaryButton,
+              !spectre.peripheralState.secureSessionReady ||
+              spectre.fieldTransfer.phase === 'copying' ||
+              spectre.fieldTransfer.phase === 'relaying'
+                ? styles.buttonDisabled
+                : null,
+            ]}
+            disabled={
+              !spectre.peripheralState.secureSessionReady ||
+              spectre.fieldTransfer.phase === 'copying' ||
+              spectre.fieldTransfer.phase === 'relaying'
+            }
+            onPress={() => spectre.offloadToPhone(25).catch(() => {})}>
+            <Text style={styles.secondaryText}>Test 25</Text>
+          </Pressable>
+          <Pressable
+            style={[
+              styles.secondaryButton,
+              !spectre.wireGuardActive ||
+              spectre.relayStatus.pending === 0 ||
+              spectre.fieldTransfer.phase === 'copying' ||
+              spectre.fieldTransfer.phase === 'relaying'
+                ? styles.buttonDisabled
+                : null,
+            ]}
+            disabled={
+              !spectre.wireGuardActive ||
+              spectre.relayStatus.pending === 0 ||
+              spectre.fieldTransfer.phase === 'copying' ||
+              spectre.fieldTransfer.phase === 'relaying'
+            }
+            onPress={() => spectre.relayHome().catch(() => {})}>
+            <Text style={styles.secondaryText}>Relay Home</Text>
+          </Pressable>
+        </View>
+      </FieldPanel>
+
       <FieldPanel
         title="Vault Uplink"
         eyebrow="BadUSB // target /config/vault/badusb"
@@ -432,21 +542,15 @@ export function OpsScreen() {
       <FieldPanel title="Field Controls" eyebrow="Control frame // slim surface" tone="accent">
         <View style={styles.compactRow}>
           <View style={styles.switchCopy}>
-            <Text style={styles.switchTitle}>WireGuard active on phone</Text>
+            <Text style={styles.switchTitle}>Phone VPN route</Text>
             <Text style={styles.switchBody}>
-              Sets bit 0 in the phone control frame so Spectre can judge uplink
-              readiness.
+              Detected automatically from Android. The status bit tells Spectre
+              whether the phone currently has a private uplink path.
             </Text>
           </View>
-          <Switch
-            value={spectre.wireGuardActive}
-            onValueChange={spectre.setWireGuardActive}
-            trackColor={{
-              false: theme.colors.panelEdge,
-              true: theme.colors.cyanDim,
-            }}
-            thumbColor={theme.colors.white}
-          />
+          <Text style={spectre.wireGuardActive ? styles.vpnActiveText : styles.warnText}>
+            {spectre.wireGuardActive ? 'ACTIVE' : 'OFFLINE'}
+          </Text>
         </View>
 
         <View style={styles.buttonRow}>
@@ -582,6 +686,12 @@ const styles = StyleSheet.create({
     fontSize: 12,
     lineHeight: 17,
     fontFamily: theme.fonts.label,
+  },
+  vpnActiveText: {
+    color: theme.colors.lime,
+    fontSize: 12,
+    fontWeight: '800',
+    letterSpacing: 0.8,
   },
   metaGrid: {
     flexDirection: 'row',

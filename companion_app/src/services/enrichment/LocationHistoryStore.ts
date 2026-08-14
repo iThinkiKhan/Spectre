@@ -1,5 +1,3 @@
-import {Platform} from 'react-native';
-import Geolocation from 'react-native-geolocation-service';
 import {
   getStoredString,
   removeStoredString,
@@ -587,31 +585,11 @@ export async function flushLocationHistoryPersist(): Promise<void> {
 }
 
 export async function getCurrentDeviceLocationFix(): Promise<LocationHistoryFix | null> {
-  if (Platform.OS !== 'android') {
-    return null;
-  }
-
-  return new Promise(resolve => {
-    Geolocation.getCurrentPosition(
-      position => {
-        resolve({
-          lat: position.coords.latitude,
-          lon: position.coords.longitude,
-          alt: position.coords.altitude ?? 0,
-          accuracy: position.coords.accuracy ?? 0,
-          timestamp: position.timestamp || Date.now(),
-          source: 'device',
-          provider: 'fused',
-        });
-      },
-      () => resolve(null),
-      {
-        enableHighAccuracy: true,
-        timeout: 15_000,
-        maximumAge: 20_000,
-        forceRequestLocation: false,
-        showLocationDialog: true,
-      },
-    );
-  });
+  // The native foreground recorder is the canonical location source and owns
+  // the same chunked history. Avoid react-native-geolocation-service here: its
+  // bundled client targets the pre-interface Play Services API and crashes on
+  // current Android 16 Play Services before its error callback can run.
+  const history = await loadLocationHistory();
+  const latest = history.length > 0 ? history[history.length - 1] : null;
+  return latest && Date.now() - latest.timestamp <= 2 * 60_000 ? latest : null;
 }

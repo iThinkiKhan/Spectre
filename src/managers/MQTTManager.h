@@ -105,16 +105,24 @@ public:
     // These are called by WiFiManager as captures happen
     bool queueProbe(const char* mac, const char* ssid,
                     int8_t rssi, uint8_t channel,
-                    const char* ieFingerprint);
+                    const char* ieFingerprint,
+                    const char* trackId, uint8_t physicalDeviceId,
+                    uint16_t sampleSeq, uint16_t sampleFrames,
+                    int8_t rssiMin, int8_t rssiMax,
+                    const char* sampleReason);
     void queueDevice(const char* mac, const char* ieFingerprint,
                      const char* probeSetHash, int8_t rssi,
-                     bool isRandomMAC);
+                     bool isRandomMAC, const char* trackId,
+                     uint8_t physicalDeviceId);
     // AP inventory. Queued once per newly-observed BSSID — beacons arrive
     // continuously, and spectre_networks is keyed by bssid, so re-publishing
     // every beacon would be pure duplicate traffic.
     void queueNetwork(const char* bssid, const char* ssid,
                       int8_t rssi, uint8_t channel,
-                      const char* security, bool isHidden, bool hasWPS);
+                      const char* security, bool isHidden, bool hasWPS,
+                      const char* trackId, uint16_t sampleSeq,
+                      uint16_t sampleFrames, int8_t rssiMin,
+                      int8_t rssiMax, const char* sampleReason);
     void queueDrone(const char* droneID, float lat, float lon,
                     float alt, const char* mac, int8_t rssi,
                     uint8_t channel, const char* protocol);

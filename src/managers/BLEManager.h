@@ -70,6 +70,10 @@ public:
     void setRadioEnabled(bool enabled);
     bool isBegun() const { return _begun; }
     bool isRadioEnabled() const { return _radioEnabled; }
+    bool isAdvertising() const { return _advertisingActive; }
+    bool isInboundConnected() const { return _serverConnected; }
+    int8_t getLastTargetRssi() const { return _lastTargetRssi; }
+    void printRxCrashDiag() const;
 
     void setTargetDeviceName(const char* deviceName);
     void setTargetServiceUUID(const char* serviceUuid);
@@ -290,6 +294,8 @@ private:
     void _drainControlRx();
     void _drainEnrichmentRx();
     void _drainCommandRx();
+    void _noteSecureRxSuccess();
+    void _noteSecureRxFailure(const char* channel, const char* error);
     void _handleCommandRequestPayload(const uint8_t* data, size_t len);
 
     void _clearBleRxQueues();
@@ -326,6 +332,7 @@ private:
 
     bool      _clientConnected = false;
     bool      _serverConnected = false;
+    uint16_t  _serverConnHandle = BLE_HS_CONN_HANDLE_NONE;
     bool      _ignoreDisconnectOnce = false;
     uint8_t   _dirtyDisconnectCount = 0;
     bool      _gpsNotifyEnabled = false;
@@ -440,6 +447,7 @@ private:
     bool    _controlRxPending = false;
     size_t  _controlRxLen = 0;
     uint16_t _controlRxDrops = 0;
+    uint8_t _secureRxFailures = 0;
 
     // Enrichment must preserve chunk order.
     uint8_t _enrichRxHead = 0;
@@ -541,6 +549,9 @@ private:
     NimBLECharacteristic*       _inputChar = nullptr;
     NimBLECharacteristic*       _receiptChar = nullptr;
     NimBLECharacteristic*       _statusChar = nullptr;
+    NimBLECharacteristic*       _linkRequestChar = nullptr;
+    volatile bool               _phoneLinkRequestPending = false;
+    uint32_t                    _lastPhoneLinkRequestMs = 0;
 
     TaskHandle_t                _workerTask = nullptr;
 

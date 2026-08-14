@@ -1,10 +1,12 @@
 #include "WioNrfAccessory.h"
 
 #include <math.h>
+#include <new>
 #include <stdlib.h>
 #include <string.h>
 
 #include "../core/DebugLog.h"
+#include "../core/PsramObject.h"
 #include "../core/Session.h"
 #include "CommandDispatcher.h"
 #include "TimeService.h"
@@ -58,7 +60,14 @@ bool isPrintableTextByte(uint8_t b) {
 }
 }
 
-WioNrfAccessory WIO_NRF;
+WioNrfAccessory& getWioNrfAccessory() {
+    static WioNrfAccessory* instance = []() {
+        void* storage = allocateManagerStorage(sizeof(WioNrfAccessory));
+        configASSERT(storage);
+        return new (storage) WioNrfAccessory();
+    }();
+    return *instance;
+}
 
 bool WioNrfAccessory::begin(uint32_t detectTimeoutMs) {
 #if WIO_NRF_ACCESSORY_ENABLED

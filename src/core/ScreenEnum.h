@@ -12,6 +12,8 @@ typedef enum {
     SCREEN_RECON,
     SCREEN_SYSTEM,
     SCREEN_MISSION_SUMMARY,
+    // Appended to preserve persisted numeric values for the existing screens.
+    SCREEN_BLE,
     SCREEN_COUNT
 } Screen;
 

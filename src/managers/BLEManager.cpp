@@ -3,6 +3,7 @@
 
 #include "BLEManager.h"
 #include "CommandDispatcher.h"
+#include "PhoneOffloadManager.h"
 #include "TimeService.h"
 
 #include "protocol/CompanionProtocol.h"
@@ -16,6 +17,8 @@
 #include "freertos/task.h"
 #include "esp_bt.h"
 #include <esp_err.h>
+
+extern void companionRequestCancel();
 #include <esp_wifi.h>
 #include <esp_heap_caps.h>
 
@@ -43,6 +46,7 @@ constexpr uint32_t CONNECT_TIMEOUT_PROBE_MS  = 45000UL;  // long field probe
 constexpr uint16_t PHONE_CONN_SUPERVISION_TIMEOUT_10MS = 1500;
 constexpr uint32_t CONNECT_WATCHDOG_MS       = 50000UL;
 constexpr uint32_t GPS_POLL_MS               = 5000UL;
+constexpr uint32_t PHONE_LINK_REQUEST_COOLDOWN_MS = 5000UL;
 constexpr uint32_t CONTROL_POLL_MS           = 2000UL;
 constexpr uint32_t GPS_STALE_MS              = 45000UL;
 constexpr uint32_t GPS_TIME_HOLDOVER_MS      = 1800000UL;
@@ -260,6 +264,22 @@ bool payloadAdvertisesUuid128(const std::vector<uint8_t>& payload, const char* u
 }
 
 BLEManager* s_bleInstance = nullptr;
+
+// Dedicated RTC marker for failures that reset USB CDC before the panic text
+// can be captured.  Do not reuse the general breadcrumb ring here: boot
+// maintenance can overwrite that ring before an operator reconnects serial.
+RTC_NOINIT_ATTR volatile uint32_t s_bleRxDiagMagic;
+RTC_NOINIT_ATTR volatile uint32_t s_bleRxDiagStage;
+RTC_NOINIT_ATTR volatile uint32_t s_bleRxDiagLen;
+RTC_NOINIT_ATTR volatile uint32_t s_bleRxDiagUptimeMs;
+constexpr uint32_t BLE_RX_DIAG_MAGIC = 0xB1E0D1A6UL;
+
+inline void markBleRxDiag(uint32_t stage, size_t len = 0) {
+    s_bleRxDiagMagic = BLE_RX_DIAG_MAGIC;
+    s_bleRxDiagLen = static_cast<uint32_t>(len);
+    s_bleRxDiagUptimeMs = millis();
+    s_bleRxDiagStage = stage; // publish the stage last
+}
 }  // namespace
 
 BLEManager BLE_MGR;
@@ -425,6 +445,17 @@ bool BLEManager::begin() {
     return true;
 }
 
+void BLEManager::printRxCrashDiag() const {
+    if (s_bleRxDiagMagic != BLE_RX_DIAG_MAGIC) {
+        Serial.println("[BLE] rxdiag unavailable");
+        return;
+    }
+    Serial.printf("[BLE] rxdiag stage=%lu len=%lu uptimeMs=%lu\n",
+                  static_cast<unsigned long>(s_bleRxDiagStage),
+                  static_cast<unsigned long>(s_bleRxDiagLen),
+                  static_cast<unsigned long>(s_bleRxDiagUptimeMs));
+}
+
 void BLEManager::shutdown() {
     if (!_begun) {
         return;
@@ -533,6 +564,12 @@ void BLEManager::setRadioEnabled(bool enabled) {
             _ensureAdvertising(false);
         }
 
+        if (_server && _serverConnHandle != BLE_HS_CONN_HANDLE_NONE) {
+            _server->disconnect(_serverConnHandle);
+            _serverConnHandle = BLE_HS_CONN_HANDLE_NONE;
+            _serverConnected = false;
+        }
+
         // GPS/probe path can keep the client object for faster reconnect.
         // Enrichment is heavier and should leave no stale NimBLE client behind.
         if (_enrichmentInFlight ||
@@ -586,6 +623,29 @@ void BLEManager::tick() {
     _checkTimeouts();
     if (!_radioEnabled) {
         return;
+    }
+
+    if (_phoneLinkRequestPending) {
+        // The phone first connects as a central to Spectre's text service and
+        // writes LINK1. This build deliberately permits one NimBLE connection,
+        // so release that short-lived inbound control link before Spectre scans
+        // back to the phone's authenticated companion peripheral. Keep the
+        // request latched until the asynchronous server-disconnect callback has
+        // confirmed the slot is free.
+        if (_serverConnected &&
+            _server &&
+            _serverConnHandle != BLE_HS_CONN_HANDLE_NONE) {
+            DLOG_INFO(TAG,
+                      "phone-side link handoff: releasing inbound conn=%u",
+                      static_cast<unsigned>(_serverConnHandle));
+            _server->disconnect(_serverConnHandle);
+            return;
+        }
+        _phoneLinkRequestPending = false;
+        if (_state != BLE_SUBSCRIBED) {
+            DLOG_INFO(TAG, "phone-side companion link request accepted");
+            requestCompanionLink("phone_gatt_request", true);
+        }
     }
 
     _handleConnectOutcome();
@@ -876,6 +936,11 @@ bool BLEManager::requestCompanionLink(const char* reason, bool allowCachedReconn
     _nextActionMs        = now + BLE_RADIO_SETTLE_MS;
     _scanDiagUntilMs     = now + (useCachedReconnect ? 12000UL : 45000UL);
     _scanDiagSeen        = 0;
+
+    // A manual link window is bidirectional. While Spectre scans for the
+    // phone's companion peripheral, also advertise Spectre's text service so
+    // the phone can initiate its Text Link from the other direction.
+    _ensureAdvertising(true);
 
     if (useCachedReconnect) {
         _directReconnectPending = true;
@@ -1243,8 +1308,17 @@ void BLEManager::_setupServer() {
         NIMBLE_PROPERTY::READ | NIMBLE_PROPERTY::NOTIFY | NIMBLE_PROPERTY::READ_ENC,
         sizeof(_statusBuf)
     );
+    _linkRequestChar = _textService->createCharacteristic(
+        TEXT_LINK_REQUEST_CHAR_UUID,
+        // This is deliberately only a discovery trigger. It grants no trust
+        // and carries no data; the outbound signed P-256 handshake remains
+        // mandatory before control, logs, enrichment, or offload are usable.
+        NIMBLE_PROPERTY::WRITE | NIMBLE_PROPERTY::WRITE_NR,
+        8
+    );
 
     _inputChar->setCallbacks(&_textInputCallbacks);
+    _linkRequestChar->setCallbacks(&_textInputCallbacks);
 
     NimBLEAdvertising* adv = NimBLEDevice::getAdvertising();
     if (adv) {
@@ -1298,6 +1372,7 @@ void BLEManager::_resetState() {
     _reconnectAttempt = 0;
     _clientConnected = false;
     _serverConnected = false;
+    _serverConnHandle = BLE_HS_CONN_HANDLE_NONE;
     _ignoreDisconnectOnce = false;
     _gpsNotifyEnabled = false;
     _controlNotifyEnabled = false;
@@ -1322,6 +1397,8 @@ void BLEManager::_resetState() {
     _enrichmentWaitStartMs = 0;
     _textInputPending = false;
     _textInputReady = false;
+    _phoneLinkRequestPending = false;
+    _lastPhoneLinkRequestMs = 0;
     _advertisingActive = false;
     _textInputToken = 0;
     _lastWgCounter = 0;
@@ -1368,6 +1445,7 @@ void BLEManager::_resetState() {
     _lastLeaseRenewMs = 0;
     _lastDisconnectReason = 0;
     _lastAuthFailReason = BleAuthFailReason::NONE;
+    _secureRxFailures = 0;
     _authRxPending = false;
     _authRxLen = 0;
     _authRxDrops = 0;
@@ -1718,8 +1796,8 @@ void BLEManager::_doConnectJob() {
         _client = NimBLEDevice::createClient();
         _client->setClientCallbacks(&_clientCallbacks, false);
         _client->setConnectTimeout(connectTimeoutMs);
-        _client->setConnectionParams(12,
-                                     24,
+        _client->setConnectionParams(6,
+                                     12,
                                      0,
                                      PHONE_CONN_SUPERVISION_TIMEOUT_10MS,
                                      CONNECT_SCAN_INTERVAL,
@@ -1819,8 +1897,9 @@ void BLEManager::_doControlPollJob() {
 }
 
 void BLEManager::_doEnrichmentSendJob() {
-    _enrichmentSendQueued = false;
-
+    // Keep the queued latch set until the worker has finished the blocking
+    // GATT write.  Clearing it on entry lets tick() observe
+    // pending=true/queued=false and enqueue the same batch a second time.
     if (RADIO_ARB.currentOwner() == RADIO_WIFI_UPLOAD) {
         DLOG_WARN(TAG, "enrichment send failed: upload active");
         _failEnrichment("upload_active");
@@ -1877,6 +1956,7 @@ void BLEManager::_doEnrichmentSendJob() {
 
     _enrichmentRequestPending = false;
     _enrichmentInFlight = true;
+    _enrichmentSendQueued = false;
     _enrichmentReady = false;
     _enrichmentRxLen = 0;
     _enrichmentAvailableCount = 0;
@@ -2068,6 +2148,15 @@ void BLEManager::_onClientDisconnected(NimBLEClient* pClient, int reason) {
     _lastDisconnectReason = reason;
     _clientConnected = false;
     _lastLeaseRenewMs = 0;
+    // A Wi-Fi bulk transfer deliberately releases the BLE radio after the
+    // authenticated endpoint command is accepted. Its index and watermarks
+    // must remain owned by PhoneOffloadManager until the TCP batch protocol
+    // completes or times out.
+    if (!PHONE_OFFLOAD.wifiBulkActive()) {
+        PHONE_OFFLOAD.end(0, "ble_disconnect");
+    } else {
+        DLOG_INFO(TAG, "BLE disconnect preserved active Wi-Fi bulk transfer");
+    }
     _clearRemoteHandles();
     _clearBleRxQueues();
 
@@ -2104,7 +2193,9 @@ void BLEManager::_onClientDisconnected(NimBLEClient* pClient, int reason) {
 
 void BLEManager::_onServerConnected(const NimBLEConnInfo* connInfo) {
     _serverConnected = true;
+    _advertisingActive = false;
     if (connInfo) {
+        _serverConnHandle = connInfo->getConnHandle();
         strlcpy(_connectedPeerAddr,
                 connInfo->getAddress().toString().c_str(),
                 sizeof(_connectedPeerAddr));
@@ -2116,11 +2207,12 @@ void BLEManager::_onServerConnected(const NimBLEConnInfo* connInfo) {
 void BLEManager::_onServerDisconnected(const NimBLEConnInfo* connInfo, int reason) {
     (void)connInfo;
     _serverConnected = false;
+    _serverConnHandle = BLE_HS_CONN_HANDLE_NONE;
     _publishBleState();
     _refreshStatusCharacteristic();
     DLOG_INFO(TAG, "server disconnect reason=%d", reason);
 
-    if (_textInputPending) {
+    if (_radioEnabled && (_textInputPending || _manualProbeActive)) {
         _ensureAdvertising(true);
     }
 }
@@ -2133,6 +2225,25 @@ void BLEManager::_onTextInputWrite(NimBLECharacteristic* pCharacteristic) {
     NimBLEAttValue value = pCharacteristic->getValue();
     if (value.size() == 0) {
         _setReceipt("REJECTED");
+        return;
+    }
+
+    if (pCharacteristic == _linkRequestChar) {
+        static constexpr char LINK_REQUEST[] = "LINK1";
+        const uint32_t now = millis();
+        const bool cooledDown = _lastPhoneLinkRequestMs == 0 ||
+            now - _lastPhoneLinkRequestMs >= PHONE_LINK_REQUEST_COOLDOWN_MS;
+        if (cooledDown &&
+            value.size() == sizeof(LINK_REQUEST) - 1U &&
+            memcmp(value.data(), LINK_REQUEST, sizeof(LINK_REQUEST) - 1U) == 0) {
+            _lastPhoneLinkRequestMs = now;
+            _phoneLinkRequestPending = true;
+            DLOG_INFO(TAG, "phone-side link request queued");
+        } else {
+            DLOG_WARN(TAG, "phone-side link request rejected bytes=%u cooldown=%u",
+                      static_cast<unsigned>(value.size()),
+                      cooledDown ? 0U : 1U);
+        }
         return;
     }
 
@@ -2167,9 +2278,11 @@ void BLEManager::_enrichmentNotifyThunk(NimBLERemoteCharacteristic* chr,
                                         bool isNotify) {
     (void)chr;
     (void)isNotify;
+    markBleRxDiag(110, len);
     if (s_bleInstance) {
         s_bleInstance->_queueEnrichmentChunkFromCallback(data, len);
     }
+    markBleRxDiag(118, len);
 }
 
 void BLEManager::_commandReqNotifyThunk(NimBLERemoteCharacteristic* chr,
@@ -2338,6 +2451,20 @@ bool BLEManager::_bindRemoteCharacteristics() {
         return false;
     }
 
+    // Phone-originated commands (screen changes, status/log requests, durable
+    // field offload) travel phone -> Spectre on this notify characteristic.
+    // Merely discovering it is not enough: without the CCCD subscription the
+    // app can show a secure session while every control request disappears.
+    if (_commandReqRemoteChar && _commandReqRemoteChar->canNotify() &&
+        discoverNotifyDescriptors(_commandReqRemoteChar, "command_req")) {
+        _commandReqNotifyEnabled = _commandReqRemoteChar->subscribe(
+            true, _commandReqNotifyThunk, true);
+    }
+    if (_commandReqRemoteChar && !_commandReqNotifyEnabled) {
+        DLOG_ERROR(TAG, "remote command request subscription failed");
+        return false;
+    }
+
     if (_metaRemoteChar && _metaRemoteChar->canRead()) {
         NimBLEAttValue meta = _metaRemoteChar->readValue();
         uint8_t plain[sizeof(_metadataBuf)] = {};
@@ -2470,7 +2597,10 @@ bool BLEManager::_authenticateRemote() {
               static_cast<unsigned>(_client && _client->getMTU() > 3
                                         ? _client->getMTU() - 3
                                         : 0));
-    constexpr size_t AUTH_WRITE_CHUNK_SIZE = 20;
+    // Authentication runs after MTU negotiation. A 120-byte write remains far
+    // below the 244-byte ATT payload we request and avoids five response-mode
+    // writes plus artificial gaps on every field connection.
+    constexpr size_t AUTH_WRITE_CHUNK_SIZE = 120;
     for (size_t offset = 0; offset < challengeLen; offset += AUTH_WRITE_CHUNK_SIZE) {
         const size_t chunkLen = min(AUTH_WRITE_CHUNK_SIZE, challengeLen - offset);
         if (!_authWriteRemoteChar->writeValue(_payload->authChallenge + offset, chunkLen, true)) {
@@ -2481,9 +2611,7 @@ bool BLEManager::_authenticateRemote() {
             _lastAuthFailReason = BleAuthFailReason::GATT_WRITE_FAILED;
             return failAuth();
         }
-        if (offset + chunkLen < challengeLen) {
-            vTaskDelay(pdMS_TO_TICKS(20));
-        }
+        if (offset + chunkLen < challengeLen) vTaskDelay(pdMS_TO_TICKS(5));
     }
 
     const uint32_t deadline = millis() + 6000UL;
@@ -2621,6 +2749,7 @@ void BLEManager::_clearRemoteHandles() {
     _enrichmentRxLen = 0;
     _enrichmentExpectedCount = 0;
     _enrichmentAvailableCount = 0;
+    _secureRxFailures = 0;
     _secureSession.reset();
     _authRxPending = false;
     _authRxLen = 0;
@@ -2897,6 +3026,7 @@ void BLEManager::_queueControlFrameFromCallback(const uint8_t* data, size_t len)
 }
 
 void BLEManager::_queueEnrichmentChunkFromCallback(const uint8_t* data, size_t len) {
+    markBleRxDiag(111, len);
     if (!data || len == 0 || len > ENRICH_RX_CHUNK_MAX) {
         xSemaphoreTake(_rxMutex, portMAX_DELAY);
         _enrichRxDrops++;
@@ -2904,7 +3034,9 @@ void BLEManager::_queueEnrichmentChunkFromCallback(const uint8_t* data, size_t l
         return;
     }
 
+    markBleRxDiag(112, len);
     xSemaphoreTake(_rxMutex, portMAX_DELAY);
+    markBleRxDiag(113, len);
 
     if (_enrichRxCount >= ENRICH_RX_SLOTS) {
         _enrichRxDrops++;
@@ -2913,13 +3045,17 @@ void BLEManager::_queueEnrichmentChunkFromCallback(const uint8_t* data, size_t l
     }
 
     BleRxChunk& slot = _payload->enrichRx[_enrichRxTail];
+    markBleRxDiag(114, len);
     slot.len = static_cast<uint16_t>(len);
     memcpy(slot.data, data, len);
+    markBleRxDiag(115, len);
 
     _enrichRxTail = (_enrichRxTail + 1) % ENRICH_RX_SLOTS;
     _enrichRxCount++;
+    markBleRxDiag(116, len);
 
     xSemaphoreGive(_rxMutex);
+    markBleRxDiag(117, len);
 }
 
 void BLEManager::_queueAuthFrameFromCallback(const uint8_t* data, size_t len) {
@@ -2996,6 +3132,7 @@ void BLEManager::_drainGpsRx() {
                                    plain,
                                    sizeof(plain),
                                    plainLen)) {
+            _noteSecureRxSuccess();
             _handleGpsPayload(plain, plainLen);
         } else {
             const char* err = _secureSession.lastError();
@@ -3003,6 +3140,7 @@ void BLEManager::_drainGpsRx() {
                 DLOG_DEBUG(TAG, "Ignoring stale GPS frame: %s", err);
             } else {
                 DLOG_WARN(TAG, "gps decrypt failed: %s", err ? err : "-");
+                _noteSecureRxFailure("gps", err);
             }
         }
     }
@@ -3035,6 +3173,7 @@ void BLEManager::_drainControlRx() {
                                    plain,
                                    sizeof(plain),
                                    plainLen)) {
+            _noteSecureRxSuccess();
             _handleControlPayload(plain, plainLen);
         } else {
             const char* err = _secureSession.lastError();
@@ -3042,18 +3181,46 @@ void BLEManager::_drainControlRx() {
                 DLOG_DEBUG(TAG, "Ignoring stale control frame: %s", err);
             } else {
                 DLOG_WARN(TAG, "control decrypt failed: %s", err ? err : "-");
+                _noteSecureRxFailure("control", err);
             }
         }
     }
 }
 
+void BLEManager::_noteSecureRxSuccess() {
+    _secureRxFailures = 0;
+}
+
+void BLEManager::_noteSecureRxFailure(const char* channel, const char* error) {
+    if (_state != BLE_SUBSCRIBED || !_client || !_client->isConnected()) {
+        return;
+    }
+    if (_secureRxFailures < 0xFF) {
+        _secureRxFailures++;
+    }
+    if (_secureRxFailures < 3) {
+        return;
+    }
+
+    DLOG_WARN(TAG,
+              "secure session desync channel=%s failures=%u error=%s; reconnecting",
+              channel ? channel : "-",
+              static_cast<unsigned>(_secureRxFailures),
+              error ? error : "-");
+    _softDisconnectClient("secure_session_desync");
+    _state = BLE_IDLE;
+    _scheduleReconnect("secure session desync");
+}
+
 void BLEManager::_drainEnrichmentRx() {
+    markBleRxDiag(120);
     while (true) {
         size_t snapLen = 0;
         uint8_t queuedAfterPop = 0;
         bool overflowed = false;
 
         xSemaphoreTake(_rxMutex, portMAX_DELAY);
+        markBleRxDiag(121);
         if (_enrichRxDrops > 0) {
             _enrichRxDrops = 0;
             _enrichRxHead = 0;
@@ -3077,13 +3244,16 @@ void BLEManager::_drainEnrichmentRx() {
         }
 
         if (snapLen > 0) {
+            markBleRxDiag(122, snapLen);
             memcpy(_payload->enrichRxScratch, slot.data, snapLen);
+            markBleRxDiag(123, snapLen);
         }
 
         _enrichRxHead = (_enrichRxHead + 1) % ENRICH_RX_SLOTS;
         _enrichRxCount--;
         queuedAfterPop = _enrichRxCount;
         xSemaphoreGive(_rxMutex);
+        markBleRxDiag(124, snapLen);
 
         if (overflowed && _enrichmentInFlight) {
             _failEnrichment("enrich_rx_overflow");
@@ -3096,13 +3266,16 @@ void BLEManager::_drainEnrichmentRx() {
                       static_cast<unsigned>(queuedAfterPop));
             uint8_t plain[ENRICH_RX_CHUNK_MAX];
             size_t plainLen = 0;
+            markBleRxDiag(125, snapLen);
             if (_secureSession.decrypt(PHONE_SECURE_CHANNEL_ENRICHMENT,
                                        _payload->enrichRxScratch,
                                        snapLen,
                                        plain,
                                        sizeof(plain),
                                        plainLen)) {
+                markBleRxDiag(126, plainLen);
                 _handleEnrichmentPayload(plain, plainLen);
+                markBleRxDiag(127, plainLen);
             } else {
                 DLOG_WARN(TAG, "enrichment decrypt failed: %s",
                           _secureSession.lastError() ? _secureSession.lastError() : "-");
@@ -3177,8 +3350,12 @@ void BLEManager::_handleCommandRequestPayload(const uint8_t* data, size_t len) {
         return;
     }
 
-    // Use response writes so the phone can deduplicate replies.
-    if (!_commandRespRemoteChar->writeValue(_payload->commandRespSecure, secureLen, true)) {
+    // The command envelope already carries an authenticated monotonic counter
+    // plus opcode/requestId, and offload chunks are stateless by offset. Avoid
+    // an ATT write-response round trip for every field-drain fragment; Android
+    // exposes WRITE_NO_RESPONSE on this characteristic and the phone still
+    // durably commits each record before Spectre advances its watermark.
+    if (!_commandRespRemoteChar->writeValue(_payload->commandRespSecure, secureLen, false)) {
         DLOG_WARN(TAG, "command response write failed");
     }
 }
@@ -3288,9 +3465,9 @@ void BLEManager::_handleControlPayload(const uint8_t* data, size_t len) {
         if (_enrichmentRequestPending || _enrichmentInFlight) {
             DLOG_WARN(TAG, "enrichment cancelled by phone");
             _failEnrichment("phone_cancel");
-            return;
         }
 
+        companionRequestCancel();
         _cancelWireGuardConfirmation("WG remote cancel");
         return;
     }

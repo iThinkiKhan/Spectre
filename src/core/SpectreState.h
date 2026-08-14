@@ -173,6 +173,18 @@ struct SpectreState {
 
     bool     bleConnected      = false;
     char     bleDeviceName[32] = "";
+    bool     bleRadioEnabled   = false;
+    bool     bleAdvertising    = false;
+    bool     bleInboundConnected = false;
+    bool     bleSecureReady    = false;
+    bool     bleGpsReady       = false;
+    bool     bleEnrichmentReady = false;
+    bool     bleFreshGps       = false;
+    uint8_t  bleLinkState      = 0;   // BLEManager::LinkState
+    uint8_t  bleAuthFailReason = 0;   // BLEManager::BleAuthFailReason
+    uint8_t  phoneTransportKind = 0;  // PhoneTransportKind
+    int8_t   blePeerRssi       = -127;
+    int      bleLastDisconnectReason = 0;
     uint8_t  companionEnabled  = 0;   // 0/1
     uint8_t  companionPhone    = 0;   // 0 unknown, 1 available, 2 unavailable
     uint8_t  companionWork     = 0;   // 0 idle, 1 probing, 2 enriching

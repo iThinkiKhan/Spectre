@@ -2686,7 +2686,14 @@ void MQTTManager::_noteQueuedRecord() {
 
 bool MQTTManager::queueProbe(const char* mac, const char* ssid,
                               int8_t rssi, uint8_t channel,
-                              const char* ieFingerprint) {
+                              const char* ieFingerprint,
+                              const char* trackId,
+                              uint8_t physicalDeviceId,
+                              uint16_t sampleSeq,
+                              uint16_t sampleFrames,
+                              int8_t rssiMin,
+                              int8_t rssiMax,
+                              const char* sampleReason) {
     JsonDocument doc;
     _prepareQueuedEvent(doc);
     doc["mac"]           = mac;
@@ -2695,6 +2702,14 @@ bool MQTTManager::queueProbe(const char* mac, const char* ssid,
     doc["rssi"]          = rssi;
     doc["channel"]       = channel;
     doc["ie_fingerprint"]= ieFingerprint ? ieFingerprint : "";
+    doc["track_id"]       = trackId ? trackId : "";
+    (void)physicalDeviceId;
+    doc["localization_sample"] = true;
+    doc["sample_seq"] = sampleSeq;
+    doc["sample_frames"] = sampleFrames;
+    doc["rssi_min"] = rssiMin;
+    doc["rssi_max"] = rssiMax;
+    doc["sample_reason"] = sampleReason ? sampleReason : "interval";
     const RAMSpool::CaptureClassification probeCls =
         RAMSpool::classify("probe", doc.as<JsonObjectConst>());
     const bool queued = RAMSpool::enqueue("probe",
@@ -2713,7 +2728,10 @@ bool MQTTManager::queueProbe(const char* mac, const char* ssid,
 void MQTTManager::queueNetwork(const char* bssid, const char* ssid,
                                int8_t rssi, uint8_t channel,
                                const char* security, bool isHidden,
-                               bool hasWPS) {
+                               bool hasWPS, const char* trackId,
+                               uint16_t sampleSeq, uint16_t sampleFrames,
+                               int8_t rssiMin, int8_t rssiMax,
+                               const char* sampleReason) {
     if (!bssid || !bssid[0]) return;
 
     JsonDocument doc;
@@ -2726,6 +2744,13 @@ void MQTTManager::queueNetwork(const char* bssid, const char* ssid,
     doc["is_hidden"] = isHidden ? 1 : 0;
     doc["has_wps"]   = hasWPS ? 1 : 0;
     doc["source"]    = "spectre_field";
+    doc["track_id"]  = trackId ? trackId : "";
+    doc["localization_sample"] = true;
+    doc["sample_seq"] = sampleSeq;
+    doc["sample_frames"] = sampleFrames;
+    doc["rssi_min"] = rssiMin;
+    doc["rssi_max"] = rssiMax;
+    doc["sample_reason"] = sampleReason ? sampleReason : "interval";
     const RAMSpool::CaptureClassification networkCls =
         RAMSpool::classify("network", doc.as<JsonObjectConst>());
     if (!RAMSpool::enqueue("network",
@@ -2741,7 +2766,9 @@ void MQTTManager::queueNetwork(const char* bssid, const char* ssid,
 void MQTTManager::queueDevice(const char* mac,
                                const char* ieFingerprint,
                                const char* probeSetHash,
-                               int8_t rssi, bool isRandomMAC) {
+                               int8_t rssi, bool isRandomMAC,
+                               const char* trackId,
+                               uint8_t physicalDeviceId) {
     JsonDocument doc;
     _prepareQueuedEvent(doc);
     doc["mac"]            = mac;
@@ -2750,6 +2777,8 @@ void MQTTManager::queueDevice(const char* mac,
     doc["rssi"]           = rssi;
     doc["is_random_mac"]  = isRandomMAC ? 1 : 0;
     doc["source"]         = "spectre_field";
+    doc["track_id"]       = trackId ? trackId : "";
+    doc["physical_device_id"] = physicalDeviceId;
     const RAMSpool::CaptureClassification deviceCls =
         RAMSpool::classify("device", doc.as<JsonObjectConst>());
     const bool queued = RAMSpool::enqueue("device",

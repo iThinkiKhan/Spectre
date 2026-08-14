@@ -47,6 +47,10 @@ public:
     bool requestUploadLease(uint32_t holdMs,
                             const char* reason,
                             bool force = false);
+    // Adopt an upload radio that was started before TaskHardware during a
+    // state-preserving field-offload reboot. This records ownership without
+    // reconfiguring the already-running private AP as a station.
+    bool adoptPrestartedUploadLease(uint32_t holdMs, const char* reason);
     bool requestStorageMaintenanceLease(uint32_t holdMs,
                                         const char* reason,
                                         bool force = false);

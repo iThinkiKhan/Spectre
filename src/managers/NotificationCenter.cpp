@@ -1,16 +1,25 @@
 #include "NotificationCenter.h"
 
+#include <new>
 #include <string.h>
 
 #include "core/DebugLog.h"
 #include "core/NotifTypes.h"
+#include "core/PsramObject.h"
 #include "PhoneTransportRouter.h"
 
 namespace {
 constexpr const char* TAG = "NOTIF";
 }
 
-NotificationCenter NOTIF_CENTER;
+NotificationCenter& getNotificationCenter() {
+    static NotificationCenter* instance = []() {
+        void* storage = allocateManagerStorage(sizeof(NotificationCenter));
+        configASSERT(storage);
+        return new (storage) NotificationCenter();
+    }();
+    return *instance;
+}
 
 void NotificationCenter::begin() {
     if (_begun) return;

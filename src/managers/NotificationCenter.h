@@ -52,4 +52,5 @@ private:
     uint8_t _txBuf[PHONE_NOTIFICATION_FRAME_MAX] = {};
 };
 
-extern NotificationCenter NOTIF_CENTER;
+NotificationCenter& getNotificationCenter();
+#define NOTIF_CENTER getNotificationCenter()

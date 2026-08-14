@@ -12,6 +12,7 @@
 #include "LogStreamer.h"
 #include "MQTTManager.h"
 #include "PhoneTransportRouter.h"
+#include "PhoneOffloadManager.h"
 #include "PowerManager.h"
 #include "RadioArbiter.h"
 #include "StorageManager.h"
@@ -69,6 +70,8 @@ bool CommandDispatcher::dispatch(const uint8_t* request,
     int payloadLen = -1;
     uint8_t status = CMD_STATUS_OK;
     const uint32_t startMs = millis();
+
+    PHONE_OFFLOAD.expireIfStale();
 
     switch (req.opcode) {
         case CMD_OP_GET_STATUS:
@@ -190,6 +193,77 @@ bool CommandDispatcher::dispatch(const uint8_t* request,
             break;
         case CMD_OP_DEBRIEF_REQUEST:
             status = handleDebriefRequest() ? CMD_STATUS_OK : CMD_STATUS_INTERNAL_ERROR;
+            payloadLen = 0;
+            break;
+        case CMD_OP_OFFLOAD_BEGIN: {
+            if (effectiveCap < sizeof(CmdOffloadBeginResponseV1)) {
+                status = CMD_STATUS_PAYLOAD_TOO_BIG;
+                payloadLen = 0;
+                break;
+            }
+            CmdOffloadBeginResponseV1 beginResp = {};
+            if (!PHONE_OFFLOAD.begin(beginResp)) {
+                status = CMD_STATUS_NOT_READY;
+                payloadLen = 0;
+                break;
+            }
+            memcpy(payloadOut, &beginResp, sizeof(beginResp));
+            payloadLen = static_cast<int>(sizeof(beginResp));
+            break;
+        }
+        case CMD_OP_OFFLOAD_NEXT: {
+            if (reqPayloadLen < sizeof(CmdOffloadNextRequestV1)) {
+                status = CMD_STATUS_BAD_PAYLOAD;
+                payloadLen = 0;
+                break;
+            }
+            CmdOffloadNextRequestV1 nextReq = {};
+            memcpy(&nextReq, reqPayload, sizeof(nextReq));
+            size_t nextLen = 0;
+            if (!PHONE_OFFLOAD.next(nextReq, payloadOut, effectiveCap, nextLen)) {
+                status = CMD_STATUS_NOT_READY;
+                payloadLen = 0;
+                break;
+            }
+            payloadLen = static_cast<int>(nextLen);
+            break;
+        }
+        case CMD_OP_OFFLOAD_ACK: {
+            if (reqPayloadLen < sizeof(CmdOffloadAckRequestV1) ||
+                effectiveCap < sizeof(CmdOffloadAckResponseV1)) {
+                status = CMD_STATUS_BAD_PAYLOAD;
+                payloadLen = 0;
+                break;
+            }
+            CmdOffloadAckRequestV1 ackReq = {};
+            CmdOffloadAckResponseV1 ackResp = {};
+            memcpy(&ackReq, reqPayload, sizeof(ackReq));
+            if (!PHONE_OFFLOAD.ack(ackReq, ackResp)) {
+                status = CMD_STATUS_NOT_READY;
+                payloadLen = 0;
+                break;
+            }
+            memcpy(payloadOut, &ackResp, sizeof(ackResp));
+            payloadLen = static_cast<int>(sizeof(ackResp));
+            break;
+        }
+        case CMD_OP_OFFLOAD_END: {
+            if (reqPayloadLen < sizeof(CmdOffloadEndRequestV1)) {
+                status = CMD_STATUS_BAD_PAYLOAD;
+                payloadLen = 0;
+                break;
+            }
+            CmdOffloadEndRequestV1 endReq = {};
+            memcpy(&endReq, reqPayload, sizeof(endReq));
+            status = PHONE_OFFLOAD.end(endReq.transferId, "phone_end")
+                         ? CMD_STATUS_OK
+                         : CMD_STATUS_BAD_PAYLOAD;
+            payloadLen = 0;
+            break;
+        }
+        case CMD_OP_WIFI_OFFLOAD_BEGIN:
+            status = PHONE_OFFLOAD.startWifiBulk(reqPayload, reqPayloadLen)
+                         ? CMD_STATUS_OK : CMD_STATUS_NOT_READY;
             payloadLen = 0;
             break;
         default:
@@ -552,6 +626,7 @@ bool CommandDispatcher::handleScreenChange(const uint8_t* payload, size_t len) {
         case SCREEN_SYSTEM:
         case SCREEN_MISSION_SUMMARY:
         case SCREEN_MESHTASTIC:
+        case SCREEN_BLE:
             break;
         default:
             DLOG_WARN(TAG, "phone screen-change refused: screen %u not phone-safe",

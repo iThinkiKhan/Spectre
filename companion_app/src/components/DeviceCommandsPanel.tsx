@@ -260,6 +260,7 @@ const SAFE_SCREENS: Array<{value: number; label: string}> = [
   {value: 5, label: 'RECON'},
   {value: 6, label: 'SYSTEM'},
   {value: 7, label: 'MISSION_SUMMARY'},
+  {value: 8, label: 'BLE'},
 ];
 
 const COMMANDS: Array<{

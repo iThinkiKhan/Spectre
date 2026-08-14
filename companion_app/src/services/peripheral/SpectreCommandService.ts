@@ -7,6 +7,11 @@ import {
   CMD_OP_GET_STATUS,
   CMD_OP_GET_STORAGE,
   CMD_OP_GET_WIO_STATUS,
+  CMD_OP_OFFLOAD_ACK,
+  CMD_OP_OFFLOAD_BEGIN,
+  CMD_OP_OFFLOAD_END,
+  CMD_OP_OFFLOAD_NEXT,
+  CMD_OP_WIFI_OFFLOAD_BEGIN,
   CMD_OP_SAVE_LOCATION,
   CMD_OP_SCREEN_CHANGE,
   CMD_OP_START_DASHBOARD_STREAM,
@@ -15,12 +20,22 @@ import {
   CMD_OP_STOP_LOG_STREAM,
   CMD_OP_TAG_SESSION,
   CMD_OP_UPLOAD_NOW,
+  CMD_STATUS_NOT_READY,
   CMD_STATUS_OK,
   PHONE_COMMAND_VERSION,
   PHONE_DASHBOARD_STREAM_DEFAULT_LEASE_MS,
   PHONE_DASHBOARD_STREAM_INTERVAL_DEFAULT_MS,
   PHONE_LOG_STREAM_DEFAULT_LEASE_MS,
+  PHONE_OFFLOAD_ACK_RESPONSE_SIZE,
+  PHONE_OFFLOAD_BEGIN_RESPONSE_SIZE,
+  PHONE_OFFLOAD_CHUNK_HEADER_SIZE,
+  PHONE_OFFLOAD_FLAG_END,
+  PHONE_OFFLOAD_FLAG_INDEX_TRUNCATED,
+  PHONE_OFFLOAD_FLAG_RECORD,
+  PHONE_OFFLOAD_VERSION,
 } from '../../protocol/contracts';
+import {base64ToBytes, bytesToUtf8, utf8ToBytes} from '../../protocol/base64';
+import type {BulkReceiverEndpoint} from '../relay/SpectreRelayService';
 import {
   decodeCmdDashboardResponse,
   decodeCmdHealthResponse,
@@ -45,6 +60,8 @@ import type {
   CmdDashboardSnapshotV1,
   CmdHealthResponseV1,
   CmdLogTailResponseV1,
+  CmdOffloadBeginResponseV1,
+  CmdOffloadChunkV1,
   CmdStartDashboardStreamResponseV1,
   CmdStartLogStreamResponseV1,
   CmdStatusResponseV1,
@@ -52,7 +69,9 @@ import type {
   DashboardStreamChunkV1,
   LogStreamChunkV1,
   PhoneStorageFrameV1,
+  PhoneOffloadSummary,
 } from '../../protocol/types';
+import type {DurableOffloadRecord} from '../relay/SpectreRelayService';
 import type {
   PeripheralCommandResponseEvent,
   PeripheralDashboardStreamEvent,
@@ -63,6 +82,75 @@ import type {
 // Request/response wrapper around the peripheral command channel.
 
 export const COMMAND_DEFAULT_TIMEOUT_MS = 8000;
+const OFFLOAD_PREPARE_TIMEOUT_MS = 90_000;
+const OFFLOAD_PREPARE_POLL_MS = 750;
+
+function delay(ms: number) {
+  return new Promise<void>(resolve => setTimeout(resolve, ms));
+}
+
+function decodeOffloadBegin(payload: Uint8Array): CmdOffloadBeginResponseV1 {
+  if (payload.length !== PHONE_OFFLOAD_BEGIN_RESPONSE_SIZE) {
+    throw new Error(`Offload begin payload must be ${PHONE_OFFLOAD_BEGIN_RESPONSE_SIZE} bytes`);
+  }
+  const view = new DataView(payload.buffer, payload.byteOffset, payload.byteLength);
+  const flags = view.getUint8(2);
+  return {
+    version: view.getUint8(0),
+    transferId: view.getUint8(1),
+    indexTruncated: !!(flags & PHONE_OFFLOAD_FLAG_INDEX_TRUNCATED),
+    pendingTotal: view.getUint32(4, true),
+    indexedTotal: view.getUint32(8, true),
+  };
+}
+
+function encodeOffloadNext(
+  transferId: number,
+  offset: number,
+  ackEventId = 0,
+) {
+  const payload = new Uint8Array(8);
+  const view = new DataView(payload.buffer);
+  view.setUint8(0, transferId);
+  view.setUint16(2, offset, true);
+  view.setUint32(4, ackEventId, true);
+  return payload;
+}
+
+function decodeOffloadChunk(payload: Uint8Array): CmdOffloadChunkV1 {
+  if (payload.length < PHONE_OFFLOAD_CHUNK_HEADER_SIZE) {
+    throw new Error('Offload chunk header is truncated');
+  }
+  const view = new DataView(payload.buffer, payload.byteOffset, payload.byteLength);
+  const flags = view.getUint8(2);
+  const chunkLen = view.getUint16(12, true);
+  if (PHONE_OFFLOAD_CHUNK_HEADER_SIZE + chunkLen !== payload.length) {
+    throw new Error('Offload chunk length mismatch');
+  }
+  return {
+    version: view.getUint8(0),
+    transferId: view.getUint8(1),
+    flags,
+    lane: view.getUint8(3),
+    eventId: view.getUint32(4, true),
+    totalLen: view.getUint16(8, true),
+    offset: view.getUint16(10, true),
+    chunk: payload.slice(PHONE_OFFLOAD_CHUNK_HEADER_SIZE),
+    sessionLen: view.getUint8(14),
+    topicLen: view.getUint8(15),
+    ending: !!(flags & PHONE_OFFLOAD_FLAG_END),
+    hasRecord: !!(flags & PHONE_OFFLOAD_FLAG_RECORD),
+    indexTruncated: !!(flags & PHONE_OFFLOAD_FLAG_INDEX_TRUNCATED),
+  };
+}
+
+function encodeOffloadAck(transferId: number, eventId: number) {
+  const payload = new Uint8Array(8);
+  const view = new DataView(payload.buffer);
+  view.setUint8(0, transferId);
+  view.setUint32(4, eventId, true);
+  return payload;
+}
 
 export class CommandError extends Error {
   readonly opcode: number;
@@ -454,6 +542,220 @@ export class SpectreCommandService {
 
   async requestDebrief(timeoutMs?: number): Promise<void> {
     await this.sendRaw(CMD_OP_DEBRIEF_REQUEST, undefined, timeoutMs);
+  }
+
+  // ── Slice #8 — durable phone offload ─────────────────────────────────────
+
+  async offloadToPhone(options: {
+    commit: (record: DurableOffloadRecord) => Promise<unknown>;
+    maxRecords?: number;
+    onProgress?: (copied: number, pendingAfter: number) => void;
+  }): Promise<PhoneOffloadSummary> {
+    const prepDeadline = Date.now() + OFFLOAD_PREPARE_TIMEOUT_MS;
+    let beginPayload: Uint8Array | null = null;
+    while (!beginPayload) {
+      try {
+        beginPayload = await this.sendRaw(
+          CMD_OP_OFFLOAD_BEGIN,
+          undefined,
+          10_000,
+        );
+      } catch (error) {
+        if (!(error instanceof CommandError) ||
+            error.status !== CMD_STATUS_NOT_READY ||
+            Date.now() >= prepDeadline) {
+          throw error;
+        }
+        await delay(OFFLOAD_PREPARE_POLL_MS);
+      }
+    }
+    const begin = decodeOffloadBegin(beginPayload);
+    if (begin.version !== PHONE_OFFLOAD_VERSION || begin.transferId === 0) {
+      throw new Error('Device returned an unsupported offload session');
+    }
+
+    const limit = Math.max(1, Math.min(options.maxRecords ?? 10_000, 10_000));
+    let copied = 0;
+    let copiedBytes = 0;
+    let pendingAfter = begin.pendingTotal;
+    let pendingAckEventId = 0;
+    let transferSucceeded = false;
+    let lastProgressAt = 0;
+
+    try {
+      while (copied < limit) {
+        let offset = 0;
+        let expected: CmdOffloadChunkV1 | null = null;
+        let body: Uint8Array | null = null;
+
+        while (true) {
+          const raw = await this.sendRaw(
+            CMD_OP_OFFLOAD_NEXT,
+            encodeOffloadNext(
+              begin.transferId,
+              offset,
+              offset === 0 ? pendingAckEventId : 0,
+            ),
+            15_000,
+          );
+          if (offset === 0 && pendingAckEventId !== 0) {
+            pendingAfter = Math.max(0, pendingAfter - 1);
+            pendingAckEventId = 0;
+          }
+          const chunk = decodeOffloadChunk(raw);
+          if (chunk.version !== PHONE_OFFLOAD_VERSION ||
+              chunk.transferId !== begin.transferId) {
+            throw new Error('Offload transfer identity mismatch');
+          }
+          if (chunk.ending && !chunk.hasRecord) {
+            transferSucceeded = true;
+            return {
+              copied,
+              copiedBytes,
+              pendingAtStart: begin.pendingTotal,
+              pendingAfter,
+              indexTruncated: begin.indexTruncated || chunk.indexTruncated,
+            };
+          }
+          if (!chunk.hasRecord || chunk.eventId === 0 || chunk.totalLen === 0) {
+            throw new Error('Device returned an invalid offload record');
+          }
+
+          if (!expected) {
+            expected = chunk;
+            body = new Uint8Array(chunk.totalLen);
+          } else if (
+            chunk.eventId !== expected.eventId ||
+            chunk.totalLen !== expected.totalLen ||
+            chunk.sessionLen !== expected.sessionLen ||
+            chunk.topicLen !== expected.topicLen ||
+            chunk.lane !== expected.lane
+          ) {
+            throw new Error('Offload record changed between chunks');
+          }
+          if (chunk.offset !== offset || offset + chunk.chunk.length > chunk.totalLen) {
+            throw new Error('Offload chunk offset is invalid');
+          }
+          body!.set(chunk.chunk, offset);
+          offset += chunk.chunk.length;
+          if (offset === chunk.totalLen) break;
+          if (chunk.chunk.length === 0) throw new Error('Offload transfer stalled');
+        }
+
+        if (!expected || !body) throw new Error('Offload record assembly failed');
+        const payloadOffset = expected.sessionLen + expected.topicLen;
+        if (expected.sessionLen === 0 || expected.topicLen === 0 ||
+            payloadOffset >= body.length) {
+          throw new Error('Offload record metadata is invalid');
+        }
+        const sessionId = bytesToUtf8(body.slice(0, expected.sessionLen));
+        const topic = bytesToUtf8(
+          body.slice(expected.sessionLen, payloadOffset),
+        );
+        const payload = body.slice(payloadOffset);
+
+        // This must complete before ACK. The native queue is the loss boundary.
+        await options.commit({
+          sessionId,
+          eventId: expected.eventId,
+          lane: expected.lane,
+          topic,
+          payload,
+        });
+        pendingAckEventId = expected.eventId;
+        copied += 1;
+        copiedBytes += payload.length;
+        const now = Date.now();
+        if (copied === 1 || copied % 16 === 0 || now - lastProgressAt >= 500) {
+          options.onProgress?.(copied, Math.max(0, pendingAfter - 1));
+          lastProgressAt = now;
+        }
+      }
+
+      // A bounded diagnostic pass stops before the next NEXT request can carry
+      // the final ACK, so close that one durable handoff explicitly.
+      if (pendingAckEventId !== 0) {
+        const ackPayload = await this.sendRaw(
+          CMD_OP_OFFLOAD_ACK,
+          encodeOffloadAck(begin.transferId, pendingAckEventId),
+          15_000,
+        );
+        if (ackPayload.length !== PHONE_OFFLOAD_ACK_RESPONSE_SIZE) {
+          throw new Error('Offload ACK response is malformed');
+        }
+        pendingAfter = new DataView(
+          ackPayload.buffer,
+          ackPayload.byteOffset,
+          ackPayload.byteLength,
+        ).getUint32(0, true);
+        pendingAckEventId = 0;
+      }
+
+      transferSucceeded = true;
+      return {
+        copied,
+        copiedBytes,
+        pendingAtStart: begin.pendingTotal,
+        pendingAfter,
+        indexTruncated: begin.indexTruncated,
+      };
+    } finally {
+      try {
+        await this.sendRaw(
+          CMD_OP_OFFLOAD_END,
+          Uint8Array.of(begin.transferId),
+          8_000,
+        );
+      } catch (error) {
+        if (transferSucceeded) {
+          throw error;
+        }
+        // Device expires abandoned transfers after two minutes. Preserve the
+        // original transfer error rather than masking it with cleanup failure.
+      }
+    }
+  }
+
+  async startWifiOffload(endpoint: BulkReceiverEndpoint): Promise<{pendingAtStart: number; started: boolean}> {
+    const prepDeadline = Date.now() + OFFLOAD_PREPARE_TIMEOUT_MS;
+    let beginPayload: Uint8Array | null = null;
+    while (!beginPayload) {
+      try {
+        beginPayload = await this.sendRaw(CMD_OP_OFFLOAD_BEGIN, undefined, 10_000);
+      } catch (error) {
+        if (!(error instanceof CommandError) || error.status !== CMD_STATUS_NOT_READY ||
+            Date.now() >= prepDeadline) throw error;
+        await delay(OFFLOAD_PREPARE_POLL_MS);
+      }
+    }
+    const begin = decodeOffloadBegin(beginPayload);
+    if (begin.pendingTotal === 0) {
+      // An automatic reconnect can race the final storage snapshot after a
+      // successful handoff. Close the empty transfer without rebooting
+      // Spectre or asking Android to approve a network with no work to carry.
+      await this.sendRaw(
+        CMD_OP_OFFLOAD_END,
+        Uint8Array.of(begin.transferId),
+        8_000,
+      );
+      return {pendingAtStart: 0, started: false};
+    }
+    const ssid = utf8ToBytes(endpoint.ssid);
+    const password = utf8ToBytes(endpoint.password);
+    const token = base64ToBytes(endpoint.tokenBase64);
+    if (ssid.length < 1 || ssid.length > 32 || password.length < 8 || password.length > 63 ||
+        token.length !== 32 || endpoint.port < 1 || endpoint.port > 65535) {
+      throw new Error('Phone bulk endpoint is invalid');
+    }
+    const payload = new Uint8Array(8 + ssid.length + password.length + token.length);
+    const view = new DataView(payload.buffer);
+    view.setUint8(0, 1); view.setUint8(1, begin.transferId);
+    view.setUint8(2, ssid.length); view.setUint8(3, password.length);
+    view.setUint8(4, token.length); view.setUint16(6, endpoint.port, true);
+    payload.set(ssid, 8); payload.set(password, 8 + ssid.length);
+    payload.set(token, 8 + ssid.length + password.length);
+    await this.sendRaw(CMD_OP_WIFI_OFFLOAD_BEGIN, payload, 10_000);
+    return {pendingAtStart: begin.pendingTotal, started: true};
   }
 
   private allocateRequestId(): number {

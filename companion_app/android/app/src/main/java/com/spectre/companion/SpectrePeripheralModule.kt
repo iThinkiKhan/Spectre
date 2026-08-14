@@ -137,6 +137,7 @@ class SpectrePeripheralModule(
   private var pendingEnrichmentSessionId = 0L
   private var pendingEnrichmentBatchId = 0L
   private var pendingEnrichmentEventRecords: ByteArray? = null
+  private var controlPulseToken = 0L
   private var useDeviceLocation = false
   private var adapterReceiverRegistered = false
   private val adapterStateReceiver =
@@ -235,7 +236,7 @@ class SpectrePeripheralModule(
               true,
           )
           cacheSessionPlainValue(PHONE_GPS_UUID, PHONE_SECURE_CHANNEL_GPS, decodeBase64OrEmpty(parsed.gpsBase64), true)
-          cacheSessionPlainValue(PHONE_CONTROL_UUID, PHONE_SECURE_CHANNEL_CONTROL, decodeBase64OrEmpty(parsed.controlBase64), true)
+          cacheControlValue(decodeBase64OrEmpty(parsed.controlBase64), true)
           // Mirror the cold-start path: enrichment + command_req must be
           // refreshed too, otherwise a stop+start with a new enrichment
           // payload leaves the stale value on the characteristic.
@@ -285,6 +286,7 @@ class SpectrePeripheralModule(
    * Runs on the main thread (posted via handler). Owns its own error handling —
    * the JS promise was already resolved by the time this runs.
    */
+  @SuppressLint("MissingPermission")
   private fun finishColdStart(parsed: StartConfig) {
     try {
       state.advertiseMode = parsed.advertiseMode
@@ -302,7 +304,7 @@ class SpectrePeripheralModule(
           true,
       )
       cacheSessionPlainValue(PHONE_GPS_UUID, PHONE_SECURE_CHANNEL_GPS, decodeBase64OrEmpty(parsed.gpsBase64), true)
-      cacheSessionPlainValue(PHONE_CONTROL_UUID, PHONE_SECURE_CHANNEL_CONTROL, decodeBase64OrEmpty(parsed.controlBase64), true)
+      cacheControlValue(decodeBase64OrEmpty(parsed.controlBase64), true)
       cacheAndApply(PHONE_ENRICHMENT_UUID, decodeBase64OrEmpty(parsed.enrichmentBase64), true)
       cacheAndApply(PHONE_COMMAND_REQ_UUID, commandChannel.requestBytes(), true)
       // The response starts empty and is populated after an auth request.
@@ -413,7 +415,7 @@ class SpectrePeripheralModule(
     runOnMain {
       val bytes = decodeBase64OrEmpty(controlBase64)
       traceInfo("update_value", "char" to uuidLabel(PHONE_CONTROL_UUID), "bytes" to bytes.size)
-      if (!cacheSessionPlainValue(PHONE_CONTROL_UUID, PHONE_SECURE_CHANNEL_CONTROL, bytes, true)) {
+      if (!cacheControlValue(bytes, true)) {
         promise.reject("E_CONTROL_ENCRYPT_FAILED", secureSession.lastError ?: "encrypt returned null")
         return@runOnMain
       }
@@ -649,7 +651,7 @@ class SpectrePeripheralModule(
               "valueBytes" to value.size,
               "responseBytes" to slice.size,
           )
-          bluetoothGattServer?.sendResponse(device, requestId, BluetoothGatt.GATT_SUCCESS, offset, slice)
+          sendGattResponse(device, requestId, BluetoothGatt.GATT_SUCCESS, offset, slice)
         }
 
         override fun onCharacteristicWriteRequest(
@@ -662,7 +664,7 @@ class SpectrePeripheralModule(
             value: ByteArray,
         ) {
           if (responseNeeded) {
-            bluetoothGattServer?.sendResponse(
+            sendGattResponse(
                 device,
                 requestId,
                 BluetoothGatt.GATT_SUCCESS,
@@ -730,7 +732,7 @@ class SpectrePeripheralModule(
               "requestId" to requestId,
               "execute" to execute,
           )
-          bluetoothGattServer?.sendResponse(
+          sendGattResponse(
               device,
               requestId,
               BluetoothGatt.GATT_SUCCESS,
@@ -761,7 +763,7 @@ class SpectrePeripheralModule(
               "value" to cccdValueLabel(value),
           )
           if (responseNeeded) {
-            bluetoothGattServer?.sendResponse(
+            sendGattResponse(
                 device,
                 requestId,
                 BluetoothGatt.GATT_SUCCESS,
@@ -1045,6 +1047,7 @@ class SpectrePeripheralModule(
     refreshFieldNotification()
   }
 
+  @SuppressLint("MissingPermission")
   private fun stopAdvertisingOnly() {
     bluetoothAdvertiser?.let { advertiser ->
       advertiseCallback?.let { callback ->
@@ -1074,7 +1077,7 @@ class SpectrePeripheralModule(
       stopFieldService()
     }
     stopAdvertisingOnly()
-    bluetoothGattServer?.close()
+    closeGattServerSafely()
     bluetoothGattServer = null
     service = null
     pendingAdvertiseModeAfterService = null
@@ -1131,7 +1134,7 @@ class SpectrePeripheralModule(
     unregisterAdapterStateReceiver()
     stopFieldService()
     stopAdvertisingOnly()
-    bluetoothGattServer?.close()
+    closeGattServerSafely()
     bluetoothGattServer = null
     service = null
     pendingAdvertiseModeAfterService = null
@@ -1418,12 +1421,12 @@ class SpectrePeripheralModule(
                 )
                 return@post
               }
-              traceWarn(
-                  "enrichment_native_deferred",
+              traceInfo(
+                  "enrichment_native_reply",
                   "records" to recordCount,
                   "bytes" to fallback.size,
                   "matches" to matched,
-                  "reason" to "js_reply_timeout",
+                  "reason" to "native_history_fast_path",
               )
               if (notifyEnrichmentResponse(fallback, recordCount)) {
                 enrichmentReplyToken += 1
@@ -1751,6 +1754,57 @@ class SpectrePeripheralModule(
     return true
   }
 
+  /**
+   * Control flags other than WG_ACTIVE are edge-triggered pulses.  Expire them
+   * on the native foreground-service looper rather than relying on JS timers:
+   * React Native can be suspended for minutes while the phone is locked, which
+   * otherwise leaves an old CANCEL or BATCH_RX bit cached for the next session.
+   */
+  private fun cacheControlValue(plaintext: ByteArray, notify: Boolean): Boolean {
+    controlPulseToken += 1
+    val token = controlPulseToken
+    val ok = cacheSessionPlainValue(
+        PHONE_CONTROL_UUID,
+        PHONE_SECURE_CHANNEL_CONTROL,
+        plaintext,
+        notify,
+    )
+
+    if (plaintext.size < PHONE_CONTROL_FRAME_SIZE ||
+        (plaintext[1].toInt() and PHONE_CTRL_ONE_SHOT_MASK) == 0) {
+      return ok
+    }
+
+    handler.postDelayed({
+      if (token != controlPulseToken) {
+        return@postDelayed
+      }
+      val current = sessionPlainCache[PHONE_CONTROL_UUID] ?: return@postDelayed
+      if (current.size < PHONE_CONTROL_FRAME_SIZE) {
+        return@postDelayed
+      }
+      val oldFlags = current[1].toInt() and 0xff
+      if ((oldFlags and PHONE_CTRL_ONE_SHOT_MASK) == 0) {
+        return@postDelayed
+      }
+      val sanitized = current.copyOf()
+      sanitized[1] = (oldFlags and PHONE_CTRL_FLAG_WG_ACTIVE).toByte()
+      controlPulseToken += 1
+      cacheSessionPlainValue(
+          PHONE_CONTROL_UUID,
+          PHONE_SECURE_CHANNEL_CONTROL,
+          sanitized,
+          true,
+      )
+      traceInfo(
+          "control_pulses_expired",
+          "oldFlags" to oldFlags,
+          "newFlags" to (sanitized[1].toInt() and 0xff),
+      )
+    }, PHONE_CONTROL_PULSE_TTL_MS)
+    return ok
+  }
+
   private fun refreshSessionPlainValues() {
     cacheSessionPlainValue(
         PHONE_METADATA_UUID,
@@ -2029,17 +2083,52 @@ class SpectrePeripheralModule(
   }
 
   @Suppress("DEPRECATION")
+  @SuppressLint("MissingPermission")
   private fun notifyCharacteristicChanged(
       server: BluetoothGattServer,
       device: BluetoothDevice,
       characteristic: BluetoothGattCharacteristic,
       value: ByteArray,
   ): Boolean {
-    return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-      server.notifyCharacteristicChanged(device, characteristic, false, value) ==
-          BluetoothStatusCodes.SUCCESS
-    } else {
-      server.notifyCharacteristicChanged(device, characteristic, false)
+    if (!hasBluetoothConnectPermission()) return false
+    return try {
+      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+        server.notifyCharacteristicChanged(device, characteristic, false, value) ==
+            BluetoothStatusCodes.SUCCESS
+      } else {
+        server.notifyCharacteristicChanged(device, characteristic, false)
+      }
+    } catch (_: SecurityException) {
+      false
+    }
+  }
+
+  private fun hasBluetoothConnectPermission(): Boolean =
+      Build.VERSION.SDK_INT < Build.VERSION_CODES.S ||
+          reactContext.checkSelfPermission(Manifest.permission.BLUETOOTH_CONNECT) ==
+              android.content.pm.PackageManager.PERMISSION_GRANTED
+
+  @SuppressLint("MissingPermission")
+  private fun sendGattResponse(
+      device: BluetoothDevice,
+      requestId: Int,
+      status: Int,
+      offset: Int,
+      value: ByteArray?,
+  ): Boolean {
+    if (!hasBluetoothConnectPermission()) return false
+    return try {
+      bluetoothGattServer?.sendResponse(device, requestId, status, offset, value) ?: false
+    } catch (_: SecurityException) {
+      false
+    }
+  }
+
+  @SuppressLint("MissingPermission")
+  private fun closeGattServerSafely() {
+    try {
+      bluetoothGattServer?.close()
+    } catch (_: SecurityException) {
     }
   }
 
@@ -2232,6 +2321,13 @@ class SpectrePeripheralModule(
   }
 
   private fun trace(level: Int, event: String, vararg fields: Pair<String, Any?>) {
+    // A field drain moves thousands of ATT fragments. Formatting several
+    // Logcat records per fragment adds avoidable main-thread I/O to the GATT
+    // server. Debug builds retain full packet traces; release builds retain
+    // lifecycle/auth evidence plus every warning and error.
+    if (!BuildConfig.DEBUG && level == Log.INFO && event in HOT_PATH_INFO_EVENTS) {
+      return
+    }
     val message =
         buildString {
           append("event=").append(event)
@@ -2364,6 +2460,18 @@ class SpectrePeripheralModule(
   }
 
   companion object {
+    private val HOT_PATH_INFO_EVENTS =
+        setOf(
+            "char_read",
+            "char_write",
+            "command_response_received",
+            "command_send",
+            "notify_requested",
+            "notify_queued",
+            "notify_send",
+            "notify_sent",
+        )
+
     @Volatile
     private var activeModule: WeakReference<SpectrePeripheralModule>? = null
 
@@ -2389,11 +2497,21 @@ class SpectrePeripheralModule(
     private const val ENRICHMENT_RESPONSE_V2_MAGIC = 0x32524553L
     private const val EVENT_BATCH_HEADER_V2_SIZE = 16
     private const val ENRICHMENT_RESPONSE_HEADER_V2_SIZE = 20
-    private const val ENRICHMENT_NOTIFY_PLAINTEXT_CHUNK_MAX = 200
+    // Keep encrypted notifications well below the negotiated 244-byte ATT
+    // payload.  Samsung accepted 222-byte envelopes, but the S3 NimBLE host
+    // could panic before invoking the application callback on that near-MTU
+    // path.  120 plain bytes become a 142-byte AES-GCM envelope and use the
+    // same bound as the framed response path.
+    private const val ENRICHMENT_NOTIFY_PLAINTEXT_CHUNK_MAX = 120
     private const val ENRICHMENT_RESPONSE_CHUNK_PAYLOAD_MAX = 120
     private const val ENRICHMENT_RESPONSE_CHUNK_PACE_MS = 75L
-    private const val ENRICHMENT_JS_REPLY_FALLBACK_MS = 12_000L
-    private const val ENRICHMENT_JS_ZERO_MATCH_FALLBACK_MS = 45_000L
+    // Native GPS history is the field source of truth and remains available
+    // when React is suspended. Give an already-running JS reply a tiny head
+    // start, then answer natively instead of stalling every batch for 12 s.
+    private const val ENRICHMENT_JS_REPLY_FALLBACK_MS = 100L
+    // If native history has no temporal match, allow foreground JS history a
+    // short recovery window before returning terminal no-data markers.
+    private const val ENRICHMENT_JS_ZERO_MATCH_FALLBACK_MS = 1_500L
     private const val NOTIFICATION_SENT_FALLBACK_MS = 1000L
     private const val EVENT_EPOCH_SECONDS_MIN = 1_600_000_000L
     private const val LOCATION_HISTORY_MAX_AGE_MS = 30L * 24 * 60 * 60 * 1000
@@ -2412,6 +2530,10 @@ class SpectrePeripheralModule(
     private const val PHONE_SECURE_CHANNEL_LOG_STREAM = 0x08
     private const val PHONE_SECURE_CHANNEL_DASHBOARD_STREAM = 0x09
     private const val PHONE_SECURE_CHANNEL_NOTIFICATION = 0x0a
+    private const val PHONE_CONTROL_FRAME_SIZE = 4
+    private const val PHONE_CTRL_FLAG_WG_ACTIVE = 0x01
+    private const val PHONE_CTRL_ONE_SHOT_MASK = 0x0e
+    private const val PHONE_CONTROL_PULSE_TTL_MS = 8_500L
     private const val AUTH_FRAME_SIZE = 163
     private const val ADVERTISE_WATCHDOG_INTERVAL_MS = 5_000L
     private const val ADVERTISE_ERROR_BAD_PAYLOAD = -2

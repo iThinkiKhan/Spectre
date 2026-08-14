@@ -284,3 +284,35 @@ export interface PhoneNotificationV1 {
   deviceUptimeMs: number;
   text: string;
 }
+
+export interface CmdOffloadBeginResponseV1 {
+  version: number;
+  transferId: number;
+  indexTruncated: boolean;
+  pendingTotal: number;
+  indexedTotal: number;
+}
+
+export interface CmdOffloadChunkV1 {
+  version: number;
+  transferId: number;
+  flags: number;
+  lane: number;
+  eventId: number;
+  totalLen: number;
+  offset: number;
+  chunk: Uint8Array;
+  sessionLen: number;
+  topicLen: number;
+  ending: boolean;
+  hasRecord: boolean;
+  indexTruncated: boolean;
+}
+
+export interface PhoneOffloadSummary {
+  copied: number;
+  copiedBytes: number;
+  pendingAtStart: number;
+  pendingAfter: number;
+  indexTruncated: boolean;
+}

@@ -118,6 +118,13 @@ DedupVerdict DedupFilter::classifyDedupCandidate(const char* type,
     (void)type; (void)payload; (void)priority;
     return v;
 #else
+    // WiFiManager already rate-limits localization observations by target and
+    // RSSI window. They must not enter the long inventory dedup window or a
+    // continuously transmitting target would never produce spatial samples.
+    if (payload["localization_sample"] | false) {
+        return v;
+    }
+
     if (strcmp(type ? type : "", "subghz") == 0) {
         return v;
     }

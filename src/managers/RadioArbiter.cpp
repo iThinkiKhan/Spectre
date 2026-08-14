@@ -149,6 +149,17 @@ bool RadioArbiter::requestUploadLease(uint32_t holdMs,
     return requestLease(RADIO_WIFI_UPLOAD, holdMs, reason, force);
 }
 
+bool RadioArbiter::adoptPrestartedUploadLease(uint32_t holdMs,
+                                              const char* reason) {
+    if (!_begun || _owner != RADIO_NONE || _pendingOwner != RADIO_NONE) {
+        return false;
+    }
+    _commitOwnerState(RADIO_WIFI_UPLOAD,
+                      holdMs,
+                      reason ? reason : "prestarted_upload");
+    return true;
+}
+
 bool RadioArbiter::requestStorageMaintenanceLease(uint32_t holdMs,
                                                   const char* reason,
                                                   bool force) {
@@ -517,24 +528,14 @@ bool RadioArbiter::_switchTo(RadioOwner owner, uint32_t holdMs, const char* reas
         _clearActiveOwnerState();
     }
 
-    // WiFi STA needs a contiguous internal-RAM block that a resident NimBLE
-    // host does not leave behind: after a BLE enrichment session the internal
-    // heap sits around 19KB free / 7KB largest and _startOwner() fails with
-    // "Failed to ready STA mode for upload", stranding the backlog until a
-    // reboot. _stopOwner(RADIO_BLE_GPS) deliberately keeps NimBLE initialized
-    // because deinit(true) panics on the probe-timeout handoff, so reclaim it
-    // here instead — an upload transition is a deliberate, quiescent handoff
-    // (link already dropped, radio already disabled), not that timeout path.
+    // NimBLE host allocations are placed in PSRAM by NimBLEBuildOverrides.h so
+    // WiFi can be restarted while the quiescent BLE host remains initialized.
+    // Do not call BLE_MGR.shutdown() here: NimBLE deinit has proven capable of
+    // resetting the S3 during a field handoff, which is worse than a deferred
+    // upload and breaks the phone-visible serial witness.
     if (owner == RADIO_WIFI_UPLOAD && BLE_MGR.isBegun()) {
         DLOG_INFO(TAG,
-                  "BLE deinit before upload internalFree=%luB largest=%luB",
-                  static_cast<unsigned long>(
-                      heap_caps_get_free_size(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT)),
-                  static_cast<unsigned long>(
-                      heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT)));
-        BLE_MGR.shutdown();
-        DLOG_INFO(TAG,
-                  "BLE deinit done internalFree=%luB largest=%luB",
+                  "BLE retained for upload internalFree=%luB largest=%luB",
                   static_cast<unsigned long>(
                       heap_caps_get_free_size(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT)),
                   static_cast<unsigned long>(

@@ -13,6 +13,7 @@ val hermesEnabled = (project.findProperty("hermesEnabled") ?: "true").toString()
 android {
   namespace = "com.spectre.companion"
   compileSdk = 36
+  compileSdkMinor = 1
   ndkVersion = "27.1.12297006"
 
   defaultConfig {

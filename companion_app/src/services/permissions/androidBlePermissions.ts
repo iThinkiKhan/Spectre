@@ -28,6 +28,7 @@ function requiredPermissions() {
 
     if (androidVersion() >= 33) {
       permissions.push(PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS);
+      permissions.push(PermissionsAndroid.PERMISSIONS.NEARBY_WIFI_DEVICES);
     }
 
     return permissions;
@@ -98,6 +99,8 @@ export function friendlyPermissionName(permission: string) {
       return 'Precise location';
     case PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS:
       return 'Notifications';
+    case PermissionsAndroid.PERMISSIONS.NEARBY_WIFI_DEVICES:
+      return 'Nearby Wi-Fi';
     default:
       return permission.split('.').pop() || permission;
   }

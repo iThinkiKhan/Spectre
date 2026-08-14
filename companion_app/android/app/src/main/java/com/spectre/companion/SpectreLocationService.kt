@@ -577,9 +577,11 @@ class SpectreLocationService : Service(), LocationListener {
     private const val MIN_INTERVAL_MS = 10_000L
     private const val INTERVAL_SLACK_MS = 500L
 
-    // Slow/distance-gated request profile for field battery life.
+    // Request temporal coverage even while stationary. The accumulator below
+    // coalesces these into one averaged marker per minute, so a fixed/home
+    // receiver remains enrichable without growing history every 20 seconds.
     private const val REQUEST_INTERVAL_MS = 20_000L
-    private const val REQUEST_MIN_DISTANCE_M = 15f
+    private const val REQUEST_MIN_DISTANCE_M = 0f
     // Fused-only batch window; keep priority high for enrichment quality.
     private const val REQUEST_MAX_BATCH_DELAY_MS = 60_000L
     private val REQUEST_PRIORITY = Priority.PRIORITY_HIGH_ACCURACY

@@ -88,6 +88,14 @@ struct WiFiNetwork {
     bool     hasWPS;             // WPS IE present
     uint32_t firstSeen;          // millis() when first observed
     uint32_t lastSeen;           // millis() of last beacon
+    // Bounded RSSI window used to emit localization-ready observations.
+    uint32_t localizationLastSample = 0;
+    int32_t  localizationRssiSum = 0;
+    uint16_t localizationFrames = 0;
+    uint16_t localizationSampleSeq = 0;
+    int8_t   localizationRssiMin = 127;
+    int8_t   localizationRssiMax = -127;
+    int8_t   localizationLastRssi = -127;
     // ── associated client tracking ───────────────────────────
     uint8_t  clientMACs[8][6];   // MACs seen talking to this AP
     uint8_t  clientRSSI[8];      // last RSSI per client
@@ -113,6 +121,15 @@ struct TrackedDevice {
     uint32_t firstSeen;
     uint32_t lastSeen;
     uint32_t frameCount;
+
+    // Bounded measurement window for mobile geolocation sampling.
+    uint32_t localizationLastSample;
+    int32_t  localizationRssiSum;
+    uint16_t localizationFrames;
+    uint16_t localizationSampleSeq;
+    int8_t   localizationRssiMin;
+    int8_t   localizationRssiMax;
+    int8_t   localizationLastRssi;
 
     // — sequence number tracking (MAC rotation detection) —
     uint16_t lastSeqNum;

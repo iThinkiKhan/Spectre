@@ -15,6 +15,9 @@
 namespace RAMSpool {
 
 static constexpr uint32_t WORKER_SLOW_MS = 250U;
+// Field logs reached 960 bytes free on a 4608-byte stack during boot-time
+// maintenance. Keep roughly 2 KB available on that observed worst path.
+static constexpr uint32_t WORKER_STACK_BYTES = 5632U;
 static constexpr uint32_t WORKER_APPEND_BATCH_MAX_RECORDS = 8U;
 static constexpr uint32_t WORKER_APPEND_BATCH_BUDGET_MS = 40U;
 static constexpr uint32_t PRESSURE_WATCH_FREE_SLOTS = POOL_SIZE / 8U;
@@ -574,7 +577,8 @@ bool begin() {
     __atomic_store_n(&s_pressureState, 0, __ATOMIC_RELAXED);
 
     BaseType_t ok = xTaskCreatePinnedToCore(
-        _workerTask, "TaskStorage", 4096, nullptr, 2, &s_workerTask, 1);
+        _workerTask, "TaskStorage", WORKER_STACK_BYTES, nullptr, 2,
+        &s_workerTask, 1);
     if (ok != pdPASS) {
         DLOG_ERROR("STORAGE", "RAMSpool worker spawn failed");
         vQueueDelete(s_freeQ);
@@ -907,6 +911,17 @@ Stats snapshot() {
 void logStats() {
     if (!isReady()) return;
     Stats s = snapshot();
+    if (s_workerTask) {
+        const uint32_t freeBytes =
+            uxTaskGetStackHighWaterMark(s_workerTask) * sizeof(StackType_t);
+        if (freeBytes < 1536U) {
+            DLOG_WARN("STACK", "TaskStorage low watermark=%luB",
+                      static_cast<unsigned long>(freeBytes));
+        } else {
+            DLOG_INFO("STACK", "TaskStorage watermark=%luB",
+                      static_cast<unsigned long>(freeBytes));
+        }
+    }
     DLOG_INFO("STORAGE",
               "RAMSpool enq=%lu cons=%lu inflight=%u/%u high=%u pressure=%u "
               "drop[full=%lu big=%lu noise=%lu p3Evict=%lu p3Drop=%lu p2Drop=%lu p1Fail=%lu] free=%u",

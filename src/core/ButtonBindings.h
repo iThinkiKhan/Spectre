@@ -47,7 +47,9 @@ enum SpectreButtonAction : uint8_t {
     BUTTON_ACTION_DEBRIEF_BACK,
     BUTTON_ACTION_BLE_TEST,
     BUTTON_ACTION_MESH_TOGGLE,
-    BUTTON_ACTION_MESH_SEND
+    BUTTON_ACTION_MESH_SEND,
+    BUTTON_ACTION_BLE_LINK,
+    BUTTON_ACTION_BLE_RELEASE
 };
 
 struct ButtonBindingSet {
@@ -95,6 +97,8 @@ static inline const char* spectreButtonActionLabel(SpectreButtonAction action,
         case BUTTON_ACTION_BADUSB_CANCEL:     return "STOP";
         case BUTTON_ACTION_PWNY_FORCE_DEAUTH: return "DEAUTH";
         case BUTTON_ACTION_BLE_TEST:          return "ENRICH";
+        case BUTTON_ACTION_BLE_LINK:          return "LINK";
+        case BUTTON_ACTION_BLE_RELEASE:       return "RELEASE";
         case BUTTON_ACTION_MESH_TOGGLE:       return busy ? "MESH ON" : "MESH";
         case BUTTON_ACTION_MESH_SEND:         return "SEND";
         default:                              return nullptr;
@@ -136,6 +140,11 @@ static inline ButtonBindingSet spectreScreenBindings(Screen screen) {
             // the natural secondary. BLE_TEST was likewise unreachable before.
             return {BUTTON_ACTION_SESSION_TAG, BUTTON_ACTION_BLE_TEST,
                     BUTTON_ACTION_UPLINK_TRIGGER, BUTTON_ACTION_SCREEN_NEXT};
+        case SCREEN_BLE:
+            // LINK opens a bidirectional discovery window: Spectre scans for
+            // the phone companion while advertising its inbound text service.
+            return {BUTTON_ACTION_BLE_LINK, BUTTON_ACTION_BLE_RELEASE,
+                    BUTTON_ACTION_BLE_TEST, BUTTON_ACTION_SCREEN_NEXT};
         case SCREEN_MESHTASTIC:
             return {BUTTON_ACTION_MESH_TOGGLE, BUTTON_ACTION_SLEEP,
                     BUTTON_ACTION_MESH_SEND, BUTTON_ACTION_SCREEN_NEXT};

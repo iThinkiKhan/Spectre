@@ -56,6 +56,12 @@ void publishCounters(uint32_t pending,
                      uint32_t eventTotal,
                      uint32_t recordTotal);
 
+// Publish an enrichment-only authoritative recount without claiming the rest
+// of a potentially maintenance-stale segment summary is fresh.
+void publishPendingEnrichment(uint32_t pendingMission,
+                              uint32_t pendingNoise,
+                              uint32_t nowMs);
+
 // Storage-ready bit + (when ready) usedStr and 4 counters. Replaces
 // _publishStorageState's critical section.
 void publishReadyState(bool storageOk,

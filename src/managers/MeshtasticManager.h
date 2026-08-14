@@ -1,8 +1,10 @@
 #pragma once
 
 #include <Arduino.h>
+#include <new>
 #include <stdint.h>
 
+#include "../core/PsramObject.h"
 #include "../config.h"
 #include "WioNrfAccessory.h"
 
@@ -35,8 +37,12 @@ struct MeshtasticNode {
 class MeshtasticManager {
 public:
     static MeshtasticManager& getInstance() {
-        static MeshtasticManager instance;
-        return instance;
+        static MeshtasticManager* instance = []() {
+            void* storage = allocateManagerStorage(sizeof(MeshtasticManager));
+            configASSERT(storage);
+            return new (storage) MeshtasticManager();
+        }();
+        return *instance;
     }
 
     void attach(WioNrfAccessory* wio) { _wio = wio; }
