@@ -4237,6 +4237,28 @@ void _handleUsbConsoleLine(const char* rawLine) {
         return;
     }
 
+    if (lower == "antenna gain" || lower.startsWith("antenna gain ")) {
+        if (lower.length() > 13) {
+            // Accept plain dBi with an optional fraction: "9", "2.15", "-1.5".
+            const float dbi = line.substring(13).toFloat();
+            if (dbi < -32.0f || dbi > 31.5f) {
+                Serial.println("[ANT] gain out of range (-32.0 .. 31.5 dBi)");
+                return;
+            }
+            const int8_t q2 = static_cast<int8_t>(lroundf(dbi * 4.0f));
+            if (!SETTINGS.setAntennaGainQ2(q2)) {
+                Serial.println("[ANT] failed to save antenna gain");
+                return;
+            }
+        }
+        const int8_t q2 = SETTINGS.get().antennaGainQ2;
+        Serial.printf("[ANT] antenna gain = %.2f dBi (q2=%d)\r\n",
+                      static_cast<double>(q2) / 4.0, static_cast<int>(q2));
+        Serial.println("[ANT] recorded on every capture record; set it whenever "
+                       "you swap antennas or RSSI comparisons will be offset");
+        return;
+    }
+
     if (lower == "fs ls" || lower.startsWith("fs ls ")) {
         const String dir = (line.length() > 6) ? line.substring(6) : String("/");
         _usbFsList(dir);

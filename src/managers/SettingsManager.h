@@ -45,6 +45,15 @@ struct RuntimeSettings {
     char ntpServer1[64] = SPECTRE_NTP_SERVER_1;
     char ntpServer2[64] = SPECTRE_NTP_SERVER_2;
     bool usbSerialDebugEnabled = SPECTRE_USB_SERIAL_DEBUG_ENABLED;
+
+    // Gain of the antenna currently fitted, in quarter-dBi (so 9 dBi -> 36).
+    // The device is always in external mode; what varies is which physical
+    // antenna is screwed on, and firmware cannot detect that. Every RSSI the
+    // device reports is referenced to this gain, so it is recorded on each
+    // capture record: without it, observations taken with a 2 dBi whip and a
+    // 9 dBi panel are silently offset by 7 dB relative to each other, which a
+    // trilateration solve turns into a large radial error it cannot see.
+    int8_t antennaGainQ2 = SPECTRE_ANTENNA_GAIN_Q2_DEFAULT;
     char usbSerialDebugLevel = SPECTRE_USB_SERIAL_DEBUG_LEVEL;
     uint32_t usbSerialDebugAreas = SPECTRE_USB_SERIAL_DEBUG_AREAS;
 };
@@ -72,6 +81,8 @@ public:
     bool setAccentHex(const char* accentHex);
     bool setDisplayTimeoutMs(uint32_t timeoutMs);
     bool setBatteryCapacityMah(uint16_t capacityMah);
+    // gainQuarterDbi is in quarter-dBi units; see RuntimeSettings::antennaGainQ2.
+    bool setAntennaGainQ2(int8_t gainQuarterDbi);
     bool setNtpServers(const char* primary, const char* secondary);
     bool setUsbSerialDebugEnabled(bool enabled);
     bool setUsbSerialDebugLevel(char level);

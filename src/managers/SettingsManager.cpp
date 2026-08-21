@@ -32,6 +32,7 @@ constexpr const char* KEY_TIMEZONE        = "tz";
 constexpr const char* KEY_ACCENT_HEX      = "accent";
 constexpr const char* KEY_DISPLAY_TIMEOUT = "disp_to";
 constexpr const char* KEY_BATTERY_CAPACITY = "bat_mah";
+constexpr const char* KEY_ANTENNA_GAIN_Q2 = "ant_gq2";
 constexpr const char* KEY_NTP_1           = "ntp_1";
 constexpr const char* KEY_NTP_2           = "ntp_2";
 constexpr const char* KEY_USB_SERIAL_EN   = "usb_dbg_en";
@@ -155,6 +156,12 @@ bool SettingsManager::setDisplayTimeoutMs(uint32_t timeoutMs) {
 bool SettingsManager::setBatteryCapacityMah(uint16_t capacityMah) {
     RuntimeSettings next = _settings;
     next.batteryCapacityMah = capacityMah;
+    return apply(next);
+}
+
+bool SettingsManager::setAntennaGainQ2(int8_t gainQuarterDbi) {
+    RuntimeSettings next = _settings;
+    next.antennaGainQ2 = gainQuarterDbi;
     return apply(next);
 }
 
@@ -368,6 +375,9 @@ void SettingsManager::_loadFromPreferences() {
     _settings.displayTimeoutMs = _prefs.getULong(KEY_DISPLAY_TIMEOUT, _settings.displayTimeoutMs);
     _settings.batteryCapacityMah =
         _prefs.getUShort(KEY_BATTERY_CAPACITY, _settings.batteryCapacityMah);
+    _settings.antennaGainQ2 =
+        static_cast<int8_t>(_prefs.getChar(KEY_ANTENNA_GAIN_Q2,
+                                           _settings.antennaGainQ2));
     _prefs.getString(KEY_NTP_1, _settings.ntpServer1, sizeof(_settings.ntpServer1));
     _prefs.getString(KEY_NTP_2, _settings.ntpServer2, sizeof(_settings.ntpServer2));
     _settings.usbSerialDebugEnabled =
@@ -428,6 +438,7 @@ bool SettingsManager::_persist() {
     ok &= putStringOk(KEY_ACCENT_HEX, _settings.accentHex);
     ok &= _prefs.putULong(KEY_DISPLAY_TIMEOUT, _settings.displayTimeoutMs) > 0;
     ok &= _prefs.putUShort(KEY_BATTERY_CAPACITY, _settings.batteryCapacityMah) > 0;
+    ok &= _prefs.putChar(KEY_ANTENNA_GAIN_Q2, _settings.antennaGainQ2) > 0;
     ok &= putStringOk(KEY_NTP_1, _settings.ntpServer1);
     ok &= putStringOk(KEY_NTP_2, _settings.ntpServer2);
     ok &= _prefs.putBool(KEY_USB_SERIAL_EN, _settings.usbSerialDebugEnabled);

@@ -167,6 +167,13 @@ static constexpr uint8_t OFF = 0;
 #define POWER_CRITICAL_SLEEP_COUNTDOWN_MS   SPECTRE_SECONDS_TO_MS(POWER_CRITICAL_SLEEP_COUNTDOWN_SEC)
 
 // Button feel.
+// Gain of the antenna fitted, in QUARTER-dBi (9 dBi -> 36). The device always
+// runs external; what changes is which physical antenna is attached, and that
+// is not detectable in firmware. Recorded on every capture record so RSSI taken
+// with different antennas can be normalised instead of silently disagreeing.
+// Set at runtime with `antenna gain <dBi>`; this is only the factory default.
+#define SPECTRE_ANTENNA_GAIN_Q2_DEFAULT   ((int8_t)9)   // 2.25 dBi, a bare whip
+
 #define BUTTON_LONG_PRESS_MS          800UL
 #define BUTTON_AB_LONG_PRESS_MS       1500UL  // both buttons held together
 #define BUTTON_DEBOUNCE_MS            50UL

@@ -2793,7 +2793,8 @@ bool MQTTManager::queueProbe(const char* mac, const char* ssid,
                               uint16_t sampleFrames,
                               int8_t rssiMin,
                               int8_t rssiMax,
-                              const char* sampleReason) {
+                              const char* sampleReason,
+                              int8_t noiseFloor) {
     JsonDocument doc;
     _prepareQueuedEvent(doc);
     doc["mac"]           = mac;
@@ -2809,6 +2810,11 @@ bool MQTTManager::queueProbe(const char* mac, const char* ssid,
     doc["sample_frames"] = sampleFrames;
     doc["rssi_min"] = rssiMin;
     doc["rssi_max"] = rssiMax;
+    // RF context. Without these an RSSI is a bare number: noise_floor gives it
+    // an SNR, and ant_gain_q2 says which antenna it was referenced to. Both are
+    // required to compare observations across time, place and hardware.
+    if (noiseFloor != 0) doc["noise_floor"] = noiseFloor;
+    doc["ant_gain_q2"] = SETTINGS.get().antennaGainQ2;
     doc["sample_reason"] = sampleReason ? sampleReason : "interval";
     const RAMSpool::CaptureClassification probeCls =
         RAMSpool::classify("probe", doc.as<JsonObjectConst>());
@@ -2831,7 +2837,8 @@ void MQTTManager::queueNetwork(const char* bssid, const char* ssid,
                                bool hasWPS, const char* trackId,
                                uint16_t sampleSeq, uint16_t sampleFrames,
                                int8_t rssiMin, int8_t rssiMax,
-                               const char* sampleReason) {
+                               const char* sampleReason,
+                               int8_t noiseFloor) {
     if (!bssid || !bssid[0]) return;
 
     JsonDocument doc;
@@ -2850,6 +2857,11 @@ void MQTTManager::queueNetwork(const char* bssid, const char* ssid,
     doc["sample_frames"] = sampleFrames;
     doc["rssi_min"] = rssiMin;
     doc["rssi_max"] = rssiMax;
+    // RF context. Without these an RSSI is a bare number: noise_floor gives it
+    // an SNR, and ant_gain_q2 says which antenna it was referenced to. Both are
+    // required to compare observations across time, place and hardware.
+    if (noiseFloor != 0) doc["noise_floor"] = noiseFloor;
+    doc["ant_gain_q2"] = SETTINGS.get().antennaGainQ2;
     doc["sample_reason"] = sampleReason ? sampleReason : "interval";
     const RAMSpool::CaptureClassification networkCls =
         RAMSpool::classify("network", doc.as<JsonObjectConst>());

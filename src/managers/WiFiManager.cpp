@@ -59,12 +59,45 @@ void _queueWiFiNotification(uint8_t type, const char* text) {
     }
 }
 
+// dBm -> linear power. Built once at first use; the per-frame path is then a
+// plain array index, no powf(). Index is (dBm + 128) so the whole int8 range is
+// covered. Units are arbitrary but consistent (1.0 == 0 dBm), which is all a
+// mean-then-convert needs.
+static const float* _dbmLinearTable() {
+    static float tbl[256];
+    static bool built = false;
+    if (!built) {
+        for (int i = 0; i < 256; i++) {
+            tbl[i] = powf(10.0f, static_cast<float>(i - 128) / 10.0f);
+        }
+        built = true;
+    }
+    return tbl;
+}
+
+static inline float _dbmToLinear(int8_t dbm) {
+    return _dbmLinearTable()[static_cast<uint8_t>(static_cast<int>(dbm) + 128)];
+}
+
+static inline int8_t _linearToDbm(float linear) {
+    if (!(linear > 0.0f)) return -127;
+    const float dbm = 10.0f * log10f(linear);
+    if (dbm > 0.0f) return 0;
+    if (dbm < -127.0f) return -127;
+    return static_cast<int8_t>(lroundf(dbm));
+}
+
 template <typename T>
-void _noteLocalizationRssi(T& target, int8_t rssi) {
+void _noteLocalizationRssi(T& target, int8_t rssi, int8_t noiseFloor) {
     if (target.localizationFrames != UINT16_MAX) {
         target.localizationFrames++;
     }
-    target.localizationRssiSum += rssi;
+    target.localizationPowerSum += _dbmToLinear(rssi);
+    // noiseFloor == 0 means the driver reported none; skip it rather than fold
+    // 0 dBm (a milliwatt of "noise") into the average.
+    if (noiseFloor != 0) {
+        target.localizationNoisePowerSum += _dbmToLinear(noiseFloor);
+    }
     if (target.localizationRssiMin == 127 || rssi < target.localizationRssiMin) {
         target.localizationRssiMin = rssi;
     }
@@ -89,8 +122,18 @@ bool _localizationSampleDue(const T& target, int8_t rssi, uint32_t now,
 template <typename T>
 int8_t _localizationAverageRssi(const T& target, int8_t fallback) {
     if (target.localizationFrames == 0) return fallback;
-    return static_cast<int8_t>(target.localizationRssiSum /
-                               static_cast<int32_t>(target.localizationFrames));
+    return _linearToDbm(target.localizationPowerSum /
+                        static_cast<float>(target.localizationFrames));
+}
+
+// Mean noise floor over the same window, in dBm. Returns 0 when the driver
+// reported none, which downstream treats as "unknown" rather than a real 0 dBm.
+template <typename T>
+int8_t _localizationAverageNoise(const T& target) {
+    if (target.localizationFrames == 0) return 0;
+    if (!(target.localizationNoisePowerSum > 0.0f)) return 0;
+    return _linearToDbm(target.localizationNoisePowerSum /
+                        static_cast<float>(target.localizationFrames));
 }
 
 template <typename T>
@@ -116,7 +159,8 @@ void _finishLocalizationSample(T& target, int8_t averageRssi, uint32_t now) {
     if (target.localizationSampleSeq != UINT16_MAX) {
         target.localizationSampleSeq++;
     }
-    target.localizationRssiSum = 0;
+    target.localizationPowerSum = 0.0f;
+    target.localizationNoisePowerSum = 0.0f;
     target.localizationFrames = 0;
     target.localizationRssiMin = 127;
     target.localizationRssiMax = -127;
@@ -225,11 +269,17 @@ void WiFiManager::tick() {
         portENTER_CRITICAL(&_deferredStatsMux);
         drops = _deferredDrops;
         portEXIT_CRITICAL(&_deferredStatsMux);
-        DLOG_DEBUG("WIFI",
-                   "frames=%lu mgmt=%lu probes=%d nets=%d queue=%d drops=%lu",
-                   _totalFrames, _mgmtFrames,
-                   _probePacketCount, _networkCount,
-                   depth, drops);
+        // noiseFloor is reported at INFO because it is load-bearing: every
+        // distance estimate downstream is an SNR, and a driver that reports a
+        // constant 0 here silently reduces that back to raw RSSI.
+        DLOG_INFO("WIFI",
+                  "frames=%lu mgmt=%lu probes=%d nets=%d queue=%d drops=%lu "
+                  "noiseFloor=%ddBm antGain=%.2fdBi",
+                  _totalFrames, _mgmtFrames,
+                  _probePacketCount, _networkCount,
+                  depth, drops,
+                  static_cast<int>(_frameNoiseFloor),
+                  static_cast<double>(SETTINGS.get().antennaGainQ2) / 4.0);
         lastQueueLog = millis();
     }
 
@@ -250,6 +300,8 @@ void WiFiManager::tick() {
             break;
         }
         DeferredFrame& f = _deferredQueue[_deferredTail];
+        // Publish this frame's noise floor for the handlers below.
+        _frameNoiseFloor = f.noiseFloor;
         const uint32_t frameStartMs = millis();
         const uint8_t frameType = f.frameType;
         const uint8_t frameSubtype = f.frameSubtype;
@@ -691,6 +743,11 @@ void WiFiManager::handleFrame(void* buf,
     f.len          = copyLen;
     f.rssi         = pkt->rx_ctrl.rssi;
     f.channel      = pkt->rx_ctrl.channel;
+    // noise_floor is what makes RSSI interpretable: SNR = rssi - noise_floor.
+    // It is free -- the same struct we already read -- and it moves with
+    // interference, temperature and AGC state, so without it an RSSI cannot be
+    // compared against one taken at another time or place.
+    f.noiseFloor   = pkt->rx_ctrl.noise_floor;
     f.frameType    = (pkt->payload[0] >> 2) & 0x03;
     f.frameSubtype = (pkt->payload[0] >> 4) & 0x0F;
 
@@ -819,7 +876,8 @@ void WiFiManager::_processProbeRequest(const uint8_t* p,
                     dev->localizationFrames,
                     dev->localizationRssiMin,
                     dev->localizationRssiMax,
-                    reason);
+                    reason,
+                    _localizationAverageNoise(*dev));
                 _finishLocalizationSample(*dev, averageRssi, now);
             }
         }
@@ -935,7 +993,8 @@ void WiFiManager::_processBeacon(const uint8_t* p,
                 net->localizationFrames,
                 net->localizationRssiMin,
                 net->localizationRssiMax,
-                _localizationSampleReason(*net, rssi, now));
+                _localizationSampleReason(*net, rssi, now),
+                _localizationAverageNoise(*net));
             _finishLocalizationSample(*net, averageRssi, now);
         }
 
@@ -2438,7 +2497,7 @@ TrackedDevice* WiFiManager::_findOrCreateDevice(
             _devices[i].rssi     = rssi;
             _devices[i].lastSeen = millis();
             _devices[i].frameCount++;
-            _noteLocalizationRssi(_devices[i], rssi);
+            _noteLocalizationRssi(_devices[i], rssi, _frameNoiseFloor);
             return &_devices[i];
         }
     }
@@ -2460,7 +2519,7 @@ TrackedDevice* WiFiManager::_findOrCreateDevice(
     dev.localizationRssiMin = 127;
     dev.localizationRssiMax = -127;
     dev.localizationLastRssi = -127;
-    _noteLocalizationRssi(dev, rssi);
+    _noteLocalizationRssi(dev, rssi, _frameNoiseFloor);
 
     return &dev;
 }
@@ -2494,7 +2553,7 @@ WiFiNetwork* WiFiManager::_findOrCreateNetwork(
         if (_macsEqual(_networks[i].bssid, bssid)) {
             _networks[i].rssi    = rssi;
             _networks[i].lastSeen = millis();
-            _noteLocalizationRssi(_networks[i], rssi);
+            _noteLocalizationRssi(_networks[i], rssi, _frameNoiseFloor);
             return &_networks[i];
         }
     }
@@ -2517,7 +2576,7 @@ WiFiNetwork* WiFiManager::_findOrCreateNetwork(
         net.localizationRssiMin = 127;
         net.localizationRssiMax = -127;
         net.localizationLastRssi = -127;
-        _noteLocalizationRssi(net, rssi);
+        _noteLocalizationRssi(net, rssi, _frameNoiseFloor);
         STATE_WRITE_BEGIN();
         g_state.wifiNetworkCount = _networkCount;
         STATE_WRITE_END();
@@ -2535,7 +2594,7 @@ WiFiNetwork* WiFiManager::_findOrCreateNetwork(
     net.localizationRssiMin = 127;
     net.localizationRssiMax = -127;
     net.localizationLastRssi = -127;
-    _noteLocalizationRssi(net, rssi);
+    _noteLocalizationRssi(net, rssi, _frameNoiseFloor);
     strlcpy(net.security, "OPEN", sizeof(net.security));
 
     STATE_WRITE_BEGIN();

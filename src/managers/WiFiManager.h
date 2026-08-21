@@ -90,7 +90,14 @@ struct WiFiNetwork {
     uint32_t lastSeen;           // millis() of last beacon
     // Bounded RSSI window used to emit localization-ready observations.
     uint32_t localizationLastSample = 0;
-    int32_t  localizationRssiSum = 0;
+    // Linear-domain accumulators. Averaging dBm arithmetically is a log-domain
+    // average of a power quantity: for Rayleigh-faded samples it sits ~2.5 dB
+    // BELOW the true mean power, and the bias does NOT shrink with more frames
+    // (measured: -2.52 dB at N=4, -2.50 dB at N=32). At a path-loss exponent of
+    // 2.0-3.5 that is an 18-33% range over-estimate, always outward. Sum linear
+    // power and convert once, at emission.
+    float    localizationPowerSum = 0.0f;
+    float    localizationNoisePowerSum = 0.0f;
     uint16_t localizationFrames = 0;
     uint16_t localizationSampleSeq = 0;
     int8_t   localizationRssiMin = 127;
@@ -124,7 +131,9 @@ struct TrackedDevice {
 
     // Bounded measurement window for mobile geolocation sampling.
     uint32_t localizationLastSample;
-    int32_t  localizationRssiSum;
+    // See the matching note on the network struct: linear-domain accumulation.
+    float    localizationPowerSum;
+    float    localizationNoisePowerSum;
     uint16_t localizationFrames;
     uint16_t localizationSampleSeq;
     int8_t   localizationRssiMin;
@@ -316,7 +325,25 @@ private:
         uint8_t  channel;
         uint8_t  frameType;
         uint8_t  frameSubtype;
+        // Radio metadata rx_ctrl already hands us and we used to drop.
+        // noiseFloor is the important one: RSSI on its own is not comparable
+        // across time or place, because the receiver's noise floor moves with
+        // interference, temperature and AGC state. SNR = rssi - noiseFloor is
+        // the quantity that actually tracks distance.
+        int8_t   noiseFloor;
     };
+    // rx_ctrl also exposes rate / sig_mode / mcs. Deliberately NOT captured:
+    // a localization sample aggregates many frames, so a single PHY value for
+    // the window is not well defined, and storing an arbitrary one of them is
+    // worse than storing none. PHY-aware RSSI correction needs per-PHY
+    // accumulators, not one byte -- do that properly or not at all.
+    // Noise floor of the frame currently being processed, in dBm (0 = the
+    // driver reported none). Set once as each deferred frame is dequeued and
+    // read by the sample-window accumulators. A member rather than a parameter
+    // because it would otherwise have to be threaded through six frame
+    // handlers that have no other interest in it; safe because the deferred
+    // queue is drained single-threaded from tick().
+    int8_t _frameNoiseFloor = 0;
     static const int DEFERRED_QUEUE_SIZE = 128;
     DeferredFrame* _deferredQueue = nullptr;
     volatile int  _deferredHead = 0;

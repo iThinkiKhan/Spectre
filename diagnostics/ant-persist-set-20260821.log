@@ -1,0 +1,31 @@
+[session] waiting up to 60s for firmware ready
+[204877][I][WIFI] frames=834 mgmt=834 probes=26 nets=9 queue=0 drops=0 noiseFloor=-97dBm antGain=2.25dBi
+[207483][W][MQTT] probe enqueue drop mac=5C:B2:6D:6E:F1:C7 ssid=Framework IT - Staff
+[209901][I][WIFI] frames=884 mgmt=884 probes=28 nets=9 queue=0 drops=0 noiseFloor=-96dBm antGain=2.25dBi
+[211027][I][STACK] TaskButtons watermark=1856B min=1856B
+[211417][I][HEAP] heap free=4502KB min=4387KB largest=4352KB frag=3% internalFree=86KB internalLargest=23KB psramFree=4409KB core=4/3% owner=WIFI_CAPTURE nets=9 pendingUpload=2884 pendingEnrich=15
+[HEALTH] time=2026-08-21 09:54:27 src=ntp
+[HEALTH] heap used=3952/8454KB free=4502KB min=4387KB largest=4352KB frag=3%
+[HEALTH] internal used=176/262KB free=86KB min=6KB largest=23KB
+[HEALTH] psram used=3783/8192KB free=4409KB largest=4352KB
+[HEALTH] stack free_min: core0=4KB/15KB core1=5KB/10KB
+[HEALTH] loopTask free_min=2764B/5120B
+[HEALTH] core usage: core0=4% core1=3%
+[HEALTH] power=usb state=usb batt=100% 4752mV trend=16mV/min runtime=0min cap=1100mAh charging=1
+[HEALTH] radio=WIFI_CAPTURE wifi=0 ble=0 gps=0 nets=9 pendingUpload=2884 pendingEnrich=15
+[HEALTH] subghz=NONE mode=OFF pkts=0 nodes=0
+[211419][I][STACK] TaskStorage watermark=4468B
+[211419][I][STORAGE] RAMSpool enq=18 cons=18 inflight=0/1024 high=2 pressure=0 drop[full=0 big=2 noise=0 p3Evict=0 p3Drop=0 p2Drop=0 p1Fail=0] free=1024
+[211419][I][STORAGE] RAMSpool enqueue probe[ok=9 drop=2] device[ok=9 drop=0]
+[211420][I][STORAGE] RAMSpool worker probe[ok=9 sup=0 drop=0 fail=0 slow=0] device[ok=9 sup=0 drop=0 fail=0 slow=0] slowTotal=0 maxMs=0
+[211420][I][STORAGE] RAMSpool prioEnq p0=0 p1=0 p2=18 p3=0
+[211420][I][STORAGE] RAMSpool lanes p1=0/0 p2=0/1 p3=0/0
+[212122][I][STORAGE] worker ui refresh serviced uiRefreshServiceCount=12 uiDeferred=25 uiFlush=12 pressure=0 usedPct=6 pending=2886
+[214842][I][STACK] TaskHardware watermark=3648B min=3648B
+[session] no boot banner; app already running
+[214913][I][WIFI] frames=946 mgmt=946 probes=34 nets=9 queue=0 drops=0 noiseFloor=-97dBm antGain=2.25dBi
+[session] ready=True — sending 1 command(s)
+[session] >>> antenna gain 9
+antenna gain 9
+[ANT] antenna gain = 9.00 dBi (q2=36)
+[ANT] recorded on every capture record; set it whenever you swap antennas or RSSI comparisons will be offset

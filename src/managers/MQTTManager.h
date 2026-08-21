@@ -109,7 +109,8 @@ public:
                     const char* trackId, uint8_t physicalDeviceId,
                     uint16_t sampleSeq, uint16_t sampleFrames,
                     int8_t rssiMin, int8_t rssiMax,
-                    const char* sampleReason);
+                    const char* sampleReason,
+                    int8_t noiseFloor);
     void queueDevice(const char* mac, const char* ieFingerprint,
                      const char* probeSetHash, int8_t rssi,
                      bool isRandomMAC, const char* trackId,
@@ -122,7 +123,8 @@ public:
                       const char* security, bool isHidden, bool hasWPS,
                       const char* trackId, uint16_t sampleSeq,
                       uint16_t sampleFrames, int8_t rssiMin,
-                      int8_t rssiMax, const char* sampleReason);
+                      int8_t rssiMax, const char* sampleReason,
+                      int8_t noiseFloor);
     void queueDrone(const char* droneID, float lat, float lon,
                     float alt, const char* mac, int8_t rssi,
                     uint8_t channel, const char* protocol);
