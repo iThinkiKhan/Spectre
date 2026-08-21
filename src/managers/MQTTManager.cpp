@@ -2794,7 +2794,8 @@ bool MQTTManager::queueProbe(const char* mac, const char* ssid,
                               int8_t rssiMin,
                               int8_t rssiMax,
                               const char* sampleReason,
-                              int8_t noiseFloor) {
+                              int8_t noiseFloor,
+                              uint16_t sampleSpanDs) {
     JsonDocument doc;
     _prepareQueuedEvent(doc);
     doc["mac"]           = mac;
@@ -2808,6 +2809,8 @@ bool MQTTManager::queueProbe(const char* mac, const char* ssid,
     doc["localization_sample"] = true;
     doc["sample_seq"] = sampleSeq;
     doc["sample_frames"] = sampleFrames;
+    // Deciseconds the averaging window was open; 0 = unknown.
+    if (sampleSpanDs) doc["sample_span_ds"] = sampleSpanDs;
     doc["rssi_min"] = rssiMin;
     doc["rssi_max"] = rssiMax;
     // RF context. Without these an RSSI is a bare number: noise_floor gives it
@@ -2839,7 +2842,8 @@ void MQTTManager::queueNetwork(const char* bssid, const char* ssid,
                                int8_t rssiMin, int8_t rssiMax,
                                const char* sampleReason,
                                int8_t noiseFloor,
-                               int8_t txPowerDbm, uint8_t txPowerSrc) {
+                               int8_t txPowerDbm, uint8_t txPowerSrc,
+                               uint16_t sampleSpanDs) {
     if (!bssid || !bssid[0]) return;
 
     JsonDocument doc;
@@ -2856,6 +2860,8 @@ void MQTTManager::queueNetwork(const char* bssid, const char* ssid,
     doc["localization_sample"] = true;
     doc["sample_seq"] = sampleSeq;
     doc["sample_frames"] = sampleFrames;
+    // Deciseconds the averaging window was open; 0 = unknown.
+    if (sampleSpanDs) doc["sample_span_ds"] = sampleSpanDs;
     doc["rssi_min"] = rssiMin;
     doc["rssi_max"] = rssiMax;
     // RF context. Without these an RSSI is a bare number: noise_floor gives it

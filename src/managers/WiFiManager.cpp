@@ -128,6 +128,23 @@ int8_t _localizationAverageRssi(const T& target, int8_t fallback) {
 
 // Mean noise floor over the same window, in dBm. Returns 0 when the driver
 // reported none, which downstream treats as "unknown" rather than a real 0 dBm.
+// How long the sample window has been open, in deciseconds, capped so it
+// always fits two varint bytes. The averaged RSSI is not a measurement at a
+// point: it is the mean received power over however far the observer moved
+// while the window was open. Recording the span lets a solver convert that
+// into a positional smear (span x speed from the GPS track) instead of
+// treating the sample as if it came from the single position it is tagged
+// with. 0 means the window has no known start (first sample for this target).
+template <typename T>
+uint16_t _localizationSpanDs(const T& target, uint32_t now) {
+    if (target.localizationSampleSeq == 0 || target.localizationLastSample == 0) {
+        return 0;
+    }
+    const uint32_t spanMs = now - target.localizationLastSample;
+    const uint32_t spanDs = spanMs / 100UL;
+    return static_cast<uint16_t>(spanDs > 60000UL ? 60000UL : spanDs);
+}
+
 template <typename T>
 int8_t _localizationAverageNoise(const T& target) {
     if (target.localizationFrames == 0) return 0;
@@ -899,7 +916,8 @@ void WiFiManager::_processProbeRequest(const uint8_t* p,
                     dev->localizationRssiMin,
                     dev->localizationRssiMax,
                     reason,
-                    _localizationAverageNoise(*dev));
+                    _localizationAverageNoise(*dev),
+                    _localizationSpanDs(*dev, now));
                 _finishLocalizationSample(*dev, averageRssi, now);
             }
         }
@@ -1072,7 +1090,8 @@ void WiFiManager::_processBeacon(const uint8_t* p,
                 net->localizationRssiMax,
                 _localizationSampleReason(*net, rssi, now),
                 _localizationAverageNoise(*net),
-                net->txPowerDbm, net->txPowerSrc);
+                net->txPowerDbm, net->txPowerSrc,
+                _localizationSpanDs(*net, now));
             _finishLocalizationSample(*net, averageRssi, now);
         }
 

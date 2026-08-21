@@ -638,7 +638,8 @@ static bool _isDecoderDerivedEventKey(const char* key) {
 // Localization sidecar fields carried positionally by the v2 probe/device/
 // network payload. Keyed, these cost ~120 B/record; positional, ~7 B.
 static bool _isLocalizationSidecarKey(const char* key) {
-    return strcmp(key, "tx_power") == 0 ||
+    return strcmp(key, "sample_span_ds") == 0 ||
+           strcmp(key, "tx_power") == 0 ||
            strcmp(key, "tx_power_src") == 0 ||
            strcmp(key, "noise_floor") == 0 ||
            strcmp(key, "ant_gain_q2") == 0 ||
@@ -1359,12 +1360,15 @@ static bool _decodeBinaryPayloadBody(const uint8_t*& p,
                 !_readZigZag32FromBytes(p, end, rssiMaxDelta)) {
                 return false;
             }
+            uint32_t sampleSpanDs = 0;
+            if (!_readUVarintFromBytes(p, end, sampleSpanDs)) return false;
             if (p >= end) return false;
             const uint8_t reasonCode = *p++;
 
             root["localization_sample"] = true;
             root["sample_seq"] = sampleSeq;
             root["sample_frames"] = sampleFrames;
+            if (sampleSpanDs) root["sample_span_ds"] = sampleSpanDs;
             // min/max are stored as deltas from rssi -- they sit within a few
             // dB of it, so the delta is almost always a single varint byte.
             root["rssi_min"] = rssi + rssiMinDelta;
@@ -6030,6 +6034,8 @@ bool StorageManager::_appendSegmentRecord(SpoolSegmentInfo& seg,
                             doc["rssi_min"].as<int32_t>() - rssi);
                         _appendZigZag32ToBytes(body,
                             doc["rssi_max"].as<int32_t>() - rssi);
+                        _appendUVarintToBytes(body,
+                            doc["sample_span_ds"].as<uint32_t>());
                         const String reason =
                             String((const char*)(doc["sample_reason"] | ""));
                         const uint8_t reasonCode =
@@ -17590,6 +17596,7 @@ bool StorageManager::spoolCodecSelfTestToSerial() {
             w["sample_frames"] = 34;
             w["rssi_min"] = -72;
             w["rssi_max"] = -61;
+            w["sample_span_ds"] = 87;   // 8.7 s averaging window
             w["sample_reason"] = "signal_delta";
         } else if (type == "pmkid") {
             w["ap"] = macA;
