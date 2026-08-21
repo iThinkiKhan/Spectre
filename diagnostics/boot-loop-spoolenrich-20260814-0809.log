@@ -1,0 +1,6 @@
+=== capture opened 2026-08-14T08:07:50.6977867-05:00 ===
+=== send: spool enrich ===
+spool enrich
+[SPOOL] deferred owner=BLE_GPS reason=manual_spool_enrich
+[190318][I][BLE] worker stack free=7432B min=7432B
+=== capture closed 2026-08-14T08:08:02.7845160-05:00 ===

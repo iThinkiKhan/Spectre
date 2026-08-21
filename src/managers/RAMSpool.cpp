@@ -17,7 +17,11 @@ namespace RAMSpool {
 static constexpr uint32_t WORKER_SLOW_MS = 250U;
 // Field logs reached 960 bytes free on a 4608-byte stack during boot-time
 // maintenance. Keep roughly 2 KB available on that observed worst path.
-static constexpr uint32_t WORKER_STACK_BYTES = 5632U;
+// Peak use measured 2026-08-18 was 3712 B (watermark 1920 B of 5632), which
+// is under the project's 4 KB guard-rail. Raised again to 8192 on 2026-08-19:
+// at 6144 the observed margin was still only ~2.4 KB, and after the field
+// panic every task stack is sized for margin, not for saved bytes.
+static constexpr uint32_t WORKER_STACK_BYTES = 8192U;
 static constexpr uint32_t WORKER_APPEND_BATCH_MAX_RECORDS = 8U;
 static constexpr uint32_t WORKER_APPEND_BATCH_BUDGET_MS = 40U;
 static constexpr uint32_t PRESSURE_WATCH_FREE_SLOTS = POOL_SIZE / 8U;

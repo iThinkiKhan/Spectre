@@ -1,0 +1,38 @@
+heap status
+[HEAP] 8bit total=8453KB free=4595KB largest=4480KB
+[HEAP] internal total=261KB free=74KB largest=32KB
+[HEAP] psram total=8192KB free=4520KB largest=4480KB
+[HEAP] uploadIndex=0 enrichWindow=0 maint=dirty_spool_index|snapshot_lagged owner=WIFI_CAPTURE
+[22555][I][STORAGE] worker ui refresh serviced uiRefreshServiceCount=2 uiDeferred=16 uiFlush=2 pressure=0 usedPct=11 pending=1881
+companion status
+[COMP] enabled=1
+[COMP] external accessory=0 bleProxy=0 phoneConnected=0 phone=unknown rssi=0 ageMs=0
+[COMP] wio link=idle sx1262=0 textInput=0
+[COMP] phone=UNKNOWN work=IDLE
+[COMP] bleBegun=0 bleRadio=0 bleState=IDLE
+[COMP] ready link=0 gps=0 freshGps=0 ctrl=0 enrich=0
+[COMP] bleInitAgeMs=0 scanStartAgeMs=0 disconnReason=0
+[COMP] pendingEnrichMission=0 pendingEnrichNoise=0 pendingEnrichTotal=0
+[COMP] lastProbeAgeMs=0 lastEnrichAgeMs=0
+[COMP] radioOwner=wifi_capture
+time
+[TIME] valid=1 accurate=1 source=ntp utc=2026-08-10T17:59:13Z
+[TIME] lastNtpAttempt=none age=0s
+[30010][I][HEAP] heap free=4548KB min=4543KB largest=4352KB frag=4% internalFree=74KB internalLargest=32KB psramFree=4473KB core=0/0% owner=WIFI_CAPTURE nets=1 pendingUpload=1881 pendingEnrich=4
+[HEALTH] time=2026-08-10 12:59:14 src=ntp
+[HEALTH] heap used=3906/8453KB free=4548KB min=4543KB largest=4352KB frag=4%
+[HEALTH] internal used=187/261KB free=74KB min=70KB largest=32KB
+[HEALTH] psram used=3719/8192KB free=4473KB largest=4352KB
+[HEALTH] stack free_min: core0=17KB/22KB core1=13KB/18KB
+[HEALTH] core usage: core0=0% core1=0%
+[HEALTH] power=usb state=usb batt=100% 4679mV trend=0mV/min runtime=0min cap=1100mAh charging=0
+[HEALTH] radio=WIFI_CAPTURE wifi=0 ble=0 gps=0 nets=1 pendingUpload=1881 pendingEnrich=4
+[HEALTH] subghz=NONE mode=OFF pkts=0 nodes=0
+[30012][I][STORAGE] RAMSpool enq=16 cons=16 inflight=0/1024 high=5 pressure=0 drop[full=0 big=0 noise=0 p3Evict=0 p3Drop=0 p2Drop=0 p1Fail=0] free=1024
+[30012][I][STORAGE] RAMSpool enqueue probe[ok=14 drop=0] device[ok=2 drop=0]
+[30013][I][STORAGE] RAMSpool worker probe[ok=2 sup=12 drop=0 fail=0 slow=0] device[ok=2 sup=0 drop=0 fail=0 slow=1] slowTotal=1 maxMs=446
+[30013][I][STORAGE] RAMSpool prioEnq p0=0 p1=0 p2=16 p3=0
+[30013][I][STORAGE] RAMSpool lanes p1=0/0 p2=0/4 p3=0/0
+[31024][I][STACK] TaskHardware watermark=17040B min=17040B
+[31035][I][STACK] TaskDisplay watermark=13128B min=13128B
+

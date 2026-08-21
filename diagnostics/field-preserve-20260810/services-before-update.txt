@@ -1,0 +1,70 @@
+ACTIVITY MANAGER SERVICES (dumpsys activity services)
+  User 0 active services:
+  * ServiceRecord{e92b23a u0 com.spectre.companion/.SpectreLocationService c:com.spectre.companion}
+    intent={cmp=com.spectre.companion/.SpectreLocationService}
+    packageName=com.spectre.companion
+    processName=com.spectre.companion
+    targetSdkVersion=36
+    baseDir=/data/app/~~6T8OhDlqG-He7WVjL-3gaQ==/com.spectre.companion-S4CVkYbRpFWPFSk17XefVA==/base.apk
+    dataDir=/data/user/0/com.spectre.companion
+    app=ProcessRecord{81a9392 30261:com.spectre.companion/u0a498}
+    useNewWiuLogic_forCapabilities()=true
+    useNewWiuLogic_forStart()=true
+    useNewBfslLogic()=true
+    mAllowWiu_noBinding=PROC_STATE_TOP
+    mAllowWiu_inBindService=DENIED
+    mAllowWiu_byBindings=DENIED
+    getFgsAllowWiu_legacy=PROC_STATE_TOP
+    getFgsAllowWiu_new=PROC_STATE_TOP
+    getFgsAllowWiu_forStart=PROC_STATE_TOP
+    getFgsAllowWiu_forCapabilities=PROC_STATE_TOP
+    allowUiJobScheduling=false
+    recentCallingPackage=com.spectre.companion
+    recentCallingUid=10498
+    mAllowStart_noBinding=PROC_STATE_TOP
+    mAllowStart_inBindService=DENIED
+    mAllowStart_byBindings=DENIED
+    getFgsAllowStart_legacy=PROC_STATE_TOP
+    getFgsAllowStart_new=PROC_STATE_TOP
+    getFgsAllowStart=PROC_STATE_TOP
+    startForegroundCount=0
+    infoAllowStartForeground=[callingPackage: com.spectre.companion; callingUid: 10498; uidState: TOP ; uidBFSL: [BFSL]; intent: Intent { xflg=0x4 cmp=com.spectre.companion/.SpectreLocationService }; code:PROC_STATE_TOP; tempAllowListReason:<null>; allowWiu:12; targetSdkVersion:36; callerTargetSdkVersion:36; startForegroundCount:0; bindFromPackage:null: isBindService:false]
+    createTime=-3h48m12s99ms startingBgTimeout=--
+    lastActivity=-2h43m14s447ms restartTime=-2h43m14s447ms createdFromFg=true
+    startRequested=true delayedStop=false stopIfKilled=true callStart=true lastStartId=1
+ startCommandResult=2
+
+  * ServiceRecord{ddd3565 u0 com.spectre.companion/.SpectreFieldService c:com.spectre.companion}
+    intent={act=com.spectre.companion.action.SET_GPS cmp=com.spectre.companion/.SpectreFieldService}
+    packageName=com.spectre.companion
+    processName=com.spectre.companion
+    targetSdkVersion=36
+    baseDir=/data/app/~~6T8OhDlqG-He7WVjL-3gaQ==/com.spectre.companion-S4CVkYbRpFWPFSk17XefVA==/base.apk
+    dataDir=/data/user/0/com.spectre.companion
+    app=ProcessRecord{81a9392 30261:com.spectre.companion/u0a498}
+    useNewWiuLogic_forCapabilities()=true
+    useNewWiuLogic_forStart()=true
+    useNewBfslLogic()=true
+    mAllowWiu_noBinding=PROC_STATE_TOP
+    mAllowWiu_inBindService=DENIED
+    mAllowWiu_byBindings=DENIED
+    getFgsAllowWiu_legacy=PROC_STATE_TOP
+    getFgsAllowWiu_new=PROC_STATE_TOP
+    getFgsAllowWiu_forStart=PROC_STATE_TOP
+    getFgsAllowWiu_forCapabilities=PROC_STATE_TOP
+    allowUiJobScheduling=true
+    recentCallingPackage=com.spectre.companion
+    recentCallingUid=10498
+    mAllowStart_noBinding=PROC_STATE_TOP
+    mAllowStart_inBindService=DENIED
+    mAllowStart_byBindings=DENIED
+    getFgsAllowStart_legacy=PROC_STATE_TOP
+    getFgsAllowStart_new=PROC_STATE_TOP
+    getFgsAllowStart=PROC_STATE_TOP
+    startForegroundCount=1
+    infoAllowStartForeground=[callingPackage: com.spectre.companion; callingUid: 10498; uidState: TOP ; uidBFSL: [BFSL]; intent: Intent { act=com.spectre.companion.action.SET_GPS xflg=0x4 cmp=com.spectre.companion/.SpectreFieldService (has extras) }; code:PROC_STATE_TOP; tempAllowListReason:<null>; allowWiu:12; targetSdkVersion:36; callerTargetSdkVersion:36; startForegroundCount:0; bindFromPackage:null: isBindService:false]
+    isForeground=true foregroundId=4201 types=0x00000018 foregroundNoti=Notification(channel=spectre_field_mode shortcut=null contentView=null vibrate=null sound=null defaults=0 flags=NO_CLEAR|FOREGROUND_SERVICE color=0x00000000 actions=1 vis=PRIVATE semFlags=0x0 semPriority=0 semMissedCount=0 semScenarioType=0)
+    createTime=-3h48m12s103ms startingBgTimeout=--
+    lastActivity=-2h43m14s82ms restartTime=-2h43m14s449ms createdFromFg=true
+    startRequested=true delayedStop=false stopIfKilled=true callStart=true lastStartId=2
+ startCommandResult=2

@@ -1,0 +1,608 @@
+=== reconnecting capture opened 2026-08-15T20:22:54.1977534-05:00 port=COM13 ===
+=== serial connected 2026-08-15T20:22:54.2151519-05:00 attempt=1 ===
+[20313][I][BLE] connect result ok=1 err=0 addr=7b:9f:6b:49:19:2f
+[20313][I][BLE] BLE link connected; starting app-layer auth watchdog=50000ms
+[20314][I][BLE] remote service lookup begin core=1 internalFree=60468 largest=31732
+[20449][I][BLE] remote service lookup end found=1 err=0
+[20449][I][BLE] remote characteristic discovery begin
+[20598][I][BLE] remote characteristic discovery end count=13 err=0
+[20658][I][BLE] remote descriptor discovery char=auth count=2 err=0
+[20658][I][BLE] auth notify subscribe begin
+[20717][I][BLE] auth notify subscribe end ok=1 err=0
+[21235][I][BLE] auth challenge write bytes=163 mtu=247 attPayload=244 mode=response
+[22279][I][BLE] app secure session ready alg=P-256+ECDH+AES-256-GCM
+[22282][I][BLE] phone auth confirmed; caching peer addr=7b:9f:6b:49:19:2f ttl=300000ms rssi=-99
+[22354][I][BLE] remote descriptor discovery char=enrichment count=2 err=0
+[22413][I][BLE] remote descriptor discovery char=command_req count=2 err=0
+[22593][I][BLE] remote bound gps=1 ctrl=1 meta=1 batch=1 enrich=1 auth=1 authReq=1 storage=1 cmdReq=1 cmdResp=1 logStream=1 dashStream=1 notification=1 notify(gps=0 ctrl=0 enrich=1 auth=1 cmdReq=1) mtu=247 a
+[22594][I][BLE] probe_summary seen=1 matchedBy=service rssi=-99 scanMs=8018
+[22595][I][BLE] phone_session_summary auth=ok mtu=247 gps=1 ctrl=1 enrich=1 storage=1
+[22598][I][BLE] link ready state=4
+[22622][I][BLE] storage snapshot sent pendingUp=0/1261 pendingEnrich=0/0 usedPct=13
+[22627][I][BLE] Phone probe succeeded ??? backoff reset
+[22712][I][BLE] storage snapshot sent pendingUp=0/1261 pendingEnrich=0/0 usedPct=13
+[22712][I][OFFLOAD] automatic handoff opened reason=upload_only_probe_ready commandWindow=30s active=0
+[30008][I][HEAP] heap free=4471KB min=4468KB largest=4352KB frag=2% internalFree=56KB internalLargest=31KB psramFree=4415KB core=0/0% owner=BLE_GPS nets=0 pendingUpload=1261 pendingEnrich=0
+[HEALTH] time=2026-08-15 20:21:54 src=gps
+[HEALTH] heap used=3982/8452KB free=4471KB min=4468KB largest=4352KB frag=2%
+[HEALTH] internal used=205/260KB free=56KB min=53KB largest=31KB
+[HEALTH] psram used=3777/8192KB free=4415KB largest=4352KB
+[HEALTH] stack free_min: core0=13KB/18KB core1=5KB/10KB
+[HEALTH] loopTask free_min=3080B/5120B
+[HEALTH] core usage: core0=0% core1=0%
+[HEALTH] power=usb state=usb batt=100% 4631mV trend=0mV/min runtime=0min cap=1100mAh charging=0
+[HEALTH] radio=BLE_GPS wifi=0 ble=1 gps=0 nets=0 pendingUpload=1261 pendingEnrich=0
+[HEALTH] subghz=NONE mode=OFF pkts=0 nodes=0
+[30011][I][STACK] TaskStorage watermark=3500B
+[30012][I][STORAGE] RAMSpool enq=0 cons=0 inflight=0/1024 high=0 pressure=0 drop[full=0 big=0 noise=0 p3Evict=0 p3Drop=0 p2Drop=0 p1Fail=0] free=1024
+[30012][I][STORAGE] RAMSpool enqueue probe[ok=0 drop=0] device[ok=0 drop=0]
+[30012][I][STORAGE] RAMSpool worker probe[ok=0 sup=0 drop=0 fail=0 slow=0] device[ok=0 sup=0 drop=0 fail=0 slow=0] slowTotal=0 maxMs=0
+[30013][I][STORAGE] RAMSpool prioEnq p0=0 p1=0 p2=0 p3=0
+[30013][I][STORAGE] RAMSpool lanes p1=0/0 p2=0/0 p3=0/0
+[30990][I][STACK] TaskButtons watermark=2092B min=2092B
+[31029][I][STACK] TaskDisplay watermark=4936B min=4936B
+[31031][I][STACK] TaskHardware watermark=12868B min=12868B
+=== serial connected 2026-08-15T20:23:07.7059573-05:00 attempt=2 ===
+[985][I][SYS] Booting
+[985][I][CORE] Idle hooks core0=1 core1=1
+[985][I][SYS] Starting tasks
+[986][I][CORE] Button input task started
+[986][I][STACK] TaskButtons watermark=2092B
+[986][I][CORE] Display task started
+[987][I][STACK] TaskDisplay watermark=7660B
+[1021][I][CORE] Hardware task started
+[1021][I][SYS] Tasks launched
+[1021][I][STACK] loopTask setup watermark=2852B
+[1022][I][STACK] TaskHardware watermark=14628B
+[1035][I][POWER] Source UNKNOWN -> USB (4654mV trend=0)
+[1035][I][POWER] State BAT_NORMAL -> USB (100% 4654mV runtime=0min charge=0)
+[1035][I][POWER] Power manager ready
+[1035][I][CORE] Settings=OK Time=OK
+[1036][I][CORE] Display ready=1 before storage init
+[1036][I][CORE] Storage begin start heapFree=167672 largest=118772
+[2396][I][STORAGE] Counter trust=trusted reason=metadata_generation_match gen=9392 pending=1261 nextEventId=38394
+[2400][I][STORAGE] Spool diag[ensure_ready_pre_rescan] validSegments=31 untrustedSegments=0 invalidSegments=0 activeSegment=609 totalRecords=2574 storedEvents=1280
+[2474][I][STORAGE] Maintenance continuity log loaded clean=1 remaining=none gen=9392 pending=1261
+[2696][I][STORAGE] Boot continuity checkpoint accepted gen=9392 pending=1261
+[2765][I][STORAGE] Fast boot: repair not required pending=1261 summary=0 dirty=0
+[2770][I][STORAGE] Config synced from settings for: Spectre
+[2991][I][STORAGE] Ready. Used=1088KB / 8128KB Free=7040KB / 8128KB
+[2992][I][STORAGE] Spool diag[ensure_ready] validSegments=31 untrustedSegments=0 invalidSegments=0 activeSegment=609 totalRecords=2574 storedEvents=1280 pendingUpload=1261 nextEventId=38394
+[2997][I][CORE] Storage begin done ok=1 ready=1 pending=1261 heapFree=164412 largest=118772
+[3011][I][STORAGE] RAMSpool ready slots=1024 slotBytes=416 total=416KB core=1
+[3011][I][STORAGE] RAMSpool worker started on core 1
+[3020][I][DLOG] DebugLog started - build Aug 15 2026 18:41:31
+[3466][I][STOR] Loaded 0 known locations
+[3487][I][MQTT] Backlog loaded: 1261 records
+[3631][I][BADUSB] Loaded 0 scripts
+[3631][I][BADUSB] IDLE
+[3633][I][WIO] UART1 begin tx=1 rx=2 baud=115200
+[6133][I][WIO] Accessory not detected within 2500ms
+[6133][I][XPORT] transport=internal_ble previous=internal_ble reason=initial wio.available=0 wio.proxy=0 ble.begun=0 ble.state=0 transitions=0
+[6134][I][WIO_SX] SX1262 not present; backend idle (Reyax fallback)
+[6735][I][MESH] Meshtastic client ready node=0x334B7A38 chanHash=0x08 (disabled)
+[6917][I][ENTITY] Boot selftest accepted=1 idempotent=1 result=pass
+=== send: fieldvault dump ===
+[13045][I][ENTITY] Rebuild complete entities=73 observations=1280 ms=6036
+[13045][I][ENTITY] Ready entities=73 observations=1280 links=98304 psram=3088KB selftest=pass rebuild=ok
+[13058][I][PWNY] PMKID capture index loaded count=0
+[13058][I][WIFI] WiFiManager initialized
+[13320][I][WIFI] Allocation: OK
+[13425][I][WIFI] Promiscuous: YES
+[13425][I][WIFI] Promiscuous mode started data=0
+[13429][I][CORE] Hardware ready
+fieldvault dump
+[FIELD] cursor=0 pending=1 nextSeq=6545
+[FIELD] --- backup path=/config/vault/field/field.jsonl.1 bytes=65549 ---
+{"type":"power_sample","seq":6085,"ts_ms":89870,"uptime_s":89,"mv":3583,"pct":14,"trend":24,"cap_mah":1100,"runtime_min":0,"source":"usb","state":"usb","charging":1,"owner":7,"reason":"source"}
+{"type":"enrich_summary","seq":6086,"ts_ms":127773,"transport":"BLE","ok":1,"requested":39,"applied":39,"failed":0,"deferred":0,"batches":4,"xfer_ms":1743,"storage_ms":4543,"total_ms":15545,"pending":1158,"enrich":0}
+{"type":"power_sample","seq":6087,"ts_ms":127925,"uptime_s":126,"mv":3576,"pct":13,"trend":-13,"cap_mah":1100,"runtime_min":27,"source":"battery","state":"battery_economy","charging":0,"owner":7,"reason":"source"}
+{"type":"run_sample","seq":6088,"ts_ms":157913,"uptime_s":157,"session":"33e864-6619-af990641","owner":1,"pending":1163,"enrich":10,"nets":5,"probes":24,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4450,"int_kb":29,"reason":"owner"}
+{"type":"enrich_summary","seq":6089,"ts_ms":200225,"transport":"BLE","ok":1,"requested":18,"applied":18,"failed":0,"deferred":0,"batches":2,"xfer_ms":874,"storage_ms":2854,"total_ms":10012,"pending":1181,"enrich":0}
+{"type":"run_sample","seq":6090,"ts_ms":217921,"uptime_s":217,"session":"33e864-6619-af990641","owner":7,"pending":1181,"enrich":0,"nets":16,"probes":33,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4473,"int_kb":58,"reason":"owner"}
+{"type":"run_sample","seq":6091,"ts_ms":277923,"uptime_s":277,"session":"33e864-6619-af990641","owner":7,"pending":1198,"enrich":27,"nets":16,"probes":42,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4467,"int_kb":52,"reason":"pending"}
+{"type":"enrich_summary","seq":6092,"ts_ms":287187,"transport":"BLE","ok":1,"requested":17,"applied":17,"failed":0,"deferred":0,"batches":2,"xfer_ms":709,"storage_ms":2429,"total_ms":9089,"pending":1198,"enrich":0}
+{"type":"run_sample","seq":6093,"ts_ms":337929,"uptime_s":337,"session":"33e864-6619-af990641","owner":1,"pending":1198,"enrich":10,"nets":16,"probes":42,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4449,"int_kb":28,"reason":"owner"}
+{"type":"run_sample","seq":6094,"ts_ms":397934,"uptime_s":397,"session":"33e864-6619-af990641","owner":7,"pending":1215,"enrich":0,"nets":16,"probes":51,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4467,"int_kb":52,"reason":"owner"}
+{"type":"run_sample","seq":6095,"ts_ms":457942,"uptime_s":457,"session":"33e864-6619-af990641","owner":7,"pending":1226,"enrich":38,"nets":16,"probes":57,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4469,"int_kb":55,"reason":"pending"}
+{"type":"reset_crash","seq":6096,"ts_ms":17333,"ts_iso":"2026-08-15T17:24:10Z","session":"33e864-10464-c51b9e71","reset":"panic","reset_code":4,"power":"battery","heap_kb":124,"pending":1319,"serial":0}
+{"type":"boot","seq":6097,"ts_ms":17449,"ts_iso":"2026-08-15T17:24:10Z","reset":"panic","reset_code":4,"session":"33e864-10464-c51b9e71","heap_kb":124,"pending":1319,"serial":0}
+{"type":"power_sample","seq":6098,"ts_ms":17729,"uptime_s":0,"mv":3544,"pct":11,"trend":0,"cap_mah":1100,"runtime_min":32,"source":"battery","state":"battery_economy","charging":0,"owner":5,"reason":"boot"}
+{"type":"run_sample","seq":6099,"ts_ms":17844,"uptime_s":0,"session":"33e864-10464-c51b9e71","owner":5,"pending":1319,"enrich":2,"nets":0,"probes":0,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4622,"int_kb":144,"reason":"boot"}
+{"type":"run_sample","seq":6100,"ts_ms":28309,"uptime_s":27,"session":"33e864-10464-c51b9e71","owner":1,"pending":1319,"enrich":2,"nets":0,"probes":0,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4570,"int_kb":96,"reason":"owner"}
+{"type":"enrich_summary","seq":6101,"ts_ms":60011,"transport":"BLE","ok":1,"requested":20,"applied":20,"failed":0,"deferred":0,"batches":2,"xfer_ms":787,"storage_ms":2082,"total_ms":13840,"pending":1321,"enrich":0}
+{"type":"reset_crash","seq":6102,"ts_ms":13230,"ts_iso":"2026-08-15T17:25:16Z","session":"33e864-6329-d2e18bf3","reset":"panic","reset_code":4,"power":"battery","heap_kb":134,"pending":1319,"serial":0}
+{"type":"boot","seq":6103,"ts_ms":13479,"ts_iso":"2026-08-15T17:25:16Z","reset":"panic","reset_code":4,"session":"33e864-6329-d2e18bf3","heap_kb":134,"pending":1319,"serial":0}
+{"type":"power_sample","seq":6104,"ts_ms":13750,"uptime_s":0,"mv":3542,"pct":11,"trend":0,"cap_mah":1100,"runtime_min":32,"source":"battery","state":"battery_economy","charging":0,"owner":5,"reason":"boot"}
+{"type":"run_sample","seq":6105,"ts_ms":13859,"uptime_s":0,"session":"33e864-6329-d2e18bf3","owner":5,"pending":194,"enrich":64,"nets":0,"probes":0,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4622,"int_kb":144,"reason":"boot"}
+{"type":"fs_audit_summary","seq":6106,"ts_ms":17786,"files":69,"valid":69,"invalid":0,"legacy":0,"tmp":0,"unknown":0,"bytes":794592,"ms":1242,"done":1}
+{"type":"run_sample","seq":6107,"ts_ms":23480,"uptime_s":20,"session":"33e864-6329-d2e18bf3","owner":5,"pending":1219,"enrich":68,"nets":0,"probes":0,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4623,"int_kb":144,"reason":"pending"}
+{"type":"run_sample","seq":6108,"ts_ms":83482,"uptime_s":83,"session":"33e864-6329-d2e18bf3","owner":1,"pending":1225,"enrich":18,"nets":1,"probes":3,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4519,"int_kb":92,"reason":"owner"}
+{"type":"power_sample","seq":6109,"ts_ms":89831,"uptime_s":89,"mv":3561,"pct":12,"trend":15,"cap_mah":1100,"runtime_min":0,"source":"usb","state":"usb","charging":1,"owner":1,"reason":"source"}
+{"type":"run_sample","seq":6110,"ts_ms":144933,"uptime_s":142,"session":"33e864-6329-d2e18bf3","owner":7,"pending":1234,"enrich":27,"nets":1,"probes":8,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4473,"int_kb":58,"reason":"owner"}
+{"type":"enrich_summary","seq":6111,"ts_ms":148871,"transport":"BLE","ok":1,"requested":15,"applied":15,"failed":0,"deferred":0,"batches":2,"xfer_ms":689,"storage_ms":2027,"total_ms":9837,"pending":1234,"enrich":0}
+{"type":"run_sample","seq":6112,"ts_ms":204934,"uptime_s":204,"session":"33e864-6329-d2e18bf3","owner":1,"pending":1236,"enrich":14,"nets":1,"probes":9,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4444,"int_kb":24,"reason":"owner"}
+{"type":"power_sample","seq":6113,"ts_ms":256443,"uptime_s":256,"mv":3561,"pct":12,"trend":0,"cap_mah":1100,"runtime_min":25,"source":"battery","state":"battery_economy","charging":0,"owner":1,"reason":"source"}
+{"type":"run_sample","seq":6114,"ts_ms":299452,"uptime_s":299,"session":"33e864-6329-d2e18bf3","owner":7,"pending":1247,"enrich":25,"nets":1,"probes":15,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4468,"int_kb":53,"reason":"owner"}
+{"type":"enrich_summary","seq":6115,"ts_ms":310644,"transport":"BLE","ok":1,"requested":13,"applied":13,"failed":0,"deferred":0,"batches":2,"xfer_ms":621,"storage_ms":2372,"total_ms":9024,"pending":1247,"enrich":0}
+{"type":"reset_crash","seq":6116,"ts_ms":16259,"ts_iso":"2026-08-15T17:30:36Z","session":"33e864-9342-4cc24ab0","reset":"panic","reset_code":4,"power":"battery","heap_kb":124,"pending":1349,"serial":0}
+{"type":"boot","seq":6117,"ts_ms":16356,"ts_iso":"2026-08-15T17:30:36Z","reset":"panic","reset_code":4,"session":"33e864-9342-4cc24ab0","heap_kb":124,"pending":1349,"serial":0}
+{"type":"power_sample","seq":6118,"ts_ms":16616,"uptime_s":0,"mv":3540,"pct":11,"trend":0,"cap_mah":1100,"runtime_min":31,"source":"battery","state":"battery_economy","charging":0,"owner":5,"reason":"boot"}
+{"type":"run_sample","seq":6119,"ts_ms":16717,"uptime_s":0,"session":"33e864-9342-4cc24ab0","owner":5,"pending":1349,"enrich":2,"nets":0,"probes":0,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4622,"int_kb":144,"reason":"boot"}
+{"type":"run_sample","seq":6120,"ts_ms":27489,"uptime_s":25,"session":"33e864-9342-4cc24ab0","owner":5,"pending":1349,"enrich":56,"nets":0,"probes":0,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4622,"int_kb":144,"reason":"pending"}
+{"type":"run_sample","seq":6121,"ts_ms":87494,"uptime_s":87,"session":"33e864-9342-4cc24ab0","owner":7,"pending":1353,"enrich":0,"nets":1,"probes":4,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4467,"int_kb":52,"reason":"owner"}
+{"type":"power_sample","seq":6122,"ts_ms":92733,"uptime_s":92,"mv":3573,"pct":13,"trend":26,"cap_mah":1100,"runtime_min":0,"source":"usb","state":"usb","charging":1,"owner":7,"reason":"source"}
+{"type":"power_sample","seq":6123,"ts_ms":123878,"uptime_s":123,"mv":3557,"pct":12,"trend":-38,"cap_mah":1100,"runtime_min":24,"source":"battery","state":"battery_economy","charging":0,"owner":1,"reason":"source"}
+{"type":"reset_crash","seq":6124,"ts_ms":13213,"ts_iso":"2026-08-15T17:33:06Z","session":"33e864-6187-98458f2e","reset":"panic","reset_code":4,"power":"battery","heap_kb":134,"pending":1349,"serial":0}
+{"type":"boot","seq":6125,"ts_ms":13362,"ts_iso":"2026-08-15T17:33:06Z","reset":"panic","reset_code":4,"session":"33e864-6187-98458f2e","heap_kb":134,"pending":1349,"serial":0}
+{"type":"power_sample","seq":6126,"ts_ms":13606,"uptime_s":0,"mv":3536,"pct":10,"trend":0,"cap_mah":1100,"runtime_min":31,"source":"battery","state":"battery_economy","charging":0,"owner":5,"reason":"boot"}
+{"type":"run_sample","seq":6127,"ts_ms":13693,"uptime_s":0,"session":"33e864-6187-98458f2e","owner":5,"pending":213,"enrich":74,"nets":0,"probes":0,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4622,"int_kb":144,"reason":"boot"}
+{"type":"fs_audit_summary","seq":6128,"ts_ms":17946,"files":71,"valid":71,"invalid":0,"legacy":0,"tmp":0,"unknown":0,"bytes":817661,"ms":1232,"done":1}
+{"type":"run_sample","seq":6129,"ts_ms":23602,"uptime_s":20,"session":"33e864-6187-98458f2e","owner":5,"pending":1321,"enrich":86,"nets":0,"probes":0,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4623,"int_kb":144,"reason":"pending"}
+{"type":"boot","seq":6130,"ts_ms":14105,"ts_iso":"","reset":"power_on","reset_code":1,"session":"33e864-6672-dccef56f","heap_kb":135,"pending":1321,"serial":0}
+{"type":"power_sample","seq":6131,"ts_ms":14444,"uptime_s":0,"mv":4338,"pct":100,"trend":0,"cap_mah":1100,"runtime_min":0,"source":"usb","state":"usb","charging":0,"owner":5,"reason":"boot"}
+{"type":"run_sample","seq":6132,"ts_ms":14541,"uptime_s":0,"session":"33e864-6672-dccef56f","owner":5,"pending":1349,"enrich":10,"nets":0,"probes":0,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4623,"int_kb":145,"reason":"boot"}
+{"type":"fs_audit_summary","seq":6133,"ts_ms":24674,"files":72,"valid":72,"invalid":0,"legacy":0,"tmp":0,"unknown":0,"bytes":821806,"ms":1260,"done":1}
+{"type":"run_sample","seq":6134,"ts_ms":27797,"uptime_s":25,"session":"33e864-6672-dccef56f","owner":5,"pending":1321,"enrich":18,"nets":0,"probes":0,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4620,"int_kb":144,"reason":"pending"}
+{"type":"enrich_summary","seq":6135,"ts_ms":44929,"transport":"BLE","ok":1,"requested":8,"applied":8,"failed":0,"deferred":0,"batches":1,"xfer_ms":376,"storage_ms":995,"total_ms":7134,"pending":1357,"enrich":0}
+{"type":"run_sample","seq":6136,"ts_ms":87796,"uptime_s":87,"session":"33e864-6672-dccef56f","owner":1,"pending":1359,"enrich":88,"nets":7,"probes":1,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4442,"int_kb":24,"reason":"owner"}
+{"type":"reset_crash","seq":6137,"ts_ms":13829,"ts_iso":"2026-08-15T22:03:47Z","session":"33e864-6457-a1d2bde1","reset":"panic","reset_code":4,"power":"usb","heap_kb":135,"pending":1357,"serial":0}
+{"type":"boot","seq":6138,"ts_ms":14021,"ts_iso":"2026-08-15T22:03:47Z","reset":"panic","reset_code":4,"session":"33e864-6457-a1d2bde1","heap_kb":135,"pending":1357,"serial":0}
+{"type":"power_sample","seq":6139,"ts_ms":14445,"uptime_s":0,"mv":4366,"pct":100,"trend":0,"cap_mah":1100,"runtime_min":0,"source":"usb","state":"usb","charging":0,"owner":5,"reason":"boot"}
+{"type":"run_sample","seq":6140,"ts_ms":14531,"uptime_s":0,"session":"33e864-6457-a1d2bde1","owner":5,"pending":1357,"enrich":94,"nets":0,"probes":0,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4620,"int_kb":145,"reason":"boot"}
+{"type":"fs_audit_summary","seq":6141,"ts_ms":24670,"files":73,"valid":73,"invalid":0,"legacy":0,"tmp":0,"unknown":0,"bytes":824507,"ms":1409,"done":1}
+{"type":"run_sample","seq":6142,"ts_ms":28019,"uptime_s":25,"session":"33e864-6457-a1d2bde1","owner":5,"pending":1357,"enrich":10,"nets":0,"probes":0,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4617,"int_kb":144,"reason":"pending"}
+{"type":"reset_crash","seq":6143,"ts_ms":18360,"ts_iso":"2026-08-15T22:05:30Z","session":"33e864-10868-8da5def9","reset":"panic","reset_code":4,"power":"usb","heap_kb":121,"pending":1357,"serial":0}
+{"type":"boot","seq":6144,"ts_ms":18455,"ts_iso":"2026-08-15T22:05:30Z","reset":"panic","reset_code":4,"session":"33e864-10868-8da5def9","heap_kb":121,"pending":1357,"serial":0}
+{"type":"power_sample","seq":6145,"ts_ms":18710,"uptime_s":0,"mv":4290,"pct":100,"trend":0,"cap_mah":1100,"runtime_min":0,"source":"usb","state":"usb","charging":0,"owner":5,"reason":"boot"}
+{"type":"run_sample","seq":6146,"ts_ms":18810,"uptime_s":0,"session":"33e864-10868-8da5def9","owner":5,"pending":1357,"enrich":55,"nets":0,"probes":0,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4619,"int_kb":143,"reason":"boot"}
+{"type":"run_sample","seq":6147,"ts_ms":30534,"uptime_s":29,"session":"33e864-10868-8da5def9","owner":1,"pending":1357,"enrich":55,"nets":0,"probes":0,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4567,"int_kb":96,"reason":"owner"}
+{"type":"run_sample","seq":6148,"ts_ms":92822,"uptime_s":89,"session":"33e864-10868-8da5def9","owner":7,"pending":1357,"enrich":0,"nets":0,"probes":0,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4470,"int_kb":58,"reason":"owner"}
+{"type":"reset_crash","seq":6149,"ts_ms":12794,"ts_iso":"2026-08-15T22:07:07Z","session":"33e864-6106-21193ad5","reset":"panic","reset_code":4,"power":"usb","heap_kb":134,"pending":1357,"serial":0}
+{"type":"boot","seq":6150,"ts_ms":12955,"ts_iso":"2026-08-15T22:07:07Z","reset":"panic","reset_code":4,"session":"33e864-6106-21193ad5","heap_kb":134,"pending":1357,"serial":0}
+{"type":"power_sample","seq":6151,"ts_ms":13228,"uptime_s":0,"mv":4300,"pct":100,"trend":0,"cap_mah":1100,"runtime_min":0,"source":"usb","state":"usb","charging":0,"owner":5,"reason":"boot"}
+{"type":"run_sample","seq":6152,"ts_ms":13338,"uptime_s":0,"session":"33e864-6106-21193ad5","owner":5,"pending":109,"enrich":117,"nets":0,"probes":0,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4622,"int_kb":144,"reason":"boot"}
+{"type":"fs_audit_summary","seq":6153,"ts_ms":16377,"files":71,"valid":71,"invalid":0,"legacy":0,"tmp":0,"unknown":0,"bytes":826403,"ms":1122,"done":1}
+{"type":"run_sample","seq":6154,"ts_ms":21418,"uptime_s":19,"session":"33e864-6106-21193ad5","owner":5,"pending":1329,"enrich":94,"nets":0,"probes":0,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4623,"int_kb":144,"reason":"pending"}
+{"type":"run_sample","seq":6155,"ts_ms":81422,"uptime_s":81,"session":"33e864-6106-21193ad5","owner":1,"pending":1333,"enrich":14,"nets":7,"probes":2,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4516,"int_kb":91,"reason":"owner"}
+{"type":"run_sample","seq":6156,"ts_ms":150172,"uptime_s":149,"session":"33e864-6106-21193ad5","owner":7,"pending":1346,"enrich":27,"nets":7,"probes":9,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4469,"int_kb":56,"reason":"owner"}
+{"type":"run_sample","seq":6157,"ts_ms":210540,"uptime_s":210,"session":"33e864-6106-21193ad5","owner":1,"pending":1346,"enrich":27,"nets":7,"probes":9,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4445,"int_kb":27,"reason":"owner"}
+{"type":"run_sample","seq":6158,"ts_ms":270973,"uptime_s":270,"session":"33e864-6106-21193ad5","owner":7,"pending":1352,"enrich":33,"nets":7,"probes":13,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4469,"int_kb":56,"reason":"owner"}
+{"type":"enrich_summary","seq":6159,"ts_ms":294139,"transport":"BLE","ok":1,"requested":23,"applied":23,"failed":0,"deferred":0,"batches":3,"xfer_ms":1398,"storage_ms":3364,"total_ms":14454,"pending":1352,"enrich":0}
+{"type":"run_sample","seq":6160,"ts_ms":330979,"uptime_s":330,"session":"33e864-6106-21193ad5","owner":1,"pending":1352,"enrich":10,"nets":7,"probes":13,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4447,"int_kb":29,"reason":"owner"}
+{"type":"run_sample","seq":6161,"ts_ms":474693,"uptime_s":474,"session":"33e864-6106-21193ad5","owner":7,"pending":1369,"enrich":27,"nets":7,"probes":25,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4465,"int_kb":52,"reason":"owner"}
+{"type":"run_sample","seq":6162,"ts_ms":534701,"uptime_s":534,"session":"33e864-6106-21193ad5","owner":1,"pending":1369,"enrich":27,"nets":7,"probes":25,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4444,"int_kb":26,"reason":"owner"}
+{"type":"run_sample","seq":6163,"ts_ms":594707,"uptime_s":594,"session":"33e864-6106-21193ad5","owner":7,"pending":1379,"enrich":37,"nets":7,"probes":32,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4467,"int_kb":55,"reason":"owner"}
+{"type":"run_sample","seq":6164,"ts_ms":654713,"uptime_s":654,"session":"33e864-6106-21193ad5","owner":1,"pending":1379,"enrich":37,"nets":7,"probes":32,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4444,"int_kb":26,"reason":"owner"}
+{"type":"run_sample","seq":6165,"ts_ms":714717,"uptime_s":714,"session":"33e864-6106-21193ad5","owner":7,"pending":1383,"enrich":41,"nets":7,"probes":36,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4467,"int_kb":55,"reason":"owner"}
+{"type":"enrich_summary","seq":6166,"ts_ms":780431,"transport":"BLE","ok":1,"requested":31,"applied":31,"failed":0,"deferred":0,"batches":4,"xfer_ms":1498,"storage_ms":5284,"total_ms":18495,"pending":1383,"enrich":0}
+{"type":"run_sample","seq":6167,"ts_ms":780789,"uptime_s":778,"session":"33e864-6106-21193ad5","owner":7,"pending":1383,"enrich":0,"nets":7,"probes":36,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4470,"int_kb":57,"reason":"pending"}
+{"type":"reset_crash","seq":6168,"ts_ms":18739,"ts_iso":"2026-08-15T22:20:25Z","session":"33e864-11332-d9d01bff","reset":"panic","reset_code":4,"power":"usb","heap_kb":121,"pending":1411,"serial":0}
+{"type":"boot","seq":6169,"ts_ms":18859,"ts_iso":"2026-08-15T22:20:25Z","reset":"panic","reset_code":4,"session":"33e864-11332-d9d01bff","heap_kb":121,"pending":1411,"serial":0}
+{"type":"power_sample","seq":6170,"ts_ms":19140,"uptime_s":0,"mv":4338,"pct":100,"trend":0,"cap_mah":1100,"runtime_min":0,"source":"usb","state":"usb","charging":0,"owner":5,"reason":"boot"}
+{"type":"run_sample","seq":6171,"ts_ms":19354,"uptime_s":0,"session":"33e864-11332-d9d01bff","owner":5,"pending":1411,"enrich":2,"nets":0,"probes":0,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4619,"int_kb":144,"reason":"boot"}
+{"type":"run_sample","seq":6172,"ts_ms":30612,"uptime_s":29,"session":"33e864-11332-d9d01bff","owner":5,"pending":1411,"enrich":56,"nets":0,"probes":0,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4619,"int_kb":143,"reason":"pending"}
+{"type":"run_sample","seq":6173,"ts_ms":90617,"uptime_s":90,"session":"33e864-11332-d9d01bff","owner":7,"pending":1411,"enrich":56,"nets":0,"probes":0,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4474,"int_kb":62,"reason":"owner"}
+{"type":"run_sample","seq":6174,"ts_ms":150621,"uptime_s":150,"session":"33e864-11332-d9d01bff","owner":1,"pending":1417,"enrich":80,"nets":7,"probes":3,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4445,"int_kb":27,"reason":"owner"}
+{"type":"run_sample","seq":6175,"ts_ms":210623,"uptime_s":210,"session":"33e864-11332-d9d01bff","owner":7,"pending":1421,"enrich":84,"nets":7,"probes":5,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4467,"int_kb":55,"reason":"owner"}
+{"type":"run_sample","seq":6176,"ts_ms":270623,"uptime_s":270,"session":"33e864-11332-d9d01bff","owner":1,"pending":1427,"enrich":90,"nets":7,"probes":9,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4444,"int_kb":26,"reason":"owner"}
+{"type":"run_sample","seq":6177,"ts_ms":330624,"uptime_s":330,"session":"33e864-11332-d9d01bff","owner":7,"pending":1427,"enrich":90,"nets":7,"probes":9,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4467,"int_kb":55,"reason":"owner"}
+{"type":"run_sample","seq":6178,"ts_ms":390626,"uptime_s":390,"session":"33e864-11332-d9d01bff","owner":1,"pending":1430,"enrich":93,"nets":7,"probes":12,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4444,"int_kb":26,"reason":"owner"}
+{"type":"run_sample","seq":6179,"ts_ms":460268,"uptime_s":460,"session":"33e864-11332-d9d01bff","owner":7,"pending":1436,"enrich":99,"nets":7,"probes":16,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4467,"int_kb":55,"reason":"owner"}
+{"type":"run_sample","seq":6180,"ts_ms":520636,"uptime_s":520,"session":"33e864-11332-d9d01bff","owner":1,"pending":1436,"enrich":99,"nets":7,"probes":16,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4444,"int_kb":26,"reason":"owner"}
+{"type":"run_sample","seq":6181,"ts_ms":641015,"uptime_s":640,"session":"33e864-11332-d9d01bff","owner":7,"pending":1459,"enrich":122,"nets":7,"probes":30,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4467,"int_kb":54,"reason":"owner"}
+{"type":"enrich_summary","seq":6182,"ts_ms":693038,"transport":"BLE","ok":1,"requested":48,"applied":48,"failed":0,"deferred":0,"batches":5,"xfer_ms":2755,"storage_ms":6003,"total_ms":33192,"pending":1459,"enrich":0}
+{"type":"run_sample","seq":6183,"ts_ms":701019,"uptime_s":701,"session":"33e864-11332-d9d01bff","owner":7,"pending":1459,"enrich":0,"nets":7,"probes":30,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4468,"int_kb":56,"reason":"pending"}
+{"type":"reset_crash","seq":6184,"ts_ms":13721,"ts_iso":"2026-08-15T22:31:59Z","session":"33e864-6402-4215afcb","reset":"panic","reset_code":4,"power":"usb","heap_kb":133,"pending":1459,"serial":0}
+{"type":"boot","seq":6185,"ts_ms":13897,"ts_iso":"2026-08-15T22:31:59Z","reset":"panic","reset_code":4,"session":"33e864-6402-4215afcb","heap_kb":133,"pending":1459,"serial":0}
+{"type":"power_sample","seq":6186,"ts_ms":14176,"uptime_s":0,"mv":4340,"pct":100,"trend":0,"cap_mah":1100,"runtime_min":0,"source":"usb","state":"usb","charging":0,"owner":5,"reason":"boot"}
+{"type":"run_sample","seq":6187,"ts_ms":14388,"uptime_s":0,"session":"33e864-6402-4215afcb","owner":5,"pending":195,"enrich":122,"nets":0,"probes":0,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4619,"int_kb":143,"reason":"boot"}
+{"type":"fs_audit_summary","seq":6188,"ts_ms":17705,"files":73,"valid":73,"invalid":0,"legacy":0,"tmp":0,"unknown":0,"bytes":827292,"ms":1230,"done":1}
+{"type":"run_sample","seq":6189,"ts_ms":23727,"uptime_s":20,"session":"33e864-6402-4215afcb","owner":5,"pending":1459,"enrich":143,"nets":0,"probes":0,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4619,"int_kb":144,"reason":"pending"}
+{"type":"enrich_summary","seq":6190,"ts_ms":35552,"transport":"BLE","ok":1,"requested":10,"applied":10,"failed":0,"deferred":0,"batches":1,"xfer_ms":410,"storage_ms":976,"total_ms":6874,"pending":1459,"enrich":0}
+{"type":"run_sample","seq":6191,"ts_ms":83733,"uptime_s":83,"session":"33e864-6402-4215afcb","owner":7,"pending":1465,"enrich":139,"nets":7,"probes":3,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4468,"int_kb":56,"reason":"owner"}
+{"type":"reset_crash","seq":6192,"ts_ms":13975,"ts_iso":"2026-08-15T22:34:00Z","session":"33e864-6433-3c463cfa","reset":"panic","reset_code":4,"power":"usb","heap_kb":135,"pending":1459,"serial":0}
+{"type":"boot","seq":6193,"ts_ms":14126,"ts_iso":"2026-08-15T22:34:00Z","reset":"panic","reset_code":4,"session":"33e864-6433-3c463cfa","heap_kb":135,"pending":1459,"serial":0}
+{"type":"power_sample","seq":6194,"ts_ms":14376,"uptime_s":0,"mv":4342,"pct":100,"trend":0,"cap_mah":1100,"runtime_min":0,"source":"usb","state":"usb","charging":0,"owner":5,"reason":"boot"}
+{"type":"run_sample","seq":6195,"ts_ms":14472,"uptime_s":0,"session":"33e864-6433-3c463cfa","owner":5,"pending":1459,"enrich":143,"nets":0,"probes":0,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4621,"int_kb":145,"reason":"boot"}
+{"type":"fs_audit_summary","seq":6196,"ts_ms":24524,"files":74,"valid":74,"invalid":0,"legacy":0,"tmp":0,"unknown":0,"bytes":829706,"ms":1261,"done":1}
+{"type":"run_sample","seq":6197,"ts_ms":27935,"uptime_s":24,"session":"33e864-6433-3c463cfa","owner":5,"pending":1459,"enrich":66,"nets":0,"probes":0,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4617,"int_kb":144,"reason":"pending"}
+{"type":"enrich_summary","seq":6198,"ts_ms":80174,"transport":"BLE","ok":1,"requested":10,"applied":10,"failed":0,"deferred":0,"batches":1,"xfer_ms":878,"storage_ms":1128,"total_ms":8491,"pending":1459,"enrich":0}
+{"type":"run_sample","seq":6199,"ts_ms":87933,"uptime_s":87,"session":"33e864-6433-3c463cfa","owner":7,"pending":1459,"enrich":0,"nets":0,"probes":0,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4471,"int_kb":59,"reason":"owner"}
+{"type":"reset_crash","seq":6200,"ts_ms":18676,"ts_iso":"2026-08-15T22:35:36Z","session":"33e864-10890-f511eaa6","reset":"panic","reset_code":4,"power":"usb","heap_kb":118,"pending":1459,"serial":0}
+{"type":"boot","seq":6201,"ts_ms":18785,"ts_iso":"2026-08-15T22:35:36Z","reset":"panic","reset_code":4,"session":"33e864-10890-f511eaa6","heap_kb":118,"pending":1459,"serial":0}
+{"type":"power_sample","seq":6202,"ts_ms":19055,"uptime_s":0,"mv":4342,"pct":100,"trend":0,"cap_mah":1100,"runtime_min":0,"source":"usb","state":"usb","charging":0,"owner":5,"reason":"boot"}
+{"type":"run_sample","seq":6203,"ts_ms":19252,"uptime_s":0,"session":"33e864-10890-f511eaa6","owner":5,"pending":1459,"enrich":55,"nets":0,"probes":0,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4619,"int_kb":144,"reason":"boot"}
+{"type":"run_sample","seq":6204,"ts_ms":31467,"uptime_s":30,"session":"33e864-10890-f511eaa6","owner":1,"pending":1459,"enrich":55,"nets":0,"probes":0,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4567,"int_kb":96,"reason":"owner"}
+{"type":"reset_crash","seq":6205,"ts_ms":14125,"ts_iso":"2026-08-15T22:36:44Z","session":"33e864-6487-cd7f5d8b","reset":"panic","reset_code":4,"power":"usb","heap_kb":133,"pending":1459,"serial":0}
+{"type":"boot","seq":6206,"ts_ms":14295,"ts_iso":"2026-08-15T22:36:44Z","reset":"panic","reset_code":4,"session":"33e864-6487-cd7f5d8b","heap_kb":133,"pending":1459,"serial":0}
+{"type":"power_sample","seq":6207,"ts_ms":14565,"uptime_s":0,"mv":4354,"pct":100,"trend":0,"cap_mah":1100,"runtime_min":0,"source":"usb","state":"usb","charging":0,"owner":5,"reason":"boot"}
+{"type":"run_sample","seq":6208,"ts_ms":14722,"uptime_s":0,"session":"33e864-6487-cd7f5d8b","owner":5,"pending":109,"enrich":117,"nets":0,"probes":0,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4619,"int_kb":143,"reason":"boot"}
+{"type":"fs_audit_summary","seq":6209,"ts_ms":17962,"files":73,"valid":73,"invalid":0,"legacy":0,"tmp":0,"unknown":0,"bytes":832761,"ms":1270,"done":1}
+{"type":"run_sample","seq":6210,"ts_ms":25371,"uptime_s":22,"session":"33e864-6487-cd7f5d8b","owner":5,"pending":1411,"enrich":95,"nets":0,"probes":0,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4620,"int_kb":144,"reason":"pending"}
+{"type":"run_sample","seq":6211,"ts_ms":85374,"uptime_s":85,"session":"33e864-6487-cd7f5d8b","owner":7,"pending":1419,"enrich":26,"nets":7,"probes":4,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4468,"int_kb":56,"reason":"owner"}
+{"type":"reset_crash","seq":6212,"ts_ms":14966,"ts_iso":"2026-08-15T22:38:37Z","session":"33e864-6930-f60f2190","reset":"panic","reset_code":4,"power":"usb","heap_kb":135,"pending":1411,"serial":0}
+{"type":"boot","seq":6213,"ts_ms":15156,"ts_iso":"2026-08-15T22:38:37Z","reset":"panic","reset_code":4,"session":"33e864-6930-f60f2190","heap_kb":135,"pending":1411,"serial":0}
+{"type":"power_sample","seq":6214,"ts_ms":15419,"uptime_s":0,"mv":4348,"pct":100,"trend":0,"cap_mah":1100,"runtime_min":0,"source":"usb","state":"usb","charging":0,"owner":5,"reason":"boot"}
+{"type":"run_sample","seq":6215,"ts_ms":15519,"uptime_s":0,"session":"33e864-6930-f60f2190","owner":5,"pending":1459,"enrich":18,"nets":0,"probes":0,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4620,"int_kb":144,"reason":"boot"}
+{"type":"fs_audit_summary","seq":6216,"ts_ms":26704,"files":74,"valid":74,"invalid":0,"legacy":0,"tmp":0,"unknown":0,"bytes":834581,"ms":1329,"done":1}
+{"type":"run_sample","seq":6217,"ts_ms":29806,"uptime_s":27,"session":"33e864-6930-f60f2190","owner":5,"pending":1411,"enrich":18,"nets":0,"probes":0,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4617,"int_kb":144,"reason":"pending"}
+{"type":"run_sample","seq":6218,"ts_ms":89807,"uptime_s":89,"session":"33e864-6930-f60f2190","owner":7,"pending":1459,"enrich":0,"nets":0,"probes":0,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4472,"int_kb":59,"reason":"owner"}
+{"type":"reset_crash","seq":6219,"ts_ms":14190,"ts_iso":"2026-08-15T22:40:38Z","session":"33e864-6630-a1145a80","reset":"panic","reset_code":4,"power":"usb","heap_kb":135,"pending":1459,"serial":0}
+{"type":"boot","seq":6220,"ts_ms":14360,"ts_iso":"2026-08-15T22:40:38Z","reset":"panic","reset_code":4,"session":"33e864-6630-a1145a80","heap_kb":135,"pending":1459,"serial":0}
+{"type":"power_sample","seq":6221,"ts_ms":14629,"uptime_s":0,"mv":4368,"pct":100,"trend":0,"cap_mah":1100,"runtime_min":0,"source":"usb","state":"usb","charging":0,"owner":5,"reason":"boot"}
+{"type":"run_sample","seq":6222,"ts_ms":14736,"uptime_s":0,"session":"33e864-6630-a1145a80","owner":5,"pending":1459,"enrich":95,"nets":0,"probes":0,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4621,"int_kb":145,"reason":"boot"}
+{"type":"fs_audit_summary","seq":6223,"ts_ms":25021,"files":75,"valid":75,"invalid":0,"legacy":0,"tmp":0,"unknown":0,"bytes":836631,"ms":1174,"done":1}
+{"type":"run_sample","seq":6224,"ts_ms":28289,"uptime_s":25,"session":"33e864-6630-a1145a80","owner":5,"pending":1459,"enrich":18,"nets":0,"probes":0,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4617,"int_kb":144,"reason":"pending"}
+{"type":"run_sample","seq":6225,"ts_ms":88289,"uptime_s":88,"session":"33e864-6630-a1145a80","owner":7,"pending":1459,"enrich":95,"nets":0,"probes":0,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4475,"int_kb":63,"reason":"owner"}
+{"type":"run_sample","seq":6226,"ts_ms":148295,"uptime_s":148,"session":"33e864-6630-a1145a80","owner":1,"pending":1471,"enrich":107,"nets":7,"probes":6,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4446,"int_kb":28,"reason":"owner"}
+{"type":"run_sample","seq":6227,"ts_ms":211719,"uptime_s":211,"session":"33e864-6630-a1145a80","owner":7,"pending":1477,"enrich":113,"nets":7,"probes":11,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4465,"int_kb":53,"reason":"owner"}
+{"type":"enrich_summary","seq":6228,"ts_ms":241908,"transport":"BLE","ok":1,"requested":20,"applied":20,"failed":0,"deferred":0,"batches":2,"xfer_ms":846,"storage_ms":2152,"total_ms":13035,"pending":1477,"enrich":0}
+{"type":"reset_crash","seq":6229,"ts_ms":19705,"ts_iso":"2026-08-15T22:44:55Z","session":"33e864-11508-79a40bad","reset":"panic","reset_code":4,"power":"usb","heap_kb":116,"pending":1479,"serial":0}
+{"type":"boot","seq":6230,"ts_ms":19809,"ts_iso":"2026-08-15T22:44:55Z","reset":"panic","reset_code":4,"session":"33e864-11508-79a40bad","heap_kb":116,"pending":1479,"serial":0}
+{"type":"power_sample","seq":6231,"ts_ms":20078,"uptime_s":0,"mv":4386,"pct":100,"trend":0,"cap_mah":1100,"runtime_min":0,"source":"usb","state":"usb","charging":0,"owner":5,"reason":"boot"}
+{"type":"run_sample","seq":6232,"ts_ms":20189,"uptime_s":0,"session":"33e864-11508-79a40bad","owner":5,"pending":1479,"enrich":55,"nets":0,"probes":0,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4619,"int_kb":143,"reason":"boot"}
+{"type":"run_sample","seq":6233,"ts_ms":32300,"uptime_s":31,"session":"33e864-11508-79a40bad","owner":1,"pending":1479,"enrich":55,"nets":0,"probes":0,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4567,"int_kb":95,"reason":"owner"}
+{"type":"reset_crash","seq":6234,"ts_ms":14905,"ts_iso":"2026-08-15T22:45:45Z","session":"33e864-6919-58b22134","reset":"panic","reset_code":4,"power":"usb","heap_kb":133,"pending":1479,"serial":0}
+{"type":"boot","seq":6235,"ts_ms":15198,"ts_iso":"2026-08-15T22:45:45Z","reset":"panic","reset_code":4,"session":"33e864-6919-58b22134","heap_kb":133,"pending":1479,"serial":0}
+{"type":"power_sample","seq":6236,"ts_ms":15468,"uptime_s":0,"mv":4388,"pct":100,"trend":0,"cap_mah":1100,"runtime_min":0,"source":"usb","state":"usb","charging":0,"owner":5,"reason":"boot"}
+{"type":"run_sample","seq":6237,"ts_ms":15575,"uptime_s":0,"session":"33e864-6919-58b22134","owner":5,"pending":157,"enrich":117,"nets":0,"probes":0,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4619,"int_kb":143,"reason":"boot"}
+{"type":"fs_audit_summary","seq":6238,"ts_ms":19051,"files":74,"valid":74,"invalid":0,"legacy":0,"tmp":0,"unknown":0,"bytes":849551,"ms":1501,"done":1}
+{"type":"run_sample","seq":6239,"ts_ms":27054,"uptime_s":24,"session":"33e864-6919-58b22134","owner":5,"pending":1459,"enrich":133,"nets":0,"probes":0,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4620,"int_kb":144,"reason":"pending"}
+{"type":"run_sample","seq":6240,"ts_ms":87491,"uptime_s":85,"session":"33e864-6919-58b22134","owner":7,"pending":1472,"enrich":0,"nets":7,"probes":7,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4465,"int_kb":52,"reason":"owner"}
+{"type":"reset_crash","seq":6241,"ts_ms":14836,"ts_iso":"2026-08-15T22:47:22Z","session":"33e864-6835-0b9f3863","reset":"panic","reset_code":4,"power":"usb","heap_kb":135,"pending":1459,"serial":0}
+{"type":"boot","seq":6242,"ts_ms":15015,"ts_iso":"2026-08-15T22:47:22Z","reset":"panic","reset_code":4,"session":"33e864-6835-0b9f3863","heap_kb":135,"pending":1459,"serial":0}
+{"type":"power_sample","seq":6243,"ts_ms":15278,"uptime_s":0,"mv":4402,"pct":100,"trend":0,"cap_mah":1100,"runtime_min":0,"source":"usb","state":"usb","charging":0,"owner":5,"reason":"boot"}
+{"type":"run_sample","seq":6244,"ts_ms":15431,"uptime_s":0,"session":"33e864-6835-0b9f3863","owner":5,"pending":1479,"enrich":18,"nets":0,"probes":0,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4621,"int_kb":145,"reason":"boot"}
+{"type":"fs_audit_summary","seq":6245,"ts_ms":26300,"files":75,"valid":75,"invalid":0,"legacy":0,"tmp":0,"unknown":0,"bytes":851321,"ms":1410,"done":1}
+{"type":"run_sample","seq":6246,"ts_ms":36829,"uptime_s":32,"session":"33e864-6835-0b9f3863","owner":1,"pending":1479,"enrich":133,"nets":0,"probes":0,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4568,"int_kb":97,"reason":"owner"}
+{"type":"run_sample","seq":6247,"ts_ms":96830,"uptime_s":96,"session":"33e864-6835-0b9f3863","owner":7,"pending":1481,"enrich":135,"nets":7,"probes":1,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4466,"int_kb":54,"reason":"owner"}
+{"type":"run_sample","seq":6248,"ts_ms":156836,"uptime_s":156,"session":"33e864-6835-0b9f3863","owner":7,"pending":1481,"enrich":0,"nets":7,"probes":1,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4465,"int_kb":53,"reason":"pending"}
+{"type":"reset_crash","seq":6249,"ts_ms":14311,"ts_iso":"2026-08-15T22:50:02Z","session":"33e864-6761-b22117e5","reset":"panic","reset_code":4,"power":"usb","heap_kb":135,"pending":1479,"serial":0}
+{"type":"boot","seq":6250,"ts_ms":14460,"ts_iso":"2026-08-15T22:50:02Z","reset":"panic","reset_code":4,"session":"33e864-6761-b22117e5","heap_kb":135,"pending":1479,"serial":0}
+{"type":"power_sample","seq":6251,"ts_ms":14805,"uptime_s":0,"mv":4408,"pct":100,"trend":0,"cap_mah":1100,"runtime_min":0,"source":"usb","state":"usb","charging":0,"owner":5,"reason":"boot"}
+{"type":"run_sample","seq":6252,"ts_ms":14894,"uptime_s":0,"session":"33e864-6761-b22117e5","owner":5,"pending":1479,"enrich":133,"nets":0,"probes":0,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4621,"int_kb":145,"reason":"boot"}
+{"type":"fs_audit_summary","seq":6253,"ts_ms":25110,"files":76,"valid":76,"invalid":0,"legacy":0,"tmp":0,"unknown":0,"bytes":855699,"ms":1237,"done":1}
+{"type":"run_sample","seq":6254,"ts_ms":28469,"uptime_s":25,"session":"33e864-6761-b22117e5","owner":5,"pending":1479,"enrich":18,"nets":0,"probes":0,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4616,"int_kb":144,"reason":"pending"}
+{"type":"run_sample","seq":6255,"ts_ms":88470,"uptime_s":88,"session":"33e864-6761-b22117e5","owner":1,"pending":1481,"enrich":135,"nets":7,"probes":1,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4443,"int_kb":25,"reason":"owner"}
+{"type":"run_sample","seq":6256,"ts_ms":148476,"uptime_s":148,"session":"33e864-6761-b22117e5","owner":7,"pending":1483,"enrich":137,"nets":7,"probes":2,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4465,"int_kb":53,"reason":"owner"}
+{"type":"reset_crash","seq":6257,"ts_ms":14943,"ts_iso":"2026-08-15T22:53:20Z","session":"33e864-6983-77dda781","reset":"panic","reset_code":4,"power":"usb","heap_kb":135,"pending":1479,"serial":0}
+{"type":"boot","seq":6258,"ts_ms":15127,"ts_iso":"2026-08-15T22:53:20Z","reset":"panic","reset_code":4,"session":"33e864-6983-77dda781","heap_kb":135,"pending":1479,"serial":0}
+{"type":"power_sample","seq":6259,"ts_ms":15398,"uptime_s":0,"mv":4430,"pct":100,"trend":0,"cap_mah":1100,"runtime_min":0,"source":"usb","state":"usb","charging":0,"owner":5,"reason":"boot"}
+{"type":"run_sample","seq":6260,"ts_ms":15508,"uptime_s":0,"session":"33e864-6983-77dda781","owner":5,"pending":1479,"enrich":133,"nets":0,"probes":0,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4621,"int_kb":145,"reason":"boot"}
+{"type":"fs_audit_summary","seq":6261,"ts_ms":26119,"files":77,"valid":77,"invalid":0,"legacy":0,"tmp":0,"unknown":0,"bytes":860075,"ms":1264,"done":1}
+{"type":"run_sample","seq":6262,"ts_ms":29362,"uptime_s":26,"session":"33e864-6983-77dda781","owner":5,"pending":1479,"enrich":18,"nets":0,"probes":0,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4617,"int_kb":144,"reason":"pending"}
+{"type":"run_sample","seq":6263,"ts_ms":89362,"uptime_s":89,"session":"33e864-6983-77dda781","owner":7,"pending":1479,"enrich":0,"nets":0,"probes":0,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4472,"int_kb":59,"reason":"owner"}
+{"type":"reset_crash","seq":6264,"ts_ms":15262,"ts_iso":"2026-08-15T22:55:22Z","session":"33e864-7072-dd7e05d6","reset":"panic","reset_code":4,"power":"usb","heap_kb":135,"pending":1479,"serial":0}
+{"type":"boot","seq":6265,"ts_ms":15449,"ts_iso":"2026-08-15T22:55:22Z","reset":"panic","reset_code":4,"session":"33e864-7072-dd7e05d6","heap_kb":135,"pending":1479,"serial":0}
+{"type":"power_sample","seq":6266,"ts_ms":15714,"uptime_s":0,"mv":4430,"pct":100,"trend":0,"cap_mah":1100,"runtime_min":0,"source":"usb","state":"usb","charging":0,"owner":5,"reason":"boot"}
+{"type":"run_sample","seq":6267,"ts_ms":15904,"uptime_s":0,"session":"33e864-7072-dd7e05d6","owner":5,"pending":1479,"enrich":133,"nets":0,"probes":0,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4621,"int_kb":145,"reason":"boot"}
+{"type":"fs_audit_summary","seq":6268,"ts_ms":26562,"files":78,"valid":78,"invalid":0,"legacy":0,"tmp":0,"unknown":0,"bytes":862123,"ms":1367,"done":1}
+{"type":"run_sample","seq":6269,"ts_ms":29915,"uptime_s":26,"session":"33e864-7072-dd7e05d6","owner":5,"pending":1479,"enrich":18,"nets":0,"probes":0,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4617,"int_kb":144,"reason":"pending"}
+{"type":"run_sample","seq":6270,"ts_ms":89921,"uptime_s":89,"session":"33e864-7072-dd7e05d6","owner":1,"pending":1479,"enrich":0,"nets":7,"probes":0,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4448,"int_kb":30,"reason":"owner"}
+{"type":"reset_crash","seq":6271,"ts_ms":15702,"ts_iso":"2026-08-15T22:57:23Z","session":"33e864-7299-c9ad3117","reset":"panic","reset_code":4,"power":"usb","heap_kb":135,"pending":1479,"serial":0}
+{"type":"boot","seq":6272,"ts_ms":15903,"ts_iso":"2026-08-15T22:57:23Z","reset":"panic","reset_code":4,"session":"33e864-7299-c9ad3117","heap_kb":135,"pending":1479,"serial":0}
+{"type":"power_sample","seq":6273,"ts_ms":16170,"uptime_s":0,"mv":4440,"pct":100,"trend":0,"cap_mah":1100,"runtime_min":0,"source":"usb","state":"usb","charging":0,"owner":5,"reason":"boot"}
+{"type":"run_sample","seq":6274,"ts_ms":16283,"uptime_s":0,"session":"33e864-7299-c9ad3117","owner":5,"pending":1479,"enrich":133,"nets":0,"probes":0,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4620,"int_kb":145,"reason":"boot"}
+{"type":"fs_audit_summary","seq":6275,"ts_ms":27240,"files":79,"valid":79,"invalid":0,"legacy":0,"tmp":0,"unknown":0,"bytes":864171,"ms":1507,"done":1}
+{"type":"run_sample","seq":6276,"ts_ms":30732,"uptime_s":27,"session":"33e864-7299-c9ad3117","owner":5,"pending":1479,"enrich":18,"nets":0,"probes":0,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4616,"int_kb":144,"reason":"pending"}
+{"type":"reset_crash","seq":6277,"ts_ms":19451,"ts_iso":"2026-08-15T22:58:24Z","session":"33e864-11335-5b9d458f","reset":"panic","reset_code":4,"power":"usb","heap_kb":113,"pending":1479,"serial":0}
+{"type":"boot","seq":6278,"ts_ms":19554,"ts_iso":"2026-08-15T22:58:24Z","reset":"panic","reset_code":4,"session":"33e864-11335-5b9d458f","heap_kb":113,"pending":1479,"serial":0}
+{"type":"power_sample","seq":6279,"ts_ms":19820,"uptime_s":0,"mv":4456,"pct":100,"trend":0,"cap_mah":1100,"runtime_min":0,"source":"usb","state":"usb","charging":0,"owner":5,"reason":"boot"}
+{"type":"run_sample","seq":6280,"ts_ms":19931,"uptime_s":0,"session":"33e864-11335-5b9d458f","owner":5,"pending":1479,"enrich":55,"nets":0,"probes":0,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4619,"int_kb":143,"reason":"boot"}
+{"type":"run_sample","seq":6281,"ts_ms":32402,"uptime_s":31,"session":"33e864-11335-5b9d458f","owner":1,"pending":1479,"enrich":55,"nets":0,"probes":0,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4567,"int_kb":95,"reason":"owner"}
+{"type":"reset_crash","seq":6282,"ts_ms":15442,"ts_iso":"2026-08-15T22:59:22Z","session":"33e864-7152-d1835b75","reset":"panic","reset_code":4,"power":"usb","heap_kb":133,"pending":1479,"serial":0}
+{"type":"boot","seq":6283,"ts_ms":15718,"ts_iso":"2026-08-15T22:59:22Z","reset":"panic","reset_code":4,"session":"33e864-7152-d1835b75","heap_kb":133,"pending":1479,"serial":0}
+{"type":"power_sample","seq":6284,"ts_ms":15959,"uptime_s":0,"mv":4458,"pct":100,"trend":0,"cap_mah":1100,"runtime_min":0,"source":"usb","state":"usb","charging":0,"owner":5,"reason":"boot"}
+{"type":"run_sample","seq":6285,"ts_ms":16048,"uptime_s":0,"session":"33e864-7152-d1835b75","owner":5,"pending":129,"enrich":117,"nets":0,"probes":0,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4619,"int_kb":143,"reason":"boot"}
+{"type":"fs_audit_summary","seq":6286,"ts_ms":19602,"files":74,"valid":74,"invalid":0,"legacy":0,"tmp":0,"unknown":0,"bytes":864336,"ms":1317,"done":1}
+{"type":"run_sample","seq":6287,"ts_ms":27445,"uptime_s":24,"session":"33e864-7152-d1835b75","owner":5,"pending":1479,"enrich":133,"nets":0,"probes":0,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4620,"int_kb":144,"reason":"pending"}
+{"type":"run_sample","seq":6288,"ts_ms":87451,"uptime_s":87,"session":"33e864-7152-d1835b75","owner":1,"pending":1481,"enrich":135,"nets":7,"probes":1,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4442,"int_kb":24,"reason":"owner"}
+{"type":"run_sample","seq":6289,"ts_ms":147454,"uptime_s":147,"session":"33e864-7152-d1835b75","owner":7,"pending":1483,"enrich":0,"nets":7,"probes":2,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4465,"int_kb":53,"reason":"owner"}
+{"type":"reset_crash","seq":6290,"ts_ms":14208,"ts_iso":"2026-08-15T23:02:11Z","session":"33e864-6793-999b2ddd","reset":"panic","reset_code":4,"power":"usb","heap_kb":135,"pending":1479,"serial":0}
+{"type":"boot","seq":6291,"ts_ms":14361,"ts_iso":"2026-08-15T23:02:11Z","reset":"panic","reset_code":4,"session":"33e864-6793-999b2ddd","heap_kb":135,"pending":1479,"serial":0}
+{"type":"power_sample","seq":6292,"ts_ms":14626,"uptime_s":0,"mv":4464,"pct":100,"trend":0,"cap_mah":1100,"runtime_min":0,"source":"usb","state":"usb","charging":0,"owner":5,"reason":"boot"}
+{"type":"run_sample","seq":6293,"ts_ms":14726,"uptime_s":0,"session":"33e864-6793-999b2ddd","owner":5,"pending":1479,"enrich":133,"nets":0,"probes":0,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4621,"int_kb":145,"reason":"boot"}
+{"type":"fs_audit_summary","seq":6294,"ts_ms":24747,"files":75,"valid":75,"invalid":0,"legacy":0,"tmp":0,"unknown":0,"bytes":868439,"ms":1219,"done":1}
+{"type":"run_sample","seq":6295,"ts_ms":28272,"uptime_s":25,"session":"33e864-6793-999b2ddd","owner":5,"pending":1479,"enrich":18,"nets":0,"probes":0,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4617,"int_kb":144,"reason":"pending"}
+{"type":"reset_crash","seq":6296,"ts_ms":18582,"ts_iso":"2026-08-15T23:03:10Z","session":"33e864-10865-6242624e","reset":"panic","reset_code":4,"power":"usb","heap_kb":118,"pending":1479,"serial":0}
+{"type":"boot","seq":6297,"ts_ms":18694,"ts_iso":"2026-08-15T23:03:10Z","reset":"panic","reset_code":4,"session":"33e864-10865-6242624e","heap_kb":118,"pending":1479,"serial":0}
+{"type":"power_sample","seq":6298,"ts_ms":18972,"uptime_s":0,"mv":4472,"pct":100,"trend":0,"cap_mah":1100,"runtime_min":0,"source":"usb","state":"usb","charging":0,"owner":5,"reason":"boot"}
+{"type":"run_sample","seq":6299,"ts_ms":19235,"uptime_s":0,"session":"33e864-10865-6242624e","owner":5,"pending":1479,"enrich":55,"nets":0,"probes":0,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4619,"int_kb":143,"reason":"boot"}
+{"type":"run_sample","seq":6300,"ts_ms":30243,"uptime_s":29,"session":"33e864-10865-6242624e","owner":1,"pending":1479,"enrich":55,"nets":0,"probes":0,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4567,"int_kb":95,"reason":"owner"}
+{"type":"reset_crash","seq":6301,"ts_ms":14363,"ts_iso":"2026-08-15T23:03:54Z","session":"33e864-6786-da7cd73a","reset":"panic","reset_code":4,"power":"usb","heap_kb":133,"pending":1479,"serial":0}
+{"type":"boot","seq":6302,"ts_ms":14520,"ts_iso":"2026-08-15T23:03:54Z","reset":"panic","reset_code":4,"session":"33e864-6786-da7cd73a","heap_kb":133,"pending":1479,"serial":0}
+{"type":"power_sample","seq":6303,"ts_ms":14772,"uptime_s":0,"mv":4476,"pct":100,"trend":0,"cap_mah":1100,"runtime_min":0,"source":"usb","state":"usb","charging":0,"owner":5,"reason":"boot"}
+{"type":"run_sample","seq":6304,"ts_ms":14866,"uptime_s":0,"session":"33e864-6786-da7cd73a","owner":5,"pending":129,"enrich":117,"nets":0,"probes":0,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4619,"int_kb":143,"reason":"boot"}
+{"type":"fs_audit_summary","seq":6305,"ts_ms":18204,"files":74,"valid":74,"invalid":0,"legacy":0,"tmp":0,"unknown":0,"bytes":870604,"ms":1295,"done":1}
+{"type":"run_sample","seq":6306,"ts_ms":23870,"uptime_s":21,"session":"33e864-6786-da7cd73a","owner":5,"pending":1479,"enrich":133,"nets":0,"probes":0,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4620,"int_kb":144,"reason":"pending"}
+{"type":"reset_crash","seq":6307,"ts_ms":18375,"ts_iso":"2026-08-15T23:04:39Z","session":"33e864-10735-a7929948","reset":"panic","reset_code":4,"power":"usb","heap_kb":118,"pending":1479,"serial":0}
+{"type":"boot","seq":6308,"ts_ms":18485,"ts_iso":"2026-08-15T23:04:39Z","reset":"panic","reset_code":4,"session":"33e864-10735-a7929948","heap_kb":118,"pending":1479,"serial":0}
+{"type":"power_sample","seq":6309,"ts_ms":18749,"uptime_s":0,"mv":4492,"pct":100,"trend":0,"cap_mah":1100,"runtime_min":0,"source":"usb","state":"usb","charging":0,"owner":5,"reason":"boot"}
+{"type":"run_sample","seq":6310,"ts_ms":18865,"uptime_s":0,"session":"33e864-10735-a7929948","owner":5,"pending":1479,"enrich":55,"nets":0,"probes":0,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4619,"int_kb":143,"reason":"boot"}
+{"type":"run_sample","seq":6311,"ts_ms":29863,"uptime_s":28,"session":"33e864-10735-a7929948","owner":5,"pending":1479,"enrich":109,"nets":0,"probes":0,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4619,"int_kb":143,"reason":"pending"}
+{"type":"run_sample","seq":6312,"ts_ms":93369,"uptime_s":89,"session":"33e864-10735-a7929948","owner":7,"pending":1481,"enrich":0,"nets":7,"probes":2,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4464,"int_kb":52,"reason":"owner"}
+{"type":"reset_crash","seq":6313,"ts_ms":14807,"ts_iso":"2026-08-15T23:06:18Z","session":"33e864-7017-1c6fc6cc","reset":"panic","reset_code":4,"power":"usb","heap_kb":133,"pending":1479,"serial":0}
+{"type":"boot","seq":6314,"ts_ms":15000,"ts_iso":"2026-08-15T23:06:18Z","reset":"panic","reset_code":4,"session":"33e864-7017-1c6fc6cc","heap_kb":133,"pending":1479,"serial":0}
+{"type":"power_sample","seq":6315,"ts_ms":15370,"uptime_s":0,"mv":4480,"pct":100,"trend":0,"cap_mah":1100,"runtime_min":0,"source":"usb","state":"usb","charging":0,"owner":5,"reason":"boot"}
+{"type":"run_sample","seq":6316,"ts_ms":15479,"uptime_s":0,"session":"33e864-7017-1c6fc6cc","owner":5,"pending":139,"enrich":127,"nets":0,"probes":0,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4619,"int_kb":143,"reason":"boot"}
+{"type":"fs_audit_summary","seq":6317,"ts_ms":19870,"files":75,"valid":75,"invalid":0,"legacy":0,"tmp":0,"unknown":0,"bytes":873803,"ms":1246,"done":1}
+{"type":"run_sample","seq":6318,"ts_ms":25770,"uptime_s":22,"session":"33e864-7017-1c6fc6cc","owner":5,"pending":1479,"enrich":133,"nets":0,"probes":0,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4620,"int_kb":144,"reason":"pending"}
+{"type":"reset_crash","seq":6319,"ts_ms":18775,"ts_iso":"2026-08-15T23:07:30Z","session":"33e864-11212-581ac9d4","reset":"panic","reset_code":4,"power":"usb","heap_kb":118,"pending":1479,"serial":0}
+{"type":"boot","seq":6320,"ts_ms":18874,"ts_iso":"2026-08-15T23:07:30Z","reset":"panic","reset_code":4,"session":"33e864-11212-581ac9d4","heap_kb":118,"pending":1479,"serial":0}
+{"type":"power_sample","seq":6321,"ts_ms":19134,"uptime_s":0,"mv":4478,"pct":100,"trend":0,"cap_mah":1100,"runtime_min":0,"source":"usb","state":"usb","charging":0,"owner":5,"reason":"boot"}
+{"type":"run_sample","seq":6322,"ts_ms":19235,"uptime_s":0,"session":"33e864-11212-581ac9d4","owner":5,"pending":1479,"enrich":55,"nets":0,"probes":0,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4619,"int_kb":143,"reason":"boot"}
+{"type":"run_sample","seq":6323,"ts_ms":30573,"uptime_s":29,"session":"33e864-11212-581ac9d4","owner":1,"pending":1479,"enrich":55,"nets":0,"probes":0,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4567,"int_kb":96,"reason":"owner"}
+{"type":"run_sample","seq":6324,"ts_ms":90582,"uptime_s":90,"session":"33e864-11212-581ac9d4","owner":7,"pending":1485,"enrich":123,"nets":7,"probes":3,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4467,"int_kb":54,"reason":"owner"}
+{"type":"reset_crash","seq":6325,"ts_ms":14664,"ts_iso":"2026-08-15T23:09:38Z","session":"33e864-6921-0b90f3c9","reset":"panic","reset_code":4,"power":"usb","heap_kb":133,"pending":1485,"serial":0}
+{"type":"boot","seq":6326,"ts_ms":14850,"ts_iso":"2026-08-15T23:09:38Z","reset":"panic","reset_code":4,"session":"33e864-6921-0b90f3c9","heap_kb":133,"pending":1485,"serial":0}
+{"type":"power_sample","seq":6327,"ts_ms":15120,"uptime_s":0,"mv":4502,"pct":100,"trend":0,"cap_mah":1100,"runtime_min":0,"source":"usb","state":"usb","charging":0,"owner":5,"reason":"boot"}
+{"type":"run_sample","seq":6328,"ts_ms":15232,"uptime_s":0,"session":"33e864-6921-0b90f3c9","owner":5,"pending":135,"enrich":123,"nets":0,"probes":0,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4619,"int_kb":143,"reason":"boot"}
+{"type":"fs_audit_summary","seq":6329,"ts_ms":18600,"files":75,"valid":75,"invalid":0,"legacy":0,"tmp":0,"unknown":0,"bytes":880600,"ms":1392,"done":1}
+{"type":"run_sample","seq":6330,"ts_ms":26483,"uptime_s":23,"session":"33e864-6921-0b90f3c9","owner":5,"pending":1485,"enrich":139,"nets":0,"probes":0,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4620,"int_kb":144,"reason":"pending"}
+{"type":"enrich_summary","seq":6331,"ts_ms":44515,"transport":"BLE","ok":1,"requested":6,"applied":6,"failed":0,"deferred":0,"batches":1,"xfer_ms":383,"storage_ms":860,"total_ms":8011,"pending":1485,"enrich":0}
+{"type":"reset_crash","seq":6332,"ts_ms":19167,"ts_iso":"2026-08-15T23:10:38Z","session":"33e864-11142-845bd2fd","reset":"panic","reset_code":4,"power":"usb","heap_kb":118,"pending":1485,"serial":0}
+{"type":"boot","seq":6333,"ts_ms":19262,"ts_iso":"2026-08-15T23:10:38Z","reset":"panic","reset_code":4,"session":"33e864-11142-845bd2fd","heap_kb":118,"pending":1485,"serial":0}
+{"type":"power_sample","seq":6334,"ts_ms":19518,"uptime_s":0,"mv":4494,"pct":100,"trend":0,"cap_mah":1100,"runtime_min":0,"source":"usb","state":"usb","charging":0,"owner":5,"reason":"boot"}
+{"type":"run_sample","seq":6335,"ts_ms":19616,"uptime_s":0,"session":"33e864-11142-845bd2fd","owner":5,"pending":1485,"enrich":55,"nets":0,"probes":0,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4619,"int_kb":143,"reason":"boot"}
+{"type":"run_sample","seq":6336,"ts_ms":32258,"uptime_s":30,"session":"33e864-11142-845bd2fd","owner":5,"pending":1485,"enrich":109,"nets":0,"probes":0,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4619,"int_kb":143,"reason":"pending"}
+{"type":"run_sample","seq":6337,"ts_ms":92260,"uptime_s":92,"session":"33e864-11142-845bd2fd","owner":1,"pending":1487,"enrich":129,"nets":7,"probes":1,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4441,"int_kb":23,"reason":"owner"}
+{"type":"reset_crash","seq":6338,"ts_ms":15200,"ts_iso":"2026-08-15T23:12:35Z","session":"33e864-7037-412a3472","reset":"panic","reset_code":4,"power":"usb","heap_kb":133,"pending":1485,"serial":0}
+{"type":"boot","seq":6339,"ts_ms":15372,"ts_iso":"2026-08-15T23:12:35Z","reset":"panic","reset_code":4,"session":"33e864-7037-412a3472","heap_kb":133,"pending":1485,"serial":0}
+{"type":"power_sample","seq":6340,"ts_ms":15615,"uptime_s":0,"mv":4496,"pct":100,"trend":0,"cap_mah":1100,"runtime_min":0,"source":"usb","state":"usb","charging":0,"owner":5,"reason":"boot"}
+{"type":"run_sample","seq":6341,"ts_ms":15709,"uptime_s":0,"session":"33e864-7037-412a3472","owner":5,"pending":119,"enrich":127,"nets":0,"probes":0,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4619,"int_kb":143,"reason":"boot"}
+{"type":"fs_audit_summary","seq":6342,"ts_ms":20028,"files":76,"valid":76,"invalid":0,"legacy":0,"tmp":0,"unknown":0,"bytes":884284,"ms":1490,"done":1}
+{"type":"run_sample","seq":6343,"ts_ms":28422,"uptime_s":25,"session":"33e864-7037-412a3472","owner":5,"pending":1479,"enrich":133,"nets":0,"probes":0,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4619,"int_kb":144,"reason":"pending"}
+{"type":"run_sample","seq":6344,"ts_ms":88419,"uptime_s":88,"session":"33e864-7037-412a3472","owner":7,"pending":1487,"enrich":26,"nets":7,"probes":5,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4468,"int_kb":56,"reason":"owner"}
+{"type":"reset_crash","seq":6345,"ts_ms":14415,"ts_iso":"2026-08-15T23:14:35Z","session":"33e864-6736-3d1421f7","reset":"panic","reset_code":4,"power":"usb","heap_kb":135,"pending":1479,"serial":0}
+{"type":"boot","seq":6346,"ts_ms":14571,"ts_iso":"2026-08-15T23:14:35Z","reset":"panic","reset_code":4,"session":"33e864-6736-3d1421f7","heap_kb":135,"pending":1479,"serial":0}
+{"type":"power_sample","seq":6347,"ts_ms":14925,"uptime_s":0,"mv":4506,"pct":100,"trend":0,"cap_mah":1100,"runtime_min":0,"source":"usb","state":"usb","charging":0,"owner":5,"reason":"boot"}
+{"type":"run_sample","seq":6348,"ts_ms":15021,"uptime_s":0,"session":"33e864-6736-3d1421f7","owner":5,"pending":1485,"enrich":18,"nets":0,"probes":0,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4620,"int_kb":144,"reason":"boot"}
+{"type":"fs_audit_summary","seq":6349,"ts_ms":25382,"files":77,"valid":77,"invalid":0,"legacy":0,"tmp":0,"unknown":0,"bytes":886026,"ms":1290,"done":1}
+{"type":"run_sample","seq":6350,"ts_ms":35151,"uptime_s":31,"session":"33e864-6736-3d1421f7","owner":1,"pending":1485,"enrich":133,"nets":0,"probes":0,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4569,"int_kb":97,"reason":"owner"}
+{"type":"reset_crash","seq":6351,"ts_ms":18619,"ts_iso":"2026-08-15T23:15:51Z","session":"33e864-10825-cfff49b5","reset":"panic","reset_code":4,"power":"usb","heap_kb":115,"pending":1485,"serial":0}
+{"type":"boot","seq":6352,"ts_ms":18726,"ts_iso":"2026-08-15T23:15:51Z","reset":"panic","reset_code":4,"session":"33e864-10825-cfff49b5","heap_kb":115,"pending":1485,"serial":0}
+{"type":"power_sample","seq":6353,"ts_ms":18995,"uptime_s":0,"mv":4518,"pct":100,"trend":0,"cap_mah":1100,"runtime_min":0,"source":"usb","state":"usb","charging":0,"owner":5,"reason":"boot"}
+{"type":"run_sample","seq":6354,"ts_ms":19106,"uptime_s":0,"session":"33e864-10825-cfff49b5","owner":5,"pending":1485,"enrich":55,"nets":0,"probes":0,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4619,"int_kb":143,"reason":"boot"}
+{"type":"run_sample","seq":6355,"ts_ms":31299,"uptime_s":30,"session":"33e864-10825-cfff49b5","owner":1,"pending":1485,"enrich":55,"nets":0,"probes":0,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4567,"int_kb":96,"reason":"owner"}
+{"type":"reset_crash","seq":6356,"ts_ms":14752,"ts_iso":"2026-08-15T23:16:35Z","session":"33e864-7064-b4824ebc","reset":"panic","reset_code":4,"power":"usb","heap_kb":133,"pending":1485,"serial":0}
+{"type":"boot","seq":6357,"ts_ms":14907,"ts_iso":"2026-08-15T23:16:35Z","reset":"panic","reset_code":4,"session":"33e864-7064-b4824ebc","heap_kb":133,"pending":1485,"serial":0}
+{"type":"power_sample","seq":6358,"ts_ms":15163,"uptime_s":0,"mv":4516,"pct":100,"trend":0,"cap_mah":1100,"runtime_min":0,"source":"usb","state":"usb","charging":0,"owner":5,"reason":"boot"}
+{"type":"run_sample","seq":6359,"ts_ms":15259,"uptime_s":0,"session":"33e864-7064-b4824ebc","owner":5,"pending":115,"enrich":117,"nets":0,"probes":0,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4619,"int_kb":143,"reason":"boot"}
+{"type":"fs_audit_summary","seq":6360,"ts_ms":18545,"files":75,"valid":75,"invalid":0,"legacy":0,"tmp":0,"unknown":0,"bytes":887717,"ms":1282,"done":1}
+{"type":"run_sample","seq":6361,"ts_ms":25895,"uptime_s":23,"session":"33e864-7064-b4824ebc","owner":5,"pending":1485,"enrich":133,"nets":0,"probes":0,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4619,"int_kb":144,"reason":"pending"}
+{"type":"run_sample","seq":6362,"ts_ms":85900,"uptime_s":85,"session":"33e864-7064-b4824ebc","owner":7,"pending":1357,"enrich":133,"nets":0,"probes":0,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4170,"int_kb":40,"reason":"owner"}
+{"type":"run_sample","seq":6363,"ts_ms":145909,"uptime_s":145,"session":"33e864-7064-b4824ebc","owner":7,"pending":1101,"enrich":133,"nets":0,"probes":0,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4170,"int_kb":40,"reason":"pending"}
+{"type":"reset_crash","seq":6364,"ts_ms":19402,"ts_iso":"2026-08-15T23:19:24Z","session":"33e864-11475-0da63e10","reset":"panic","reset_code":4,"power":"usb","heap_kb":115,"pending":973,"serial":0}
+{"type":"boot","seq":6365,"ts_ms":19500,"ts_iso":"2026-08-15T23:19:24Z","reset":"panic","reset_code":4,"session":"33e864-11475-0da63e10","heap_kb":115,"pending":973,"serial":0}
+{"type":"power_sample","seq":6366,"ts_ms":19764,"uptime_s":0,"mv":4518,"pct":100,"trend":0,"cap_mah":1100,"runtime_min":0,"source":"usb","state":"usb","charging":0,"owner":5,"reason":"boot"}
+{"type":"run_sample","seq":6367,"ts_ms":19868,"uptime_s":0,"session":"33e864-11475-0da63e10","owner":5,"pending":973,"enrich":55,"nets":0,"probes":0,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4618,"int_kb":142,"reason":"boot"}
+{"type":"run_sample","seq":6368,"ts_ms":30957,"uptime_s":29,"session":"33e864-11475-0da63e10","owner":1,"pending":973,"enrich":55,"nets":0,"probes":0,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4567,"int_kb":96,"reason":"owner"}
+{"type":"run_sample","seq":6369,"ts_ms":90956,"uptime_s":90,"session":"33e864-11475-0da63e10","owner":7,"pending":975,"enrich":0,"nets":7,"probes":1,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4465,"int_kb":53,"reason":"owner"}
+{"type":"run_sample","seq":6370,"ts_ms":151721,"uptime_s":149,"session":"33e864-11475-0da63e10","owner":7,"pending":976,"enrich":123,"nets":7,"probes":3,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4465,"int_kb":53,"reason":"pending"}
+{"type":"enrich_summary","seq":6371,"ts_ms":159463,"transport":"BLE","ok":1,"requested":5,"applied":5,"failed":0,"deferred":0,"batches":2,"xfer_ms":404,"storage_ms":1527,"total_ms":9979,"pending":976,"enrich":0}
+[FIELD] --- end backup lines=287 ---
+[FIELD] --- live path=/config/vault/field/field.jsonl bytes=39766 ---
+{"type":"run_sample","seq":6372,"ts_ms":211725,"uptime_s":211,"session":"33e864-11475-0da63e10","owner":1,"pending":981,"enrich":123,"nets":7,"probes":6,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4441,"int_kb":23,"reason":"owner"}
+{"type":"enrich_summary","seq":6373,"ts_ms":231689,"transport":"BLE","ok":1,"requested":3,"applied":3,"failed":0,"deferred":0,"batches":2,"xfer_ms":370,"storage_ms":1581,"total_ms":8780,"pending":981,"enrich":0}
+{"type":"run_sample","seq":6374,"ts_ms":277163,"uptime_s":276,"session":"33e864-11475-0da63e10","owner":7,"pending":981,"enrich":120,"nets":7,"probes":6,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4470,"int_kb":58,"reason":"owner"}
+{"type":"run_sample","seq":6375,"ts_ms":337172,"uptime_s":337,"session":"33e864-11475-0da63e10","owner":7,"pending":982,"enrich":0,"nets":7,"probes":7,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4465,"int_kb":53,"reason":"pending"}
+{"type":"boot","seq":6376,"ts_ms":11033,"ts_iso":"2026-08-15T23:43:41Z","reset":"unknown","reset_code":11,"session":"33e864-5970-5bcd2bc2","heap_kb":130,"pending":981,"serial":0}
+{"type":"power_sample","seq":6377,"ts_ms":11361,"uptime_s":0,"mv":4540,"pct":100,"trend":0,"cap_mah":1100,"runtime_min":0,"source":"usb","state":"usb","charging":0,"owner":5,"reason":"boot"}
+{"type":"run_sample","seq":6378,"ts_ms":11459,"uptime_s":0,"session":"33e864-5970-5bcd2bc2","owner":5,"pending":121,"enrich":120,"nets":0,"probes":0,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4618,"int_kb":140,"reason":"boot"}
+{"type":"fs_audit_summary","seq":6379,"ts_ms":14930,"files":59,"valid":59,"invalid":0,"legacy":0,"tmp":0,"unknown":0,"bytes":632870,"ms":1197,"done":1}
+{"type":"run_sample","seq":6380,"ts_ms":18420,"uptime_s":15,"session":"33e864-5970-5bcd2bc2","owner":5,"pending":994,"enrich":77,"nets":0,"probes":0,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4619,"int_kb":140,"reason":"pending"}
+{"type":"run_sample","seq":6381,"ts_ms":78419,"uptime_s":78,"session":"33e864-5970-5bcd2bc2","owner":7,"pending":998,"enrich":0,"nets":7,"probes":2,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4464,"int_kb":49,"reason":"owner"}
+{"type":"enrich_summary","seq":6382,"ts_ms":129908,"transport":"BLE","ok":1,"requested":11,"applied":11,"failed":0,"deferred":0,"batches":2,"xfer_ms":590,"storage_ms":2268,"total_ms":9312,"pending":1004,"enrich":0}
+{"type":"run_sample","seq":6383,"ts_ms":160184,"uptime_s":160,"session":"33e864-5970-5bcd2bc2","owner":5,"pending":1004,"enrich":0,"nets":7,"probes":6,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4469,"int_kb":54,"reason":"owner"}
+{"type":"run_sample","seq":6384,"ts_ms":220191,"uptime_s":220,"session":"33e864-5970-5bcd2bc2","owner":7,"pending":1007,"enrich":0,"nets":7,"probes":8,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4464,"int_kb":49,"reason":"owner"}
+{"type":"run_sample","seq":6385,"ts_ms":280195,"uptime_s":280,"session":"33e864-5970-5bcd2bc2","owner":1,"pending":1009,"enrich":81,"nets":7,"probes":9,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4430,"int_kb":19,"reason":"owner"}
+{"type":"enrich_summary","seq":6386,"ts_ms":303478,"transport":"BLE","ok":1,"requested":5,"applied":5,"failed":0,"deferred":0,"batches":2,"xfer_ms":379,"storage_ms":1914,"total_ms":9391,"pending":1010,"enrich":0}
+{"type":"run_sample","seq":6387,"ts_ms":348767,"uptime_s":348,"session":"33e864-5970-5bcd2bc2","owner":7,"pending":1015,"enrich":82,"nets":7,"probes":14,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4463,"int_kb":49,"reason":"owner"}
+{"type":"enrich_summary","seq":6388,"ts_ms":414232,"transport":"BLE","ok":1,"requested":7,"applied":7,"failed":0,"deferred":0,"batches":2,"xfer_ms":420,"storage_ms":2013,"total_ms":8876,"pending":1017,"enrich":0}
+{"type":"run_sample","seq":6389,"ts_ms":414442,"uptime_s":412,"session":"33e864-5970-5bcd2bc2","owner":7,"pending":1017,"enrich":0,"nets":7,"probes":16,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4469,"int_kb":54,"reason":"pending"}
+{"type":"reset_crash","seq":6390,"ts_ms":10814,"ts_iso":"2026-08-15T23:51:13Z","session":"33e864-5830-95fdd109","reset":"panic","reset_code":4,"power":"usb","heap_kb":131,"pending":1017,"serial":0}
+{"type":"boot","seq":6391,"ts_ms":10940,"ts_iso":"2026-08-15T23:51:13Z","reset":"panic","reset_code":4,"session":"33e864-5830-95fdd109","heap_kb":131,"pending":1017,"serial":0}
+{"type":"power_sample","seq":6392,"ts_ms":11137,"uptime_s":0,"mv":4522,"pct":100,"trend":0,"cap_mah":1100,"runtime_min":0,"source":"usb","state":"usb","charging":0,"owner":1,"reason":"boot"}
+{"type":"run_sample","seq":6393,"ts_ms":11223,"uptime_s":0,"session":"33e864-5830-95fdd109","owner":1,"pending":1017,"enrich":77,"nets":0,"probes":0,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4567,"int_kb":93,"reason":"boot"}
+{"type":"run_sample","seq":6394,"ts_ms":11644,"uptime_s":11,"session":"33e864-5830-95fdd109","owner":7,"pending":1017,"enrich":77,"nets":0,"probes":0,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4521,"int_kb":59,"reason":"owner"}
+{"type":"reset_crash","seq":6395,"ts_ms":10840,"ts_iso":"2026-08-15T23:51:42Z","session":"33e864-5859-e6564de9","reset":"panic","reset_code":4,"power":"usb","heap_kb":131,"pending":1017,"serial":0}
+{"type":"boot","seq":6396,"ts_ms":10984,"ts_iso":"2026-08-15T23:51:42Z","reset":"panic","reset_code":4,"session":"33e864-5859-e6564de9","heap_kb":131,"pending":1017,"serial":0}
+{"type":"power_sample","seq":6397,"ts_ms":11190,"uptime_s":0,"mv":4532,"pct":100,"trend":0,"cap_mah":1100,"runtime_min":0,"source":"usb","state":"usb","charging":0,"owner":1,"reason":"boot"}
+{"type":"run_sample","seq":6398,"ts_ms":11287,"uptime_s":0,"session":"33e864-5859-e6564de9","owner":1,"pending":1017,"enrich":77,"nets":0,"probes":0,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4567,"int_kb":93,"reason":"boot"}
+{"type":"run_sample","seq":6399,"ts_ms":11661,"uptime_s":11,"session":"33e864-5859-e6564de9","owner":7,"pending":1017,"enrich":77,"nets":0,"probes":0,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4521,"int_kb":59,"reason":"owner"}
+{"type":"run_sample","seq":6400,"ts_ms":71670,"uptime_s":71,"session":"33e864-5859-e6564de9","owner":1,"pending":1021,"enrich":81,"nets":7,"probes":2,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4434,"int_kb":24,"reason":"owner"}
+{"type":"boot","seq":6401,"ts_ms":10951,"ts_iso":"","reset":"power_on","reset_code":1,"session":"33e864-5856-742569ba","heap_kb":131,"pending":1017,"serial":0}
+{"type":"power_sample","seq":6402,"ts_ms":11361,"uptime_s":0,"mv":4668,"pct":100,"trend":0,"cap_mah":1100,"runtime_min":0,"source":"usb","state":"usb","charging":0,"owner":5,"reason":"boot"}
+{"type":"run_sample","seq":6403,"ts_ms":11459,"uptime_s":0,"session":"33e864-5856-742569ba","owner":5,"pending":1017,"enrich":77,"nets":0,"probes":0,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4619,"int_kb":140,"reason":"boot"}
+{"type":"fs_audit_summary","seq":6404,"ts_ms":19514,"files":61,"valid":61,"invalid":0,"legacy":0,"tmp":0,"unknown":0,"bytes":654999,"ms":1154,"done":1}
+{"type":"run_sample","seq":6405,"ts_ms":22969,"uptime_s":19,"session":"33e864-5856-742569ba","owner":5,"pending":1017,"enrich":10,"nets":0,"probes":0,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4616,"int_kb":140,"reason":"pending"}
+{"type":"run_sample","seq":6406,"ts_ms":82970,"uptime_s":82,"session":"33e864-5856-742569ba","owner":1,"pending":1017,"enrich":0,"nets":7,"probes":0,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4436,"int_kb":26,"reason":"owner"}
+{"type":"boot","seq":6407,"ts_ms":11906,"ts_iso":"","reset":"power_on","reset_code":1,"session":"33e864-6303-d8bf2940","heap_kb":131,"pending":1032,"serial":0}
+{"type":"power_sample","seq":6408,"ts_ms":12184,"uptime_s":0,"mv":4600,"pct":100,"trend":0,"cap_mah":1100,"runtime_min":0,"source":"usb","state":"usb","charging":0,"owner":1,"reason":"boot"}
+{"type":"run_sample","seq":6409,"ts_ms":12269,"uptime_s":0,"session":"33e864-6303-d8bf2940","owner":1,"pending":1032,"enrich":15,"nets":0,"probes":0,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4567,"int_kb":93,"reason":"boot"}
+{"type":"run_sample","seq":6410,"ts_ms":12638,"uptime_s":12,"session":"33e864-6303-d8bf2940","owner":7,"pending":1032,"enrich":15,"nets":0,"probes":0,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4520,"int_kb":59,"reason":"owner"}
+{"type":"enrich_summary","seq":6411,"ts_ms":19557,"transport":"BLE","ok":1,"requested":15,"applied":15,"failed":0,"deferred":0,"batches":1,"xfer_ms":568,"storage_ms":1203,"total_ms":3929,"pending":1032,"enrich":0}
+{"type":"boot","seq":6412,"ts_ms":13821,"ts_iso":"","reset":"power_on","reset_code":1,"session":"33e864-8599-8c91b831","heap_kb":125,"pending":1019,"serial":0}
+{"type":"power_sample","seq":6413,"ts_ms":14074,"uptime_s":0,"mv":4676,"pct":100,"trend":0,"cap_mah":1100,"runtime_min":0,"source":"usb","state":"usb","charging":0,"owner":5,"reason":"boot"}
+{"type":"run_sample","seq":6414,"ts_ms":14166,"uptime_s":0,"session":"33e864-8599-8c91b831","owner":5,"pending":1019,"enrich":0,"nets":0,"probes":0,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4618,"int_kb":140,"reason":"boot"}
+{"type":"run_sample","seq":6415,"ts_ms":23616,"uptime_s":22,"session":"33e864-8599-8c91b831","owner":1,"pending":1019,"enrich":0,"nets":0,"probes":0,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4566,"int_kb":92,"reason":"owner"}
+{"type":"reset_crash","seq":6416,"ts_ms":11171,"ts_iso":"2026-08-16T00:08:31Z","session":"33e864-5996-802327de","reset":"panic","reset_code":4,"power":"usb","heap_kb":130,"pending":1019,"serial":0}
+{"type":"boot","seq":6417,"ts_ms":11331,"ts_iso":"2026-08-16T00:08:31Z","reset":"panic","reset_code":4,"session":"33e864-5996-802327de","heap_kb":130,"pending":1019,"serial":0}
+{"type":"power_sample","seq":6418,"ts_ms":11684,"uptime_s":0,"mv":4658,"pct":100,"trend":0,"cap_mah":1100,"runtime_min":0,"source":"usb","state":"usb","charging":0,"owner":5,"reason":"boot"}
+{"type":"run_sample","seq":6419,"ts_ms":11777,"uptime_s":0,"session":"33e864-5996-802327de","owner":5,"pending":213,"enrich":210,"nets":0,"probes":0,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4618,"int_kb":140,"reason":"boot"}
+{"type":"fs_audit_summary","seq":6420,"ts_ms":15109,"files":61,"valid":61,"invalid":0,"legacy":0,"tmp":0,"unknown":0,"bytes":664581,"ms":1103,"done":1}
+{"type":"run_sample","seq":6421,"ts_ms":20172,"uptime_s":17,"session":"33e864-5996-802327de","owner":5,"pending":1017,"enrich":80,"nets":0,"probes":0,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4619,"int_kb":140,"reason":"pending"}
+{"type":"run_sample","seq":6422,"ts_ms":80176,"uptime_s":80,"session":"33e864-5996-802327de","owner":1,"pending":1023,"enrich":16,"nets":7,"probes":3,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4514,"int_kb":87,"reason":"owner"}
+{"type":"run_sample","seq":6423,"ts_ms":177248,"uptime_s":176,"session":"33e864-5996-802327de","owner":7,"pending":1034,"enrich":27,"nets":7,"probes":12,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4467,"int_kb":52,"reason":"owner"}
+{"type":"enrich_summary","seq":6424,"ts_ms":183703,"transport":"BLE","ok":1,"requested":13,"applied":13,"failed":0,"deferred":0,"batches":1,"xfer_ms":548,"storage_ms":1011,"total_ms":3435,"pending":1034,"enrich":0}
+{"type":"run_sample","seq":6425,"ts_ms":237247,"uptime_s":237,"session":"33e864-5996-802327de","owner":1,"pending":1041,"enrich":7,"nets":9,"probes":17,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4429,"int_kb":19,"reason":"owner"}
+{"type":"run_sample","seq":6426,"ts_ms":454318,"uptime_s":453,"session":"33e864-5996-802327de","owner":7,"pending":1060,"enrich":26,"nets":10,"probes":35,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4463,"int_kb":49,"reason":"owner"}
+{"type":"enrich_summary","seq":6427,"ts_ms":464133,"transport":"BLE","ok":1,"requested":30,"applied":30,"failed":0,"deferred":0,"batches":2,"xfer_ms":1221,"storage_ms":2755,"total_ms":7595,"pending":1060,"enrich":0}
+{"type":"run_sample","seq":6428,"ts_ms":514322,"uptime_s":514,"session":"33e864-5996-802327de","owner":1,"pending":1062,"enrich":2,"nets":10,"probes":37,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4429,"int_kb":19,"reason":"owner"}
+{"type":"run_sample","seq":6429,"ts_ms":814331,"uptime_s":814,"session":"33e864-5996-802327de","owner":1,"pending":1080,"enrich":20,"nets":10,"probes":57,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4429,"int_kb":19,"reason":"interval"}
+{"type":"reset_crash","seq":6430,"ts_ms":12318,"ts_iso":"2026-08-16T00:22:10Z","session":"33e864-6483-a6407ebf","reset":"panic","reset_code":4,"power":"usb","heap_kb":131,"pending":1083,"serial":0}
+{"type":"boot","seq":6431,"ts_ms":12507,"ts_iso":"2026-08-16T00:22:10Z","reset":"panic","reset_code":4,"session":"33e864-6483-a6407ebf","heap_kb":131,"pending":1083,"serial":0}
+{"type":"power_sample","seq":6432,"ts_ms":12730,"uptime_s":0,"mv":4610,"pct":100,"trend":0,"cap_mah":1100,"runtime_min":0,"source":"usb","state":"usb","charging":0,"owner":1,"reason":"boot"}
+{"type":"run_sample","seq":6433,"ts_ms":12845,"uptime_s":0,"session":"33e864-6483-a6407ebf","owner":1,"pending":1098,"enrich":23,"nets":0,"probes":0,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4567,"int_kb":93,"reason":"boot"}
+{"type":"run_sample","seq":6434,"ts_ms":13326,"uptime_s":13,"session":"33e864-6483-a6407ebf","owner":7,"pending":1098,"enrich":23,"nets":0,"probes":0,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4520,"int_kb":59,"reason":"owner"}
+{"type":"enrich_summary","seq":6435,"ts_ms":23613,"transport":"BLE","ok":1,"requested":23,"applied":23,"failed":0,"deferred":0,"batches":2,"xfer_ms":994,"storage_ms":2781,"total_ms":7612,"pending":1098,"enrich":0}
+{"type":"run_sample","seq":6436,"ts_ms":73334,"uptime_s":73,"session":"33e864-6483-a6407ebf","owner":1,"pending":1085,"enrich":2,"nets":10,"probes":2,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4430,"int_kb":20,"reason":"owner"}
+{"type":"run_sample","seq":6437,"ts_ms":220880,"uptime_s":220,"session":"33e864-6483-a6407ebf","owner":7,"pending":1108,"enrich":25,"nets":10,"probes":18,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4464,"int_kb":49,"reason":"owner"}
+{"type":"enrich_summary","seq":6438,"ts_ms":229659,"transport":"BLE","ok":1,"requested":25,"applied":25,"failed":0,"deferred":0,"batches":2,"xfer_ms":1055,"storage_ms":1759,"total_ms":6238,"pending":1108,"enrich":0}
+{"type":"reset_crash","seq":6439,"ts_ms":15352,"ts_iso":"2026-08-16T00:26:23Z","session":"33e864-9380-e14e6646","reset":"panic","reset_code":4,"power":"usb","heap_kb":125,"pending":1110,"serial":0}
+{"type":"boot","seq":6440,"ts_ms":15455,"ts_iso":"2026-08-16T00:26:23Z","reset":"panic","reset_code":4,"session":"33e864-9380-e14e6646","heap_kb":125,"pending":1110,"serial":0}
+{"type":"power_sample","seq":6441,"ts_ms":15718,"uptime_s":0,"mv":4672,"pct":100,"trend":0,"cap_mah":1100,"runtime_min":0,"source":"usb","state":"usb","charging":0,"owner":5,"reason":"boot"}
+{"type":"run_sample","seq":6442,"ts_ms":15819,"uptime_s":0,"session":"33e864-9380-e14e6646","owner":5,"pending":1110,"enrich":0,"nets":0,"probes":0,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4618,"int_kb":140,"reason":"boot"}
+{"type":"run_sample","seq":6443,"ts_ms":25415,"uptime_s":23,"session":"33e864-9380-e14e6646","owner":5,"pending":1110,"enrich":110,"nets":0,"probes":0,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4618,"int_kb":140,"reason":"pending"}
+{"type":"run_sample","seq":6444,"ts_ms":85418,"uptime_s":85,"session":"33e864-9380-e14e6646","owner":1,"pending":1114,"enrich":70,"nets":10,"probes":2,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4429,"int_kb":19,"reason":"owner"}
+{"type":"run_sample","seq":6445,"ts_ms":145423,"uptime_s":145,"session":"33e864-9380-e14e6646","owner":1,"pending":1120,"enrich":3,"nets":10,"probes":6,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4429,"int_kb":18,"reason":"pending"}
+{"type":"run_sample","seq":6446,"ts_ms":369186,"uptime_s":368,"session":"33e864-9380-e14e6646","owner":7,"pending":1144,"enrich":27,"nets":10,"probes":27,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4463,"int_kb":48,"reason":"owner"}
+{"type":"enrich_summary","seq":6447,"ts_ms":383052,"transport":"BLE","ok":1,"requested":34,"applied":34,"failed":0,"deferred":0,"batches":2,"xfer_ms":1371,"storage_ms":2019,"total_ms":11649,"pending":1144,"enrich":0}
+{"type":"run_sample","seq":6448,"ts_ms":429190,"uptime_s":429,"session":"33e864-9380-e14e6646","owner":1,"pending":1145,"enrich":1,"nets":10,"probes":28,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4428,"int_kb":18,"reason":"owner"}
+{"type":"run_sample","seq":6449,"ts_ms":684228,"uptime_s":683,"session":"33e864-9380-e14e6646","owner":7,"pending":1169,"enrich":25,"nets":10,"probes":52,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4463,"int_kb":48,"reason":"owner"}
+{"type":"enrich_summary","seq":6450,"ts_ms":699072,"transport":"BLE","ok":1,"requested":25,"applied":25,"failed":0,"deferred":0,"batches":2,"xfer_ms":1047,"storage_ms":3057,"total_ms":12474,"pending":1169,"enrich":0}
+{"type":"run_sample","seq":6451,"ts_ms":744233,"uptime_s":744,"session":"33e864-9380-e14e6646","owner":1,"pending":1169,"enrich":0,"nets":10,"probes":52,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4434,"int_kb":23,"reason":"owner"}
+{"type":"power_sample","seq":6452,"ts_ms":915721,"uptime_s":915,"mv":4709,"pct":100,"trend":-4,"cap_mah":1100,"runtime_min":0,"source":"usb","state":"usb","charging":0,"owner":1,"reason":"interval"}
+{"type":"run_sample","seq":6453,"ts_ms":1020135,"uptime_s":1020,"session":"33e864-9380-e14e6646","owner":1,"pending":1194,"enrich":25,"nets":10,"probes":77,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4428,"int_kb":18,"reason":"pending"}
+{"type":"enrich_summary","seq":6454,"ts_ms":1046521,"transport":"BLE","ok":1,"requested":25,"applied":25,"failed":0,"deferred":0,"batches":2,"xfer_ms":1066,"storage_ms":3582,"total_ms":13859,"pending":1194,"enrich":0}
+{"type":"reset_crash","seq":6455,"ts_ms":12756,"ts_iso":"2026-08-16T00:43:52Z","session":"33e864-6383-c4c8352a","reset":"panic","reset_code":4,"power":"usb","heap_kb":129,"pending":1188,"serial":0}
+{"type":"boot","seq":6456,"ts_ms":12940,"ts_iso":"2026-08-16T00:43:52Z","reset":"panic","reset_code":4,"session":"33e864-6383-c4c8352a","heap_kb":129,"pending":1188,"serial":0}
+{"type":"power_sample","seq":6457,"ts_ms":13200,"uptime_s":0,"mv":4666,"pct":100,"trend":0,"cap_mah":1100,"runtime_min":0,"source":"usb","state":"usb","charging":0,"owner":5,"reason":"boot"}
+{"type":"run_sample","seq":6458,"ts_ms":13304,"uptime_s":0,"session":"33e864-6383-c4c8352a","owner":5,"pending":472,"enrich":19,"nets":0,"probes":0,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4618,"int_kb":139,"reason":"boot"}
+{"type":"fs_audit_summary","seq":6459,"ts_ms":16975,"files":64,"valid":64,"invalid":0,"legacy":0,"tmp":0,"unknown":0,"bytes":760674,"ms":1039,"done":1}
+{"type":"run_sample","seq":6460,"ts_ms":21596,"uptime_s":19,"session":"33e864-6383-c4c8352a","owner":5,"pending":1201,"enrich":99,"nets":0,"probes":0,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4618,"int_kb":140,"reason":"pending"}
+{"type":"reset_crash","seq":6461,"ts_ms":16668,"ts_iso":"2026-08-16T00:44:45Z","session":"33e864-10712-678df99e","reset":"panic","reset_code":4,"power":"usb","heap_kb":123,"pending":1194,"serial":0}
+{"type":"boot","seq":6462,"ts_ms":16762,"ts_iso":"2026-08-16T00:44:45Z","reset":"panic","reset_code":4,"session":"33e864-10712-678df99e","heap_kb":123,"pending":1194,"serial":0}
+{"type":"power_sample","seq":6463,"ts_ms":17022,"uptime_s":0,"mv":4668,"pct":100,"trend":0,"cap_mah":1100,"runtime_min":0,"source":"usb","state":"usb","charging":0,"owner":5,"reason":"boot"}
+{"type":"run_sample","seq":6464,"ts_ms":17118,"uptime_s":0,"session":"33e864-10712-678df99e","owner":5,"pending":1194,"enrich":10,"nets":0,"probes":0,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4618,"int_kb":139,"reason":"boot"}
+{"type":"run_sample","seq":6465,"ts_ms":27040,"uptime_s":25,"session":"33e864-10712-678df99e","owner":5,"pending":1194,"enrich":120,"nets":0,"probes":0,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4618,"int_kb":139,"reason":"pending"}
+{"type":"reset_crash","seq":6466,"ts_ms":12203,"ts_iso":"2026-08-16T00:45:27Z","session":"33e864-6186-1e54d631","reset":"panic","reset_code":4,"power":"usb","heap_kb":129,"pending":1194,"serial":0}
+{"type":"boot","seq":6467,"ts_ms":12349,"ts_iso":"2026-08-16T00:45:27Z","reset":"panic","reset_code":4,"session":"33e864-6186-1e54d631","heap_kb":129,"pending":1194,"serial":0}
+{"type":"power_sample","seq":6468,"ts_ms":12598,"uptime_s":0,"mv":4680,"pct":100,"trend":0,"cap_mah":1100,"runtime_min":0,"source":"usb","state":"usb","charging":0,"owner":5,"reason":"boot"}
+{"type":"run_sample","seq":6469,"ts_ms":12687,"uptime_s":0,"session":"33e864-6186-1e54d631","owner":5,"pending":313,"enrich":320,"nets":0,"probes":0,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4618,"int_kb":139,"reason":"boot"}
+{"type":"fs_audit_summary","seq":6470,"ts_ms":15927,"files":64,"valid":64,"invalid":0,"legacy":0,"tmp":0,"unknown":0,"bytes":762984,"ms":1162,"done":1}
+{"type":"run_sample","seq":6471,"ts_ms":21323,"uptime_s":18,"session":"33e864-6186-1e54d631","owner":5,"pending":1123,"enrich":80,"nets":0,"probes":0,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4618,"int_kb":140,"reason":"pending"}
+{"type":"run_sample","seq":6472,"ts_ms":81326,"uptime_s":81,"session":"33e864-6186-1e54d631","owner":1,"pending":1135,"enrich":22,"nets":10,"probes":7,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4514,"int_kb":87,"reason":"owner"}
+{"type":"enrich_summary","seq":6473,"ts_ms":110411,"transport":"BLE","ok":1,"requested":15,"applied":15,"failed":0,"deferred":0,"batches":1,"xfer_ms":561,"storage_ms":1031,"total_ms":3548,"pending":1138,"enrich":0}
+{"type":"run_sample","seq":6474,"ts_ms":346068,"uptime_s":346,"session":"33e864-6186-1e54d631","owner":1,"pending":1160,"enrich":21,"nets":10,"probes":29,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4429,"int_kb":19,"reason":"pending"}
+{"type":"run_sample","seq":6475,"ts_ms":406557,"uptime_s":404,"session":"33e864-6186-1e54d631","owner":7,"pending":1165,"enrich":26,"nets":10,"probes":34,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4468,"int_kb":54,"reason":"owner"}
+{"type":"enrich_summary","seq":6476,"ts_ms":406683,"transport":"BLE","ok":1,"requested":27,"applied":27,"failed":0,"deferred":0,"batches":2,"xfer_ms":1156,"storage_ms":2715,"total_ms":8415,"pending":1165,"enrich":0}
+{"type":"reset_crash","seq":6477,"ts_ms":16966,"ts_iso":"2026-08-16T00:52:25Z","session":"33e864-10726-84abd771","reset":"panic","reset_code":4,"power":"usb","heap_kb":122,"pending":1236,"serial":0}
+{"type":"boot","seq":6478,"ts_ms":17065,"ts_iso":"2026-08-16T00:52:25Z","reset":"panic","reset_code":4,"session":"33e864-10726-84abd771","heap_kb":122,"pending":1236,"serial":0}
+{"type":"power_sample","seq":6479,"ts_ms":17325,"uptime_s":0,"mv":4668,"pct":100,"trend":0,"cap_mah":1100,"runtime_min":0,"source":"usb","state":"usb","charging":0,"owner":5,"reason":"boot"}
+{"type":"run_sample","seq":6480,"ts_ms":17430,"uptime_s":0,"session":"33e864-10726-84abd771","owner":5,"pending":1236,"enrich":0,"nets":0,"probes":0,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4618,"int_kb":139,"reason":"boot"}
+{"type":"run_sample","seq":6481,"ts_ms":27807,"uptime_s":25,"session":"33e864-10726-84abd771","owner":5,"pending":1236,"enrich":110,"nets":0,"probes":0,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4618,"int_kb":139,"reason":"pending"}
+{"type":"reset_crash","seq":6482,"ts_ms":12478,"ts_iso":"2026-08-16T00:53:08Z","session":"33e864-6310-85365d15","reset":"panic","reset_code":4,"power":"usb","heap_kb":130,"pending":1236,"serial":0}
+{"type":"boot","seq":6483,"ts_ms":12635,"ts_iso":"2026-08-16T00:53:08Z","reset":"panic","reset_code":4,"session":"33e864-6310-85365d15","heap_kb":130,"pending":1236,"serial":0}
+{"type":"power_sample","seq":6484,"ts_ms":12894,"uptime_s":0,"mv":4664,"pct":100,"trend":0,"cap_mah":1100,"runtime_min":0,"source":"usb","state":"usb","charging":0,"owner":5,"reason":"boot"}
+{"type":"run_sample","seq":6485,"ts_ms":12992,"uptime_s":0,"session":"33e864-6310-85365d15","owner":5,"pending":397,"enrich":310,"nets":0,"probes":0,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4618,"int_kb":139,"reason":"boot"}
+{"type":"fs_audit_summary","seq":6486,"ts_ms":16253,"files":65,"valid":65,"invalid":0,"legacy":0,"tmp":0,"unknown":0,"bytes":788065,"ms":1221,"done":1}
+{"type":"run_sample","seq":6487,"ts_ms":21934,"uptime_s":18,"session":"33e864-6310-85365d15","owner":5,"pending":1207,"enrich":80,"nets":0,"probes":0,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4619,"int_kb":140,"reason":"pending"}
+{"type":"run_sample","seq":6488,"ts_ms":81938,"uptime_s":81,"session":"33e864-6310-85365d15","owner":1,"pending":1218,"enrich":21,"nets":10,"probes":6,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4514,"int_kb":87,"reason":"owner"}
+{"type":"enrich_summary","seq":6489,"ts_ms":115894,"transport":"BLE","ok":1,"requested":15,"applied":15,"failed":0,"deferred":0,"batches":1,"xfer_ms":586,"storage_ms":1028,"total_ms":3508,"pending":1226,"enrich":0}
+{"type":"reset_crash","seq":6490,"ts_ms":16681,"ts_iso":"2026-08-16T00:55:24Z","session":"33e864-10042-07bd23ce","reset":"panic","reset_code":4,"power":"usb","heap_kb":120,"pending":1255,"serial":0}
+{"type":"boot","seq":6491,"ts_ms":16797,"ts_iso":"2026-08-16T00:55:24Z","reset":"panic","reset_code":4,"session":"33e864-10042-07bd23ce","heap_kb":120,"pending":1255,"serial":0}
+{"type":"power_sample","seq":6492,"ts_ms":17072,"uptime_s":0,"mv":4668,"pct":100,"trend":0,"cap_mah":1100,"runtime_min":0,"source":"usb","state":"usb","charging":0,"owner":5,"reason":"boot"}
+{"type":"run_sample","seq":6493,"ts_ms":17194,"uptime_s":0,"session":"33e864-10042-07bd23ce","owner":5,"pending":1255,"enrich":10,"nets":0,"probes":0,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4618,"int_kb":139,"reason":"boot"}
+{"type":"run_sample","seq":6494,"ts_ms":28888,"uptime_s":26,"session":"33e864-10042-07bd23ce","owner":5,"pending":1255,"enrich":120,"nets":0,"probes":0,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4618,"int_kb":139,"reason":"pending"}
+{"type":"enrich_summary","seq":6495,"ts_ms":43216,"transport":"BLE","ok":1,"requested":4,"applied":4,"failed":0,"deferred":0,"batches":1,"xfer_ms":234,"storage_ms":1081,"total_ms":9482,"pending":1255,"enrich":0}
+{"type":"reset_crash","seq":6496,"ts_ms":13576,"ts_iso":"2026-08-16T00:56:15Z","session":"33e864-6745-fd355a07","reset":"panic","reset_code":4,"power":"usb","heap_kb":130,"pending":1255,"serial":0}
+{"type":"boot","seq":6497,"ts_ms":13773,"ts_iso":"2026-08-16T00:56:15Z","reset":"panic","reset_code":4,"session":"33e864-6745-fd355a07","heap_kb":130,"pending":1255,"serial":0}
+{"type":"power_sample","seq":6498,"ts_ms":14131,"uptime_s":0,"mv":4668,"pct":100,"trend":0,"cap_mah":1100,"runtime_min":0,"source":"usb","state":"usb","charging":0,"owner":5,"reason":"boot"}
+{"type":"run_sample","seq":6499,"ts_ms":14228,"uptime_s":0,"session":"33e864-6745-fd355a07","owner":5,"pending":355,"enrich":320,"nets":0,"probes":0,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4618,"int_kb":139,"reason":"boot"}
+{"type":"fs_audit_summary","seq":6500,"ts_ms":17802,"files":66,"valid":66,"invalid":0,"legacy":0,"tmp":0,"unknown":0,"bytes":801174,"ms":1186,"done":1}
+{"type":"run_sample","seq":6501,"ts_ms":22674,"uptime_s":20,"session":"33e864-6745-fd355a07","owner":5,"pending":1249,"enrich":80,"nets":0,"probes":0,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4618,"int_kb":140,"reason":"pending"}
+{"type":"boot","seq":6502,"ts_ms":13174,"ts_iso":"","reset":"power_on","reset_code":1,"session":"33e864-6511-7fe298b2","heap_kb":131,"pending":1249,"serial":0}
+{"type":"power_sample","seq":6503,"ts_ms":13494,"uptime_s":0,"mv":4688,"pct":100,"trend":0,"cap_mah":1100,"runtime_min":0,"source":"usb","state":"usb","charging":0,"owner":5,"reason":"boot"}
+{"type":"run_sample","seq":6504,"ts_ms":13584,"uptime_s":0,"session":"33e864-6511-7fe298b2","owner":5,"pending":1268,"enrich":10,"nets":0,"probes":0,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4619,"int_kb":140,"reason":"boot"}
+{"type":"fs_audit_summary","seq":6505,"ts_ms":23567,"files":67,"valid":67,"invalid":0,"legacy":0,"tmp":0,"unknown":0,"bytes":802393,"ms":1080,"done":1}
+{"type":"run_sample","seq":6506,"ts_ms":30721,"uptime_s":26,"session":"33e864-6511-7fe298b2","owner":1,"pending":1268,"enrich":80,"nets":0,"probes":0,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4567,"int_kb":93,"reason":"owner"}
+{"type":"boot","seq":6507,"ts_ms":17137,"ts_iso":"","reset":"power_on","reset_code":1,"session":"33e864-10337-fd8b30ac","heap_kb":120,"pending":1255,"serial":0}
+{"type":"power_sample","seq":6508,"ts_ms":17399,"uptime_s":0,"mv":4664,"pct":100,"trend":0,"cap_mah":1100,"runtime_min":0,"source":"usb","state":"usb","charging":0,"owner":5,"reason":"boot"}
+{"type":"run_sample","seq":6509,"ts_ms":17498,"uptime_s":0,"session":"33e864-10337-fd8b30ac","owner":5,"pending":1255,"enrich":10,"nets":0,"probes":0,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4618,"int_kb":139,"reason":"boot"}
+{"type":"run_sample","seq":6510,"ts_ms":27981,"uptime_s":26,"session":"33e864-10337-fd8b30ac","owner":1,"pending":1255,"enrich":10,"nets":0,"probes":0,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4566,"int_kb":91,"reason":"owner"}
+{"type":"run_sample","seq":6511,"ts_ms":87981,"uptime_s":87,"session":"33e864-10337-fd8b30ac","owner":1,"pending":1264,"enrich":141,"nets":9,"probes":5,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4428,"int_kb":18,"reason":"pending"}
+{"type":"enrich_summary","seq":6512,"ts_ms":122043,"transport":"BLE","ok":1,"requested":6,"applied":6,"failed":0,"deferred":0,"batches":1,"xfer_ms":348,"storage_ms":1424,"total_ms":8663,"pending":1267,"enrich":0}
+{"type":"run_sample","seq":6513,"ts_ms":147981,"uptime_s":147,"session":"33e864-10337-fd8b30ac","owner":7,"pending":1267,"enrich":0,"nets":9,"probes":7,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4468,"int_kb":53,"reason":"owner"}
+{"type":"boot","seq":6514,"ts_ms":13009,"ts_iso":"","reset":"power_on","reset_code":1,"session":"33e864-6474-1ffc8068","heap_kb":129,"pending":1267,"serial":0}
+{"type":"power_sample","seq":6515,"ts_ms":13328,"uptime_s":0,"mv":4666,"pct":100,"trend":0,"cap_mah":1100,"runtime_min":0,"source":"usb","state":"usb","charging":0,"owner":5,"reason":"boot"}
+{"type":"run_sample","seq":6516,"ts_ms":13410,"uptime_s":0,"session":"33e864-6474-1ffc8068","owner":5,"pending":382,"enrich":0,"nets":0,"probes":0,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4618,"int_kb":139,"reason":"boot"}
+{"type":"fs_audit_summary","seq":6517,"ts_ms":16843,"files":67,"valid":67,"invalid":0,"legacy":0,"tmp":0,"unknown":0,"bytes":811910,"ms":1254,"done":1}
+{"type":"run_sample","seq":6518,"ts_ms":22407,"uptime_s":19,"session":"33e864-6474-1ffc8068","owner":5,"pending":1261,"enrich":84,"nets":0,"probes":0,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4619,"int_kb":140,"reason":"pending"}
+{"type":"reset_crash","seq":6519,"ts_ms":13852,"ts_iso":"2026-08-16T01:12:18Z","session":"33e864-7087-67dff2ae","reset":"panic","reset_code":4,"power":"usb","heap_kb":131,"pending":1261,"serial":0}
+{"type":"boot","seq":6520,"ts_ms":14033,"ts_iso":"2026-08-16T01:12:18Z","reset":"panic","reset_code":4,"session":"33e864-7087-67dff2ae","heap_kb":131,"pending":1261,"serial":0}
+{"type":"power_sample","seq":6521,"ts_ms":14246,"uptime_s":0,"mv":4590,"pct":100,"trend":0,"cap_mah":1100,"runtime_min":0,"source":"usb","state":"usb","charging":0,"owner":1,"reason":"boot"}
+{"type":"run_sample","seq":6522,"ts_ms":14344,"uptime_s":0,"session":"33e864-7087-67dff2ae","owner":1,"pending":1261,"enrich":84,"nets":0,"probes":0,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4567,"int_kb":93,"reason":"boot"}
+{"type":"run_sample","seq":6523,"ts_ms":14719,"uptime_s":14,"session":"33e864-7087-67dff2ae","owner":7,"pending":1261,"enrich":84,"nets":0,"probes":0,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4520,"int_kb":59,"reason":"owner"}
+{"type":"run_sample","seq":6524,"ts_ms":74725,"uptime_s":74,"session":"33e864-7087-67dff2ae","owner":1,"pending":1269,"enrich":8,"nets":10,"probes":4,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4431,"int_kb":20,"reason":"owner"}
+{"type":"boot","seq":6525,"ts_ms":12881,"ts_iso":"","reset":"power_on","reset_code":1,"session":"33e864-6496-29e426a7","heap_kb":131,"pending":1261,"serial":0}
+{"type":"power_sample","seq":6526,"ts_ms":13217,"uptime_s":0,"mv":4662,"pct":100,"trend":0,"cap_mah":1100,"runtime_min":0,"source":"usb","state":"usb","charging":0,"owner":5,"reason":"boot"}
+{"type":"run_sample","seq":6527,"ts_ms":13327,"uptime_s":0,"session":"33e864-6496-29e426a7","owner":5,"pending":1261,"enrich":0,"nets":0,"probes":0,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4619,"int_kb":140,"reason":"boot"}
+{"type":"fs_audit_summary","seq":6528,"ts_ms":23137,"files":68,"valid":68,"invalid":0,"legacy":0,"tmp":0,"unknown":0,"bytes":814453,"ms":1388,"done":1}
+{"type":"run_sample","seq":6529,"ts_ms":31833,"uptime_s":27,"session":"33e864-6496-29e426a7","owner":1,"pending":1261,"enrich":84,"nets":0,"probes":0,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4567,"int_kb":93,"reason":"owner"}
+{"type":"run_sample","seq":6530,"ts_ms":93880,"uptime_s":75,"session":"33e864-6496-29e426a7","owner":7,"pending":1261,"enrich":0,"nets":0,"probes":0,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4228,"int_kb":47,"reason":"owner"}
+{"type":"reset_crash","seq":6531,"ts_ms":13422,"ts_iso":"2026-08-16T01:19:49Z","session":"33e864-6876-37c4be25","reset":"panic","reset_code":4,"power":"usb","heap_kb":131,"pending":1261,"serial":0}
+{"type":"boot","seq":6532,"ts_ms":13661,"ts_iso":"2026-08-16T01:19:49Z","reset":"panic","reset_code":4,"session":"33e864-6876-37c4be25","heap_kb":131,"pending":1261,"serial":0}
+{"type":"power_sample","seq":6533,"ts_ms":13864,"uptime_s":0,"mv":4588,"pct":100,"trend":0,"cap_mah":1100,"runtime_min":0,"source":"usb","state":"usb","charging":0,"owner":1,"reason":"boot"}
+{"type":"run_sample","seq":6534,"ts_ms":13960,"uptime_s":0,"session":"33e864-6876-37c4be25","owner":1,"pending":1261,"enrich":84,"nets":0,"probes":0,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4567,"int_kb":93,"reason":"boot"}
+{"type":"run_sample","seq":6535,"ts_ms":14338,"uptime_s":14,"session":"33e864-6876-37c4be25","owner":7,"pending":1261,"enrich":84,"nets":0,"probes":0,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4521,"int_kb":59,"reason":"owner"}
+{"type":"run_sample","seq":6536,"ts_ms":74342,"uptime_s":74,"session":"33e864-6876-37c4be25","owner":7,"pending":1261,"enrich":0,"nets":0,"probes":0,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4470,"int_kb":55,"reason":"pending"}
+{"type":"boot","seq":6537,"ts_ms":13040,"ts_iso":"","reset":"power_on","reset_code":1,"session":"33e864-6717-863e0d23","heap_kb":131,"pending":1261,"serial":0}
+{"type":"power_sample","seq":6538,"ts_ms":13304,"uptime_s":0,"mv":4598,"pct":100,"trend":0,"cap_mah":1100,"runtime_min":0,"source":"usb","state":"usb","charging":0,"owner":1,"reason":"boot"}
+{"type":"run_sample","seq":6539,"ts_ms":13400,"uptime_s":0,"session":"33e864-6717-863e0d23","owner":1,"pending":1261,"enrich":0,"nets":0,"probes":0,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4567,"int_kb":93,"reason":"boot"}
+{"type":"run_sample","seq":6540,"ts_ms":13772,"uptime_s":13,"session":"33e864-6717-863e0d23","owner":7,"pending":1261,"enrich":0,"nets":0,"probes":0,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4521,"int_kb":59,"reason":"owner"}
+{"type":"reset_crash","seq":6541,"ts_ms":13059,"ts_iso":"2026-08-16T01:22:10Z","session":"33e864-6735-c1755bb9","reset":"panic","reset_code":4,"power":"usb","heap_kb":131,"pending":1261,"serial":0}
+{"type":"boot","seq":6542,"ts_ms":13217,"ts_iso":"2026-08-16T01:22:10Z","reset":"panic","reset_code":4,"session":"33e864-6735-c1755bb9","heap_kb":131,"pending":1261,"serial":0}
+{"type":"power_sample","seq":6543,"ts_ms":13432,"uptime_s":0,"mv":4604,"pct":100,"trend":0,"cap_mah":1100,"runtime_min":0,"source":"usb","state":"usb","charging":0,"owner":1,"reason":"boot"}
+{"type":"run_sample","seq":6544,"ts_ms":13531,"uptime_s":0,"session":"33e864-6735-c1755bb9","owner":1,"pending":1261,"enrich":0,"nets":0,"probes":0,"lora":0,"sg_mode":0,"sg_nodes":0,"wio":0,"wio_proxy":0,"wio_phone":0,"upload":0,"heap_kb":4567,"int_kb":93,"reason":"boot"}
+[FIELD] --- end live lines=173 ---
+[FIELD] dump complete
+[FIELD] retained after dump
+[14993][I][COMP] Automatic phone offload recovery requested
+[14994][I][WIFI] Radio paused
+[15155][I][WIFI] Radio suspended
+[15156][I][BLE] BLE payload buffers in PSRAM bytes=6276
+[15232][I][BLE] begin phase=nimble_pre bt=idle/0 heap=126104 largest=55284 stack=12896 devLen=14
+[15233][I][BLE] begin phase=nimble_init
+[15244][I][BLE] begin phase=nimble_init_ok bt=enabled/2 heap=63124 largest=31732 stack=12896
+[15245][I][BLE] BLE SM disabled; app-layer P-256/AES-GCM required
+[15247][I][BLE] begin phase=server_ok
+[15247][I][BLE] scanner configured legacy=1 active=0 interval=30 window=30 srTimeout=200
+[15248][I][BLE] begin phase=scanner_ok
+[15249][I][BLE] begin phase=worker_ok
+[15250][I][BLE] begin ready
+[15250][I][BLE] radio enabled settle=500ms
+[15252][I][BLE] advertising start
+[15252][I][BLE] companion link requested reason=offload_prep mode=fresh_scan timeout=15s settle=500ms cacheAge=0ms rssi=0
+[15258][I][BLE] Phone probe lease granted reason=offload_prep cachedFirst=1 hold=60000ms
+[15268][W][CORE] TaskHardware loop gap=1838ms owner=BLE_GPS pendingUpload=1261 maintPending=0 suppressed=0
+[15754][I][BLE] scan start
+[15755][I][BLE] scan start diag=1 deliverDuplicates=1 diagLeft=44495 state=1 window=8000ms weakRecent=0 lastRssi=0
+[16096][I][BLE] target found matchedBy=service cachePeer=0 addr=62:5d:4d:35:43:cc name=SpectrePhone rssi=-99
+[16097][I][BLE] target found matchedBy=service cachePeer=0 addr=62:5d:4d:35:43:cc name=SpectrePhone rssi=-99
+[16123][I][BLE] scan stop; connect pending addr=62:5d:4d:35:43:cc
+[16387][I][BLE] connect pending settled addr=62:5d:4d:35:43:cc
+[16388][I][BLE] connect attempt addr=62:5d:4d:35:43:cc name=SpectrePhone
+[16388][I][BLE] connect params timeoutMs=15000 scanItvl=16 scanWin=16 addrType=1
+[30011][I][HEAP] heap free=4474KB min=4469KB largest=4352KB frag=2% internalFree=59KB internalLargest=31KB psramFree=4415KB core=0/0% owner=BLE_GPS nets=0 pendingUpload=1261 pendingEnrich=0
+[HEALTH] time=2026-08-15 20:22:26 src=ntp
+[HEALTH] heap used=3978/8452KB free=4474KB min=4469KB largest=4352KB frag=2%
+[HEALTH] internal used=201/260KB free=59KB min=54KB largest=31KB
+[HEALTH] psram used=3777/8192KB free=4415KB largest=4352KB
+[HEALTH] stack free_min: core0=13KB/18KB core1=5KB/10KB
+[HEALTH] loopTask free_min=2852B/5120B
+[HEALTH] core usage: core0=0% core1=0%
+[HEALTH] power=usb state=usb batt=100% 4620mV trend=0mV/min runtime=0min cap=1100mAh charging=0
+[HEALTH] radio=BLE_GPS wifi=0 ble=0 gps=0 nets=0 pendingUpload=1261 pendingEnrich=0
+[HEALTH] subghz=NONE mode=OFF pkts=0 nodes=0
+[30017][I][STACK] TaskStorage watermark=3500B
+[30018][I][STORAGE] RAMSpool enq=0 cons=0 inflight=0/1024 high=0 pressure=0 drop[full=0 big=0 noise=0 p3Evict=0 p3Drop=0 p2Drop=0 p1Fail=0] free=1024
+[30019][I][STORAGE] RAMSpool enqueue probe[ok=0 drop=0] device[ok=0 drop=0]
+[30020][I][STORAGE] RAMSpool worker probe[ok=0 sup=0 drop=0 fail=0 slow=0] device[ok=0 sup=0 drop=0 fail=0 slow=0] slowTotal=0 maxMs=0
+[30021][I][STORAGE] RAMSpool prioEnq p0=0 p1=0 p2=0 p3=0
+[30021][I][STORAGE] RAMSpool lanes p1=0/0 p2=0/0 p3=0/0
+[30996][I][STACK] TaskButtons watermark=2092B min=2092B
+[31024][I][STACK] TaskDisplay watermark=4936B min=4936B
+[31029][I][STACK] TaskHardware watermark=12896B min=12896B
+=== reconnecting capture closed 2026-08-15T20:23:44.2014630-05:00 ===

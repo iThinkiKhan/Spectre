@@ -288,6 +288,11 @@ const WIFI_BULK_ENRICH_THRESHOLD = 128;
 const WIFI_BULK_OFFLOAD_THRESHOLD = 64;
 const WIFI_BULK_TIMEOUT_MS = 10 * 60_000;
 
+// Cadence for the time-only GPS frame that carries UTC to Spectre when the
+// phone has no fix. Only a connected device reads it.
+const GPS_TIME_FRAME_CONNECTED_MS = 15_000;
+const GPS_TIME_FRAME_IDLE_MS = 5 * 60_000;
+
 function nowId(prefix: string) {
   return `${prefix}-${Date.now()}-${Math.round(Math.random() * 1000)}`;
 }
@@ -1067,11 +1072,13 @@ export function SpectreProvider({children}: {children: React.ReactNode}) {
       if (!nativeRecorderActiveRef.current) {
         return;
       }
-      locationHistoryRef.current = rememberLocationSample(
-        locationHistoryRef.current,
-        fix,
-      );
-      setLocationHistoryVersion(previous => previous + 1);
+      // Deliberately does NOT mirror the fix into locationHistoryRef. The
+      // native recorder already owns and persists history, and appending here
+      // meant every fix copied the whole array (capped at 200k samples) and
+      // bumped locationHistoryVersion, re-running the auto-enrich effect —
+      // every 20s, in the background, for a copy nothing read. The JS enrich
+      // path reloads from persisted storage at publish time (see
+      // publishBatch), so it sees the native writes without this mirror.
       setDeviceLocation(fix);
     });
     return unsubscribe;
@@ -1142,15 +1149,31 @@ export function SpectreProvider({children}: {children: React.ReactNode}) {
   }, [gpsBase64, peripheralState.running]);
 
   // Keep time-only GPS frames fresh while the phone lacks a live fix.
+  //
+  // Only Spectre reads this characteristic, so refreshing it while nothing is
+  // connected burns a JS wakeup and a native write every 15s for a value no
+  // one will read. Hold the tight cadence while a device is attached; back
+  // right off while we are merely advertising.
   useEffect(() => {
     if (!peripheralState.running || activeLocation) {
       return;
     }
+    const connected = peripheralState.connectedDevices > 0;
+    const periodMs = connected
+      ? GPS_TIME_FRAME_CONNECTED_MS
+      : GPS_TIME_FRAME_IDLE_MS;
+    // Push one frame straight away so a device that just attached never waits
+    // out the idle interval for its first UTC sample.
+    swallowPromise(peripheralRef.current?.updateGpsValue(buildGpsBase64(null)));
     const timer = setInterval(() => {
       swallowPromise(peripheralRef.current?.updateGpsValue(buildGpsBase64(null)));
-    }, 15000);
+    }, periodMs);
     return () => clearInterval(timer);
-  }, [peripheralState.running, activeLocation]);
+  }, [
+    peripheralState.running,
+    peripheralState.connectedDevices,
+    activeLocation,
+  ]);
 
   // Refresh UTC immediately when a brief enrich probe becomes secure.
   useEffect(() => {

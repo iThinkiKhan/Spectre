@@ -1,0 +1,38 @@
+[session] waiting up to 90s for firmware ready
+[5156150][I][STORAGE] worker ui refresh serviced uiRefreshServiceCount=226 uiDeferred=285 uiFlush=226 pressure=0 usedPct=3 pending=2136
+[5161035][I][STACK] TaskButtons watermark=1784B min=1784B
+[5170922][I][STACK] TaskHardware watermark=3648B min=3648B
+[5170924][I][HEAP] heap free=4509KB min=4427KB largest=4352KB frag=3% internalFree=89KB internalLargest=31KB psramFree=4413KB core=0/1% owner=WIFI_CAPTURE nets=9 pendingUpload=2136 pendingEnrich=2088
+[HEALTH] time=2026-08-21 05:17:16 src=ntp
+[HEALTH] heap used=3946/8455KB free=4509KB min=4427KB largest=4352KB frag=3%
+[HEALTH] internal used=175/263KB free=89KB min=11KB largest=31KB
+[HEALTH] psram used=3779/8192KB free=4413KB largest=4352KB
+[HEALTH] stack free_min: core0=4KB/15KB core1=5KB/10KB
+[HEALTH] loopTask free_min=2632B/5120B
+[HEALTH] core usage: core0=0% core1=1%
+[HEALTH] power=usb state=usb batt=100% 4759mV trend=-2mV/min runtime=0min cap=1100mAh charging=0
+[HEALTH] radio=WIFI_CAPTURE wifi=0 ble=0 gps=0 nets=9 pendingUpload=2136 pendingEnrich=2088
+[HEALTH] subghz=NONE mode=OFF pkts=0 nodes=0
+[5170927][I][STACK] TaskStorage watermark=4416B
+[session] no boot banner; app already running
+[5170927][I][STORAGE] RAMSpool enq=285 cons=285 inflight=0/1024 high=2 pressure=0 drop[full=0 big=0 noise=0 p3Evict=0 p3Drop=0 p2Drop=0 p1Fail=0] free=1024
+[5170927][I][STORAGE] RAMSpool enqueue probe[ok=258 drop=0] device[ok=27 drop=0]
+[5170927][I][STORAGE] RAMSpool worker probe[ok=258 sup=0 drop=0 fail=0 slow=0] device[ok=24 sup=3 drop=0 fail=0 slow=0] slowTotal=0 maxMs=0
+[5170928][I][STORAGE] RAMSpool prioEnq p0=0 p1=0 p2=285 p3=0
+[5170928][I][STORAGE] RAMSpool lanes p1=0/0 p2=0/1 p3=0/0
+[session] ready=True — sending 1 command(s)
+[session] >>> fs ls /spool
+fs ls /spool
+[FS] ls /spool
+    2633 index.json.bak
+    2633 index.json
+     848 seg_000001.bin
+     404 seg_000002.bin
+   30371 seg_000003.bin
+    3309 seg_000004.bin
+   41517 seg_000005.bin
+    5104 seg_000006.bin
+   41678 seg_000007.bin
+   19868 seg_000008.bin
+   21465 seg_000009.bin
+[FS] 11 entries, 169830 bytes

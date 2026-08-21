@@ -1,0 +1,1816 @@
+=== capture opened 2026-08-11T14:00:45.5632496-05:00 ===
+[141530][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[141532][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[141532][I][BLE] Enrichment pending scan done count=0
+[141532][I][BLE] Phone enrichment finished successfully
+[141554][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[141555][I][BLE] Localization complete; retaining phone link for offload pending=2
+[141555][I][BLE] Enrichment complete; persistent companion link retained
+[141570][I][COMP] Automatic phone offload recovery requested
+[141575][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[141575][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[141576][I][BLE] Enrichment pending scan done count=0
+[141576][I][BLE] Phone enrichment finished successfully
+[141600][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[141600][I][BLE] Localization complete; retaining phone link for offload pending=2
+[141600][I][BLE] Enrichment complete; persistent companion link retained
+[141615][I][COMP] Automatic phone offload recovery requested
+[141621][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[141621][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[141622][I][BLE] Enrichment pending scan done count=0
+[141622][I][BLE] Phone enrichment finished successfully
+[141644][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[141645][I][BLE] Localization complete; retaining phone link for offload pending=2
+[141645][I][BLE] Enrichment complete; persistent companion link retained
+[141660][I][COMP] Automatic phone offload recovery requested
+[141665][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[141665][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[141666][I][BLE] Enrichment pending scan done count=0
+[141666][I][BLE] Phone enrichment finished successfully
+[141689][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[141690][I][BLE] Localization complete; retaining phone link for offload pending=2
+[141690][I][BLE] Enrichment complete; persistent companion link retained
+[141704][I][COMP] Automatic phone offload recovery requested
+[141710][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[141710][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[141711][I][BLE] Enrichment pending scan done count=0
+[141711][I][BLE] Phone enrichment finished successfully
+[141734][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[141735][I][BLE] Localization complete; retaining phone link for offload pending=2
+[141735][I][BLE] Enrichment complete; persistent companion link retained
+[141749][I][COMP] Automatic phone offload recovery requested
+[141755][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[141755][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[141756][I][BLE] Enrichment pending scan done count=0
+[141756][I][BLE] Phone enrichment finished successfully
+[141779][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[141780][I][BLE] Localization complete; retaining phone link for offload pending=2
+[141780][I][BLE] Enrichment complete; persistent companion link retained
+[141795][I][COMP] Automatic phone offload recovery requested
+[141800][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[141800][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[141801][I][BLE] Enrichment pending scan done count=0
+[141801][I][BLE] Phone enrichment finished successfully
+[141824][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[141825][I][BLE] Localization complete; retaining phone link for offload pending=2
+[141825][I][BLE] Enrichment complete; persistent companion link retained
+[141839][I][COMP] Automatic phone offload recovery requested
+[141899][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[141899][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[141900][I][BLE] Enrichment pending scan done count=0
+[141900][I][BLE] Phone enrichment finished successfully
+[141929][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[141930][I][BLE] Localization complete; retaining phone link for offload pending=2
+[141930][I][BLE] Enrichment complete; persistent companion link retained
+[141945][I][COMP] Automatic phone offload recovery requested
+[141950][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[141950][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[141951][I][BLE] Enrichment pending scan done count=0
+[141951][I][BLE] Phone enrichment finished successfully
+[141974][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[141975][I][BLE] Localization complete; retaining phone link for offload pending=2
+[141975][I][BLE] Enrichment complete; persistent companion link retained
+[141989][I][COMP] Automatic phone offload recovery requested
+[141995][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[141996][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[141996][I][BLE] Enrichment pending scan done count=0
+[141997][I][BLE] Phone enrichment finished successfully
+[142049][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[142050][I][BLE] Localization complete; retaining phone link for offload pending=2
+[142050][I][BLE] Enrichment complete; persistent companion link retained
+[142064][I][COMP] Automatic phone offload recovery requested
+[142070][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[142070][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[142071][I][BLE] Enrichment pending scan done count=0
+[142071][I][BLE] Phone enrichment finished successfully
+[142094][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[142095][I][BLE] Localization complete; retaining phone link for offload pending=2
+[142095][I][BLE] Enrichment complete; persistent companion link retained
+[142110][I][COMP] Automatic phone offload recovery requested
+[142115][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[142115][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[142116][I][BLE] Enrichment pending scan done count=0
+[142116][I][BLE] Phone enrichment finished successfully
+[142139][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[142140][I][BLE] Localization complete; retaining phone link for offload pending=2
+[142140][I][BLE] Enrichment complete; persistent companion link retained
+[142154][I][COMP] Automatic phone offload recovery requested
+[142160][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[142160][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[142161][I][BLE] Enrichment pending scan done count=0
+[142161][I][BLE] Phone enrichment finished successfully
+[142184][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[142185][I][BLE] Localization complete; retaining phone link for offload pending=2
+[142185][I][BLE] Enrichment complete; persistent companion link retained
+[142200][I][COMP] Automatic phone offload recovery requested
+[142206][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[142206][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[142207][I][BLE] Enrichment pending scan done count=0
+[142207][I][BLE] Phone enrichment finished successfully
+[142229][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[142230][I][BLE] Localization complete; retaining phone link for offload pending=2
+[142230][I][BLE] Enrichment complete; persistent companion link retained
+[142245][I][COMP] Automatic phone offload recovery requested
+[142310][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[142310][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[142311][I][BLE] Enrichment pending scan done count=0
+[142311][I][BLE] Phone enrichment finished successfully
+[142334][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[142335][I][BLE] Localization complete; retaining phone link for offload pending=2
+[142335][I][BLE] Enrichment complete; persistent companion link retained
+[142349][I][COMP] Automatic phone offload recovery requested
+[142355][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[142355][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[142356][I][BLE] Enrichment pending scan done count=0
+[142356][I][BLE] Phone enrichment finished successfully
+[142379][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[142380][I][BLE] Localization complete; retaining phone link for offload pending=2
+[142380][I][BLE] Enrichment complete; persistent companion link retained
+[142394][I][COMP] Automatic phone offload recovery requested
+[142400][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[142400][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[142401][I][BLE] Enrichment pending scan done count=0
+[142401][I][BLE] Phone enrichment finished successfully
+[142424][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[142425][I][BLE] Localization complete; retaining phone link for offload pending=2
+[142425][I][BLE] Enrichment complete; persistent companion link retained
+[142440][I][COMP] Automatic phone offload recovery requested
+[142445][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[142445][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[142446][I][BLE] Enrichment pending scan done count=0
+[142446][I][BLE] Phone enrichment finished successfully
+[142469][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[142470][I][BLE] Localization complete; retaining phone link for offload pending=2
+[142470][I][BLE] Enrichment complete; persistent companion link retained
+[142487][I][COMP] Automatic phone offload recovery requested
+[142493][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[142493][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[142494][I][BLE] Enrichment pending scan done count=0
+[142494][I][BLE] Phone enrichment finished successfully
+[142514][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[142515][I][BLE] Localization complete; retaining phone link for offload pending=2
+[142515][I][BLE] Enrichment complete; persistent companion link retained
+[142530][I][COMP] Automatic phone offload recovery requested
+[142535][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[142535][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[142536][I][BLE] Enrichment pending scan done count=0
+[142536][I][BLE] Phone enrichment finished successfully
+[142559][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[142560][I][BLE] Localization complete; retaining phone link for offload pending=2
+[142560][I][BLE] Enrichment complete; persistent companion link retained
+[142574][I][COMP] Automatic phone offload recovery requested
+[142580][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[142580][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[142581][I][BLE] Enrichment pending scan done count=0
+[142581][I][BLE] Phone enrichment finished successfully
+=== send: status ===
+[142604][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[142605][I][BLE] Localization complete; retaining phone link for offload pending=2
+[142605][I][BLE] Enrichment complete; persistent companion link retained
+[142620][I][COMP] Automatic phone offload recovery requested
+[142680][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[142680][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[142681][I][BLE] Enrichment pending scan done count=0
+[142681][I][BLE] Phone enrichment finished successfully
+[142709][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[142710][I][BLE] Localization complete; retaining phone link for offload pending=2
+[142710][I][BLE] Enrichment complete; persistent companion link retained
+status
+[USB] unknown command: status
+[USB] Commands:
+[USB]   debug on | debug off
+[USB]   debug status | debug dump
+[USB]   debug level d|i|w|e
+[USB]   debug focus ops|all|radio,wifi,mqtt
+[USB]   debug focus add <areas> | remove <areas>
+[USB]   debug focus +wifi -ble (mixed +/-)
+[USB]   debug focus list
+[USB]   wio status
+[USB]   wio hello | wio ble start | wio ble status | wio drop
+[USB]   wio probe | wio enrich
+[USB]   wio text <prompt> | wio text cancel
+[USB]   wio raw <line>  (send exact UART line to WIO)
+[USB]   companion status
+[USB]   companion link    (hold secure BLE link until cancel)
+[USB]   companion probe   (one-shot manual BLE probe)
+[USB]   companion enrich  (manual enrichment; probes first if needed)
+[USB]   companion cancel  (clear all pending companion requests)
+[USB]   time | time sync   (clock status; 'sync' forces NTP now)
+[USB]   heap status      (internal/PSRAM heap snapshot)
+[USB]   entity status    (PSRAM Entity working-set summary)
+[USB]   spool audit       (read-only spool scan, prints mismatches)
+[USB]   spool count       (exact total record count + spool stats)
+[USB]   spool enrich      (pending vs already enriched counts)
+[USB]   spool repair      (audit + repair counters, quarantine bad segs)
+[USB]   spool diag        (segment list, counters, flags)
+[USB]   spool quarantine list  (list /spool_bad files)
+[USB]   spool quarantine meta  (print quarantine JSON records)
+[USB]   spool quarantine clear (delete all quarantine files)
+[USB]   fieldvault dump    (print FieldVault records, keep them)
+[USB]   fieldvault clear   (delete retained FieldVault records)
+[USB]   fieldvault upload  (upload pending FieldVault records only)
+[USB]   crash log         (print retained crash breadcrumb ring)
+[USB]   ble rxdiag        (print retained BLE receive crash stage)
+[USB]   upload now         (manual MQTT upload of pending records)
+[USB]   upload stop        (safely stop the active MQTT upload)
+[USB]   upload resume      (allow MQTT uploads again)
+[USB]   upload rewind [id] (re-offer uploaded records; 0/blank = all)
+[USB]   mesh status        (Meshtastic client state + counters)
+[USB]   mesh on | mesh off (take/release SX1262 for Meshtastic)
+[USB]   mesh nodes         (list heard mesh nodes)
+[USB]   mesh send <text>   (broadcast a text message)
+[USB]   ble smoke         (suspend WiFi, init/deinit NimBLE, resume promisc)
+[142730][I][COMP] Automatic phone offload recovery requested
+[142736][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[142736][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[142737][I][BLE] Enrichment pending scan done count=0
+[142737][I][BLE] Phone enrichment finished successfully
+[142754][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[142755][I][BLE] Localization complete; retaining phone link for offload pending=2
+[142755][I][BLE] Enrichment complete; persistent companion link retained
+[142769][I][COMP] Automatic phone offload recovery requested
+[142775][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[142775][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[142776][I][BLE] Enrichment pending scan done count=0
+[142776][I][BLE] Phone enrichment finished successfully
+[142799][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[142800][I][BLE] Localization complete; retaining phone link for offload pending=2
+[142800][I][BLE] Enrichment complete; persistent companion link retained
+[142814][I][COMP] Automatic phone offload recovery requested
+[142820][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[142820][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[142821][I][BLE] Enrichment pending scan done count=0
+[142821][I][BLE] Phone enrichment finished successfully
+[142844][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[142845][I][BLE] Localization complete; retaining phone link for offload pending=2
+[142845][I][BLE] Enrichment complete; persistent companion link retained
+[142859][I][COMP] Automatic phone offload recovery requested
+[142865][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[142865][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[142866][I][BLE] Enrichment pending scan done count=0
+[142866][I][BLE] Phone enrichment finished successfully
+[142889][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[142890][I][BLE] Localization complete; retaining phone link for offload pending=2
+[142890][I][BLE] Enrichment complete; persistent companion link retained
+[142904][I][COMP] Automatic phone offload recovery requested
+[142910][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[142910][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[142911][I][BLE] Enrichment pending scan done count=0
+[142911][I][BLE] Phone enrichment finished successfully
+[142934][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[142935][I][BLE] Localization complete; retaining phone link for offload pending=2
+[142935][I][BLE] Enrichment complete; persistent companion link retained
+[142949][I][COMP] Automatic phone offload recovery requested
+[142955][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[142955][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[142956][I][BLE] Enrichment pending scan done count=0
+[142956][I][BLE] Phone enrichment finished successfully
+[142979][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[142980][I][BLE] Localization complete; retaining phone link for offload pending=2
+[142980][I][BLE] Enrichment complete; persistent companion link retained
+[142994][I][COMP] Automatic phone offload recovery requested
+[143058][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[143058][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[143059][I][BLE] Enrichment pending scan done count=0
+[143059][I][BLE] Phone enrichment finished successfully
+[143084][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[143085][I][BLE] Localization complete; retaining phone link for offload pending=2
+[143085][I][BLE] Enrichment complete; persistent companion link retained
+[143100][I][COMP] Automatic phone offload recovery requested
+[143105][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[143105][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[143106][I][BLE] Enrichment pending scan done count=0
+[143106][I][BLE] Phone enrichment finished successfully
+[143129][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[143130][I][BLE] Localization complete; retaining phone link for offload pending=2
+[143130][I][BLE] Enrichment complete; persistent companion link retained
+[143144][I][COMP] Automatic phone offload recovery requested
+[143150][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[143150][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[143151][I][BLE] Enrichment pending scan done count=0
+[143151][I][BLE] Phone enrichment finished successfully
+[143174][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[143175][I][BLE] Localization complete; retaining phone link for offload pending=2
+[143175][I][BLE] Enrichment complete; persistent companion link retained
+[143190][I][COMP] Automatic phone offload recovery requested
+[143195][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[143195][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[143196][I][BLE] Enrichment pending scan done count=0
+[143196][I][BLE] Phone enrichment finished successfully
+[143219][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[143220][I][BLE] Localization complete; retaining phone link for offload pending=2
+[143220][I][BLE] Enrichment complete; persistent companion link retained
+[143234][I][COMP] Automatic phone offload recovery requested
+[143240][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[143240][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[143241][I][BLE] Enrichment pending scan done count=0
+[143241][I][BLE] Phone enrichment finished successfully
+[143264][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[143265][I][BLE] Localization complete; retaining phone link for offload pending=2
+[143265][I][BLE] Enrichment complete; persistent companion link retained
+[143280][I][COMP] Automatic phone offload recovery requested
+[143285][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[143285][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[143286][I][BLE] Enrichment pending scan done count=0
+[143286][I][BLE] Phone enrichment finished successfully
+[143309][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[143310][I][BLE] Localization complete; retaining phone link for offload pending=2
+[143310][I][BLE] Enrichment complete; persistent companion link retained
+[143324][I][COMP] Automatic phone offload recovery requested
+[143330][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[143330][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[143331][I][BLE] Enrichment pending scan done count=0
+[143331][I][BLE] Phone enrichment finished successfully
+[143354][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[143355][I][BLE] Localization complete; retaining phone link for offload pending=2
+[143355][I][BLE] Enrichment complete; persistent companion link retained
+[143369][I][COMP] Automatic phone offload recovery requested
+[143429][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[143429][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[143430][I][BLE] Enrichment pending scan done count=0
+[143430][I][BLE] Phone enrichment finished successfully
+[143459][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[143460][I][BLE] Localization complete; retaining phone link for offload pending=2
+[143460][I][BLE] Enrichment complete; persistent companion link retained
+[143475][I][COMP] Automatic phone offload recovery requested
+[143481][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[143481][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[143482][I][BLE] Enrichment pending scan done count=0
+[143482][I][BLE] Phone enrichment finished successfully
+[143504][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[143505][I][BLE] Localization complete; retaining phone link for offload pending=2
+[143505][I][BLE] Enrichment complete; persistent companion link retained
+[143522][I][COMP] Automatic phone offload recovery requested
+[143528][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[143528][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[143529][I][BLE] Enrichment pending scan done count=0
+[143529][I][BLE] Phone enrichment finished successfully
+[143549][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[143550][I][BLE] Localization complete; retaining phone link for offload pending=2
+[143550][I][BLE] Enrichment complete; persistent companion link retained
+[143564][I][COMP] Automatic phone offload recovery requested
+[143570][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[143570][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[143571][I][BLE] Enrichment pending scan done count=0
+[143571][I][BLE] Phone enrichment finished successfully
+[143594][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[143595][I][BLE] Localization complete; retaining phone link for offload pending=2
+[143595][I][BLE] Enrichment complete; persistent companion link retained
+[143609][I][COMP] Automatic phone offload recovery requested
+[143615][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[143615][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[143616][I][BLE] Enrichment pending scan done count=0
+[143616][I][BLE] Phone enrichment finished successfully
+[143639][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[143640][I][BLE] Localization complete; retaining phone link for offload pending=2
+[143640][I][BLE] Enrichment complete; persistent companion link retained
+[143655][I][COMP] Automatic phone offload recovery requested
+[143660][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[143660][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[143661][I][BLE] Enrichment pending scan done count=0
+[143661][I][BLE] Phone enrichment finished successfully
+[143684][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[143685][I][BLE] Localization complete; retaining phone link for offload pending=2
+[143685][I][BLE] Enrichment complete; persistent companion link retained
+[143700][I][COMP] Automatic phone offload recovery requested
+[143705][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[143705][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[143706][I][BLE] Enrichment pending scan done count=0
+[143706][I][BLE] Phone enrichment finished successfully
+[143729][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[143730][I][BLE] Localization complete; retaining phone link for offload pending=2
+[143730][I][BLE] Enrichment complete; persistent companion link retained
+[143745][I][COMP] Automatic phone offload recovery requested
+[143810][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[143810][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[143811][I][BLE] Enrichment pending scan done count=0
+[143811][I][BLE] Phone enrichment finished successfully
+[143834][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[143835][I][BLE] Localization complete; retaining phone link for offload pending=2
+[143835][I][BLE] Enrichment complete; persistent companion link retained
+[143849][I][COMP] Automatic phone offload recovery requested
+[143855][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[143855][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[143856][I][BLE] Enrichment pending scan done count=0
+[143856][I][BLE] Phone enrichment finished successfully
+[143879][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[143880][I][BLE] Localization complete; retaining phone link for offload pending=2
+[143880][I][BLE] Enrichment complete; persistent companion link retained
+[143894][I][COMP] Automatic phone offload recovery requested
+[143900][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[143900][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[143901][I][BLE] Enrichment pending scan done count=0
+[143901][I][BLE] Phone enrichment finished successfully
+[143924][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[143925][I][BLE] Localization complete; retaining phone link for offload pending=2
+[143925][I][BLE] Enrichment complete; persistent companion link retained
+[143940][I][COMP] Automatic phone offload recovery requested
+[143945][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[143945][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[143946][I][BLE] Enrichment pending scan done count=0
+[143946][I][BLE] Phone enrichment finished successfully
+[143969][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[143970][I][BLE] Localization complete; retaining phone link for offload pending=2
+[143970][I][BLE] Enrichment complete; persistent companion link retained
+[143984][I][COMP] Automatic phone offload recovery requested
+[143990][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[143990][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[143991][I][BLE] Enrichment pending scan done count=0
+[143991][I][BLE] Phone enrichment finished successfully
+[144029][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[144030][I][BLE] Localization complete; retaining phone link for offload pending=2
+[144030][I][BLE] Enrichment complete; persistent companion link retained
+[144044][I][COMP] Automatic phone offload recovery requested
+[144050][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[144050][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[144051][I][BLE] Enrichment pending scan done count=0
+[144052][I][BLE] Phone enrichment finished successfully
+[144104][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[144105][I][BLE] Localization complete; retaining phone link for offload pending=2
+[144105][I][BLE] Enrichment complete; persistent companion link retained
+[144119][I][COMP] Automatic phone offload recovery requested
+[144125][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[144125][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[144126][I][BLE] Enrichment pending scan done count=0
+[144126][I][BLE] Phone enrichment finished successfully
+[144149][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[144150][I][BLE] Localization complete; retaining phone link for offload pending=2
+[144150][I][BLE] Enrichment complete; persistent companion link retained
+[144164][I][COMP] Automatic phone offload recovery requested
+[144226][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[144226][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[144227][I][BLE] Enrichment pending scan done count=0
+[144227][I][BLE] Phone enrichment finished successfully
+[144254][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[144255][I][BLE] Localization complete; retaining phone link for offload pending=2
+[144255][I][BLE] Enrichment complete; persistent companion link retained
+[144270][I][COMP] Automatic phone offload recovery requested
+[144275][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[144275][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[144276][I][BLE] Enrichment pending scan done count=0
+[144276][I][BLE] Phone enrichment finished successfully
+[144299][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[144300][I][BLE] Localization complete; retaining phone link for offload pending=2
+[144300][I][BLE] Enrichment complete; persistent companion link retained
+[144314][I][COMP] Automatic phone offload recovery requested
+[144320][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[144320][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[144321][I][BLE] Enrichment pending scan done count=0
+[144321][I][BLE] Phone enrichment finished successfully
+[144344][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[144345][I][BLE] Localization complete; retaining phone link for offload pending=2
+[144345][I][BLE] Enrichment complete; persistent companion link retained
+[144359][I][COMP] Automatic phone offload recovery requested
+[144365][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[144365][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[144366][I][BLE] Enrichment pending scan done count=0
+[144366][I][BLE] Phone enrichment finished successfully
+[144389][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[144390][I][BLE] Localization complete; retaining phone link for offload pending=2
+[144390][I][BLE] Enrichment complete; persistent companion link retained
+[144404][I][COMP] Automatic phone offload recovery requested
+[144410][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[144410][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[144411][I][BLE] Enrichment pending scan done count=0
+[144411][I][BLE] Phone enrichment finished successfully
+[144434][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[144435][I][BLE] Localization complete; retaining phone link for offload pending=2
+[144435][I][BLE] Enrichment complete; persistent companion link retained
+[144449][I][COMP] Automatic phone offload recovery requested
+[144455][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[144455][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[144456][I][BLE] Enrichment pending scan done count=0
+[144456][I][BLE] Phone enrichment finished successfully
+[144479][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[144480][I][BLE] Localization complete; retaining phone link for offload pending=2
+[144480][I][BLE] Enrichment complete; persistent companion link retained
+[144495][I][COMP] Automatic phone offload recovery requested
+[144500][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[144500][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[144501][I][BLE] Enrichment pending scan done count=0
+[144501][I][BLE] Phone enrichment finished successfully
+[144524][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[144525][I][BLE] Localization complete; retaining phone link for offload pending=2
+[144525][I][BLE] Enrichment complete; persistent companion link retained
+[144542][I][COMP] Automatic phone offload recovery requested
+[144606][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[144606][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[144607][I][BLE] Enrichment pending scan done count=0
+[144607][I][BLE] Phone enrichment finished successfully
+[144629][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[144630][I][BLE] Localization complete; retaining phone link for offload pending=2
+[144630][I][BLE] Enrichment complete; persistent companion link retained
+[144644][I][COMP] Automatic phone offload recovery requested
+[144650][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[144650][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[144651][I][BLE] Enrichment pending scan done count=0
+[144651][I][BLE] Phone enrichment finished successfully
+[144674][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[144675][I][BLE] Localization complete; retaining phone link for offload pending=2
+[144675][I][BLE] Enrichment complete; persistent companion link retained
+[144689][I][COMP] Automatic phone offload recovery requested
+[144695][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[144695][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[144696][I][BLE] Enrichment pending scan done count=0
+[144696][I][BLE] Phone enrichment finished successfully
+[144719][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[144720][I][BLE] Localization complete; retaining phone link for offload pending=2
+[144720][I][BLE] Enrichment complete; persistent companion link retained
+[144735][I][COMP] Automatic phone offload recovery requested
+[144740][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[144740][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[144741][I][BLE] Enrichment pending scan done count=0
+[144741][I][BLE] Phone enrichment finished successfully
+[144764][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[144765][I][BLE] Localization complete; retaining phone link for offload pending=2
+[144765][I][BLE] Enrichment complete; persistent companion link retained
+[144779][I][COMP] Automatic phone offload recovery requested
+[144785][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[144785][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[144786][I][BLE] Enrichment pending scan done count=0
+[144786][I][BLE] Phone enrichment finished successfully
+[144809][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[144810][I][BLE] Localization complete; retaining phone link for offload pending=2
+[144810][I][BLE] Enrichment complete; persistent companion link retained
+[144825][I][COMP] Automatic phone offload recovery requested
+[144830][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[144830][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[144831][I][BLE] Enrichment pending scan done count=0
+[144831][I][BLE] Phone enrichment finished successfully
+[144854][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[144855][I][BLE] Localization complete; retaining phone link for offload pending=2
+[144855][I][BLE] Enrichment complete; persistent companion link retained
+[144869][I][COMP] Automatic phone offload recovery requested
+[144875][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[144875][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[144876][I][BLE] Enrichment pending scan done count=0
+[144876][I][BLE] Phone enrichment finished successfully
+[144899][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[144900][I][BLE] Localization complete; retaining phone link for offload pending=2
+[144900][I][BLE] Enrichment complete; persistent companion link retained
+[144914][I][COMP] Automatic phone offload recovery requested
+[144976][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[144976][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[144977][I][BLE] Enrichment pending scan done count=0
+[144977][I][BLE] Phone enrichment finished successfully
+[145004][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[145005][I][BLE] Localization complete; retaining phone link for offload pending=2
+[145005][I][BLE] Enrichment complete; persistent companion link retained
+[145019][I][COMP] Automatic phone offload recovery requested
+[145025][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[145025][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[145026][I][BLE] Enrichment pending scan done count=0
+[145026][I][BLE] Phone enrichment finished successfully
+[145049][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[145050][I][BLE] Localization complete; retaining phone link for offload pending=2
+[145050][I][BLE] Enrichment complete; persistent companion link retained
+[145065][I][COMP] Automatic phone offload recovery requested
+[145070][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[145070][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[145071][I][BLE] Enrichment pending scan done count=0
+[145071][I][BLE] Phone enrichment finished successfully
+[145094][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[145095][I][BLE] Localization complete; retaining phone link for offload pending=2
+[145095][I][BLE] Enrichment complete; persistent companion link retained
+[145109][I][COMP] Automatic phone offload recovery requested
+[145115][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[145115][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[145116][I][BLE] Enrichment pending scan done count=0
+[145116][I][BLE] Phone enrichment finished successfully
+[145139][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[145140][I][BLE] Localization complete; retaining phone link for offload pending=2
+[145140][I][BLE] Enrichment complete; persistent companion link retained
+[145155][I][COMP] Automatic phone offload recovery requested
+[145160][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[145160][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[145161][I][BLE] Enrichment pending scan done count=0
+[145161][I][BLE] Phone enrichment finished successfully
+[145184][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[145185][I][BLE] Localization complete; retaining phone link for offload pending=2
+[145185][I][BLE] Enrichment complete; persistent companion link retained
+[145199][I][COMP] Automatic phone offload recovery requested
+[145205][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[145205][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[145206][I][BLE] Enrichment pending scan done count=0
+[145206][I][BLE] Phone enrichment finished successfully
+[145229][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[145230][I][BLE] Localization complete; retaining phone link for offload pending=2
+[145230][I][BLE] Enrichment complete; persistent companion link retained
+[145245][I][COMP] Automatic phone offload recovery requested
+[145250][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[145250][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[145251][I][BLE] Enrichment pending scan done count=0
+[145251][I][BLE] Phone enrichment finished successfully
+[145274][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[145275][I][BLE] Localization complete; retaining phone link for offload pending=2
+[145275][I][BLE] Enrichment complete; persistent companion link retained
+[145289][I][COMP] Automatic phone offload recovery requested
+[145356][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[145356][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[145357][I][BLE] Enrichment pending scan done count=0
+[145357][I][BLE] Phone enrichment finished successfully
+[145379][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[145380][I][BLE] Localization complete; retaining phone link for offload pending=2
+[145380][I][BLE] Enrichment complete; persistent companion link retained
+[145394][I][COMP] Automatic phone offload recovery requested
+[145400][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[145400][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[145401][I][BLE] Enrichment pending scan done count=0
+[145401][I][BLE] Phone enrichment finished successfully
+[145424][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[145425][I][BLE] Localization complete; retaining phone link for offload pending=2
+[145425][I][BLE] Enrichment complete; persistent companion link retained
+[145439][I][COMP] Automatic phone offload recovery requested
+[145445][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[145445][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[145446][I][BLE] Enrichment pending scan done count=0
+[145446][I][BLE] Phone enrichment finished successfully
+[145469][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[145470][I][BLE] Localization complete; retaining phone link for offload pending=2
+[145470][I][BLE] Enrichment complete; persistent companion link retained
+[145484][I][COMP] Automatic phone offload recovery requested
+[145490][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[145490][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[145491][I][BLE] Enrichment pending scan done count=0
+[145491][I][BLE] Phone enrichment finished successfully
+[145514][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[145515][I][BLE] Localization complete; retaining phone link for offload pending=2
+[145515][I][BLE] Enrichment complete; persistent companion link retained
+[145529][I][COMP] Automatic phone offload recovery requested
+[145535][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[145535][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[145536][I][BLE] Enrichment pending scan done count=0
+[145536][I][BLE] Phone enrichment finished successfully
+[145559][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[145560][I][BLE] Localization complete; retaining phone link for offload pending=2
+[145560][I][BLE] Enrichment complete; persistent companion link retained
+[145578][I][COMP] Automatic phone offload recovery requested
+[145584][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[145584][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[145585][I][BLE] Enrichment pending scan done count=0
+[145585][I][BLE] Phone enrichment finished successfully
+[145604][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[145605][I][BLE] Localization complete; retaining phone link for offload pending=2
+[145605][I][BLE] Enrichment complete; persistent companion link retained
+[145619][I][COMP] Automatic phone offload recovery requested
+[145625][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[145625][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[145626][I][BLE] Enrichment pending scan done count=0
+[145626][I][BLE] Phone enrichment finished successfully
+[145649][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[145650][I][BLE] Localization complete; retaining phone link for offload pending=2
+[145650][I][BLE] Enrichment complete; persistent companion link retained
+[145664][I][COMP] Automatic phone offload recovery requested
+[145724][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[145724][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[145725][I][BLE] Enrichment pending scan done count=0
+[145725][I][BLE] Phone enrichment finished successfully
+[145754][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[145755][I][BLE] Localization complete; retaining phone link for offload pending=2
+[145755][I][BLE] Enrichment complete; persistent companion link retained
+[145770][I][COMP] Automatic phone offload recovery requested
+[145775][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[145775][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[145776][I][BLE] Enrichment pending scan done count=0
+[145777][I][BLE] Phone enrichment finished successfully
+[145829][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[145830][I][BLE] Localization complete; retaining phone link for offload pending=2
+[145830][I][BLE] Enrichment complete; persistent companion link retained
+[145844][I][COMP] Automatic phone offload recovery requested
+[145850][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[145850][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[145851][I][BLE] Enrichment pending scan done count=0
+[145851][I][BLE] Phone enrichment finished successfully
+[145874][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[145875][I][BLE] Localization complete; retaining phone link for offload pending=2
+[145875][I][BLE] Enrichment complete; persistent companion link retained
+[145890][I][COMP] Automatic phone offload recovery requested
+[145895][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[145895][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[145896][I][BLE] Enrichment pending scan done count=0
+[145896][I][BLE] Phone enrichment finished successfully
+[145919][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[145920][I][BLE] Localization complete; retaining phone link for offload pending=2
+[145920][I][BLE] Enrichment complete; persistent companion link retained
+[145935][I][COMP] Automatic phone offload recovery requested
+[145940][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[145940][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[145941][I][BLE] Enrichment pending scan done count=0
+[145941][I][BLE] Phone enrichment finished successfully
+[145979][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[145980][I][BLE] Localization complete; retaining phone link for offload pending=2
+[145980][I][BLE] Enrichment complete; persistent companion link retained
+[145994][I][COMP] Automatic phone offload recovery requested
+[146000][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[146000][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[146001][I][BLE] Enrichment pending scan done count=0
+[146001][I][BLE] Phone enrichment finished successfully
+[146024][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[146025][I][BLE] Localization complete; retaining phone link for offload pending=2
+[146025][I][BLE] Enrichment complete; persistent companion link retained
+[146039][I][COMP] Automatic phone offload recovery requested
+[146045][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[146045][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[146046][I][BLE] Enrichment pending scan done count=0
+[146046][I][BLE] Phone enrichment finished successfully
+[146069][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[146070][I][BLE] Localization complete; retaining phone link for offload pending=2
+[146070][I][BLE] Enrichment complete; persistent companion link retained
+[146084][I][COMP] Automatic phone offload recovery requested
+[146148][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[146149][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[146149][I][BLE] Enrichment pending scan done count=0
+[146150][I][BLE] Phone enrichment finished successfully
+[146204][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[146205][I][BLE] Localization complete; retaining phone link for offload pending=2
+[146205][I][BLE] Enrichment complete; persistent companion link retained
+[146219][I][COMP] Automatic phone offload recovery requested
+[146225][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[146225][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[146226][I][BLE] Enrichment pending scan done count=0
+[146226][I][BLE] Phone enrichment finished successfully
+[146249][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[146250][I][BLE] Localization complete; retaining phone link for offload pending=2
+[146250][I][BLE] Enrichment complete; persistent companion link retained
+[146265][I][COMP] Automatic phone offload recovery requested
+[146270][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[146270][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[146271][I][BLE] Enrichment pending scan done count=0
+[146271][I][BLE] Phone enrichment finished successfully
+[146294][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[146295][I][BLE] Localization complete; retaining phone link for offload pending=2
+[146295][I][BLE] Enrichment complete; persistent companion link retained
+[146309][I][COMP] Automatic phone offload recovery requested
+[146315][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[146315][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[146316][I][BLE] Enrichment pending scan done count=0
+[146316][I][BLE] Phone enrichment finished successfully
+[146339][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[146340][I][BLE] Localization complete; retaining phone link for offload pending=2
+[146340][I][BLE] Enrichment complete; persistent companion link retained
+[146355][I][COMP] Automatic phone offload recovery requested
+[146360][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[146360][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[146361][I][BLE] Enrichment pending scan done count=0
+[146361][I][BLE] Phone enrichment finished successfully
+[146384][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[146385][I][BLE] Localization complete; retaining phone link for offload pending=2
+[146385][I][BLE] Enrichment complete; persistent companion link retained
+[146399][I][COMP] Automatic phone offload recovery requested
+[146405][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[146405][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[146406][I][BLE] Enrichment pending scan done count=0
+[146406][I][BLE] Phone enrichment finished successfully
+[146429][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[146430][I][BLE] Localization complete; retaining phone link for offload pending=2
+[146430][I][BLE] Enrichment complete; persistent companion link retained
+[146444][I][COMP] Automatic phone offload recovery requested
+[146450][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[146450][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[146451][I][BLE] Enrichment pending scan done count=0
+[146451][I][BLE] Phone enrichment finished successfully
+[146474][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[146475][I][BLE] Localization complete; retaining phone link for offload pending=2
+[146475][I][BLE] Enrichment complete; persistent companion link retained
+[146490][I][COMP] Automatic phone offload recovery requested
+[146551][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[146551][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[146552][I][BLE] Enrichment pending scan done count=0
+[146552][I][BLE] Phone enrichment finished successfully
+[146579][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[146580][I][BLE] Localization complete; retaining phone link for offload pending=2
+[146580][I][BLE] Enrichment complete; persistent companion link retained
+[146597][I][COMP] Automatic phone offload recovery requested
+[146603][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[146603][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[146604][I][BLE] Enrichment pending scan done count=0
+[146604][I][BLE] Phone enrichment finished successfully
+[146624][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[146625][I][BLE] Localization complete; retaining phone link for offload pending=2
+[146625][I][BLE] Enrichment complete; persistent companion link retained
+[146639][I][COMP] Automatic phone offload recovery requested
+[146645][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[146645][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[146646][I][BLE] Enrichment pending scan done count=0
+[146646][I][BLE] Phone enrichment finished successfully
+[146669][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[146670][I][BLE] Localization complete; retaining phone link for offload pending=2
+[146670][I][BLE] Enrichment complete; persistent companion link retained
+[146684][I][COMP] Automatic phone offload recovery requested
+[146690][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[146690][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[146691][I][BLE] Enrichment pending scan done count=0
+[146691][I][BLE] Phone enrichment finished successfully
+[146714][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[146715][I][BLE] Localization complete; retaining phone link for offload pending=2
+[146715][I][BLE] Enrichment complete; persistent companion link retained
+[146730][I][COMP] Automatic phone offload recovery requested
+[146735][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[146735][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[146736][I][BLE] Enrichment pending scan done count=0
+[146736][I][BLE] Phone enrichment finished successfully
+[146759][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[146760][I][BLE] Localization complete; retaining phone link for offload pending=2
+[146760][I][BLE] Enrichment complete; persistent companion link retained
+[146774][I][COMP] Automatic phone offload recovery requested
+[146780][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[146780][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[146781][I][BLE] Enrichment pending scan done count=0
+[146781][I][BLE] Phone enrichment finished successfully
+[146804][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[146805][I][BLE] Localization complete; retaining phone link for offload pending=2
+[146805][I][BLE] Enrichment complete; persistent companion link retained
+[146819][I][COMP] Automatic phone offload recovery requested
+[146825][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[146825][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[146826][I][BLE] Enrichment pending scan done count=0
+[146826][I][BLE] Phone enrichment finished successfully
+[146849][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[146850][I][BLE] Localization complete; retaining phone link for offload pending=2
+[146850][I][BLE] Enrichment complete; persistent companion link retained
+[146864][I][COMP] Automatic phone offload recovery requested
+[146930][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[146930][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[146931][I][BLE] Enrichment pending scan done count=0
+[146931][I][BLE] Phone enrichment finished successfully
+[146954][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[146955][I][BLE] Localization complete; retaining phone link for offload pending=2
+[146955][I][BLE] Enrichment complete; persistent companion link retained
+[146969][I][COMP] Automatic phone offload recovery requested
+[146975][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[146975][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[146976][I][BLE] Enrichment pending scan done count=0
+[146976][I][BLE] Phone enrichment finished successfully
+[146999][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[147000][I][BLE] Localization complete; retaining phone link for offload pending=2
+[147000][I][BLE] Enrichment complete; persistent companion link retained
+[147014][I][COMP] Automatic phone offload recovery requested
+[147020][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[147020][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[147021][I][BLE] Enrichment pending scan done count=0
+[147021][I][BLE] Phone enrichment finished successfully
+[147044][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[147045][I][BLE] Localization complete; retaining phone link for offload pending=2
+[147045][I][BLE] Enrichment complete; persistent companion link retained
+[147059][I][COMP] Automatic phone offload recovery requested
+[147065][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[147065][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[147066][I][BLE] Enrichment pending scan done count=0
+[147066][I][BLE] Phone enrichment finished successfully
+[147089][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[147090][I][BLE] Localization complete; retaining phone link for offload pending=2
+[147090][I][BLE] Enrichment complete; persistent companion link retained
+[147105][I][COMP] Automatic phone offload recovery requested
+[147110][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[147110][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[147111][I][BLE] Enrichment pending scan done count=0
+[147111][I][BLE] Phone enrichment finished successfully
+[147134][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[147135][I][BLE] Localization complete; retaining phone link for offload pending=2
+[147135][I][BLE] Enrichment complete; persistent companion link retained
+[147149][I][COMP] Automatic phone offload recovery requested
+[147155][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[147155][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[147156][I][BLE] Enrichment pending scan done count=0
+[147156][I][BLE] Phone enrichment finished successfully
+[147179][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[147180][I][BLE] Localization complete; retaining phone link for offload pending=2
+[147180][I][BLE] Enrichment complete; persistent companion link retained
+[147194][I][COMP] Automatic phone offload recovery requested
+[147200][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[147200][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[147201][I][BLE] Enrichment pending scan done count=0
+[147201][I][BLE] Phone enrichment finished successfully
+[147224][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[147225][I][BLE] Localization complete; retaining phone link for offload pending=2
+[147225][I][BLE] Enrichment complete; persistent companion link retained
+[147240][I][COMP] Automatic phone offload recovery requested
+[147303][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[147303][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[147304][I][BLE] Enrichment pending scan done count=0
+[147304][I][BLE] Phone enrichment finished successfully
+[147329][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[147330][I][BLE] Localization complete; retaining phone link for offload pending=2
+[147330][I][BLE] Enrichment complete; persistent companion link retained
+[147344][I][COMP] Automatic phone offload recovery requested
+[147350][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[147350][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[147351][I][BLE] Enrichment pending scan done count=0
+[147351][I][BLE] Phone enrichment finished successfully
+[147374][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[147375][I][BLE] Localization complete; retaining phone link for offload pending=2
+[147375][I][BLE] Enrichment complete; persistent companion link retained
+[147389][I][COMP] Automatic phone offload recovery requested
+[147395][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[147395][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[147396][I][BLE] Enrichment pending scan done count=0
+[147396][I][BLE] Phone enrichment finished successfully
+[147419][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[147420][I][BLE] Localization complete; retaining phone link for offload pending=2
+[147420][I][BLE] Enrichment complete; persistent companion link retained
+[147435][I][COMP] Automatic phone offload recovery requested
+[147440][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[147440][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[147441][I][BLE] Enrichment pending scan done count=0
+[147441][I][BLE] Phone enrichment finished successfully
+[147464][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[147465][I][BLE] Localization complete; retaining phone link for offload pending=2
+[147465][I][BLE] Enrichment complete; persistent companion link retained
+[147479][I][COMP] Automatic phone offload recovery requested
+[147485][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[147485][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[147486][I][BLE] Enrichment pending scan done count=0
+[147486][I][BLE] Phone enrichment finished successfully
+[147509][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[147510][I][BLE] Localization complete; retaining phone link for offload pending=2
+[147510][I][BLE] Enrichment complete; persistent companion link retained
+[147525][I][COMP] Automatic phone offload recovery requested
+[147530][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[147530][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[147531][I][BLE] Enrichment pending scan done count=0
+[147531][I][BLE] Phone enrichment finished successfully
+[147554][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[147555][I][BLE] Localization complete; retaining phone link for offload pending=2
+[147555][I][BLE] Enrichment complete; persistent companion link retained
+[147569][I][COMP] Automatic phone offload recovery requested
+[147575][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[147575][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[147576][I][BLE] Enrichment pending scan done count=0
+[147576][I][BLE] Phone enrichment finished successfully
+[147600][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[147600][I][BLE] Localization complete; retaining phone link for offload pending=2
+[147600][I][BLE] Enrichment complete; persistent companion link retained
+[147618][I][COMP] Automatic phone offload recovery requested
+[147685][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[147685][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[147686][I][BLE] Enrichment pending scan done count=0
+[147686][I][BLE] Phone enrichment finished successfully
+[147704][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[147705][I][BLE] Localization complete; retaining phone link for offload pending=2
+[147705][I][BLE] Enrichment complete; persistent companion link retained
+[147719][I][COMP] Automatic phone offload recovery requested
+[147725][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[147725][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[147726][I][BLE] Enrichment pending scan done count=0
+[147726][I][BLE] Phone enrichment finished successfully
+[147749][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[147750][I][BLE] Localization complete; retaining phone link for offload pending=2
+[147750][I][BLE] Enrichment complete; persistent companion link retained
+[147764][I][COMP] Automatic phone offload recovery requested
+[147770][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[147770][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[147771][I][BLE] Enrichment pending scan done count=0
+[147771][I][BLE] Phone enrichment finished successfully
+[147794][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[147795][I][BLE] Localization complete; retaining phone link for offload pending=2
+[147795][I][BLE] Enrichment complete; persistent companion link retained
+[147810][I][COMP] Automatic phone offload recovery requested
+[147815][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[147815][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[147816][I][BLE] Enrichment pending scan done count=0
+[147816][I][BLE] Phone enrichment finished successfully
+[147839][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[147840][I][BLE] Localization complete; retaining phone link for offload pending=2
+[147840][I][BLE] Enrichment complete; persistent companion link retained
+[147855][I][COMP] Automatic phone offload recovery requested
+[147860][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[147860][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[147861][I][BLE] Enrichment pending scan done count=0
+[147861][I][BLE] Phone enrichment finished successfully
+[147884][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[147885][I][BLE] Localization complete; retaining phone link for offload pending=2
+[147885][I][BLE] Enrichment complete; persistent companion link retained
+[147900][I][COMP] Automatic phone offload recovery requested
+[147905][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[147905][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[147906][I][BLE] Enrichment pending scan done count=0
+[147906][I][BLE] Phone enrichment finished successfully
+[147944][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[147945][I][BLE] Localization complete; retaining phone link for offload pending=2
+[147945][I][BLE] Enrichment complete; persistent companion link retained
+[147959][I][COMP] Automatic phone offload recovery requested
+[147965][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[147965][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[147966][I][BLE] Enrichment pending scan done count=0
+[147966][I][BLE] Phone enrichment finished successfully
+[147989][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[147990][I][BLE] Localization complete; retaining phone link for offload pending=2
+[147990][I][BLE] Enrichment complete; persistent companion link retained
+[148004][I][COMP] Automatic phone offload recovery requested
+[148066][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[148066][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[148067][I][BLE] Enrichment pending scan done count=0
+[148067][I][BLE] Phone enrichment finished successfully
+[148094][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[148095][I][BLE] Localization complete; retaining phone link for offload pending=2
+[148095][I][BLE] Enrichment complete; persistent companion link retained
+[148109][I][COMP] Automatic phone offload recovery requested
+[148115][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[148115][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[148116][I][BLE] Enrichment pending scan done count=0
+[148116][I][BLE] Phone enrichment finished successfully
+[148139][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[148140][I][BLE] Localization complete; retaining phone link for offload pending=2
+[148140][I][BLE] Enrichment complete; persistent companion link retained
+[148154][I][COMP] Automatic phone offload recovery requested
+[148160][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[148160][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[148161][I][BLE] Enrichment pending scan done count=0
+[148162][I][BLE] Phone enrichment finished successfully
+[148214][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[148215][I][BLE] Localization complete; retaining phone link for offload pending=2
+[148215][I][BLE] Enrichment complete; persistent companion link retained
+[148229][I][COMP] Automatic phone offload recovery requested
+[148235][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[148235][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[148236][I][BLE] Enrichment pending scan done count=0
+[148236][I][BLE] Phone enrichment finished successfully
+[148259][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[148260][I][BLE] Localization complete; retaining phone link for offload pending=2
+[148260][I][BLE] Enrichment complete; persistent companion link retained
+[148274][I][COMP] Automatic phone offload recovery requested
+[148280][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[148280][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[148281][I][BLE] Enrichment pending scan done count=0
+[148281][I][BLE] Phone enrichment finished successfully
+[148304][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[148305][I][BLE] Localization complete; retaining phone link for offload pending=2
+[148305][I][BLE] Enrichment complete; persistent companion link retained
+[148319][I][COMP] Automatic phone offload recovery requested
+[148325][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[148325][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[148326][I][BLE] Enrichment pending scan done count=0
+[148326][I][BLE] Phone enrichment finished successfully
+[148349][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[148350][I][BLE] Localization complete; retaining phone link for offload pending=2
+[148350][I][BLE] Enrichment complete; persistent companion link retained
+[148365][I][COMP] Automatic phone offload recovery requested
+[148370][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[148370][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[148371][I][BLE] Enrichment pending scan done count=0
+[148371][I][BLE] Phone enrichment finished successfully
+[148394][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[148395][I][BLE] Localization complete; retaining phone link for offload pending=2
+[148395][I][BLE] Enrichment complete; persistent companion link retained
+[148409][I][COMP] Automatic phone offload recovery requested
+[148475][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[148475][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[148476][I][BLE] Enrichment pending scan done count=0
+[148476][I][BLE] Phone enrichment finished successfully
+[148499][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[148500][I][BLE] Localization complete; retaining phone link for offload pending=2
+[148500][I][BLE] Enrichment complete; persistent companion link retained
+[148514][I][COMP] Automatic phone offload recovery requested
+[148520][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[148520][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[148521][I][BLE] Enrichment pending scan done count=0
+[148521][I][BLE] Phone enrichment finished successfully
+[148544][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[148545][I][BLE] Localization complete; retaining phone link for offload pending=2
+[148545][I][BLE] Enrichment complete; persistent companion link retained
+[148559][I][COMP] Automatic phone offload recovery requested
+[148565][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[148565][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[148566][I][BLE] Enrichment pending scan done count=0
+[148566][I][BLE] Phone enrichment finished successfully
+[148589][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[148590][I][BLE] Localization complete; retaining phone link for offload pending=2
+[148590][I][BLE] Enrichment complete; persistent companion link retained
+[148605][I][COMP] Automatic phone offload recovery requested
+[148610][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[148610][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[148611][I][BLE] Enrichment pending scan done count=0
+[148611][I][BLE] Phone enrichment finished successfully
+[148634][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[148635][I][BLE] Localization complete; retaining phone link for offload pending=2
+[148635][I][BLE] Enrichment complete; persistent companion link retained
+[148652][I][COMP] Automatic phone offload recovery requested
+[148658][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[148658][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[148659][I][BLE] Enrichment pending scan done count=0
+[148659][I][BLE] Phone enrichment finished successfully
+[148679][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[148680][I][BLE] Localization complete; retaining phone link for offload pending=2
+[148680][I][BLE] Enrichment complete; persistent companion link retained
+[148694][I][COMP] Automatic phone offload recovery requested
+[148700][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[148700][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[148701][I][BLE] Enrichment pending scan done count=0
+[148701][I][BLE] Phone enrichment finished successfully
+[148724][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[148725][I][BLE] Localization complete; retaining phone link for offload pending=2
+[148725][I][BLE] Enrichment complete; persistent companion link retained
+[148739][I][COMP] Automatic phone offload recovery requested
+[148745][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[148745][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[148746][I][BLE] Enrichment pending scan done count=0
+[148746][I][BLE] Phone enrichment finished successfully
+[148769][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[148770][I][BLE] Localization complete; retaining phone link for offload pending=2
+[148770][I][BLE] Enrichment complete; persistent companion link retained
+[148785][I][COMP] Automatic phone offload recovery requested
+[148847][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[148847][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[148848][I][BLE] Enrichment pending scan done count=0
+[148848][I][BLE] Phone enrichment finished successfully
+[148874][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[148875][I][BLE] Localization complete; retaining phone link for offload pending=2
+[148875][I][BLE] Enrichment complete; persistent companion link retained
+[148890][I][COMP] Automatic phone offload recovery requested
+[148895][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[148895][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[148896][I][BLE] Enrichment pending scan done count=0
+[148896][I][BLE] Phone enrichment finished successfully
+[148919][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[148920][I][BLE] Localization complete; retaining phone link for offload pending=2
+[148920][I][BLE] Enrichment complete; persistent companion link retained
+[148934][I][COMP] Automatic phone offload recovery requested
+[148940][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[148940][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[148941][I][BLE] Enrichment pending scan done count=0
+[148941][I][BLE] Phone enrichment finished successfully
+[148964][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[148965][I][BLE] Localization complete; retaining phone link for offload pending=2
+[148965][I][BLE] Enrichment complete; persistent companion link retained
+[148980][I][COMP] Automatic phone offload recovery requested
+[148985][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[148985][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[148986][I][BLE] Enrichment pending scan done count=0
+[148986][I][BLE] Phone enrichment finished successfully
+[149009][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[149010][I][BLE] Localization complete; retaining phone link for offload pending=2
+[149010][I][BLE] Enrichment complete; persistent companion link retained
+[149025][I][COMP] Automatic phone offload recovery requested
+[149031][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[149031][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[149032][I][BLE] Enrichment pending scan done count=0
+[149032][I][BLE] Phone enrichment finished successfully
+[149054][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[149055][I][BLE] Localization complete; retaining phone link for offload pending=2
+[149055][I][BLE] Enrichment complete; persistent companion link retained
+[149069][I][COMP] Automatic phone offload recovery requested
+[149075][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[149075][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[149076][I][BLE] Enrichment pending scan done count=0
+[149076][I][BLE] Phone enrichment finished successfully
+[149099][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[149100][I][BLE] Localization complete; retaining phone link for offload pending=2
+[149100][I][BLE] Enrichment complete; persistent companion link retained
+[149114][I][COMP] Automatic phone offload recovery requested
+[149120][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[149120][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[149121][I][BLE] Enrichment pending scan done count=0
+[149121][I][BLE] Phone enrichment finished successfully
+[149144][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[149145][I][BLE] Localization complete; retaining phone link for offload pending=2
+[149145][I][BLE] Enrichment complete; persistent companion link retained
+[149159][I][COMP] Automatic phone offload recovery requested
+[149223][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[149223][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[149224][I][BLE] Enrichment pending scan done count=0
+[149224][I][BLE] Phone enrichment finished successfully
+[149249][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[149250][I][BLE] Localization complete; retaining phone link for offload pending=2
+[149250][I][BLE] Enrichment complete; persistent companion link retained
+[149264][I][COMP] Automatic phone offload recovery requested
+[149270][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[149270][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[149271][I][BLE] Enrichment pending scan done count=0
+[149271][I][BLE] Phone enrichment finished successfully
+[149294][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[149295][I][BLE] Localization complete; retaining phone link for offload pending=2
+[149295][I][BLE] Enrichment complete; persistent companion link retained
+[149309][I][COMP] Automatic phone offload recovery requested
+[149315][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[149315][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[149316][I][BLE] Enrichment pending scan done count=0
+[149316][I][BLE] Phone enrichment finished successfully
+[149339][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[149340][I][BLE] Localization complete; retaining phone link for offload pending=2
+[149340][I][BLE] Enrichment complete; persistent companion link retained
+[149355][I][COMP] Automatic phone offload recovery requested
+[149360][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[149360][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[149361][I][BLE] Enrichment pending scan done count=0
+[149361][I][BLE] Phone enrichment finished successfully
+[149384][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[149385][I][BLE] Localization complete; retaining phone link for offload pending=2
+[149385][I][BLE] Enrichment complete; persistent companion link retained
+[149400][I][COMP] Automatic phone offload recovery requested
+[149405][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[149405][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[149406][I][BLE] Enrichment pending scan done count=0
+[149406][I][BLE] Phone enrichment finished successfully
+[149429][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[149430][I][BLE] Localization complete; retaining phone link for offload pending=2
+[149430][I][BLE] Enrichment complete; persistent companion link retained
+[149444][I][COMP] Automatic phone offload recovery requested
+[149450][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[149450][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[149451][I][BLE] Enrichment pending scan done count=0
+[149451][I][BLE] Phone enrichment finished successfully
+[149474][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[149475][I][BLE] Localization complete; retaining phone link for offload pending=2
+[149475][I][BLE] Enrichment complete; persistent companion link retained
+[149489][I][COMP] Automatic phone offload recovery requested
+[149495][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[149495][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[149496][I][BLE] Enrichment pending scan done count=0
+[149496][I][BLE] Phone enrichment finished successfully
+[149519][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[149520][I][BLE] Localization complete; retaining phone link for offload pending=2
+[149520][I][BLE] Enrichment complete; persistent companion link retained
+[149535][I][COMP] Automatic phone offload recovery requested
+[149598][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[149598][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[149599][I][BLE] Enrichment pending scan done count=0
+[149599][I][BLE] Phone enrichment finished successfully
+[149624][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[149625][I][BLE] Localization complete; retaining phone link for offload pending=2
+[149625][I][BLE] Enrichment complete; persistent companion link retained
+[149639][I][COMP] Automatic phone offload recovery requested
+[149645][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[149645][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[149646][I][BLE] Enrichment pending scan done count=0
+[149646][I][BLE] Phone enrichment finished successfully
+[149669][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[149670][I][BLE] Localization complete; retaining phone link for offload pending=2
+[149670][I][BLE] Enrichment complete; persistent companion link retained
+[149687][I][COMP] Automatic phone offload recovery requested
+[149693][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[149693][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[149694][I][BLE] Enrichment pending scan done count=0
+[149694][I][BLE] Phone enrichment finished successfully
+[149714][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[149715][I][BLE] Localization complete; retaining phone link for offload pending=2
+[149715][I][BLE] Enrichment complete; persistent companion link retained
+[149729][I][COMP] Automatic phone offload recovery requested
+[149735][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[149735][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[149736][I][BLE] Enrichment pending scan done count=0
+[149736][I][BLE] Phone enrichment finished successfully
+[149759][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[149760][I][BLE] Localization complete; retaining phone link for offload pending=2
+[149760][I][BLE] Enrichment complete; persistent companion link retained
+[149774][I][COMP] Automatic phone offload recovery requested
+[149780][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[149780][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[149781][I][BLE] Enrichment pending scan done count=0
+[149781][I][BLE] Phone enrichment finished successfully
+[149804][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[149805][I][BLE] Localization complete; retaining phone link for offload pending=2
+[149805][I][BLE] Enrichment complete; persistent companion link retained
+[149819][I][COMP] Automatic phone offload recovery requested
+[149825][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[149825][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[149826][I][BLE] Enrichment pending scan done count=0
+[149826][I][BLE] Phone enrichment finished successfully
+[149849][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[149850][I][BLE] Localization complete; retaining phone link for offload pending=2
+[149850][I][BLE] Enrichment complete; persistent companion link retained
+[149864][I][COMP] Automatic phone offload recovery requested
+[149870][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[149870][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[149871][I][BLE] Enrichment pending scan done count=0
+[149871][I][BLE] Phone enrichment finished successfully
+[149894][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[149895][I][BLE] Localization complete; retaining phone link for offload pending=2
+[149895][I][BLE] Enrichment complete; persistent companion link retained
+[149909][I][COMP] Automatic phone offload recovery requested
+[149973][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[149973][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[149974][I][BLE] Enrichment pending scan done count=0
+[149974][I][BLE] Phone enrichment finished successfully
+[149999][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[150000][I][BLE] Localization complete; retaining phone link for offload pending=2
+[150000][I][BLE] Enrichment complete; persistent companion link retained
+[150014][I][COMP] Automatic phone offload recovery requested
+[150020][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[150020][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[150021][I][BLE] Enrichment pending scan done count=0
+[150021][I][BLE] Phone enrichment finished successfully
+[150044][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[150045][I][BLE] Localization complete; retaining phone link for offload pending=2
+[150045][I][BLE] Enrichment complete; persistent companion link retained
+[150059][I][COMP] Automatic phone offload recovery requested
+[150065][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[150065][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[150066][I][BLE] Enrichment pending scan done count=0
+[150066][I][BLE] Phone enrichment finished successfully
+[150089][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[150090][I][BLE] Localization complete; retaining phone link for offload pending=2
+[150090][I][BLE] Enrichment complete; persistent companion link retained
+[150105][I][COMP] Automatic phone offload recovery requested
+[150110][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[150110][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[150111][I][BLE] Enrichment pending scan done count=0
+[150111][I][BLE] Phone enrichment finished successfully
+[150134][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[150135][I][BLE] Localization complete; retaining phone link for offload pending=2
+[150135][I][BLE] Enrichment complete; persistent companion link retained
+[150141][I][HEAP] heap free=4451KB min=4426KB largest=4352KB frag=2% internalFree=36KB internalLargest=22KB psramFree=4414KB core=2/1% owner=BLE_GPS nets=1 pendingUpload=2 pendingEnrich=0
+[HEALTH] time=2026-08-11 14:00:47 src=gps
+[HEALTH] heap used=3996/8446KB free=4451KB min=4426KB largest=4352KB frag=2%
+[HEALTH] internal used=218/254KB free=36KB min=12KB largest=22KB
+[HEALTH] psram used=3778/8192KB free=4414KB largest=4352KB
+[HEALTH] stack free_min: core0=15KB/22KB core1=13KB/18KB
+[HEALTH] core usage: core0=2% core1=1%
+[HEALTH] power=usb state=usb batt=100% 4324mV trend=42mV/min runtime=0min cap=1100mAh charging=1
+[HEALTH] radio=BLE_GPS wifi=0 ble=1 gps=0 nets=1 pendingUpload=2 pendingEnrich=0
+[HEALTH] subghz=NONE mode=OFF pkts=0 nodes=0
+[150144][I][STORAGE] RAMSpool enq=2 cons=2 inflight=0/1024 high=2 pressure=0 drop[full=0 big=0 noise=0 p3Evict=0 p3Drop=0 p2Drop=0 p1Fail=0] free=1024
+[150144][I][STORAGE] RAMSpool enqueue probe[ok=1 drop=0] device[ok=1 drop=0]
+[150144][I][STORAGE] RAMSpool worker probe[ok=1 sup=0 drop=0 fail=0 slow=0] device[ok=1 sup=0 drop=0 fail=0 slow=0] slowTotal=0 maxMs=0
+[150145][I][STORAGE] RAMSpool prioEnq p0=0 p1=0 p2=2 p3=0
+[150145][I][STORAGE] RAMSpool lanes p1=0/0 p2=0/1 p3=0/0
+[150154][I][COMP] Automatic phone offload recovery requested
+[150160][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[150160][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[150161][I][BLE] Enrichment pending scan done count=0
+[150162][I][BLE] Phone enrichment finished successfully
+[150209][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[150210][I][BLE] Localization complete; retaining phone link for offload pending=2
+[150210][I][BLE] Enrichment complete; persistent companion link retained
+[150224][I][COMP] Automatic phone offload recovery requested
+[150230][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[150230][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[150231][I][BLE] Enrichment pending scan done count=0
+[150231][I][BLE] Phone enrichment finished successfully
+[150254][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[150255][I][BLE] Localization complete; retaining phone link for offload pending=2
+[150255][I][BLE] Enrichment complete; persistent companion link retained
+[150269][I][COMP] Automatic phone offload recovery requested
+[150275][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[150275][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[150276][I][BLE] Enrichment pending scan done count=0
+[150276][I][BLE] Phone enrichment finished successfully
+[150299][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[150300][I][BLE] Localization complete; retaining phone link for offload pending=2
+[150300][I][BLE] Enrichment complete; persistent companion link retained
+[150314][I][COMP] Automatic phone offload recovery requested
+[150374][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[150374][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[150375][I][BLE] Enrichment pending scan done count=0
+[150375][I][BLE] Phone enrichment finished successfully
+[150404][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[150405][I][BLE] Localization complete; retaining phone link for offload pending=2
+[150405][I][BLE] Enrichment complete; persistent companion link retained
+[150420][I][COMP] Automatic phone offload recovery requested
+[150425][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[150425][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[150426][I][BLE] Enrichment pending scan done count=0
+[150426][I][BLE] Phone enrichment finished successfully
+[150449][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[150450][I][BLE] Localization complete; retaining phone link for offload pending=2
+[150450][I][BLE] Enrichment complete; persistent companion link retained
+[150464][I][COMP] Automatic phone offload recovery requested
+[150470][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[150470][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[150471][I][BLE] Enrichment pending scan done count=0
+[150471][I][BLE] Phone enrichment finished successfully
+[150494][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[150495][I][BLE] Localization complete; retaining phone link for offload pending=2
+[150495][I][BLE] Enrichment complete; persistent companion link retained
+[150509][I][COMP] Automatic phone offload recovery requested
+[150515][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[150515][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[150516][I][BLE] Enrichment pending scan done count=0
+[150516][I][BLE] Phone enrichment finished successfully
+[150539][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[150540][I][BLE] Localization complete; retaining phone link for offload pending=2
+[150540][I][BLE] Enrichment complete; persistent companion link retained
+[150555][I][COMP] Automatic phone offload recovery requested
+[150560][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[150560][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[150561][I][BLE] Enrichment pending scan done count=0
+[150561][I][BLE] Phone enrichment finished successfully
+[150584][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[150585][I][BLE] Localization complete; retaining phone link for offload pending=2
+[150585][I][BLE] Enrichment complete; persistent companion link retained
+[150600][I][COMP] Automatic phone offload recovery requested
+[150605][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[150605][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[150606][I][BLE] Enrichment pending scan done count=0
+[150606][I][BLE] Phone enrichment finished successfully
+[150629][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[150630][I][BLE] Localization complete; retaining phone link for offload pending=2
+[150630][I][BLE] Enrichment complete; persistent companion link retained
+[150645][I][COMP] Automatic phone offload recovery requested
+[150650][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[150650][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[150651][I][BLE] Enrichment pending scan done count=0
+[150651][I][BLE] Phone enrichment finished successfully
+[150674][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[150675][I][BLE] Localization complete; retaining phone link for offload pending=2
+[150675][I][BLE] Enrichment complete; persistent companion link retained
+[150692][I][COMP] Automatic phone offload recovery requested
+[150756][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[150756][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[150757][I][BLE] Enrichment pending scan done count=0
+[150757][I][BLE] Phone enrichment finished successfully
+[150779][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[150780][I][BLE] Localization complete; retaining phone link for offload pending=2
+[150780][I][BLE] Enrichment complete; persistent companion link retained
+[150794][I][COMP] Automatic phone offload recovery requested
+[150800][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[150800][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[150801][I][BLE] Enrichment pending scan done count=0
+[150802][I][BLE] Phone enrichment finished successfully
+[150854][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[150855][I][BLE] Localization complete; retaining phone link for offload pending=2
+[150855][I][BLE] Enrichment complete; persistent companion link retained
+[150869][I][COMP] Automatic phone offload recovery requested
+[150875][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[150875][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[150876][I][BLE] Enrichment pending scan done count=0
+[150876][I][BLE] Phone enrichment finished successfully
+[150899][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[150900][I][BLE] Localization complete; retaining phone link for offload pending=2
+[150900][I][BLE] Enrichment complete; persistent companion link retained
+[150915][I][COMP] Automatic phone offload recovery requested
+[150920][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[150920][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[150921][I][BLE] Enrichment pending scan done count=0
+[150921][I][BLE] Phone enrichment finished successfully
+[150944][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[150945][I][BLE] Localization complete; retaining phone link for offload pending=2
+[150945][I][BLE] Enrichment complete; persistent companion link retained
+[150960][I][COMP] Automatic phone offload recovery requested
+[150965][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[150965][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[150966][I][BLE] Enrichment pending scan done count=0
+[150966][I][BLE] Phone enrichment finished successfully
+[150989][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[150990][I][BLE] Localization complete; retaining phone link for offload pending=2
+[150990][I][BLE] Enrichment complete; persistent companion link retained
+[151004][I][COMP] Automatic phone offload recovery requested
+[151010][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[151010][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[151011][I][BLE] Enrichment pending scan done count=0
+[151011][I][BLE] Phone enrichment finished successfully
+[151034][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[151035][I][BLE] Localization complete; retaining phone link for offload pending=2
+[151035][I][BLE] Enrichment complete; persistent companion link retained
+[151050][I][COMP] Automatic phone offload recovery requested
+[151055][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[151055][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[151056][I][BLE] Enrichment pending scan done count=0
+[151056][I][BLE] Phone enrichment finished successfully
+[151079][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[151080][I][BLE] Localization complete; retaining phone link for offload pending=2
+[151080][I][BLE] Enrichment complete; persistent companion link retained
+[151094][I][COMP] Automatic phone offload recovery requested
+[151154][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[151154][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[151155][I][BLE] Enrichment pending scan done count=0
+[151155][I][BLE] Phone enrichment finished successfully
+[151184][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[151185][I][BLE] Localization complete; retaining phone link for offload pending=2
+[151185][I][BLE] Enrichment complete; persistent companion link retained
+[151190][I][STACK] TaskHardware watermark=15456B min=15456B
+[151200][I][COMP] Automatic phone offload recovery requested
+[151206][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[151206][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[151207][I][BLE] Enrichment pending scan done count=0
+[151207][I][BLE] Phone enrichment finished successfully
+[151229][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[151230][I][BLE] Localization complete; retaining phone link for offload pending=2
+[151230][I][BLE] Enrichment complete; persistent companion link retained
+[151244][I][COMP] Automatic phone offload recovery requested
+[151250][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[151250][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[151251][I][BLE] Enrichment pending scan done count=0
+[151251][I][BLE] Phone enrichment finished successfully
+[151274][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[151275][I][BLE] Localization complete; retaining phone link for offload pending=2
+[151275][I][BLE] Enrichment complete; persistent companion link retained
+[151289][I][COMP] Automatic phone offload recovery requested
+[151295][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[151295][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[151296][I][BLE] Enrichment pending scan done count=0
+[151296][I][BLE] Phone enrichment finished successfully
+[151319][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[151320][I][BLE] Localization complete; retaining phone link for offload pending=2
+[151320][I][BLE] Enrichment complete; persistent companion link retained
+[151334][I][COMP] Automatic phone offload recovery requested
+[151340][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[151340][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[151341][I][BLE] Enrichment pending scan done count=0
+[151341][I][BLE] Phone enrichment finished successfully
+[151364][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[151365][I][BLE] Localization complete; retaining phone link for offload pending=2
+[151365][I][BLE] Enrichment complete; persistent companion link retained
+[151379][I][COMP] Automatic phone offload recovery requested
+[151385][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[151385][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[151386][I][BLE] Enrichment pending scan done count=0
+[151386][I][BLE] Phone enrichment finished successfully
+[151409][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[151410][I][BLE] Localization complete; retaining phone link for offload pending=2
+[151410][I][BLE] Enrichment complete; persistent companion link retained
+[151424][I][COMP] Automatic phone offload recovery requested
+[151430][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[151430][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[151431][I][BLE] Enrichment pending scan done count=0
+[151431][I][BLE] Phone enrichment finished successfully
+[151469][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[151470][I][BLE] Localization complete; retaining phone link for offload pending=2
+[151470][I][BLE] Enrichment complete; persistent companion link retained
+[151485][I][COMP] Automatic phone offload recovery requested
+[151550][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[151550][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[151551][I][BLE] Enrichment pending scan done count=0
+[151551][I][BLE] Phone enrichment finished successfully
+[151574][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[151575][I][BLE] Localization complete; retaining phone link for offload pending=2
+[151575][I][BLE] Enrichment complete; persistent companion link retained
+[151589][I][COMP] Automatic phone offload recovery requested
+[151595][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[151595][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[151596][I][BLE] Enrichment pending scan done count=0
+[151596][I][BLE] Phone enrichment finished successfully
+[151619][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[151620][I][BLE] Localization complete; retaining phone link for offload pending=2
+[151620][I][BLE] Enrichment complete; persistent companion link retained
+[151634][I][COMP] Automatic phone offload recovery requested
+[151640][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[151640][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[151641][I][BLE] Enrichment pending scan done count=0
+[151641][I][BLE] Phone enrichment finished successfully
+[151664][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[151665][I][BLE] Localization complete; retaining phone link for offload pending=2
+[151665][I][BLE] Enrichment complete; persistent companion link retained
+[151680][I][COMP] Automatic phone offload recovery requested
+[151685][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[151685][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[151686][I][BLE] Enrichment pending scan done count=0
+[151686][I][BLE] Phone enrichment finished successfully
+[151724][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[151725][I][BLE] Localization complete; retaining phone link for offload pending=2
+[151725][I][BLE] Enrichment complete; persistent companion link retained
+[151742][I][COMP] Automatic phone offload recovery requested
+[151748][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[151748][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[151749][I][BLE] Enrichment pending scan done count=0
+[151749][I][BLE] Phone enrichment finished successfully
+[151769][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[151770][I][BLE] Localization complete; retaining phone link for offload pending=2
+[151770][I][BLE] Enrichment complete; persistent companion link retained
+[151785][I][COMP] Automatic phone offload recovery requested
+[151790][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[151790][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[151791][I][BLE] Enrichment pending scan done count=0
+[151791][I][BLE] Phone enrichment finished successfully
+[151814][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[151815][I][BLE] Localization complete; retaining phone link for offload pending=2
+[151815][I][BLE] Enrichment complete; persistent companion link retained
+[151829][I][COMP] Automatic phone offload recovery requested
+[151835][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[151835][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[151836][I][BLE] Enrichment pending scan done count=0
+[151836][I][BLE] Phone enrichment finished successfully
+[151859][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[151860][I][BLE] Localization complete; retaining phone link for offload pending=2
+[151860][I][BLE] Enrichment complete; persistent companion link retained
+[151875][I][COMP] Automatic phone offload recovery requested
+[151938][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[151938][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[151939][I][BLE] Enrichment pending scan done count=0
+[151939][I][BLE] Phone enrichment finished successfully
+[151964][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[151965][I][BLE] Localization complete; retaining phone link for offload pending=2
+[151965][I][BLE] Enrichment complete; persistent companion link retained
+[151979][I][COMP] Automatic phone offload recovery requested
+[151985][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[151985][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[151986][I][BLE] Enrichment pending scan done count=0
+[151986][I][BLE] Phone enrichment finished successfully
+[152009][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[152010][I][BLE] Localization complete; retaining phone link for offload pending=2
+[152010][I][BLE] Enrichment complete; persistent companion link retained
+[152024][I][COMP] Automatic phone offload recovery requested
+[152030][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[152030][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[152031][I][BLE] Enrichment pending scan done count=0
+[152031][I][BLE] Phone enrichment finished successfully
+[152054][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[152055][I][BLE] Localization complete; retaining phone link for offload pending=2
+[152055][I][BLE] Enrichment complete; persistent companion link retained
+[152070][I][COMP] Automatic phone offload recovery requested
+[152075][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[152075][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[152076][I][BLE] Enrichment pending scan done count=0
+[152076][I][BLE] Phone enrichment finished successfully
+[152100][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[152100][I][BLE] Localization complete; retaining phone link for offload pending=2
+[152100][I][BLE] Enrichment complete; persistent companion link retained
+[152114][I][COMP] Automatic phone offload recovery requested
+[152120][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[152120][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[152121][I][BLE] Enrichment pending scan done count=0
+[152121][I][BLE] Phone enrichment finished successfully
+[152144][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[152145][I][BLE] Localization complete; retaining phone link for offload pending=2
+[152145][I][BLE] Enrichment complete; persistent companion link retained
+[152160][I][COMP] Automatic phone offload recovery requested
+[152165][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[152165][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[152166][I][BLE] Enrichment pending scan done count=0
+[152167][I][BLE] Phone enrichment finished successfully
+[152234][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[152235][I][BLE] Localization complete; retaining phone link for offload pending=2
+[152235][I][BLE] Enrichment complete; persistent companion link retained
+[152249][I][COMP] Automatic phone offload recovery requested
+[152255][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[152255][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[152256][I][BLE] Enrichment pending scan done count=0
+[152256][I][BLE] Phone enrichment finished successfully
+[152279][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[152280][I][BLE] Localization complete; retaining phone link for offload pending=2
+[152280][I][BLE] Enrichment complete; persistent companion link retained
+[152294][I][COMP] Automatic phone offload recovery requested
+[152360][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[152360][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[152361][I][BLE] Enrichment pending scan done count=0
+[152361][I][BLE] Phone enrichment finished successfully
+[152384][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[152385][I][BLE] Localization complete; retaining phone link for offload pending=2
+[152385][I][BLE] Enrichment complete; persistent companion link retained
+[152399][I][COMP] Automatic phone offload recovery requested
+[152405][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[152405][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[152406][I][BLE] Enrichment pending scan done count=0
+[152406][I][BLE] Phone enrichment finished successfully
+[152429][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[152430][I][BLE] Localization complete; retaining phone link for offload pending=2
+[152430][I][BLE] Enrichment complete; persistent companion link retained
+[152444][I][COMP] Automatic phone offload recovery requested
+[152450][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[152450][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[152451][I][BLE] Enrichment pending scan done count=0
+[152451][I][BLE] Phone enrichment finished successfully
+[152474][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[152475][I][BLE] Localization complete; retaining phone link for offload pending=2
+[152475][I][BLE] Enrichment complete; persistent companion link retained
+[152490][I][COMP] Automatic phone offload recovery requested
+[152496][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[152496][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[152497][I][BLE] Enrichment pending scan done count=0
+[152497][I][BLE] Phone enrichment finished successfully
+[152519][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[152520][I][BLE] Localization complete; retaining phone link for offload pending=2
+[152520][I][BLE] Enrichment complete; persistent companion link retained
+[152534][I][COMP] Automatic phone offload recovery requested
+[152540][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[152540][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[152541][I][BLE] Enrichment pending scan done count=0
+[152541][I][BLE] Phone enrichment finished successfully
+[152564][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[152565][I][BLE] Localization complete; retaining phone link for offload pending=2
+[152565][I][BLE] Enrichment complete; persistent companion link retained
+[152579][I][COMP] Automatic phone offload recovery requested
+[152585][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[152585][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[152586][I][BLE] Enrichment pending scan done count=0
+[152586][I][BLE] Phone enrichment finished successfully
+[152609][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[152610][I][BLE] Localization complete; retaining phone link for offload pending=2
+[152610][I][BLE] Enrichment complete; persistent companion link retained
+[152625][I][COMP] Automatic phone offload recovery requested
+[152630][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[152630][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[152631][I][BLE] Enrichment pending scan done count=0
+[152631][I][BLE] Phone enrichment finished successfully
+[152654][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[152655][I][BLE] Localization complete; retaining phone link for offload pending=2
+[152655][I][BLE] Enrichment complete; persistent companion link retained
+[152669][I][COMP] Automatic phone offload recovery requested
+[152727][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[152727][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[152728][I][BLE] Enrichment pending scan done count=0
+[152728][I][BLE] Phone enrichment finished successfully
+[152759][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[152760][I][BLE] Localization complete; retaining phone link for offload pending=2
+[152760][I][BLE] Enrichment complete; persistent companion link retained
+[152777][I][COMP] Automatic phone offload recovery requested
+[152783][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[152783][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[152784][I][BLE] Enrichment pending scan done count=0
+[152784][I][BLE] Phone enrichment finished successfully
+[152804][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[152805][I][BLE] Localization complete; retaining phone link for offload pending=2
+[152805][I][BLE] Enrichment complete; persistent companion link retained
+[152819][I][COMP] Automatic phone offload recovery requested
+[152825][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[152825][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[152826][I][BLE] Enrichment pending scan done count=0
+[152826][I][BLE] Phone enrichment finished successfully
+[152849][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[152850][I][BLE] Localization complete; retaining phone link for offload pending=2
+[152850][I][BLE] Enrichment complete; persistent companion link retained
+[152864][I][COMP] Automatic phone offload recovery requested
+[152870][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[152870][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[152871][I][BLE] Enrichment pending scan done count=0
+[152871][I][BLE] Phone enrichment finished successfully
+[152909][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[152910][I][BLE] Localization complete; retaining phone link for offload pending=2
+[152910][I][BLE] Enrichment complete; persistent companion link retained
+[152925][I][COMP] Automatic phone offload recovery requested
+[152931][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[152931][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[152932][I][BLE] Enrichment pending scan done count=0
+[152932][I][BLE] Phone enrichment finished successfully
+[152954][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[152955][I][BLE] Localization complete; retaining phone link for offload pending=2
+[152955][I][BLE] Enrichment complete; persistent companion link retained
+[152969][I][COMP] Automatic phone offload recovery requested
+[152975][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[152975][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[152976][I][BLE] Enrichment pending scan done count=0
+[152976][I][BLE] Phone enrichment finished successfully
+[152999][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[153000][I][BLE] Localization complete; retaining phone link for offload pending=2
+[153000][I][BLE] Enrichment complete; persistent companion link retained
+[153015][I][COMP] Automatic phone offload recovery requested
+[153021][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[153021][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[153022][I][BLE] Enrichment pending scan done count=0
+[153022][I][BLE] Phone enrichment finished successfully
+[153044][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[153045][I][BLE] Localization complete; retaining phone link for offload pending=2
+[153045][I][BLE] Enrichment complete; persistent companion link retained
+[153060][I][COMP] Automatic phone offload recovery requested
+[153124][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[153124][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[153125][I][BLE] Enrichment pending scan done count=0
+[153125][I][BLE] Phone enrichment finished successfully
+[153149][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[153150][I][BLE] Localization complete; retaining phone link for offload pending=2
+[153150][I][BLE] Enrichment complete; persistent companion link retained
+[153165][I][COMP] Automatic phone offload recovery requested
+[153171][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[153171][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[153172][I][BLE] Enrichment pending scan done count=0
+[153172][I][BLE] Phone enrichment finished successfully
+[153194][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[153195][I][BLE] Localization complete; retaining phone link for offload pending=2
+[153195][I][BLE] Enrichment complete; persistent companion link retained
+[153209][I][COMP] Automatic phone offload recovery requested
+[153215][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[153215][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[153216][I][BLE] Enrichment pending scan done count=0
+[153216][I][BLE] Phone enrichment finished successfully
+[153239][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[153240][I][BLE] Localization complete; retaining phone link for offload pending=2
+[153240][I][BLE] Enrichment complete; persistent companion link retained
+[153255][I][COMP] Automatic phone offload recovery requested
+[153260][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[153260][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[153261][I][BLE] Enrichment pending scan done count=0
+[153261][I][BLE] Phone enrichment finished successfully
+[153284][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[153285][I][BLE] Localization complete; retaining phone link for offload pending=2
+[153285][I][BLE] Enrichment complete; persistent companion link retained
+[153299][I][COMP] Automatic phone offload recovery requested
+[153305][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[153305][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[153306][I][BLE] Enrichment pending scan done count=0
+[153306][I][BLE] Phone enrichment finished successfully
+[153329][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[153330][I][BLE] Localization complete; retaining phone link for offload pending=2
+[153330][I][BLE] Enrichment complete; persistent companion link retained
+[153345][I][COMP] Automatic phone offload recovery requested
+[153350][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[153350][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[153351][I][BLE] Enrichment pending scan done count=0
+[153351][I][BLE] Phone enrichment finished successfully
+[153374][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[153375][I][BLE] Localization complete; retaining phone link for offload pending=2
+[153375][I][BLE] Enrichment complete; persistent companion link retained
+[153389][I][COMP] Automatic phone offload recovery requested
+[153395][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[153395][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[153396][I][BLE] Enrichment pending scan done count=0
+[153396][I][BLE] Phone enrichment finished successfully
+[153419][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[153420][I][BLE] Localization complete; retaining phone link for offload pending=2
+[153420][I][BLE] Enrichment complete; persistent companion link retained
+[153434][I][COMP] Automatic phone offload recovery requested
+[153494][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[153494][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[153495][I][BLE] Enrichment pending scan done count=0
+[153495][I][BLE] Phone enrichment finished successfully
+[153524][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[153525][I][BLE] Localization complete; retaining phone link for offload pending=2
+[153525][I][BLE] Enrichment complete; persistent companion link retained
+[153540][I][COMP] Automatic phone offload recovery requested
+[153545][I][BLE] Active BLE link promoted to enrichment pendingEnrich=0 manual=0 offload=1 timeSync=0
+[153545][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[153546][I][BLE] Enrichment pending scan done count=0
+[153546][I][BLE] Phone enrichment finished successfully
+[153569][I][BLE] storage snapshot sent pendingUp=0/2 pendingEnrich=0/0 usedPct=4
+[153570][I][BLE] Localization complete; retaining phone link for offload pending=2
+[153570][I][BLE] Enrichment complete; persistent companion link retained
+[153584][I][COMP] Automatic phone offload recovery requested
+=== capture closed 2026-08-11T14:00:57.6202912-05:00 ===

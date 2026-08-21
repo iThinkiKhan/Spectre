@@ -1,0 +1,5 @@
+=== capture opened 2026-08-14T08:07:29.8447777-05:00 ===
+=== send: spool count ===
+spool count
+[SPOOL] deferred owner=BLE_GPS reason=manual_spool_count
+=== capture closed 2026-08-14T08:07:41.9160648-05:00 ===

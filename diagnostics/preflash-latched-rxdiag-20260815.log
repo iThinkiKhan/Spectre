@@ -1,0 +1,6 @@
+=== reconnecting capture opened 2026-08-15T20:52:11.9775781-05:00 port=COM13 ===
+=== serial connected 2026-08-15T20:52:11.9927528-05:00 attempt=1 ===
+=== send: ble rxdiag ===
+ble rxdiag
+[BLE] rxdiag stage=138 len=0 uptimeMs=65856
+=== reconnecting capture closed 2026-08-15T20:52:14.9969786-05:00 ===

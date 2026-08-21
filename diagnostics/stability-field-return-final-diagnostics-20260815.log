@@ -1,0 +1,61 @@
+=== reconnecting capture opened 2026-08-15T19:06:30.7814906-05:00 port=COM13 ===
+=== serial connected 2026-08-15T19:06:30.7998638-05:00 attempt=1 ===
+[19233][I][STORAGE] Routine maintenance requests coalesced count=1 latest=snapshot_lagged source=append_enrich_batch_deferred flags=snapshot_lagged
+[19541][I][STORAGE] Spool enrich_batch applied=15 failed=0 batchFirstEventId=37875 batchLastEventId=37874 firstRecord=37889 lastRecord=37903 ms=843
+[19541][I][BLE] enrich_perf count=15 applied=15 failed=0 deferred=0 storageMs=1203 pendingUpload=1032
+[19542][I][BLE] Enrich drain done applied=15 failed=0 deferred=0 queueSize=0
+[19542][I][BLE] Enrich torrent done drained=1 remaining=0 tookLease=0 preempt=0 elapsedMs=1646
+[19556][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[19556][I][BLE] Enrichment pending scan done count=0
+[19557][I][BLE] enrich_session_summary requested=15 applied=15 failed=0 deferred=0 batches=1 xferMs=568 storageMs=1203 totalMs=3929
+[19651][I][BLE] Phone enrichment finished successfully
+[19672][I][BLE] storage snapshot sent pendingUp=0/1032 pendingEnrich=0/0 usedPct=10
+[19672][I][OFFLOAD] automatic handoff opened reason=localization_complete commandWindow=30s active=0
+[19673][I][OFFLOAD] localization complete; bounded handoff pending=1032
+[19673][I][BLE] Enrichment complete; persistent companion link retained
+=== send: companion status
+spool count
+crash log ===
+companion status
+[COMP] enabled=1
+[COMP] external accessory=0 bleProxy=0 phoneConnected=0 phone=unknown rssi=0 ageMs=0
+[COMP] wio link=idle sx1262=0 textInput=0
+[COMP] phone=AVAILABLE work=IDLE
+[COMP] bleBegun=1 bleRadio=1 bleState=SUBSCRIBED
+[COMP] ready link=1 gps=1 freshGps=0 ctrl=1 enrich=1
+[COMP] bleInitAgeMs=7568 scanStartAgeMs=7064 disconnReason=0
+[COMP] pendingEnrichMission=0 pendingEnrichNoise=0 pendingEnrichTotal=0
+[COMP] hold manual=0 autoOffload=1 managerActive=0 prep=0 deadlineInMs=29475 retryInMs=294830
+[COMP] lastProbeAgeMs=7555 lastEnrichAgeMs=526
+[COMP] radioOwner=ble_gps
+spool count
+[SPOOL] deferred owner=BLE_GPS reason=manual_spool_count
+crash log
+[BOOT] crash log: 5 entries, seq 0..28 (oldest first)
+[BOOT] #1 seq=24 [ok] phase=wifi_capture owner=1 pendingUpload=1032 heapFree=93K largest=53K min=93K uptime=12s
+[BOOT] #2 seq=25 [ok] phase=backlog_probe owner=7 pendingUpload=0 heapFree=59K largest=30K min=58K uptime=12s
+[BOOT] #3 seq=26 [ok] phase=ble_auth owner=7 pendingUpload=0 heapFree=56K largest=30K min=53K uptime=14s
+[BOOT] #4 seq=27 [ok] phase=backlog_enrich owner=7 pendingUpload=15 heapFree=55K largest=30K min=52K uptime=15s
+[BOOT] #5 seq=28 [ok] phase=storage_append owner=7 pendingUpload=1032 heapFree=55K largest=30K min=49K uptime=17s
+[30006][I][HEAP] heap free=4470KB min=4464KB largest=4352KB frag=2% internalFree=55KB internalLargest=31KB psramFree=4415KB core=0/0% owner=BLE_GPS nets=0 pendingUpload=1032 pendingEnrich=0
+[HEALTH] time=2026-08-15 19:05:47 src=gps
+[HEALTH] heap used=3982/8452KB free=4470KB min=4464KB largest=4352KB frag=2%
+[HEALTH] internal used=205/260KB free=55KB min=49KB largest=31KB
+[HEALTH] psram used=3777/8192KB free=4415KB largest=4352KB
+[HEALTH] stack free_min: core0=11KB/18KB core1=5KB/10KB
+[HEALTH] loopTask free_min=3080B/5120B
+[HEALTH] core usage: core0=0% core1=0%
+[HEALTH] power=usb state=usb batt=100% 4642mV trend=0mV/min runtime=0min cap=1100mAh charging=0
+[HEALTH] radio=BLE_GPS wifi=0 ble=1 gps=0 nets=0 pendingUpload=1032 pendingEnrich=0
+[HEALTH] subghz=NONE mode=OFF pkts=0 nodes=0
+[30009][I][STACK] TaskStorage watermark=3500B
+[30009][I][STORAGE] RAMSpool enq=0 cons=0 inflight=0/1024 high=0 pressure=0 drop[full=0 big=0 noise=0 p3Evict=0 p3Drop=0 p2Drop=0 p1Fail=0] free=1024
+[30010][I][STORAGE] RAMSpool enqueue probe[ok=0 drop=0] device[ok=0 drop=0]
+[30010][I][STORAGE] RAMSpool worker probe[ok=0 sup=0 drop=0 fail=0 slow=0] device[ok=0 sup=0 drop=0 fail=0 slow=0] slowTotal=0 maxMs=0
+[30010][I][STORAGE] RAMSpool prioEnq p0=0 p1=0 p2=0 p3=0
+[30010][I][STORAGE] RAMSpool lanes p1=0/0 p2=0/0 p3=0/0
+[30991][I][STACK] TaskButtons watermark=2092B min=2092B
+[31028][I][STACK] TaskDisplay watermark=4936B min=4936B
+[31034][I][STACK] TaskHardware watermark=11376B min=11376B
+[42648][I][BLE] worker stack free=7380B min=7380B
+=== reconnecting capture closed 2026-08-15T19:07:00.8245723-05:00 ===

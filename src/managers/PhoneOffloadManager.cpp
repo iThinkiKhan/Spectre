@@ -24,7 +24,6 @@ constexpr uint32_t OFFLOAD_STALE_MS = 120000UL;
 constexpr uint32_t OFFLOAD_INDEX_BUDGET_MS = 45000UL;
 constexpr uint32_t OFFLOAD_CHECKPOINT_MS = 60000UL;
 constexpr uint16_t OFFLOAD_CHECKPOINT_RECORDS = 128;
-constexpr uint32_t OFFLOAD_PREP_STACK_BYTES = 8192UL;
 constexpr uint32_t WIFI_BULK_MAGIC = 0x53504231UL;
 constexpr uint32_t WIFI_BULK_ACK_MAGIC = 0x41434b31UL;
 constexpr size_t WIFI_BULK_BATCH_MAX_BYTES = 64U * 1024U;
@@ -181,6 +180,11 @@ bool PhoneOffloadManager::begin(CmdOffloadBeginResponseV1& out) {
     }
 
     const uint8_t prep = __atomic_load_n(&_prepState, __ATOMIC_ACQUIRE);
+    DLOG_INFO(TAG,
+              "begin request prep=%u resident=%u active=%u",
+              static_cast<unsigned>(prep),
+              STORAGE.isUploadIndexResident() ? 1U : 0U,
+              _active ? 1U : 0U);
     if (prep == PREP_IDLE || prep == PREP_FAILED) {
         if (!startPreparation()) {
             return false;
@@ -214,8 +218,20 @@ bool PhoneOffloadManager::begin(CmdOffloadBeginResponseV1& out) {
     _transferAckedBytes = 0;
     _transferAckedRecords = 0;
 
-    STORAGE.beginUploadBatch();
-    _storageBatchOpen = STORAGE.isUploadBatchActive();
+    // beginUploadBatch flushes/closes the RAM-spool worker's append handle.
+    // The preparation window has already resumed that worker, so activation
+    // needs its own short exclusive window. Calling this naked raced a Core 1
+    // append with the Android BEGIN retry immediately after index completion.
+    StorageExclusiveWindow activationWindow;
+    _storageBatchOpen = activationWindow.begin(
+        STORAGE_WINDOW_ENRICHMENT, "phone_offload_activate");
+    if (_storageBatchOpen) {
+        STORAGE.beginUploadBatch();
+        _storageBatchOpen = STORAGE.isUploadBatchActive();
+        activationWindow.end(_storageBatchOpen
+                                 ? "batch_open"
+                                 : "batch_open_failed");
+    }
     if (!_storageBatchOpen) {
         (void)reset("batch_open_failed");
         return false;
@@ -243,35 +259,40 @@ bool PhoneOffloadManager::begin(CmdOffloadBeginResponseV1& out) {
 }
 
 bool PhoneOffloadManager::startPreparation() {
-    if (_prepTask) return true;
+    if (__atomic_load_n(&_prepState, __ATOMIC_ACQUIRE) == PREP_RUNNING) {
+        return true;
+    }
     __atomic_store_n(&_prepAbandonRequested, false, __ATOMIC_RELEASE);
     __atomic_store_n(&_prepState, PREP_RUNNING, __ATOMIC_RELEASE);
-    const BaseType_t created = xTaskCreatePinnedToCore(
-        preparationTask,
-        "OffloadPrep",
-        OFFLOAD_PREP_STACK_BYTES,
-        this,
-        1,
-        &_prepTask,
-        1);
-    if (created != pdPASS || !_prepTask) {
-        _prepTask = nullptr;
-        __atomic_store_n(&_prepState, PREP_FAILED, __ATOMIC_RELEASE);
-        DLOG_ERROR(TAG, "index preparation task create failed rc=%ld",
-                   static_cast<long>(created));
-        return false;
-    }
+    DLOG_INFO(TAG,
+              "index preparation queued on TaskHardware internalFree=%lu largest=%lu",
+              static_cast<unsigned long>(
+                  heap_caps_get_free_size(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT)),
+              static_cast<unsigned long>(
+                  heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT)));
     return true;
 }
 
-void PhoneOffloadManager::preparationTask(void* arg) {
-    auto* self = static_cast<PhoneOffloadManager*>(arg);
-    if (self) self->runPreparation();
-    if (self) self->_prepTask = nullptr;
-    vTaskDelete(nullptr);
+void PhoneOffloadManager::servicePreparation() {
+    if (__atomic_load_n(&_prepState, __ATOMIC_ACQUIRE) != PREP_RUNNING) {
+        return;
+    }
+    runPreparation();
 }
 
 void PhoneOffloadManager::runPreparation() {
+    if (__atomic_exchange_n(&_prepAbandonRequested,
+                            false,
+                            __ATOMIC_ACQ_REL)) {
+        __atomic_store_n(&_prepState, PREP_IDLE, __ATOMIC_RELEASE);
+        DLOG_INFO(TAG, "queued index preparation abandoned before start");
+        return;
+    }
+
+    DLOG_INFO(TAG,
+              "index preparation started on TaskHardware stackFree=%lu",
+              static_cast<unsigned long>(
+                  uxTaskGetStackHighWaterMark(nullptr) * sizeof(StackType_t)));
     StorageExclusiveWindow window;
     bool ok = window.begin(STORAGE_WINDOW_ENRICHMENT, "phone_offload_prepare");
     if (ok) {
@@ -304,7 +325,7 @@ void PhoneOffloadManager::runPreparation() {
     DLOG_INFO(TAG, "index preparation complete ok=%u resident=%u",
               ok && !abandoned ? 1U : 0U,
               STORAGE.isUploadIndexResident() ? 1U : 0U);
-    DLOG_INFO("STACK", "OffloadPrep watermark=%luB",
+    DLOG_INFO("STACK", "TaskHardware offload preparation watermark=%luB",
               static_cast<unsigned long>(
                   uxTaskGetStackHighWaterMark(nullptr) * sizeof(StackType_t)));
 }

@@ -1,0 +1,30 @@
+===== CMD: heap status =====
+heap status
+[HEAP] 8bit total=8456KB free=4518KB largest=4352KB
+[HEAP] internal total=264KB free=89KB largest=54KB
+[HEAP] rtc-slow free=7KB (spill indicator; DRAM dry if falling)
+[HEAP] psram total=8192KB free=4421KB largest=4352KB
+[HEAP] uploadIndex=0 enrichWindow=0 maint=dirty_spool_index|snapshot_lagged owner=WIFI_CAPTURE
+[60010][I][HEAP] heap free=4518KB min=4513KB largest=4352KB frag=3% internalFree=89KB internalLargest=54KB psramFree=4421KB core=0/0% owner=WIFI_CAPTURE nets=9 pendingUpload=4111 pendingEnrich=18
+[HEALTH] time=2026-08-19 07:19:45 src=ntp
+[HEALTH] heap used=3938/8456KB free=4518KB min=4513KB largest=4352KB frag=3%
+[HEALTH] internal used=175/264KB free=89KB min=84KB largest=54KB
+[HEALTH] psram used=3771/8192KB free=4421KB largest=4352KB
+[HEALTH] stack free_min: core0=10KB/15KB core1=3KB/8KB
+[HEALTH] loopTask free_min=3084B/5120B
+[HEALTH] core usage: core0=0% core1=0%
+[HEALTH] power=usb state=usb batt=100% 4713mV trend=77mV/min runtime=0min cap=1100mAh charging=1
+[HEALTH] radio=WIFI_CAPTURE wifi=0 ble=0 gps=0 nets=9 pendingUpload=4111 pendingEnrich=18
+[HEALTH] subghz=NONE mode=OFF pkts=0 nodes=0
+[60013][I][STACK] TaskStorage watermark=2416B
+[60013][I][STORAGE] RAMSpool enq=6 cons=6 inflight=0/1024 high=2 pressure=0 drop[full=0 big=0 noise=0 p3Evict=0 p3Drop=0 p2Drop=0 p1Fail=0] free=1024
+[60013][I][STORAGE] RAMSpool enqueue probe[ok=3 drop=0] device[ok=3 drop=0]
+[60014][I][STORAGE] RAMSpool worker probe[ok=3 sup=0 drop=0 fail=0 slow=0] device[ok=3 sup=0 drop=0 fail=0 slow=0] slowTotal=0 maxMs=0
+[60014][I][STORAGE] RAMSpool prioEnq p0=0 p1=0 p2=6 p3=0
+[60014][I][STORAGE] RAMSpool lanes p1=0/0 p2=0/1 p3=0/0
+[61020][I][STACK] TaskButtons watermark=2084B min=2084B
+[61054][I][STACK] TaskHardware watermark=9784B min=9784B
+[61588][I][STORAGE] worker ui refresh serviced uiRefreshServiceCount=4 uiDeferred=8 uiFlush=4 pressure=0 usedPct=26 pending=4113
+[66595][I][STORAGE] worker ui refresh serviced uiRefreshServiceCount=5 uiDeferred=10 uiFlush=5 pressure=0 usedPct=26 pending=4115
+[71599][I][STORAGE] worker ui refresh serviced uiRefreshServiceCount=6 uiDeferred=12 uiFlush=6 pressure=0 usedPct=26 pending=4117
+

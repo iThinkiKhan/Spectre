@@ -2,6 +2,23 @@
 #pragma once
 
 #include <Arduino.h>
+#include <stdint.h>
+
+// Running context for delta-coded enrichment records (REC_ENRICH_DELTA_V2).
+// One instance per segment scan on the read side, one per active segment on the
+// write side. `have` false means "no baseline yet" -- the next record is written
+// absolute and carries ENRICH_FLAG_ABSOLUTE.
+struct BinaryEnrichContext {
+    bool     have        = false;
+    uint32_t recordId    = 0;
+    uint32_t tsDelta     = 0;
+    uint32_t eventId     = 0;
+    int32_t  latE7       = 0;
+    int32_t  lonE7       = 0;
+    int32_t  altCm       = 0;
+    uint32_t gpsEpochUtc = 0;
+};
+
 
 // Type definitions and pure helpers for the spool audit/repair subsystem.
 // SpoolRepairJob lives in SpoolRepair.h (it depends on SpoolSegmentInfo).

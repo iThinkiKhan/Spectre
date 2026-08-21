@@ -1,0 +1,99 @@
+=== capture opened 2026-08-11T13:26:56.8125625-05:00 ===
+=== send: btcon enrich ===
+btcon enrich
+[USB] unknown command: btcon enrich
+[USB] Commands:
+[USB]   debug on | debug off
+[USB]   debug status | debug dump
+[USB]   debug level d|i|w|e
+[USB]   debug focus ops|all|radio,wifi,mqtt
+[USB]   debug focus add <areas> | remove <areas>
+[USB]   debug focus +wifi -ble (mixed +/-)
+[USB]   debug focus list
+[USB]   wio status
+[USB]   wio hello | wio ble start | wio ble status | wio drop
+[USB]   wio probe | wio enrich
+[USB]   wio text <prompt> | wio text cancel
+[USB]   wio raw <line>  (send exact UART line to WIO)
+[USB]   companion status
+[USB]   companion link    (hold secure BLE link until cancel)
+[USB]   companion probe   (one-shot manual BLE probe)
+[USB]   companion enrich  (manual enrichment; probes first if needed)
+[USB]   companion cancel  (clear all pending companion requests)
+[USB]   time | time sync   (clock status; 'sync' forces NTP now)
+[USB]   heap status      (internal/PSRAM heap snapshot)
+[USB]   entity status    (PSRAM Entity working-set summary)
+[USB]   spool audit       (read-only spool scan, prints mismatches)
+[USB]   spool count       (exact total record count + spool stats)
+[USB]   spool enrich      (pending vs already enriched counts)
+[USB]   spool repair      (audit + repair counters, quarantine bad segs)
+[USB]   spool diag        (segment list, counters, flags)
+[USB]   spool quarantine list  (list /spool_bad files)
+[USB]   spool quarantine meta  (print quarantine JSON records)
+[USB]   spool quarantine clear (delete all quarantine files)
+[USB]   fieldvault dump    (print FieldVault records, keep them)
+[USB]   fieldvault clear   (delete retained FieldVault records)
+[USB]   fieldvault upload  (upload pending FieldVault records only)
+[USB]   crash log         (print retained crash breadcrumb ring)
+[USB]   ble rxdiag        (print retained BLE receive crash stage)
+[USB]   upload now         (manual MQTT upload of pending records)
+[USB]   upload stop        (safely stop the active MQTT upload)
+[USB]   upload resume      (allow MQTT uploads again)
+[USB]   upload rewind [id] (re-offer uploaded records; 0/blank = all)
+[USB]   mesh status        (Meshtastic client state + counters)
+[USB]   mesh on | mesh off (take/release SX1262 for Meshtastic)
+[USB]   mesh nodes         (list heard mesh nodes)
+[USB]   mesh send <text>   (broadcast a text message)
+[USB]   ble smoke         (suspend WiFi, init/deinit NimBLE, resume promisc)
+[30008][I][HEAP] heap free=4508KB min=4500KB largest=4352KB frag=3% internalFree=79KB internalLargest=38KB psramFree=4429KB core=0/0% owner=WIFI_CAPTURE nets=1 pendingUpload=0 pendingEnrich=0
+[HEALTH] time=2026-08-11 13:26:48 src=ntp
+[HEALTH] heap used=3943/8451KB free=4508KB min=4500KB largest=4352KB frag=3%
+[HEALTH] internal used=180/259KB free=79KB min=71KB largest=38KB
+[HEALTH] psram used=3763/8192KB free=4429KB largest=4352KB
+[HEALTH] stack free_min: core0=16KB/22KB core1=13KB/18KB
+[HEALTH] core usage: core0=0% core1=0%
+[HEALTH] power=battery state=battery_normal batt=100% 4197mV trend=0mV/min runtime=206min cap=1100mAh charging=0
+[HEALTH] radio=WIFI_CAPTURE wifi=0 ble=0 gps=0 nets=1 pendingUpload=0 pendingEnrich=0
+[HEALTH] subghz=NONE mode=OFF pkts=0 nodes=0
+[30011][I][STORAGE] RAMSpool enq=0 cons=0 inflight=0/1024 high=0 pressure=0 drop[full=0 big=0 noise=0 p3Evict=0 p3Drop=0 p2Drop=0 p1Fail=0] free=1024
+[30011][I][STORAGE] RAMSpool enqueue probe[ok=0 drop=0] device[ok=0 drop=0]
+[30011][I][STORAGE] RAMSpool worker probe[ok=0 sup=0 drop=0 fail=0 slow=0] device[ok=0 sup=0 drop=0 fail=0 slow=0] slowTotal=0 maxMs=0
+[30012][I][STORAGE] RAMSpool prioEnq p0=0 p1=0 p2=0 p3=0
+[30012][I][STORAGE] RAMSpool lanes p1=0/0 p2=0/0 p3=0/0
+[31025][I][STACK] TaskHardware watermark=16224B min=16224B
+[31031][I][STACK] TaskDisplay watermark=13128B min=13128B
+[60009][I][HEAP] heap free=4508KB min=4500KB largest=4352KB frag=3% internalFree=79KB internalLargest=38KB psramFree=4429KB core=0/0% owner=WIFI_CAPTURE nets=1 pendingUpload=0 pendingEnrich=0
+[HEALTH] time=2026-08-11 13:27:18 src=ntp
+[HEALTH] heap used=3943/8451KB free=4508KB min=4500KB largest=4352KB frag=3%
+[HEALTH] internal used=180/259KB free=79KB min=71KB largest=38KB
+[HEALTH] psram used=3763/8192KB free=4429KB largest=4352KB
+[HEALTH] stack free_min: core0=16KB/22KB core1=13KB/18KB
+[HEALTH] core usage: core0=0% core1=0%
+[HEALTH] power=battery state=battery_normal batt=100% 4270mV trend=81mV/min runtime=206min cap=1100mAh charging=0
+[HEALTH] radio=WIFI_CAPTURE wifi=0 ble=0 gps=0 nets=1 pendingUpload=0 pendingEnrich=0
+[HEALTH] subghz=NONE mode=OFF pkts=0 nodes=0
+[60012][I][STORAGE] RAMSpool enq=0 cons=0 inflight=0/1024 high=0 pressure=0 drop[full=0 big=0 noise=0 p3Evict=0 p3Drop=0 p2Drop=0 p1Fail=0] free=1024
+[60012][I][STORAGE] RAMSpool enqueue probe[ok=0 drop=0] device[ok=0 drop=0]
+[60012][I][STORAGE] RAMSpool worker probe[ok=0 sup=0 drop=0 fail=0 slow=0] device[ok=0 sup=0 drop=0 fail=0 slow=0] slowTotal=0 maxMs=0
+[60013][I][STORAGE] RAMSpool prioEnq p0=0 p1=0 p2=0 p3=0
+[60013][I][STORAGE] RAMSpool lanes p1=0/0 p2=0/0 p3=0/0
+[61032][I][STACK] TaskHardware watermark=16224B min=16224B
+[76662][I][POWER] Source BATTERY -> USB (4271mV trend=61)
+[76663][I][POWER] State BAT_NORMAL -> USB (100% 4271mV runtime=0min charge=1)
+[90014][I][HEAP] heap free=4508KB min=4500KB largest=4352KB frag=3% internalFree=79KB internalLargest=38KB psramFree=4429KB core=0/0% owner=WIFI_CAPTURE nets=1 pendingUpload=0 pendingEnrich=0
+[HEALTH] time=2026-08-11 13:27:48 src=ntp
+[HEALTH] heap used=3943/8451KB free=4508KB min=4500KB largest=4352KB frag=3%
+[HEALTH] internal used=180/259KB free=79KB min=71KB largest=38KB
+[HEALTH] psram used=3763/8192KB free=4429KB largest=4352KB
+[HEALTH] stack free_min: core0=16KB/22KB core1=13KB/18KB
+[HEALTH] core usage: core0=0% core1=0%
+[HEALTH] power=usb state=usb batt=100% 4270mV trend=0mV/min runtime=0min cap=1100mAh charging=0
+[HEALTH] radio=WIFI_CAPTURE wifi=0 ble=0 gps=0 nets=1 pendingUpload=0 pendingEnrich=0
+[HEALTH] subghz=NONE mode=OFF pkts=0 nodes=0
+[90017][I][STORAGE] RAMSpool enq=0 cons=0 inflight=0/1024 high=0 pressure=0 drop[full=0 big=0 noise=0 p3Evict=0 p3Drop=0 p2Drop=0 p1Fail=0] free=1024
+[90017][I][STORAGE] RAMSpool enqueue probe[ok=0 drop=0] device[ok=0 drop=0]
+[90017][I][STORAGE] RAMSpool worker probe[ok=0 sup=0 drop=0 fail=0 slow=0] device[ok=0 sup=0 drop=0 fail=0 slow=0] slowTotal=0 maxMs=0
+[90018][I][STORAGE] RAMSpool prioEnq p0=0 p1=0 p2=0 p3=0
+[90018][I][STORAGE] RAMSpool lanes p1=0/0 p2=0/0 p3=0/0
+[91036][I][STACK] TaskHardware watermark=16224B min=16224B
+=== capture closed 2026-08-11T13:28:26.9107079-05:00 ===

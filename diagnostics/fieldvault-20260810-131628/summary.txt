@@ -1,0 +1,9 @@
+Spectre FieldVault analysis
+Records: 505; parse errors: 0
+Sequence: 3360..3864; gaps: 0; duplicates: 0
+Boot records: 26; ready samples: 32; slow ready (>=8 s): 24; BLE-adjacent boot evidence: 6
+Crashes: 17; audit problem records: 0
+USB power samples: 92; range: 3803..4766 mV
+Latest run: seq=3864 uptime=0s owner=1 pending=1918 enrich=1909 intHeap=80KB
+Slow boots: seq=3538:16604ms/4596mV, seq=3542:8786ms/4598mV, seq=3599:9740ms/4580mV, seq=3603:9101ms/4610mV, seq=3609:9340ms/4606mV, seq=3615:9514ms/4610mV, seq=3621:8821ms/4578mV, seq=3625:9010ms/4634mV, seq=3632:9402ms/4636mV, seq=3641:9690ms/4658mV, seq=3647:9973ms/4630mV, seq=3697:18764ms/4004mV, seq=3702:19543ms/3888mV, seq=3806:25586ms/4694mV, seq=3811:20976ms/4666mV, seq=3815:12543ms/4686mV, seq=3819:12501ms/4686mV, seq=3825:12228ms/4678mV, seq=3832:13993ms/4684mV, seq=3838:13812ms/4674mV, seq=3846:15378ms/4668mV, seq=3849:14169ms/4670mV, seq=3855:14629ms/4706mV, seq=3863:15422ms/4684mV
+Crash records: seq=3408:storage_boot/reset during storage_boot, seq=3482:storage_boot/reset during storage_boot, seq=3494:storage_boot/reset during storage_boot, seq=3507:storage_boot/reset during storage_boot, seq=3512:storage_boot/reset during storage_boot, seq=3526:storage_boot/reset during storage_boot, seq=3531:storage_boot/reset during storage_boot, seq=3540:storage_boot/reset during storage_boot, seq=3597:storage_boot/reset during storage_boot, seq=3601:storage_boot/reset during storage_boot, seq=3607:storage_boot/reset during storage_boot, seq=3613:storage_boot/reset during storage_boot, seq=3619:storage_boot/reset during storage_boot, seq=3623:storage_boot/reset during storage_boot, seq=3630:storage_boot/task watchdog during storage_boot, seq=3639:storage_boot/reset during storage_boot, seq=3645:storage_boot/reset during storage_boot

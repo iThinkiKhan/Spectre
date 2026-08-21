@@ -1,0 +1,1 @@
+serial_capture.ps1: Exception calling "ReadExisting" with "0" argument(s): "The port is closed."

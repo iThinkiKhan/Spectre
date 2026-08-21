@@ -1,0 +1,79 @@
+--------- beginning of main
+08-11 16:07:45.606 I/SpectrePeripheral(11878): event=start_server mode=uuidOnly useDeviceLocation=false metadataBytes=14 gpsBytes=20 controlBytes=4 enrichmentBytes=0
+08-11 16:07:45.612 I/SpectrePeripheral(11878): event=secure_value_pending char=metadata plainBytes=14
+08-11 16:07:45.612 I/SpectrePeripheral(11878): event=secure_value_pending char=gps plainBytes=20
+08-11 16:07:45.612 I/SpectrePeripheral(11878): event=secure_value_pending char=control plainBytes=4
+08-11 16:07:45.614 I/SpectrePeripheral(11878): event=service_char_added char=gps properties=read|notify permissions=1
+08-11 16:07:45.614 I/SpectrePeripheral(11878): event=service_char_added char=control properties=read|notify permissions=1
+08-11 16:07:45.614 I/SpectrePeripheral(11878): event=service_char_added char=metadata properties=read|notify permissions=1
+08-11 16:07:45.614 I/SpectrePeripheral(11878): event=service_char_added char=event_batch properties=write|write_no_response permissions=16
+08-11 16:07:45.614 I/SpectrePeripheral(11878): event=service_char_added char=enrichment properties=read|notify permissions=1
+08-11 16:07:45.614 I/SpectrePeripheral(11878): event=service_char_added char=auth properties=notify permissions=0
+08-11 16:07:45.614 I/SpectrePeripheral(11878): event=service_char_added char=auth_request properties=write|write_no_response permissions=16
+08-11 16:07:45.614 I/SpectrePeripheral(11878): event=service_char_added char=storage properties=write|write_no_response permissions=16
+08-11 16:07:45.614 I/SpectrePeripheral(11878): event=service_char_added char=command_req properties=read|notify permissions=1
+08-11 16:07:45.614 I/SpectrePeripheral(11878): event=service_char_added char=command_resp properties=write|write_no_response permissions=16
+08-11 16:07:45.614 I/SpectrePeripheral(11878): event=service_char_added char=log_stream properties=write|write_no_response permissions=16
+08-11 16:07:45.614 I/SpectrePeripheral(11878): event=service_char_added char=dashboard_stream properties=write|write_no_response permissions=16
+08-11 16:07:45.614 I/SpectrePeripheral(11878): event=service_char_added char=notification properties=write|write_no_response permissions=16
+08-11 16:07:45.615 I/SpectrePeripheral(11878): event=advertise_restart_ignored reason=field_service pendingServiceAdvertise=true
+08-11 16:07:45.617 I/SpectrePeripheral(11878): event=advertise_restart_ignored reason=field_service pendingServiceAdvertise=true
+08-11 16:07:45.622 I/SpectrePeripheral(11878): event=service_added status=success uuid=phone_service characteristics=13 pendingAdvertise=true
+08-11 16:07:45.622 I/SpectrePeripheral(11878): event=app_log message=Spectre GATT service ready
+08-11 16:07:45.622 I/SpectrePeripheral(11878): event=advertise_start_request mode=uuidOnly includeName=false includeService=true scanResponseService=false connectable=true
+08-11 16:07:45.623 I/SpectrePeripheral(11878): event=update_value char=gps bytes=20
+08-11 16:07:45.623 I/SpectrePeripheral(11878): event=secure_value_pending char=gps plainBytes=20
+08-11 16:07:45.623 I/SpectrePeripheral(11878): event=update_value char=gps bytes=20
+08-11 16:07:45.623 I/SpectrePeripheral(11878): event=secure_value_pending char=gps plainBytes=20
+08-11 16:07:45.637 I/SpectrePeripheral(11878): event=update_value char=gps bytes=20
+08-11 16:07:45.637 I/SpectrePeripheral(11878): event=secure_value_pending char=gps plainBytes=20
+08-11 16:07:45.645 I/SpectrePeripheral(11878): event=advertise_start_success mode=uuidOnly txPower=3 advertiseMode=2 restarts=0
+08-11 16:07:45.645 I/SpectrePeripheral(11878): event=app_log message=Spectre peripheral advertising started
+08-11 16:07:46.019 I/SpectrePeripheral(11878): event=mtu_changed peer=Spectre-fa68b9(xx:7A:39) mtu=247
+08-11 16:07:46.019 I/SpectrePeripheral(11878): event=connection_state peer=Spectre-fa68b9(xx:7A:39) status=0 newState=connected connectedBefore=0
+08-11 16:07:46.019 I/SpectrePeripheral(11878): event=app_log message=Peripheral connected: Spectre-fa68b9
+08-11 16:07:46.195 I/SpectrePeripheral(11878): event=descriptor_write peer=Spectre-f33d62(xx:7A:39) descriptor=cccd char=auth requestId=22437 offset=0 bytes=2 responseNeeded=true value=notify
+08-11 16:07:46.595 I/SpectrePeripheral(11878): event=auth_challenge_chunk peer=Spectre-f33d62(xx:7A:39) bytes=120 targetBytes=163
+08-11 16:07:46.616 I/SpectrePeripheral(11878): event=auth_challenge_received peer=Spectre-f33d62(xx:7A:39) bytes=163
+08-11 16:07:46.622 I/SpectrePeripheral(11878): event=secure_value_updated char=metadata channel=3 plainBytes=14 cipherBytes=36 notify=false
+08-11 16:07:46.623 I/SpectrePeripheral(11878): event=secure_value_updated char=gps channel=1 plainBytes=20 cipherBytes=42 notify=true
+08-11 16:07:46.623 I/SpectrePeripheral(11878): event=secure_value_updated char=control channel=2 plainBytes=4 cipherBytes=26 notify=false
+08-11 16:07:46.623 I/SpectrePeripheral(11878): event=auth_session_ready peer=Spectre-f33d62(xx:7A:39) responseBytes=163
+08-11 16:07:46.623 I/SpectrePeripheral(11878): event=app_log message=Secure session established with Spectre-f33d62
+08-11 16:07:46.637 I/SpectrePeripheral(11878): event=update_value char=gps bytes=20
+08-11 16:07:46.638 I/SpectrePeripheral(11878): event=secure_value_updated char=gps channel=1 plainBytes=20 cipherBytes=42 notify=true
+08-11 16:07:47.217 I/SpectrePeripheral(11878): event=descriptor_write peer=Spectre-f33d62(xx:7A:39) descriptor=cccd char=enrichment requestId=22440 offset=0 bytes=2 responseNeeded=true value=notify
+08-11 16:07:47.275 I/SpectrePeripheral(11878): event=descriptor_write peer=Spectre-f33d62(xx:7A:39) descriptor=cccd char=command_req requestId=22441 offset=0 bytes=2 responseNeeded=true value=notify
+08-11 16:07:47.399 I/SpectrePeripheral(11878): event=storage_snapshot_received peer=Spectre-f33d62(xx:7A:39) cipherBytes=90 plainBytes=68
+08-11 16:07:47.563 I/SpectrePeripheral(11878): event=event_batch_received peer=Spectre-f33d62(xx:7A:39) cipherBytes=102 plainBytes=80 recordsEstimate=8 sessionId=0 batchId=0 totalBatches=1
+08-11 16:07:47.672 I/SpectrePeripheral(11878): event=location_history_native_load buckets=7 samples=360 oldest=1784066852000 newest=1786482001890
+08-11 16:07:47.672 I/SpectrePeripheral(11878): event=enrichment_native_reply records=8 bytes=376 matches=8 reason=native_history_fast_path
+08-11 16:07:47.672 W/SpectrePeripheral(11878): event=enrichment_response_unframed records=8 pendingRecords=8 sessionId=0 batchId=0
+08-11 16:07:47.672 I/SpectrePeripheral(11878): event=notify_chunked char=enrichment plainBytes=376 chunks=4 chunkPlainMax=120
+08-11 16:07:47.673 I/SpectrePeripheral(11878): event=notify_chunk char=enrichment chunk=0 plainBytes=120 bytes=142
+08-11 16:07:47.676 I/SpectrePeripheral(11878): event=notify_chunk char=enrichment chunk=1 plainBytes=120 bytes=142
+08-11 16:07:47.677 I/SpectrePeripheral(11878): event=notify_chunk char=enrichment chunk=2 plainBytes=120 bytes=142
+08-11 16:07:47.678 I/SpectrePeripheral(11878): event=notify_chunk char=enrichment chunk=3 plainBytes=16 bytes=38
+08-11 16:07:47.735 I/SpectrePeripheral(11878): event=update_value char=control bytes=4
+08-11 16:07:47.738 I/SpectrePeripheral(11878): event=secure_value_updated char=control channel=2 plainBytes=4 cipherBytes=26 notify=true
+08-11 16:07:47.740 W/SpectrePeripheral(11878): event=enrichment_response_unframed records=8 pendingRecords=0 sessionId=0 batchId=0
+08-11 16:07:47.740 I/SpectrePeripheral(11878): event=notify_chunked char=enrichment plainBytes=376 chunks=4 chunkPlainMax=120
+08-11 16:07:47.740 I/SpectrePeripheral(11878): event=notify_chunk char=enrichment chunk=0 plainBytes=120 bytes=142
+08-11 16:07:47.741 I/SpectrePeripheral(11878): event=notify_chunk char=enrichment chunk=1 plainBytes=120 bytes=142
+08-11 16:07:47.741 I/SpectrePeripheral(11878): event=notify_chunk char=enrichment chunk=2 plainBytes=120 bytes=142
+08-11 16:07:47.742 I/SpectrePeripheral(11878): event=notify_chunk char=enrichment chunk=3 plainBytes=16 bytes=38
+08-11 16:07:48.604 I/SpectrePeripheral(11878): event=storage_snapshot_received peer=Spectre-f33d62(xx:7A:39) cipherBytes=90 plainBytes=68
+08-11 16:07:51.698 I/SpectrePeripheral(11878): event=update_value char=control bytes=4
+08-11 16:07:51.700 I/SpectrePeripheral(11878): event=secure_value_updated char=control channel=2 plainBytes=4 cipherBytes=26 notify=true
+08-11 16:07:53.763 I/SpectrePeripheral(11878): event=connection_state peer=Spectre-f33d62(xx:7A:39) status=0 newState=disconnected connectedBefore=1
+08-11 16:07:53.764 I/SpectrePeripheral(11878): event=advertise_restart reason=disconnect mode=uuidOnly count=1
+08-11 16:07:53.764 I/SpectrePeripheral(11878): event=app_log message=Advertising restart requested: disconnect
+08-11 16:07:53.764 I/SpectrePeripheral(11878): event=advertise_stop_request mode=uuidOnly
+08-11 16:07:53.765 I/SpectrePeripheral(11878): event=advertise_start_request mode=uuidOnly includeName=false includeService=true scanResponseService=false connectable=true
+08-11 16:07:53.766 I/SpectrePeripheral(11878): event=app_log message=Peripheral disconnected: Spectre-f33d62
+08-11 16:07:53.792 I/SpectrePeripheral(11878): event=advertise_start_success mode=uuidOnly txPower=3 advertiseMode=2 restarts=1
+08-11 16:07:53.792 I/SpectrePeripheral(11878): event=app_log message=Spectre peripheral advertising started
+08-11 16:07:54.729 I/SpectrePeripheral(11878): event=update_value char=control bytes=4
+08-11 16:07:54.730 I/SpectrePeripheral(11878): event=secure_value_pending char=control plainBytes=4
+08-11 16:07:56.741 I/SpectrePeripheral(11878): event=update_value char=control bytes=4
+08-11 16:07:56.741 I/SpectrePeripheral(11878): event=secure_value_pending char=control plainBytes=4

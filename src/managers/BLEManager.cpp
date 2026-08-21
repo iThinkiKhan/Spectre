@@ -42,7 +42,11 @@ constexpr uint32_t BLE_PRE_INIT_SETTLE_MS    = 75UL;
 constexpr uint16_t CONNECT_SCAN_INTERVAL     = 16;  // 10 ms units used by NimBLE initiator
 constexpr uint16_t CONNECT_SCAN_WINDOW       = 16;
 constexpr uint32_t CONNECT_TIMEOUT_MS        = 8000UL;  // modest increase; was 6 s
-constexpr uint32_t CONNECT_TIMEOUT_PROBE_MS  = 45000UL;  // long field probe
+// A peer has already been seen by the scanner before connect() starts. A
+// 45-second blocking attempt outlived the automatic handoff window in field
+// use and invited cross-task teardown. Fifteen seconds still tolerates a weak
+// phone while bounding how long capture stays paused.
+constexpr uint32_t CONNECT_TIMEOUT_PROBE_MS  = 15000UL;
 constexpr uint16_t PHONE_CONN_SUPERVISION_TIMEOUT_10MS = 1500;
 constexpr uint32_t CONNECT_WATCHDOG_MS       = 50000UL;
 constexpr uint32_t GPS_POLL_MS               = 5000UL;
@@ -72,6 +76,11 @@ constexpr uint32_t RECONNECT_BACKOFF_MS[3]   = { 2000UL, 5000UL, 10000UL };
 
 constexpr uint8_t NOTIF_INFO = 1;
 constexpr uint8_t NOTIF_WARN = 2;
+
+// Protects the small worker/disable handshake shared by TaskHardware (core 0)
+// and BLEWorker (core 1). NimBLE calls themselves deliberately run outside the
+// critical section.
+portMUX_TYPE s_bleWorkerStateMux = portMUX_INITIALIZER_UNLOCKED;
 
 template <typename T>
 T clampValue(T v, T lo, T hi) {
@@ -274,11 +283,35 @@ RTC_NOINIT_ATTR volatile uint32_t s_bleRxDiagLen;
 RTC_NOINIT_ATTR volatile uint32_t s_bleRxDiagUptimeMs;
 constexpr uint32_t BLE_RX_DIAG_MAGIC = 0xB1E0D1A6UL;
 
+// A normal reboot starts ticking BLE again before an operator can reconnect
+// USB, which would overwrite the last pre-panic marker above.  Snapshot that
+// marker into a second RTC record only when boot observes a crash reset.  Host
+// recovery resets and subsequent healthy boots intentionally leave it intact.
+RTC_NOINIT_ATTR volatile uint32_t s_bleRxCrashMagic;
+RTC_NOINIT_ATTR volatile uint32_t s_bleRxCrashStage;
+RTC_NOINIT_ATTR volatile uint32_t s_bleRxCrashLen;
+RTC_NOINIT_ATTR volatile uint32_t s_bleRxCrashUptimeMs;
+RTC_NOINIT_ATTR volatile uint32_t s_bleWorkerDiagMagic;
+RTC_NOINIT_ATTR volatile uint32_t s_bleWorkerDiagStage;
+RTC_NOINIT_ATTR volatile uint32_t s_bleWorkerDiagDetail;
+RTC_NOINIT_ATTR volatile uint32_t s_bleWorkerDiagUptimeMs;
+RTC_NOINIT_ATTR volatile uint32_t s_bleWorkerCrashMagic;
+RTC_NOINIT_ATTR volatile uint32_t s_bleWorkerCrashStage;
+RTC_NOINIT_ATTR volatile uint32_t s_bleWorkerCrashDetail;
+RTC_NOINIT_ATTR volatile uint32_t s_bleWorkerCrashUptimeMs;
+
 inline void markBleRxDiag(uint32_t stage, size_t len = 0) {
     s_bleRxDiagMagic = BLE_RX_DIAG_MAGIC;
     s_bleRxDiagLen = static_cast<uint32_t>(len);
     s_bleRxDiagUptimeMs = millis();
     s_bleRxDiagStage = stage; // publish the stage last
+}
+
+inline void markBleWorkerDiag(uint32_t stage, uint32_t detail = 0) {
+    s_bleWorkerDiagMagic = BLE_RX_DIAG_MAGIC;
+    s_bleWorkerDiagDetail = detail;
+    s_bleWorkerDiagUptimeMs = millis();
+    s_bleWorkerDiagStage = stage;
 }
 }  // namespace
 
@@ -331,7 +364,9 @@ bool BLEManager::begin() {
         _releaseWorkerTask("begin_fail");
 
         s_bleInstance = nullptr;
-        NimBLEDevice::deinit(true);
+        _teardownSessionObjects();
+        NimBLEDevice::deinit(false);
+        _deinitBtController();
         _scan = nullptr;
         _client = nullptr;
         _remoteService = nullptr;
@@ -384,8 +419,8 @@ bool BLEManager::begin() {
               "begin phase=nimble_pre bt=%s/%d heap=%u largest=%u stack=%u devLen=%u",
               btControllerStatusName(btStatus),
               static_cast<int>(btStatus),
-              static_cast<unsigned>(heap_caps_get_free_size(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT)),
-              static_cast<unsigned>(heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT)),
+              static_cast<unsigned>(heap_caps_get_free_size(SPECTRE_CAP_DRAM)),
+              static_cast<unsigned>(heap_caps_get_largest_free_block(SPECTRE_CAP_DRAM)),
               static_cast<unsigned>(currentTaskFreeStackBytes()),
               static_cast<unsigned>(strlen(_deviceName)));
 
@@ -396,8 +431,8 @@ bool BLEManager::begin() {
                    "begin phase=nimble_init_fail bt=%s/%d heap=%u largest=%u stack=%u",
                    btControllerStatusName(esp_bt_controller_get_status()),
                    static_cast<int>(esp_bt_controller_get_status()),
-                   static_cast<unsigned>(heap_caps_get_free_size(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT)),
-                   static_cast<unsigned>(heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT)),
+                   static_cast<unsigned>(heap_caps_get_free_size(SPECTRE_CAP_DRAM)),
+                   static_cast<unsigned>(heap_caps_get_largest_free_block(SPECTRE_CAP_DRAM)),
                    static_cast<unsigned>(currentTaskFreeStackBytes()));
         failBegin();
         return false;
@@ -406,8 +441,8 @@ bool BLEManager::begin() {
               "begin phase=nimble_init_ok bt=%s/%d heap=%u largest=%u stack=%u",
               btControllerStatusName(esp_bt_controller_get_status()),
               static_cast<int>(esp_bt_controller_get_status()),
-              static_cast<unsigned>(heap_caps_get_free_size(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT)),
-              static_cast<unsigned>(heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT)),
+              static_cast<unsigned>(heap_caps_get_free_size(SPECTRE_CAP_DRAM)),
+              static_cast<unsigned>(heap_caps_get_largest_free_block(SPECTRE_CAP_DRAM)),
               static_cast<unsigned>(currentTaskFreeStackBytes()));
 
     NimBLEDevice::setPower(ESP_PWR_LVL_P9);
@@ -446,14 +481,61 @@ bool BLEManager::begin() {
 }
 
 void BLEManager::printRxCrashDiag() const {
-    if (s_bleRxDiagMagic != BLE_RX_DIAG_MAGIC) {
+    bool printed = false;
+    if (s_bleRxCrashMagic == BLE_RX_DIAG_MAGIC) {
+        Serial.printf("[BLE] rxdiag crash stage=%lu len=%lu uptimeMs=%lu\n",
+                      static_cast<unsigned long>(s_bleRxCrashStage),
+                      static_cast<unsigned long>(s_bleRxCrashLen),
+                      static_cast<unsigned long>(s_bleRxCrashUptimeMs));
+        printed = true;
+    } else if (s_bleRxDiagMagic == BLE_RX_DIAG_MAGIC) {
+        Serial.printf("[BLE] rxdiag stage=%lu len=%lu uptimeMs=%lu\n",
+                      static_cast<unsigned long>(s_bleRxDiagStage),
+                      static_cast<unsigned long>(s_bleRxDiagLen),
+                      static_cast<unsigned long>(s_bleRxDiagUptimeMs));
+        printed = true;
+    }
+
+    if (s_bleWorkerCrashMagic == BLE_RX_DIAG_MAGIC) {
+        Serial.printf("[BLE] workerdiag crash stage=%lu detail=%lu uptimeMs=%lu\n",
+                      static_cast<unsigned long>(s_bleWorkerCrashStage),
+                      static_cast<unsigned long>(s_bleWorkerCrashDetail),
+                      static_cast<unsigned long>(s_bleWorkerCrashUptimeMs));
+        printed = true;
+    } else if (s_bleWorkerDiagMagic == BLE_RX_DIAG_MAGIC) {
+        Serial.printf("[BLE] workerdiag stage=%lu detail=%lu uptimeMs=%lu\n",
+                      static_cast<unsigned long>(s_bleWorkerDiagStage),
+                      static_cast<unsigned long>(s_bleWorkerDiagDetail),
+                      static_cast<unsigned long>(s_bleWorkerDiagUptimeMs));
+        printed = true;
+    }
+
+    if (!printed) {
         Serial.println("[BLE] rxdiag unavailable");
+    }
+}
+
+void BLEManager::latchRxCrashDiag() {
+    const esp_reset_reason_t reason = esp_reset_reason();
+    if (reason != ESP_RST_PANIC &&
+        reason != ESP_RST_TASK_WDT &&
+        reason != ESP_RST_INT_WDT &&
+        reason != ESP_RST_WDT) {
         return;
     }
-    Serial.printf("[BLE] rxdiag stage=%lu len=%lu uptimeMs=%lu\n",
-                  static_cast<unsigned long>(s_bleRxDiagStage),
-                  static_cast<unsigned long>(s_bleRxDiagLen),
-                  static_cast<unsigned long>(s_bleRxDiagUptimeMs));
+    if (s_bleRxDiagMagic == BLE_RX_DIAG_MAGIC) {
+        s_bleRxCrashStage = s_bleRxDiagStage;
+        s_bleRxCrashLen = s_bleRxDiagLen;
+        s_bleRxCrashUptimeMs = s_bleRxDiagUptimeMs;
+        s_bleRxCrashMagic = BLE_RX_DIAG_MAGIC;
+    }
+
+    if (s_bleWorkerDiagMagic == BLE_RX_DIAG_MAGIC) {
+        s_bleWorkerCrashStage = s_bleWorkerDiagStage;
+        s_bleWorkerCrashDetail = s_bleWorkerDiagDetail;
+        s_bleWorkerCrashUptimeMs = s_bleWorkerDiagUptimeMs;
+        s_bleWorkerCrashMagic = BLE_RX_DIAG_MAGIC;
+    }
 }
 
 void BLEManager::shutdown() {
@@ -470,29 +552,26 @@ void BLEManager::shutdown() {
         delay(BLE_SCAN_STOP_SETTLE_MS);
     }
 
-    _releaseWorkerTask("shutdown");
+    if (!_releaseWorkerTask("shutdown")) {
+        // The worker is still inside a blocking NimBLE call (connect/auth).
+        // Tearing down underneath it corrupts host state. Leave the stack up;
+        // the caller retries once the worker goes idle.
+        DLOG_WARN(TAG, "shutdown aborted: worker busy, stack left initialised");
+        return;
+    }
+
+    // Destroy the object graph before the host goes away, then take the host
+    // down without letting NimBLE run destructors afterwards (clearAll=false).
+    _teardownSessionObjects();
 
     DLOG_INFO(TAG, "shutdown phase=nimble_deinit");
-    NimBLEDevice::deinit(true);
+    NimBLEDevice::deinit(false);
     DLOG_INFO(TAG, "shutdown phase=nimble_deinit_ok");
 
-    _scan = nullptr;
-    _client = nullptr;
-    _remoteService = nullptr;
-    _gpsRemoteChar = nullptr;
-    _controlRemoteChar = nullptr;
-    _metaRemoteChar = nullptr;
-    _eventBatchRemoteChar = nullptr;
-    _enrichmentRemoteChar = nullptr;
-    _authRemoteChar = nullptr;
-    _authWriteRemoteChar = nullptr;
-    _storageRemoteChar = nullptr;
-    _server = nullptr;
-    _textService = nullptr;
-    _promptChar = nullptr;
-    _inputChar = nullptr;
-    _receiptChar = nullptr;
-    _statusChar = nullptr;
+    // deinit() leaves the controller initialised in this build, so its ~33 KB
+    // would stay pinned and the next init() would fail on an already
+    // initialised controller.
+    _deinitBtController();
 
     _resetState();
     _begun = false;
@@ -513,86 +592,152 @@ void BLEManager::shutdown() {
     _publishTextInputState();
 }
 
+void BLEManager::_teardownSessionObjects() {
+    // Order matters. NimBLEDevice::deinit(true) tears the host down FIRST and
+    // then runs these destructors, so they free attribute storage and mbufs
+    // against pools nimble_port_deinit() has already handed back - which is the
+    // "free() target pointer is outside heap areas" assert captured in the
+    // 2026-08-18 coredump. Doing the destruction here, while the host is still
+    // up, keeps every free matched to a live pool.
+
+    if (_client) {
+        if (_client->isConnected()) {
+            _client->disconnect();
+            delay(BLE_SCAN_STOP_SETTLE_MS);
+        }
+        NimBLEDevice::deleteClient(_client);
+        _client = nullptr;
+    }
+    _remoteService        = nullptr;
+    _gpsRemoteChar        = nullptr;
+    _controlRemoteChar    = nullptr;
+    _metaRemoteChar       = nullptr;
+    _eventBatchRemoteChar = nullptr;
+    _enrichmentRemoteChar = nullptr;
+    _authRemoteChar       = nullptr;
+    _authWriteRemoteChar  = nullptr;
+    _storageRemoteChar    = nullptr;
+
+    if (_server && _textService) {
+        // removeService() is two-phase: the first call hides the service and
+        // marks it removed, the second actually deletes it. It also drops the
+        // UUID from the advertising payload for us.
+        _server->removeService(_textService, true);
+        _server->removeService(_textService, true);
+        _textService = nullptr;
+    }
+    _promptChar      = nullptr;
+    _inputChar       = nullptr;
+    _receiptChar     = nullptr;
+    _statusChar      = nullptr;
+    _linkRequestChar = nullptr;
+
+    if (NimBLEAdvertising* adv = NimBLEDevice::getAdvertising()) {
+        adv->removeServices();
+        adv->clearData();
+    }
+    _advertisingActive = false;
+
+    // _server and _scan stay alive: NimBLEDevice owns them and hands the same
+    // instances back from createServer()/getScan() on the next begin(), which
+    // then rebuilds the services. Removing the services set m_svcChanged, so
+    // NimBLEServer::start() will reset and re-register the GATT database
+    // against the freshly initialised host instead of early-returning.
+}
+
+void BLEManager::_deinitBtController() {
+    const uint32_t before =
+        heap_caps_get_free_size(SPECTRE_CAP_DRAM);
+
+    if (esp_bt_controller_get_status() == ESP_BT_CONTROLLER_STATUS_ENABLED) {
+        const esp_err_t err = esp_bt_controller_disable();
+        if (err != ESP_OK) {
+            DLOG_WARN(TAG, "controller disable failed: %s", esp_err_to_name(err));
+            return;
+        }
+    }
+
+    if (esp_bt_controller_get_status() == ESP_BT_CONTROLLER_STATUS_INITED) {
+        const esp_err_t err = esp_bt_controller_deinit();
+        if (err != ESP_OK) {
+            DLOG_WARN(TAG, "controller deinit failed: %s", esp_err_to_name(err));
+            return;
+        }
+    }
+
+    const uint32_t after =
+        heap_caps_get_free_size(SPECTRE_CAP_DRAM);
+    DLOG_INFO(TAG, "controller released %luB (%luB -> %luB) status=%s",
+              static_cast<unsigned long>(after > before ? after - before : 0),
+              static_cast<unsigned long>(before),
+              static_cast<unsigned long>(after),
+              btControllerStatusName(esp_bt_controller_get_status()));
+}
+
 void BLEManager::releaseProbeResources() {
     if (!_begun) {
         return;
     }
 
-    const bool scanWasActive = _scan && _scan->isScanning();
     DLOG_INFO(TAG, "probe resource release");
+    portENTER_CRITICAL(&s_bleWorkerStateMux);
+    _probeResetPending = true;
+    portEXIT_CRITICAL(&s_bleWorkerStateMux);
     setRadioEnabled(false);
-    if (scanWasActive) {
-        DLOG_INFO(TAG, "probe release scan stop settle=%lums",
-                  static_cast<unsigned long>(BLE_SCAN_STOP_SETTLE_MS));
-        delay(BLE_SCAN_STOP_SETTLE_MS);
+
+    // BLEWorker uses a PSRAM-backed stack, so retaining it costs no scarce
+    // internal heap. More importantly, deleting it here used to kill the task
+    // while client->connect()/authentication was still blocking, corrupting
+    // NimBLE state and producing the field panic loop.
+    if (!readyForWifiHandoff()) {
+        DLOG_INFO(TAG, "probe release waiting for BLE handoff settle");
     }
-
-    // NimBLEDevice::deinit(true) is a proven panic site on the GPS probe
-    // timeout path. Free only our app worker stack here; begin() recreates it
-    // on the next BLE lease while the NimBLE host remains initialized.
-    _releaseWorkerTask("probe_release");
-    _resetState();
-    _radioEnabled = false;
-    _scanActive = false;
-    _clientConnected = false;
-    _connectResultPending = false;
-    _connectResultOk = false;
-    _state = BLE_IDLE;
-    _lastStackLogMs = 0;
-    _workerMinFreeStackBytes = 0;
-
-    _publishBleState();
-    _publishGpsState();
-    _publishTextInputState();
 }
 
 void BLEManager::setRadioEnabled(bool enabled) {
-    if (!_begun || _radioEnabled == enabled) {
+    if (!_begun) {
         return;
     }
 
-    _radioEnabled = enabled;
-
-    if (!_radioEnabled) {
-        if (_scan && _scan->isScanning()) {
-            _scan->stop();
+    if (!enabled) {
+        bool workerBusy = false;
+        bool needsCleanup = false;
+        portENTER_CRITICAL(&s_bleWorkerStateMux);
+        needsCleanup = _radioEnabled || _radioDisablePending ||
+                       _probeResetPending;
+        if (!needsCleanup) {
+            portEXIT_CRITICAL(&s_bleWorkerStateMux);
+            return;
         }
-        _scanActive = false;
-        _nextActionMs = millis() + SCAN_GAP_MS;
-
-        if (_advertisingActive) {
-            _ensureAdvertising(false);
+        _radioEnabled = false;
+        _wifiHandoffReadyAtMs = 0;
+        workerBusy = _workerBusy;
+        if (workerBusy) {
+            _radioDisablePending = true;
         }
+        portEXIT_CRITICAL(&s_bleWorkerStateMux);
 
-        if (_server && _serverConnHandle != BLE_HS_CONN_HANDLE_NONE) {
-            _server->disconnect(_serverConnHandle);
-            _serverConnHandle = BLE_HS_CONN_HANDLE_NONE;
-            _serverConnected = false;
-        }
-
-        // GPS/probe path can keep the client object for faster reconnect.
-        // Enrichment is heavier and should leave no stale NimBLE client behind.
-        if (_enrichmentInFlight ||
-            _enrichmentReady ||
-            _enrichmentRequestPending ||
-            _enrichmentFailed ||
-            _dirtyDisconnectCount >= 2) {
-            _hardDropClient("radio_disabled");
-        } else {
-            _softDisconnectClient("radio_disabled");
+        if (workerBusy) {
+            DLOG_INFO(TAG, "radio disable queued: worker busy");
+            return;
         }
 
-        _clearBleRxQueues();
-        _manualProbeActive = false;
-        _probeStartMs = 0;
-        _connectResultPending = false;
-        _connectResultOk = false;
-        _connectStartedMs = 0;
-        _state = BLE_IDLE;
-        _publishBleState();
-        DLOG_INFO(TAG, "radio disabled");
+        _finishRadioDisable();
         return;
-   }
+    }
+
+    portENTER_CRITICAL(&s_bleWorkerStateMux);
+    const bool canEnable = !_workerBusy && !_radioDisablePending;
+    if (canEnable) {
+        _radioEnabled = true;
+        _wifiHandoffReadyAtMs = 0;
+    }
+    portEXIT_CRITICAL(&s_bleWorkerStateMux);
+
+    if (!canEnable) {
+        DLOG_WARN(TAG, "radio enable deferred: BLE cleanup still active");
+        return;
+    }
 
     _nextActionMs = millis() + BLE_RADIO_SETTLE_MS;
     if (_textInputPending && !_serverConnected) {
@@ -600,6 +745,91 @@ void BLEManager::setRadioEnabled(bool enabled) {
     }
     DLOG_INFO(TAG, "radio enabled settle=%lums",
               static_cast<unsigned long>(BLE_RADIO_SETTLE_MS));
+}
+
+void BLEManager::_finishRadioDisable() {
+    const bool scanWasActive = _scan && _scan->isScanning();
+    if (scanWasActive) {
+        _scan->stop();
+    }
+    _scanActive = false;
+    _nextActionMs = millis() + SCAN_GAP_MS;
+
+    if (_advertisingActive) {
+        _ensureAdvertising(false);
+    }
+
+    if (_server && _serverConnHandle != BLE_HS_CONN_HANDLE_NONE) {
+        _server->disconnect(_serverConnHandle);
+        _serverConnHandle = BLE_HS_CONN_HANDLE_NONE;
+        _serverConnected = false;
+    }
+
+    // GPS/probe path can keep the client object for faster reconnect.
+    // Enrichment is heavier and should leave no stale NimBLE client behind.
+    if (_enrichmentInFlight ||
+        _enrichmentReady ||
+        _enrichmentRequestPending ||
+        _enrichmentFailed ||
+        _dirtyDisconnectCount >= 2) {
+        _hardDropClient("radio_disabled");
+    } else {
+        _softDisconnectClient("radio_disabled");
+    }
+
+    _clearBleRxQueues();
+    _manualProbeActive = false;
+    _probeStartMs = 0;
+    _connectResultPending = false;
+    _connectResultOk = false;
+    _connectStartedMs = 0;
+    _state = BLE_IDLE;
+
+    bool resetProbeState = false;
+    portENTER_CRITICAL(&s_bleWorkerStateMux);
+    resetProbeState = _probeResetPending;
+    _probeResetPending = false;
+    _radioDisablePending = false;
+    _wifiHandoffReadyAtMs = millis() +
+        (scanWasActive ? BLE_SCAN_STOP_SETTLE_MS : BLE_PRE_INIT_SETTLE_MS);
+    portEXIT_CRITICAL(&s_bleWorkerStateMux);
+
+    if (resetProbeState) {
+        _resetState();
+        _radioEnabled = false;
+        _lastStackLogMs = 0;
+        _workerMinFreeStackBytes = 0;
+    }
+
+    _publishBleState();
+    _publishGpsState();
+    _publishTextInputState();
+    DLOG_INFO(TAG,
+              "radio disabled handoffSettle=%lums workerRetained=1",
+              static_cast<unsigned long>(scanWasActive
+                                             ? BLE_SCAN_STOP_SETTLE_MS
+                                             : BLE_PRE_INIT_SETTLE_MS));
+}
+
+bool BLEManager::readyForWifiHandoff() const {
+    if (!_begun) {
+        return true;
+    }
+
+    bool enabled = false;
+    bool busy = false;
+    bool cleanupPending = false;
+    uint32_t readyAtMs = 0;
+    portENTER_CRITICAL(&s_bleWorkerStateMux);
+    enabled = _radioEnabled;
+    busy = _workerBusy;
+    cleanupPending = _radioDisablePending;
+    readyAtMs = _wifiHandoffReadyAtMs;
+    portEXIT_CRITICAL(&s_bleWorkerStateMux);
+
+    return !enabled && !busy && !cleanupPending &&
+           (readyAtMs == 0 ||
+            static_cast<int32_t>(millis() - readyAtMs) >= 0);
 }
 
 void BLEManager::tick() {
@@ -666,16 +896,13 @@ void BLEManager::tick() {
             _lastLeaseRenewMs = now;
         }
 
-        if (!_gpsNotifyEnabled && _gpsRemoteChar && (now - _lastGpsPollMs) >= GPS_POLL_MS) {
-            _lastGpsPollMs = now;
-            _queueWorker(WORKER_JOB_POLL_GPS);
-        }
-
-        if (!_controlNotifyEnabled && _controlRemoteChar &&
-            (now - _lastControlPollMs) >= CONTROL_POLL_MS) {
-            _lastControlPollMs = now;
-            _queueWorker(WORKER_JOB_POLL_CONTROL);
-        }
+        // Do not fall back to periodic GATT reads when the phone omits notify
+        // support. Field traces consistently panic inside the NimBLE host about
+        // 100 ms after a completed GPS read (the third read, roughly ten seconds
+        // into each secure session). Command responses, enrichment, and offload
+        // use separate characteristics and remain fully available. A phone build
+        // that exposes GPS/control notifications will resume those feeds through
+        // the already-subscribed callback path without polling.
 
         if (_enrichmentRequestPending && !_enrichmentSendQueued) {
             _enrichmentSendQueued = true;
@@ -1484,7 +1711,12 @@ void BLEManager::_startScanWindow() {
     _state = BLE_SCANNING;
     _scan->clearResults();
     _scan->setScanCallbacks(&_scanCallbacks, diagActive);
-    _scanActive = _scan->start(scanWindowMs, false, false);
+    // Keep NimBLE's controller-side duration infinite and let the application
+    // timer below own the stop.  Giving both layers the same finite deadline
+    // creates an intermittent race between the natural GAP completion event
+    // and ble_gap_disc_cancel(), observed as an ESP_RST_PANIC exactly at an
+    // 8-second scan boundary during repeated field probes.
+    _scanActive = _scan->start(0, false, false);
     _lastScanStartMs = millis();
 
     if (_scanActive) {
@@ -1665,6 +1897,23 @@ bool BLEManager::_ensureWorkerTask() {
         return true;
     }
 
+    // The stack MUST be internal. It was MALLOC_CAP_SPIRAM, which IDF permits
+    // (CONFIG_SPIRAM_ALLOW_STACK_EXTERNAL_MEMORY=y) but which is unsafe for any
+    // task that reaches a flash write: spi_flash disables the cache for the
+    // duration, PSRAM goes with it, and the next register-window spill writes
+    // to a stack that is no longer addressable. The fault lands inside the
+    // exception handler, so it is a DoubleException — unrecoverable, and it
+    // takes the device down with no usable backtrace on the app CDC.
+    //
+    // That is the 2026-08-20 overnight panic, confirmed from the coredump:
+    //   exccause 0x42 (DoubleException)  excvaddr 0xffffffe0
+    //   epc6 -> _WindowOverflow8         epc1 -> esp_psram_check_ptr_addr
+    //   a1   -> spiflash_start_core      (the cache-disable path)
+    // All five panics recorded phase=backlog_probe, which runs here. This is
+    // the only task in the firmware with a non-internal stack.
+    //
+    // Costs WORKER_STACK_BYTES of DRAM while BLE is up; the teardown path
+    // reclaims it along with the NimBLE object graph.
     const BaseType_t created = xTaskCreatePinnedToCoreWithCaps(
         _workerTaskEntry,
         "BLEWorker",
@@ -1673,15 +1922,19 @@ bool BLEManager::_ensureWorkerTask() {
         2,
         &_workerTask,
         1,
-        MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT
+        MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT
     );
     if (created != pdPASS || !_workerTask) {
         _workerTask = nullptr;
+        // Report the pool the stack actually comes from, not PSRAM.
         DLOG_ERROR(TAG,
-                   "worker task create failed rc=%ld psramFree=%u largest=%u",
+                   "worker task create failed rc=%ld need=%u internalFree=%u largest=%u",
                    static_cast<long>(created),
-                   static_cast<unsigned>(heap_caps_get_free_size(MALLOC_CAP_SPIRAM)),
-                   static_cast<unsigned>(heap_caps_get_largest_free_block(MALLOC_CAP_SPIRAM)));
+                   static_cast<unsigned>(WORKER_STACK_BYTES),
+                   static_cast<unsigned>(
+                       heap_caps_get_free_size(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT)),
+                   static_cast<unsigned>(
+                       heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT)));
         return false;
     }
 
@@ -1691,13 +1944,22 @@ bool BLEManager::_ensureWorkerTask() {
     return true;
 }
 
-void BLEManager::_releaseWorkerTask(const char* phase) {
+bool BLEManager::_releaseWorkerTask(const char* phase) {
     if (_workerTask) {
+        portENTER_CRITICAL(&s_bleWorkerStateMux);
+        const bool workerBusy = _workerBusy;
+        portEXIT_CRITICAL(&s_bleWorkerStateMux);
+        if (workerBusy) {
+            DLOG_WARN(TAG, "%s phase=worker_delete_deferred busy=1",
+                      phase ? phase : "ble");
+            return false;
+        }
         DLOG_INFO(TAG, "%s phase=worker_delete", phase ? phase : "ble");
         TaskHandle_t task = _workerTask;
         _workerTask = nullptr;
         vTaskDeleteWithCaps(task);
     }
+    return true;
 }
 
 void BLEManager::_ensureAdvertising(bool enable) {
@@ -1763,19 +2025,62 @@ void BLEManager::_workerLoop() {
     while (true) {
         uint32_t bits = 0;
         xTaskNotifyWait(0, 0xFFFFFFFFUL, &bits, portMAX_DELAY);
+        markBleWorkerDiag(160, bits);
+
+        portENTER_CRITICAL(&s_bleWorkerStateMux);
+        const bool runJobs = _radioEnabled;
+        if (runJobs) {
+            _workerBusy = true;
+        }
+        portEXIT_CRITICAL(&s_bleWorkerStateMux);
+
+        if (!runJobs) {
+            markBleWorkerDiag(161, bits);
+            continue;
+        }
 
         if (bits & WORKER_JOB_CONNECT) {
+            markBleWorkerDiag(162, bits);
             _doConnectJob();
+            markBleWorkerDiag(163, bits);
         }
-        if (bits & WORKER_JOB_POLL_GPS) {
+        if (_radioEnabled && (bits & WORKER_JOB_POLL_GPS)) {
+            markBleWorkerDiag(164, bits);
             _doGpsPollJob();
+            markBleWorkerDiag(165, bits);
         }
-        if (bits & WORKER_JOB_POLL_CONTROL) {
+        if (_radioEnabled && (bits & WORKER_JOB_POLL_CONTROL)) {
+            markBleWorkerDiag(166, bits);
             _doControlPollJob();
+            markBleWorkerDiag(167, bits);
         }
-        if (bits & WORKER_JOB_SEND_ENRICH) {
+        if (_radioEnabled && (bits & WORKER_JOB_SEND_ENRICH)) {
+            markBleWorkerDiag(168, bits);
             _doEnrichmentSendJob();
+            markBleWorkerDiag(169, bits);
         }
+
+        bool finishDisable = false;
+        portENTER_CRITICAL(&s_bleWorkerStateMux);
+        if (_radioDisablePending) {
+            // Keep busy asserted until cleanup completes so RadioArbiter cannot
+            // start WiFi between the blocking job and its disconnect cleanup.
+            _radioDisablePending = false;
+            finishDisable = true;
+        } else {
+            _workerBusy = false;
+        }
+        portEXIT_CRITICAL(&s_bleWorkerStateMux);
+
+        if (finishDisable) {
+            markBleWorkerDiag(170, bits);
+            _finishRadioDisable();
+            markBleWorkerDiag(171, bits);
+            portENTER_CRITICAL(&s_bleWorkerStateMux);
+            _workerBusy = false;
+            portEXIT_CRITICAL(&s_bleWorkerStateMux);
+        }
+        markBleWorkerDiag(172, bits);
     }
 }
 
@@ -1873,27 +2178,37 @@ void BLEManager::_doConnectJob() {
 }
 
 void BLEManager::_doGpsPollJob() {
+    markBleWorkerDiag(180);
     if (!_gpsRemoteChar || !_client || !_client->isConnected() || !_gpsRemoteChar->canRead()) {
+        markBleWorkerDiag(181);
         return;
     }
 
+    markBleWorkerDiag(182);
     NimBLEAttValue value = _gpsRemoteChar->readValue();
+    markBleWorkerDiag(183, value.size());
     if (value.size() == 0) {
         return;
     }
     _queueGpsFrameFromCallback(value.data(), value.size());
+    markBleWorkerDiag(184, value.size());
 }
 
 void BLEManager::_doControlPollJob() {
+    markBleWorkerDiag(190);
     if (!_controlRemoteChar || !_client || !_client->isConnected() || !_controlRemoteChar->canRead()) {
+        markBleWorkerDiag(191);
         return;
     }
 
+    markBleWorkerDiag(192);
     NimBLEAttValue value = _controlRemoteChar->readValue();
+    markBleWorkerDiag(193, value.size());
     if (value.size() == 0) {
         return;
     }
     _queueControlFrameFromCallback(value.data(), value.size());
+    markBleWorkerDiag(194, value.size());
 }
 
 void BLEManager::_doEnrichmentSendJob() {
@@ -2351,8 +2666,8 @@ bool BLEManager::_bindRemoteCharacteristics() {
 
     DLOG_INFO(TAG, "remote service lookup begin core=%d internalFree=%u largest=%u",
               xPortGetCoreID(),
-              static_cast<unsigned>(heap_caps_get_free_size(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT)),
-              static_cast<unsigned>(heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT)));
+              static_cast<unsigned>(heap_caps_get_free_size(SPECTRE_CAP_DRAM)),
+              static_cast<unsigned>(heap_caps_get_largest_free_block(SPECTRE_CAP_DRAM)));
     _remoteService = _client->getService(_targetServiceUUID);
     DLOG_INFO(TAG, "remote service lookup end found=%u err=%d",
               _remoteService ? 1u : 0u,
@@ -3077,6 +3392,7 @@ void BLEManager::_queueAuthFrameFromCallback(const uint8_t* data, size_t len) {
 }
 
 void BLEManager::_queueCommandRequestFromCallback(const uint8_t* data, size_t len) {
+    markBleRxDiag(128, len);
     if (!data || len == 0 || len > COMMAND_REQ_RX_MAX) {
         xSemaphoreTake(_rxMutex, portMAX_DELAY);
         _commandReqRxDrops++;
@@ -3094,6 +3410,7 @@ void BLEManager::_queueCommandRequestFromCallback(const uint8_t* data, size_t le
     _commandReqRxLen = len;
     _commandReqRxPending = true;
     xSemaphoreGive(_rxMutex);
+    markBleRxDiag(129, len);
 }
 
 // ── BLE RX queue — drain side (called from tick() context only) ──
@@ -3106,11 +3423,13 @@ void BLEManager::_drainBleRxQueues() {
 }
 
 void BLEManager::_drainGpsRx() {
+    markBleRxDiag(200);
     uint8_t snapshot[GPS_RX_MAX];
     size_t snapLen = 0;
     bool hadFrame = false;
 
     xSemaphoreTake(_rxMutex, portMAX_DELAY);
+    markBleRxDiag(201);
     if (_gpsRxPending && _gpsRxLen > 0) {
         snapLen = _gpsRxLen;
         if (snapLen > GPS_RX_MAX) {
@@ -3120,21 +3439,28 @@ void BLEManager::_drainGpsRx() {
         _gpsRxPending = false;
         _gpsRxLen = 0;
         hadFrame = true;
+        markBleRxDiag(202, snapLen);
     }
     xSemaphoreGive(_rxMutex);
+    markBleRxDiag(203, snapLen);
 
     if (hadFrame) {
         uint8_t plain[PHONE_GPS_FRAME_SIZE];
         size_t plainLen = 0;
+        markBleRxDiag(204, snapLen);
         if (_secureSession.decrypt(PHONE_SECURE_CHANNEL_GPS,
                                    snapshot,
                                    snapLen,
                                    plain,
                                    sizeof(plain),
                                    plainLen)) {
+            markBleRxDiag(205, plainLen);
             _noteSecureRxSuccess();
+            markBleRxDiag(206, plainLen);
             _handleGpsPayload(plain, plainLen);
+            markBleRxDiag(207, plainLen);
         } else {
+            markBleRxDiag(208, snapLen);
             const char* err = _secureSession.lastError();
             if (err && strstr(err, "replay/stale counter")) {
                 DLOG_DEBUG(TAG, "Ignoring stale GPS frame: %s", err);
@@ -3147,11 +3473,13 @@ void BLEManager::_drainGpsRx() {
 }
 
 void BLEManager::_drainControlRx() {
+    markBleRxDiag(210);
     uint8_t snapshot[CONTROL_RX_MAX];
     size_t snapLen = 0;
     bool hadFrame = false;
 
     xSemaphoreTake(_rxMutex, portMAX_DELAY);
+    markBleRxDiag(211);
     if (_controlRxPending && _controlRxLen > 0) {
         snapLen = _controlRxLen;
         if (snapLen > CONTROL_RX_MAX) {
@@ -3161,21 +3489,28 @@ void BLEManager::_drainControlRx() {
         _controlRxPending = false;
         _controlRxLen = 0;
         hadFrame = true;
+        markBleRxDiag(212, snapLen);
     }
     xSemaphoreGive(_rxMutex);
+    markBleRxDiag(213, snapLen);
 
     if (hadFrame) {
         uint8_t plain[PHONE_CONTROL_FRAME_SIZE];
         size_t plainLen = 0;
+        markBleRxDiag(214, snapLen);
         if (_secureSession.decrypt(PHONE_SECURE_CHANNEL_CONTROL,
                                    snapshot,
                                    snapLen,
                                    plain,
                                    sizeof(plain),
                                    plainLen)) {
+            markBleRxDiag(215, plainLen);
             _noteSecureRxSuccess();
+            markBleRxDiag(216, plainLen);
             _handleControlPayload(plain, plainLen);
+            markBleRxDiag(217, plainLen);
         } else {
+            markBleRxDiag(218, snapLen);
             const char* err = _secureSession.lastError();
             if (err && strstr(err, "replay/stale counter")) {
                 DLOG_DEBUG(TAG, "Ignoring stale control frame: %s", err);
@@ -3289,11 +3624,13 @@ void BLEManager::_drainEnrichmentRx() {
 }
 
 void BLEManager::_drainCommandRx() {
+    markBleRxDiag(130);
     uint8_t snapshot[COMMAND_REQ_RX_MAX];
     size_t snapLen = 0;
     bool hadFrame = false;
 
     xSemaphoreTake(_rxMutex, portMAX_DELAY);
+    markBleRxDiag(131);
     if (_commandReqRxPending && _commandReqRxLen > 0) {
         snapLen = _commandReqRxLen;
         if (snapLen > COMMAND_REQ_RX_MAX) {
@@ -3303,34 +3640,43 @@ void BLEManager::_drainCommandRx() {
         _commandReqRxPending = false;
         _commandReqRxLen = 0;
         hadFrame = true;
+        markBleRxDiag(132, snapLen);
     }
     xSemaphoreGive(_rxMutex);
+    markBleRxDiag(133, snapLen);
 
     if (!hadFrame) {
+        markBleRxDiag(138);
         return;
     }
 
     uint8_t plain[PHONE_COMMAND_REQ_FRAME_MAX];
     size_t plainLen = 0;
+    markBleRxDiag(134, snapLen);
     if (!_secureSession.decrypt(PHONE_SECURE_CHANNEL_COMMAND,
                                 snapshot, snapLen,
                                 plain, sizeof(plain),
                                 plainLen)) {
         DLOG_WARN(TAG, "command decrypt failed: %s",
                   _secureSession.lastError() ? _secureSession.lastError() : "-");
+        markBleRxDiag(139, snapLen);
         return;
     }
 
+    markBleRxDiag(135, plainLen);
     _handleCommandRequestPayload(plain, plainLen);
+    markBleRxDiag(137, plainLen);
 }
 
 void BLEManager::_handleCommandRequestPayload(const uint8_t* data, size_t len) {
+    markBleRxDiag(140, len);
     if (!_commandRespRemoteChar || !_commandRespRemoteChar->canWrite()) {
         DLOG_WARN(TAG, "command response char not writable; dropping reply");
         return;
     }
 
     size_t plainRespLen = 0;
+    markBleRxDiag(141, len);
     if (!CommandDispatcher::dispatch(data, len,
                                      _payload->commandRespPlain,
                                      sizeof(_payload->commandRespPlain),
@@ -3339,7 +3685,9 @@ void BLEManager::_handleCommandRequestPayload(const uint8_t* data, size_t len) {
         return;
     }
 
+    markBleRxDiag(142, plainRespLen);
     size_t secureLen = 0;
+    markBleRxDiag(143, plainRespLen);
     if (!_secureSession.encrypt(PHONE_SECURE_CHANNEL_COMMAND,
                                 _payload->commandRespPlain, plainRespLen,
                                 _payload->commandRespSecure,
@@ -3350,14 +3698,17 @@ void BLEManager::_handleCommandRequestPayload(const uint8_t* data, size_t len) {
         return;
     }
 
+    markBleRxDiag(144, secureLen);
     // The command envelope already carries an authenticated monotonic counter
     // plus opcode/requestId, and offload chunks are stateless by offset. Avoid
     // an ATT write-response round trip for every field-drain fragment; Android
     // exposes WRITE_NO_RESPONSE on this characteristic and the phone still
     // durably commits each record before Spectre advances its watermark.
+    markBleRxDiag(145, secureLen);
     if (!_commandRespRemoteChar->writeValue(_payload->commandRespSecure, secureLen, false)) {
         DLOG_WARN(TAG, "command response write failed");
     }
+    markBleRxDiag(146, secureLen);
 }
 
 void BLEManager::_clearBleRxQueues() {

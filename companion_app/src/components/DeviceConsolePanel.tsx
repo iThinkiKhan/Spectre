@@ -73,7 +73,7 @@ const HELP_LINES = [
   '  logtail                last buffered log lines (one-shot)',
   '  log [start|stop]       toggle the live log stream',
   '  enrich                 request enrich-now',
-  '  upload                 resume upload',
+  '  upload                 upload now',
   '  tag <text>             tag the active session',
   '  saveloc <text>         save a named location',
   '  screen <name|index>    change device screen',
@@ -259,7 +259,7 @@ export function DeviceConsolePanel() {
           }
           case 'upload': {
             await service.uploadNow();
-            append('out', 'upload resume requested');
+            append('out', 'upload queued');
             break;
           }
           case 'tag': {

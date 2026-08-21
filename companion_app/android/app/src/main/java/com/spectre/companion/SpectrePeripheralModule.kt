@@ -129,6 +129,11 @@ class SpectrePeripheralModule(
   private var advertiseCallback: AdvertiseCallback? = null
   private var service: BluetoothGattService? = null
   private var pendingAdvertiseModeAfterService: String? = null
+  // Advertising runs in a fast-discovery tier for a bounded window after start
+  // or a disconnect, then falls back to a low-power tier. Holding LOW_LATENCY +
+  // TX_POWER_HIGH indefinitely is the most expensive advertising configuration
+  // Android offers (~100ms interval at max TX) and was running 24/7.
+  private var advertiseFastDiscovery = true
   private var notificationInFlight = false
   private var notificationFlightToken = 0L
   private var notificationPostSendDelayMs = 0L
@@ -174,8 +179,21 @@ class SpectrePeripheralModule(
             restartAdvertising("watchdog")
           }
 
-          handler.postDelayed(this, ADVERTISE_WATCHDOG_INTERVAL_MS)
+          handler.postDelayed(this, advertiseWatchdogIntervalMs())
         }
+      }
+
+  // Drop out of the fast-discovery tier once Spectre has had a generous window
+  // to find us. A disconnect escalates back, so a device that wanders out of
+  // range is still picked up quickly on its return.
+  private val advertiseStepDown =
+      Runnable {
+        if (!state.running || !advertiseFastDiscovery) {
+          return@Runnable
+        }
+        advertiseFastDiscovery = false
+        traceInfo("advertise_power_stepdown", "connected" to connectedDevices.size)
+        restartAdvertising("power_stepdown")
       }
 
   init {
@@ -185,9 +203,16 @@ class SpectrePeripheralModule(
 
   override fun getName(): String = "SpectrePeripheral"
 
-  override fun onHostResume() = Unit
+  // While the app is in front the map and status panels read live fixes, so the
+  // recorder delivers promptly. Backgrounded, nothing is watching and it can
+  // batch instead.
+  override fun onHostResume() {
+    SpectreLocationService.setForeground(reactContext, true)
+  }
 
-  override fun onHostPause() = Unit
+  override fun onHostPause() {
+    SpectreLocationService.setForeground(reactContext, false)
+  }
 
   override fun onHostDestroy() {
     stopInternal()
@@ -537,6 +562,8 @@ class SpectrePeripheralModule(
               state.connectedDevices = connectedDevices.size
               state.lastConnectedAt = System.currentTimeMillis()
               state.lastConnectedPeer = peer
+              // Something is reading GPS now: narrow the recorder's batch window.
+              SpectreLocationService.setLinked(reactContext, true)
               emitLog("Peripheral connected: $peer")
             } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
               connectedDevices.remove(device.address)
@@ -557,6 +584,10 @@ class SpectrePeripheralModule(
               if (connectedDevices.isEmpty()) {
                 secureSession.reset()
                 state.secureSessionReady = false
+                SpectreLocationService.setLinked(reactContext, false)
+                // Back to the fast tier so a device that dropped out of range
+                // is rediscovered quickly; it steps down again on its own.
+                advertiseFastDiscovery = true
                 restartAdvertising("disconnect")
               }
               emitLog("Peripheral disconnected: $peer")
@@ -934,11 +965,24 @@ class SpectrePeripheralModule(
 
     val settings =
         AdvertiseSettings.Builder()
-            .setAdvertiseMode(AdvertiseSettings.ADVERTISE_MODE_LOW_LATENCY)
-            .setTxPowerLevel(AdvertiseSettings.ADVERTISE_TX_POWER_HIGH)
+            .setAdvertiseMode(
+                if (advertiseFastDiscovery) AdvertiseSettings.ADVERTISE_MODE_LOW_LATENCY
+                else AdvertiseSettings.ADVERTISE_MODE_LOW_POWER
+            )
+            .setTxPowerLevel(
+                if (advertiseFastDiscovery) AdvertiseSettings.ADVERTISE_TX_POWER_HIGH
+                else AdvertiseSettings.ADVERTISE_TX_POWER_MEDIUM
+            )
             .setConnectable(true)
             .setTimeout(0)
             .build()
+
+    // Arm the step-down only while in the fast tier; the low-power restart
+    // leaves advertiseFastDiscovery false, so this does not re-arm itself.
+    handler.removeCallbacks(advertiseStepDown)
+    if (advertiseFastDiscovery) {
+      handler.postDelayed(advertiseStepDown, ADVERTISE_FAST_DISCOVERY_WINDOW_MS)
+    }
 
     advertiseCallback =
         object : AdvertiseCallback() {
@@ -995,16 +1039,25 @@ class SpectrePeripheralModule(
     }
   }
 
+  // Poll hard only while advertising is actually down. A confirmed-healthy
+  // advertiser needs a liveness check, not a five-second one.
+  private fun advertiseWatchdogIntervalMs(): Long =
+      if (advertiseCallback != null && state.advertising) ADVERTISE_WATCHDOG_HEALTHY_MS
+      else ADVERTISE_WATCHDOG_RECOVERY_MS
+
   private fun armAdvertisingWatchdog() {
     handler.removeCallbacks(advertiseWatchdog)
     if (state.running) {
       state.watchdogActive = true
-      handler.postDelayed(advertiseWatchdog, ADVERTISE_WATCHDOG_INTERVAL_MS)
+      handler.postDelayed(advertiseWatchdog, advertiseWatchdogIntervalMs())
     }
   }
 
   private fun disarmAdvertisingWatchdog() {
     handler.removeCallbacks(advertiseWatchdog)
+    handler.removeCallbacks(advertiseStepDown)
+    // Next start is a fresh discovery window.
+    advertiseFastDiscovery = true
     state.watchdogActive = false
   }
 
@@ -2535,7 +2588,12 @@ class SpectrePeripheralModule(
     private const val PHONE_CTRL_ONE_SHOT_MASK = 0x0e
     private const val PHONE_CONTROL_PULSE_TTL_MS = 8_500L
     private const val AUTH_FRAME_SIZE = 163
-    private const val ADVERTISE_WATCHDOG_INTERVAL_MS = 5_000L
+    // 5s only while recovering a down advertiser; 30s once it is confirmed up.
+    private const val ADVERTISE_WATCHDOG_RECOVERY_MS = 5_000L
+    private const val ADVERTISE_WATCHDOG_HEALTHY_MS = 30_000L
+    // How long to hold LOW_LATENCY + TX_POWER_HIGH after a start or a
+    // disconnect before dropping to the low-power advertising tier.
+    private const val ADVERTISE_FAST_DISCOVERY_WINDOW_MS = 60_000L
     private const val ADVERTISE_ERROR_BAD_PAYLOAD = -2
     private const val LOG_TAG = "SpectrePeripheral"
 

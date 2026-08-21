@@ -173,9 +173,9 @@ const char* missionProfileSummary(MissionProfile profile) {
 
 const char* missionProfileListSummary(MissionProfile profile) {
     switch (profile) {
-        case MISSION_RECON:  return "Passive wifi + subghz";
-        case MISSION_PWNY:   return "Target lock + pressure";
-        case MISSION_UPLINK: return "Sync + export relay";
+        case MISSION_RECON:  return "Passive WiFi + subGHz";
+        case MISSION_PWNY:   return "Target + capture";
+        case MISSION_UPLINK: return "Sync + export";
         default:             return "Mission staging";
     }
 }
@@ -230,7 +230,7 @@ ButtonBindingSet displayBadUsbBindings(bool ready, bool armed, bool running) {
 ButtonBindingSet displayBindingsFromState() {
     uint8_t runContext = RUN_CONTEXT_GENERAL;
     uint8_t activeMissionProfile = MISSION_RECON;
-    Screen currentScreen = SCREEN_LORA;
+    Screen currentScreen = DEFAULT_GENERAL_SCREEN;
     bool wifiListActive = false;
     bool missionListActive = false;
     bool badUsbListActive = false;
@@ -271,6 +271,22 @@ ButtonBindingSet displayBindingsFromState() {
         return displayBadUsbBindings(badUsbReady, badUsbArmed, badUsbRunning);
     }
     return spectreScreenBindings(currentScreen);
+}
+
+void updatePageIndicator(lv_obj_t* label, Screen screen) {
+    if (!label) return;
+
+    char text[24] = {};
+    const uint8_t ordinal = generalScreenOrdinal(screen);
+    if (ordinal > 0) {
+        snprintf(text, sizeof(text), "%u/%u %s",
+                 static_cast<unsigned>(ordinal),
+                 static_cast<unsigned>(GENERAL_SCREEN_COUNT),
+                 screenLongName(screen));
+    } else {
+        snprintf(text, sizeof(text), "LIVE %s", screenLongName(screen));
+    }
+    lv_label_set_text(label, text);
 }
 
 }
@@ -316,8 +332,8 @@ void DisplayManager::begin() {
     _setPanelBorderColor(_actionBar,   CLR_BORDER);
     _setPanelBorderColor(_mascotPanel, CLR_BORDER);
 
-    setScreen(SCREEN_LORA);
-    drawLora("NONE", "OFF", 0, 0, "--", 0, 0, 0);
+    setScreen(DEFAULT_GENERAL_SCREEN);
+    drawRecon(MISSION_RECON);
 }
 
 void DisplayManager::setActionHints(const ButtonBindingSet& bindings) {
@@ -552,7 +568,7 @@ void DisplayManager::setScreen(Screen s) {
     }
 
     if (_currentScreen == s) {
-        if (_lblScreen) lv_label_set_text(_lblScreen, screenShortTag(s));
+        updatePageIndicator(_lblScreen, s);
         return;
     }
 
@@ -604,7 +620,7 @@ void DisplayManager::setScreen(Screen s) {
 
     _currentScreen = s;
 
-    if (_lblScreen) lv_label_set_text(_lblScreen, screenShortTag(s));
+    updatePageIndicator(_lblScreen, s);
 
     if (_radarLine) {
         const bool radarActive = (s == SCREEN_WIFI);
@@ -624,29 +640,24 @@ void DisplayManager::_buildStatusBar() {
                             0, 0, THEME_SCREEN_W, THEME_STATUS_H,
                             0x111111, accent);
 
-    _makeLabel(_statusBar, "SPECTRE", accent, FONT_BODY,
-                LV_ALIGN_LEFT_MID, 4, 0);
+    // Fixed-width field-state slots prevent dynamic labels from colliding.
+    // The old brand token consumed scarce pixels while W:RX/BLE/LORA left the
+    // operator guessing whether each item was a radio, link, or activity.
+    _lblBatt = makeClippedLabel(_statusBar, "USB", CLR_GREEN, FONT_SMALL,
+                                4, 4, 42);
+    _lblWifi = makeClippedLabel(_statusBar, "RADIO --", CLR_GREY, FONT_SMALL,
+                                50, 4, 68);
+    _lblBle = makeClippedLabel(_statusBar, "PHONE-", CLR_GREY, FONT_SMALL,
+                               122, 4, 44);
+    _lblLora = makeClippedLabel(_statusBar, "SG--", CLR_GREY, FONT_SMALL,
+                                170, 4, 42);
 
-    _lblBatt = _makeLabel(_statusBar, "PWR", CLR_GREEN, FONT_SMALL,
-                          LV_ALIGN_LEFT_MID, 68, 0);
-
-    _lblWifi = _makeLabel(_statusBar, "W:--", CLR_GREY, FONT_SMALL,
-                          LV_ALIGN_LEFT_MID, 104, 0);
-
-    _lblBle = _makeLabel(_statusBar, "BLE", CLR_GREY, FONT_SMALL,
-                         LV_ALIGN_LEFT_MID, 154, 0);
-
-    _lblLora = _makeLabel(_statusBar, "LORA", CLR_YELLOW, FONT_SMALL,
-                          LV_ALIGN_LEFT_MID, 194, 0);
-
-    // Sleep-chord hint. Sits in the gap between the LoRa indicator (ends ~226)
-    // and the right-aligned screen tag (starts ~292), so it costs no existing
-    // element any room. Kept dim on purpose: it is a reminder, not a status.
-    _lblSleepHint = _makeLabel(_statusBar, "AB=SLP", CLR_DIM, FONT_SMALL,
-                               LV_ALIGN_LEFT_MID, 236, 0);
-
-    _lblScreen = _makeLabel(_statusBar, "LRA", CLR_CYAN, FONT_SMALL,
-                            LV_ALIGN_RIGHT_MID, -4, 0);
+    // Position + page tag makes one-button navigation predictable. The global
+    // sleep chord remains in the button system; persistent status pixels are
+    // reserved for changing field state.
+    _lblScreen = makeClippedLabel(_statusBar, "1/8 MISSION", CLR_CYAN,
+                                  FONT_SMALL, 216, 4, 100,
+                                  LV_TEXT_ALIGN_RIGHT);
 
     static lv_point_precise_t pts[] = {{0, THEME_STATUS_H - 1},
                                        {THEME_SCREEN_W, THEME_STATUS_H - 1}};
@@ -707,27 +718,29 @@ void DisplayManager::updateStatus(const StatusBar& sb) {
     uint32_t    radioCol;
     switch ((RadioOwner)sb.radioOwner) {
         case RADIO_WIFI_CAPTURE:
-            radioTxt = "W:RX";  radioCol = CLR_CYAN;   break;
+            radioTxt = "WIFI RX";  radioCol = CLR_CYAN;   break;
         case RADIO_WIFI_UPLOAD:
-            radioTxt = "W:UP";  radioCol = CLR_GREEN;  break;
+            radioTxt = "WIFI UP";  radioCol = CLR_GREEN;  break;
         case RADIO_WIFI_SCAN:
-            radioTxt = "W:SCN"; radioCol = CLR_YELLOW; break;
+            radioTxt = "WIFI SCN"; radioCol = CLR_YELLOW; break;
         case RADIO_WIFI_PMKID:
-            radioTxt = "W:PWN"; radioCol = CLR_RED;    break;
+            radioTxt = "WIFI PWN"; radioCol = CLR_RED;    break;
         case RADIO_BLE_GPS:
-            radioTxt = "B:GPS"; radioCol = CLR_YELLOW; break;
+            radioTxt = "BLE GPS"; radioCol = CLR_YELLOW; break;
         case RADIO_BLE_TEXT:
-            radioTxt = "B:TXT"; radioCol = CLR_YELLOW; break;
+            radioTxt = "BLE TXT"; radioCol = CLR_YELLOW; break;
         default:
-            radioTxt = "W:--";  radioCol = CLR_GREY;   break;
+            radioTxt = "RADIO --"; radioCol = CLR_GREY; break;
     }
     lv_label_set_text(_lblWifi, radioTxt);
     lv_obj_set_style_text_color(_lblWifi,
         lv_color_hex(radioCol), 0);
 
+    lv_label_set_text(_lblBle, sb.bleConnected ? "PHONE+" : "PHONE-");
     lv_obj_set_style_text_color(_lblBle,
         sb.bleConnected ? lv_color_hex(CLR_CYAN) : lv_color_hex(CLR_GREY), 0);
 
+    lv_label_set_text(_lblLora, sb.loraActive ? "SG ON" : "SG --");
     lv_obj_set_style_text_color(_lblLora,
         sb.loraActive ? lv_color_hex(CLR_YELLOW) : lv_color_hex(CLR_GREY), 0);
 }
@@ -1109,8 +1122,11 @@ void DisplayManager::_buildScreenLora() {
                               CLR_BLACK, CLR_BLACK);
 
     const uint32_t accent = displayAccentColor();
-    _makeLabel(_loraContent, "SUB-GHZ RECON", accent, FONT_HEADER,
+    _makeLabel(_loraContent, "SUB-GHZ", accent, FONT_HEADER,
                LV_ALIGN_TOP_LEFT, 4, 4);
+    _loraHeaderStatus = makeClippedLabel(_loraContent, "OFF", CLR_GREY,
+                                         FONT_SMALL, 142, 8, 98,
+                                         LV_TEXT_ALIGN_RIGHT);
 
     static lv_point_precise_t sep[] = {{0,26},{THEME_CONTENT_W,26}};
     lv_obj_t* line = lv_line_create(_loraContent);
@@ -1122,12 +1138,12 @@ void DisplayManager::_buildScreenLora() {
                LV_ALIGN_TOP_LEFT, 4, 32);
     _makeLabel(_loraContent, "SNR", CLR_GREY, FONT_SMALL,
                LV_ALIGN_TOP_LEFT, 90, 32);
-    _makeLabel(_loraContent, "PACKETS", CLR_GREY, FONT_SMALL,
+    _makeLabel(_loraContent, "RX", CLR_GREY, FONT_SMALL,
                LV_ALIGN_TOP_LEFT, 180, 32);
     _makeLabel(_loraContent, "LAST SIGNAL", CLR_GREY, FONT_SMALL,
                LV_ALIGN_TOP_LEFT, 4, 72);
-    _subGhzMetaValue = makeClippedLabel(_loraContent, "NONE / OFF / 0.0 MHz / NODES 0",
-                                        CLR_DIMYELLOW, FONT_SMALL, 4, 108, THEME_CONTENT_W - 8);
+    _subGhzMetaValue = makeClippedLabel(_loraContent, "NONE  0.0MHz  NODES 0",
+                                         CLR_DIMYELLOW, FONT_SMALL, 4, 108, THEME_CONTENT_W - 8);
 
     _rssiLabel = makeClippedLabel(_loraContent, "0 dB", CLR_GREY, FONT_BODY, 4, 46, 72);
     _snrLabel = makeClippedLabel(_loraContent, "0 dB", CLR_GREY, FONT_BODY, 90, 46, 72);
@@ -1142,8 +1158,11 @@ void DisplayManager::_buildScreenMeshtastic() {
                               CLR_BLACK, CLR_BLACK);
 
     const uint32_t accent = displayAccentColor();
-    _makeLabel(_meshContent, "MESHTASTIC", accent, FONT_HEADER,
+    _makeLabel(_meshContent, "MESH", accent, FONT_HEADER,
                LV_ALIGN_TOP_LEFT, 4, 4);
+    _meshHeaderStatus = makeClippedLabel(_meshContent, "OFF", CLR_GREY,
+                                         FONT_SMALL, 142, 8, 98,
+                                         LV_TEXT_ALIGN_RIGHT);
 
     static lv_point_precise_t sep[] = {{0,26},{THEME_CONTENT_W,26}};
     lv_obj_t* line = lv_line_create(_meshContent);
@@ -1151,18 +1170,21 @@ void DisplayManager::_buildScreenMeshtastic() {
     lv_obj_set_style_line_color(line, lv_color_hex(accent), 0);
     lv_obj_set_style_line_width(line, 1, 0);
 
-    _makeLabel(_meshContent, "NODE", CLR_GREY, FONT_SMALL,
-               LV_ALIGN_TOP_LEFT, 4, 32);
-    _makeLabel(_meshContent, "CHANNEL", CLR_GREY, FONT_SMALL,
-               LV_ALIGN_TOP_LEFT, 120, 32);
+    _makeLabel(_meshContent, "NODES", CLR_GREY, FONT_SMALL,
+               LV_ALIGN_TOP_LEFT, 4, 30);
+    _makeLabel(_meshContent, "RX", CLR_GREY, FONT_SMALL,
+               LV_ALIGN_TOP_LEFT, 84, 30);
+    _makeLabel(_meshContent, "TX", CLR_GREY, FONT_SMALL,
+               LV_ALIGN_TOP_LEFT, 164, 30);
     _makeLabel(_meshContent, "LAST MESSAGE", CLR_GREY, FONT_SMALL,
-               LV_ALIGN_TOP_LEFT, 4, 72);
+               LV_ALIGN_TOP_LEFT, 4, 66);
 
-    _meshNodeValue = makeClippedLabel(_meshContent, "--", CLR_CYAN, FONT_BODY, 4, 46, 108);
-    _meshChannelValue = makeClippedLabel(_meshContent, "LONGFAST", CLR_YELLOW, FONT_BODY, 120, 46, 116);
-    _meshLastMessageValue = makeClippedLabel(_meshContent, "--", CLR_WHITE, FONT_BODY, 4, 86, THEME_CONTENT_W - 8);
-    _meshStatsValue = makeClippedLabel(_meshContent, "PACKETS RX: 0    NODES SEEN: 0",
-                                       CLR_GREY, FONT_SMALL, 4, 116, THEME_CONTENT_W - 8);
+    _meshNodeValue = makeClippedLabel(_meshContent, "0", CLR_CYAN, FONT_BODY, 4, 44, 64);
+    _meshChannelValue = makeClippedLabel(_meshContent, "0", CLR_GREEN, FONT_BODY, 84, 44, 64);
+    _meshTxValue = makeClippedLabel(_meshContent, "0", CLR_YELLOW, FONT_BODY, 164, 44, 72);
+    _meshLastMessageValue = makeClippedLabel(_meshContent, "--", CLR_WHITE, FONT_BODY, 4, 80, THEME_CONTENT_W - 8);
+    _meshStatsValue = makeClippedLabel(_meshContent, "SELF --  FROM --  LONGFAST",
+                                       CLR_GREY, FONT_SMALL, 4, 106, THEME_CONTENT_W - 8);
     lv_obj_add_flag(_meshContent, LV_OBJ_FLAG_HIDDEN);
 }
 
@@ -1173,8 +1195,11 @@ void DisplayManager::_buildScreenWifi() {
                               CLR_BLACK, CLR_BLACK);
 
     const uint32_t accent = displayAccentColor();
-    _makeLabel(_wifiContent, "ENTITIES", accent, FONT_HEADER,
+    _makeLabel(_wifiContent, "FIELD ENTITIES", accent, FONT_HEADER,
                LV_ALIGN_TOP_LEFT, 4, 4);
+    _wifiHeaderStatus = makeClippedLabel(_wifiContent, "CH --", CLR_GREY,
+                                         FONT_SMALL, 166, 8, 74,
+                                         LV_TEXT_ALIGN_RIGHT);
 
     static lv_point_precise_t sep[] = {{0,26},{THEME_CONTENT_W,26}};
     lv_obj_t* line = lv_line_create(_wifiContent);
@@ -1196,7 +1221,9 @@ void DisplayManager::_buildScreenWifi() {
     _wifiProbesValue = makeClippedLabel(_wifiContent, "0", CLR_GREY, FONT_BODY, 180, 46, 64);
     _wifiLastSSIDValue = makeClippedLabel(_wifiContent, "--", CLR_CYAN, FONT_BODY, 4, 82, THEME_CONTENT_W - 8);
     _wifiLastMACValue = makeClippedLabel(_wifiContent, "--", CLR_GREY, FONT_SMALL, 4, 100, THEME_CONTENT_W - 8);
-    _wifiChannelValue = makeClippedLabel(_wifiContent, "CH: 0", CLR_DIMYELLOW, FONT_SMALL, 4, 114, 72);
+    _wifiChannelValue = makeClippedLabel(_wifiContent, "AP 0  CLIENT 0  DRONE 0  BLE 0",
+                                         CLR_DIMYELLOW, FONT_SMALL, 4, 114,
+                                         THEME_CONTENT_W - 8);
     lv_obj_add_flag(_wifiContent, LV_OBJ_FLAG_HIDDEN);
 }
 
@@ -1229,13 +1256,13 @@ void DisplayManager::_buildScreenBle() {
                                        172, y, 72);
     };
 
-    makeBleRow(30, "XPORT", &_bleTransportValue, "RADIO", &_bleRadioValue);
-    makeBleRow(48, "OUT", &_bleOutboundValue, "IN", &_bleInboundValue);
-    makeBleRow(66, "SECURE", &_bleSecurityValue, "GPS", &_bleGpsValue);
-    makeBleRow(84, "WORK", &_bleWorkValue, "PEND", &_blePendingValue);
+    makeBleRow(30, "PHONE", &_bleTransportValue, "RADIO", &_bleRadioValue);
+    makeBleRow(48, "LINK", &_bleOutboundValue, "IN", &_bleInboundValue);
+    makeBleRow(66, "AUTH", &_bleSecurityValue, "GPS", &_bleGpsValue);
+    makeBleRow(84, "JOB", &_bleWorkValue, "QUEUE", &_blePendingValue);
 
     makeClippedLabel(_bleContent,
-                     "LINK opens scan + inbound discovery",
+                     "LINK enables phone GPS, enrichment + offload",
                      CLR_DIMYELLOW, FONT_SMALL, 4, 106,
                      THEME_CONTENT_W - 8);
     lv_obj_add_flag(_bleContent, LV_OBJ_FLAG_HIDDEN);
@@ -1315,7 +1342,7 @@ void DisplayManager::_buildScreenPwny() {
     for (int i = 0; i < 8; i++) {
         _pwnyTargetRows[i] = makeClippedLabel(_pwnyContent,
             "", CLR_GREY, FONT_SMALL,
-            4, 64 + i * 12, THEME_CONTENT_W - 8);
+            4, 64 + i * 14, THEME_CONTENT_W - 8);
     }
 
     _updatePwnyHandshakeViz(0);
@@ -1355,7 +1382,7 @@ void DisplayManager::_buildScreenBadUsb() {
 
     for (int i = 0; i < 4; ++i) {
         _badUsbOpLabels[i] = makeClippedLabel(_badUsbContent, "", CLR_GREY, FONT_SMALL,
-                                              4, 94 + i * 10, THEME_CONTENT_W - 8);
+                                              4, 90 + i * 13, THEME_CONTENT_W - 8);
     }
 
     lv_obj_add_flag(_badUsbContent, LV_OBJ_FLAG_HIDDEN);
@@ -1368,29 +1395,27 @@ void DisplayManager::_buildScreenRecon() {
                                CLR_BLACK, CLR_BLACK);
 
     const uint32_t accent = displayAccentColor();
-    _makeLabel(_reconContent, "MISSION LAUNCH", accent, FONT_HEADER,
+    _makeLabel(_reconContent, "MISSIONS", accent, FONT_HEADER,
                LV_ALIGN_TOP_LEFT, 4, 4);
 
-    // Tightened vertical rhythm so the tactical posture line fits inside the
-    // 128px area (it was clipped at y≈118). The old redundant "detail" filler
-    // line is hidden in drawRecon(), leaving posture as the last row.
     _makeLabel(_reconContent, "PROFILE", CLR_GREY, FONT_SMALL,
-               LV_ALIGN_TOP_LEFT, 4, 22);
-    _reconModeValue = makeClippedLabel(_reconContent, "IDLE", accent, FONT_BODY, 4, 34, THEME_CONTENT_W - 8);
+               LV_ALIGN_TOP_LEFT, 4, 30);
+    _reconModeValue = makeClippedLabel(_reconContent, "RECON", accent, FONT_BODY,
+                                       72, 28, THEME_CONTENT_W - 76);
 
     _reconScriptLabel = _makeLabel(_reconContent, "OBJECTIVE", CLR_GREY, FONT_SMALL,
-                                   LV_ALIGN_TOP_LEFT, 4, 52);
-    _reconScriptValue = makeClippedLabel(_reconContent, "--", CLR_WHITE, FONT_BODY,
-                                         4, 64, THEME_CONTENT_W - 8);
+                                   LV_ALIGN_TOP_LEFT, 4, 50);
+    _reconScriptValue = makeClippedLabel(_reconContent, "--", CLR_WHITE, FONT_SMALL,
+                                         84, 50, THEME_CONTENT_W - 88);
 
-    _reconStatusValue = makeClippedLabel(_reconContent, "READY", CLR_CYAN, FONT_BODY,
-                                         4, 84, THEME_CONTENT_W - 8);
+    _reconStatusValue = makeClippedLabel(_reconContent, "READY TO LAUNCH", CLR_CYAN, FONT_SMALL,
+                                         4, 113, THEME_CONTENT_W - 8);
     _reconDetailValue = makeClippedLabel(_reconContent, "--", CLR_GREY, FONT_SMALL,
                                          4, 104, THEME_CONTENT_W - 8);
 
     for (int i = 0; i < 4; i++) {
         _reconOpLabels[i] = makeClippedLabel(_reconContent, "", CLR_GREY, FONT_SMALL,
-                                             4, 104 + i * 8, THEME_CONTENT_W - 8);
+                                             4, 65 + i * 16, THEME_CONTENT_W - 8);
     }
     lv_obj_add_flag(_reconContent, LV_OBJ_FLAG_HIDDEN);
 }
@@ -1444,7 +1469,7 @@ void DisplayManager::_buildScreenSystem() {
     };
 
     makeSystemRow(30, "STORE", &_sysStorageValue, "FREE", &_sysFreeValue);
-    makeSystemRow(48, "ENT", &_sysPendingValue, "DEDUP", &_sysDedupeValue);
+    makeSystemRow(48, "QUEUE", &_sysPendingValue, "LOSS", &_sysDedupeValue);
     makeSystemRow(66, "MAINT", &_sysModeValue, "WORK", &_sysPolicyValue);
     _sysTimeLabel = makeClippedLabel(_sysLivePanel, "UPTIME", CLR_GREY, FONT_SMALL, 4, 84, 42);
     _sysTimeValue = makeClippedLabel(_sysLivePanel, "--", CLR_CYAN, FONT_SMALL, 48, 84, 78);
@@ -1495,30 +1520,39 @@ void DisplayManager::drawLora(const char* moduleName, const char* modeName,
     _setActionHints(bindings);
     const char* payloadText = (lastPayload && lastPayload[0]) ? lastPayload : "--";
     char metaStr[80];
-    snprintf(metaStr, sizeof(metaStr), "%s / %s / %lu.%lu MHz / NODES %u",
+    snprintf(metaStr, sizeof(metaStr), "%s  %lu.%luMHz  NODES %u",
              (moduleName && moduleName[0]) ? moduleName : "NONE",
-             (modeName && modeName[0]) ? modeName : "OFF",
              static_cast<unsigned long>(frequencyHz / 1000000UL),
              static_cast<unsigned long>((frequencyHz % 1000000UL) / 100000UL),
              static_cast<unsigned>(nodeCount));
+
+    const char* activeMode = (modeName && modeName[0]) ? modeName : "OFF";
+    if (_loraHeaderStatus) {
+        lv_label_set_text(_loraHeaderStatus, activeMode);
+        lv_obj_set_style_text_color(_loraHeaderStatus,
+                                    lv_color_hex(strcmp(activeMode, "OFF") == 0
+                                                     ? CLR_GREY : CLR_GREEN), 0);
+    }
 
     uint32_t rssiColor = rssi == 0    ? CLR_GREY  :
                          rssi > -80   ? CLR_GREEN  :
                          rssi > -100  ? CLR_YELLOW : CLR_RED;
     char rssiStr[16];
-    snprintf(rssiStr, sizeof(rssiStr), "%d dB", rssi);
+    if (rssi == 0) snprintf(rssiStr, sizeof(rssiStr), "--");
+    else snprintf(rssiStr, sizeof(rssiStr), "%d dBm", rssi);
     lv_label_set_text(_rssiLabel, rssiStr);
     lv_obj_set_style_text_color(_rssiLabel, lv_color_hex(rssiColor), 0);
 
     char snrStr[16];
-    snprintf(snrStr, sizeof(snrStr), "%d dB", snr);
+    if (rssi == 0) snprintf(snrStr, sizeof(snrStr), "--");
+    else snprintf(snrStr, sizeof(snrStr), "%+d dB", snr);
     lv_label_set_text(_snrLabel, snrStr);
     lv_obj_set_style_text_color(_snrLabel,
                                 lv_color_hex(snr == 0 ? CLR_GREY : CLR_CYAN),
                                 0);
 
     char pktStr[16];
-    snprintf(pktStr, sizeof(pktStr), "%05d", packets);
+    snprintf(pktStr, sizeof(pktStr), "%d", packets);
     lv_label_set_text(_loraPacketsValue, pktStr);
     lv_label_set_text(_loraPayloadValue, payloadText);
     if (_subGhzMetaValue) {
@@ -1906,15 +1940,31 @@ void DisplayManager::drawMeshtastic(bool enabled, uint32_t nodeNum, int nodeCoun
     const ButtonBindingSet bindings = spectreScreenBindings(SCREEN_MESHTASTIC);
     _setActionHints(bindings);
 
+    if (_meshHeaderStatus) {
+        lv_label_set_text(_meshHeaderStatus, enabled ? "LISTENING" : "OFF");
+        lv_obj_set_style_text_color(_meshHeaderStatus,
+                                    lv_color_hex(enabled ? CLR_GREEN : CLR_GREY), 0);
+    }
+
     char nodeText[16] = {};
-    snprintf(nodeText, sizeof(nodeText), "!%08lx",
-             static_cast<unsigned long>(nodeNum));
+    snprintf(nodeText, sizeof(nodeText), "%d", nodeCount);
     lv_label_set_text(_meshNodeValue, nodeText);
+    lv_obj_set_style_text_color(_meshNodeValue,
+                                lv_color_hex(nodeCount > 0 ? CLR_CYAN : CLR_GREY), 0);
 
     char channelText[20] = {};
-    snprintf(channelText, sizeof(channelText), "LongFast %s",
-             enabled ? "ON" : "OFF");
+    snprintf(channelText, sizeof(channelText), "%lu",
+             static_cast<unsigned long>(rxText));
     lv_label_set_text(_meshChannelValue, channelText);
+    lv_obj_set_style_text_color(_meshChannelValue,
+                                lv_color_hex(rxText > 0 ? CLR_GREEN : CLR_GREY), 0);
+
+    char txTextBuf[20] = {};
+    snprintf(txTextBuf, sizeof(txTextBuf), "%lu",
+             static_cast<unsigned long>(txText));
+    lv_label_set_text(_meshTxValue, txTextBuf);
+    lv_obj_set_style_text_color(_meshTxValue,
+                                lv_color_hex(txText > 0 ? CLR_YELLOW : CLR_GREY), 0);
 
     char lastMsg[96] = {};
     if (lastText && lastText[0]) {
@@ -1926,11 +1976,15 @@ void DisplayManager::drawMeshtastic(bool enabled, uint32_t nodeNum, int nodeCoun
     }
     lv_label_set_text(_meshLastMessageValue, lastMsg);
 
-    char stats[48] = {};
-    snprintf(stats, sizeof(stats), "RX:%lu  TX:%lu  NODES:%d",
-             static_cast<unsigned long>(rxText),
-             static_cast<unsigned long>(txText),
-             nodeCount);
+    char stats[64] = {};
+    if (lastFrom != 0) {
+        snprintf(stats, sizeof(stats), "SELF !%08lx  FROM !%08lx",
+                 static_cast<unsigned long>(nodeNum),
+                 static_cast<unsigned long>(lastFrom));
+    } else {
+        snprintf(stats, sizeof(stats), "SELF !%08lx  LONGFAST",
+                 static_cast<unsigned long>(nodeNum));
+    }
     lv_label_set_text(_meshStatsValue, stats);
 }
 
@@ -1958,6 +2012,10 @@ void DisplayManager::drawWifi(const char* ssid, int networks,
     uint32_t entities = 0;
     uint32_t nearby = 0;
     uint32_t observations = 0;
+    uint16_t accessPoints = 0;
+    uint16_t clients = 0;
+    uint16_t drones = 0;
+    uint16_t bleEntities = 0;
     int8_t closestRssi = -127;
     uint8_t closestChannel = 0;
     uint8_t closestKind = 0;
@@ -1968,6 +2026,10 @@ void DisplayManager::drawWifi(const char* ssid, int networks,
     entities = g_state.entityTotal;
     nearby = g_state.entityNearby;
     observations = g_state.entityObservations;
+    accessPoints = g_state.entityAccessPoints;
+    clients = g_state.entityClients;
+    drones = g_state.entityDrones;
+    bleEntities = g_state.entityBle;
     closestRssi = g_state.entityClosestRssi;
     closestChannel = g_state.entityClosestChannel;
     closestKind = g_state.entityClosestKind;
@@ -2035,9 +2097,25 @@ void DisplayManager::drawWifi(const char* ssid, int networks,
     STATE_READ_BEGIN();
     ch = g_state.wifiChannel;
     STATE_READ_END();
-    char chStr[16];
-    snprintf(chStr, sizeof(chStr), "CH: %d", ch);
-    lv_label_set_text(_wifiChannelValue, chStr);
+    char chStr[20];
+    if (scanPending) {
+        snprintf(chStr, sizeof(chStr), "SCANNING");
+    } else {
+        snprintf(chStr, sizeof(chStr), "CH %u", static_cast<unsigned>(ch));
+    }
+    lv_label_set_text(_wifiHeaderStatus, chStr);
+    lv_obj_set_style_text_color(_wifiHeaderStatus,
+                                lv_color_hex(scanPending ? CLR_YELLOW : CLR_CYAN), 0);
+
+    char breakdown[56];
+    snprintf(breakdown, sizeof(breakdown), "AP %u  CLIENT %u  DRONE %u  BLE %u",
+             static_cast<unsigned>(accessPoints),
+             static_cast<unsigned>(clients),
+             static_cast<unsigned>(drones),
+             static_cast<unsigned>(bleEntities));
+    lv_label_set_text(_wifiChannelValue, breakdown);
+    lv_obj_set_style_text_color(_wifiChannelValue,
+                                lv_color_hex(drones > 0 ? CLR_RED : CLR_DIMYELLOW), 0);
 }
 
 void DisplayManager::drawBle() {
@@ -2541,10 +2619,10 @@ void DisplayManager::_buildMissionList() {
         lv_obj_clear_flag(_missionListRows[i], LV_OBJ_FLAG_SCROLLABLE);
 
         _missionListNameLabels[i] = makeClippedLabel(_missionListRows[i], "", CLR_WHITE,
-                                                     FONT_BODY, 4, 1, 92);
+                                                     FONT_BODY, 4, 1, 72);
         _missionListMetaLabels[i] = makeClippedLabel(_missionListRows[i], "", CLR_CYAN,
-                                                     FONT_SMALL, 100, 3,
-                                                     THEME_SCREEN_W - THEME_DIVIDER_X - 126);
+                                                     FONT_SMALL, 80, 3,
+                                                     THEME_SCREEN_W - THEME_DIVIDER_X - 106);
     }
 }
 
@@ -2921,37 +2999,33 @@ void DisplayManager::drawBadUsb() {
     char rowBuf[4][56] = {};
     uint32_t rowColor[4] = {CLR_GREY, CLR_GREY, CLR_GREY, CLR_GREY};
 
+    snprintf(rowBuf[0], sizeof(rowBuf[0]), "FILES      %d available", scriptCount);
+    rowColor[0] = scriptCount > 0 ? CLR_WHITE : CLR_GREY;
+
     if (!ready) {
-        snprintf(rowBuf[0], sizeof(rowBuf[0]), "Host HID backend unavailable");
-        snprintf(rowBuf[1], sizeof(rowBuf[1]), "LB scripts  B next");
-        rowColor[0] = CLR_RED;
-        rowColor[1] = CLR_CYAN;
+        snprintf(rowBuf[1], sizeof(rowBuf[1]), "HID        unavailable");
+        snprintf(rowBuf[2], sizeof(rowBuf[2]), "USB        reconnect host");
+        rowColor[1] = CLR_RED;
+        rowColor[2] = CLR_YELLOW;
     } else if (running) {
-        snprintf(rowBuf[0], sizeof(rowBuf[0]), "LA stop run  LB scripts  B next");
-        snprintf(rowBuf[1], sizeof(rowBuf[1]), "Line %u",
+        snprintf(rowBuf[1], sizeof(rowBuf[1]), "PROGRESS   line %u",
                  static_cast<unsigned>(progressLine));
-        snprintf(rowBuf[2], sizeof(rowBuf[2]), "%d payloads loaded", scriptCount);
-        rowColor[0] = CLR_YELLOW;
-        rowColor[1] = CLR_CYAN;
-        rowColor[2] = CLR_GREY;
+        snprintf(rowBuf[2], sizeof(rowBuf[2]), "SAFETY     stop available");
+        rowColor[1] = CLR_GREEN;
+        rowColor[2] = CLR_YELLOW;
     } else if (armed) {
-        snprintf(rowBuf[0], sizeof(rowBuf[0]), "LA run armed payload");
-        snprintf(rowBuf[1], sizeof(rowBuf[1]), "LB scripts  B next");
-        snprintf(rowBuf[2], sizeof(rowBuf[2]), "%d payloads loaded", scriptCount);
-        rowColor[0] = CLR_GREEN;
+        snprintf(rowBuf[1], sizeof(rowBuf[1]), "STATE      armed");
+        snprintf(rowBuf[2], sizeof(rowBuf[2]), "SAFETY     hold to execute");
+        rowColor[1] = CLR_YELLOW;
+        rowColor[2] = CLR_RED;
+    } else if (scriptName[0]) {
+        snprintf(rowBuf[1], sizeof(rowBuf[1]), "STATE      selected");
+        snprintf(rowBuf[2], sizeof(rowBuf[2]), "SAFETY     arm before run");
         rowColor[1] = CLR_CYAN;
         rowColor[2] = CLR_GREY;
-    } else if (scriptName[0]) {
-        snprintf(rowBuf[0], sizeof(rowBuf[0]), "A or LA arm selected payload");
-        snprintf(rowBuf[1], sizeof(rowBuf[1]), "LB scripts  B next");
-        rowColor[0] = CLR_GREEN;
-        rowColor[1] = CLR_CYAN;
     } else {
-        snprintf(rowBuf[0], sizeof(rowBuf[0]), "LB opens payload list");
-        snprintf(rowBuf[1], sizeof(rowBuf[1]), "%d payloads discovered", scriptCount);
-        snprintf(rowBuf[2], sizeof(rowBuf[2]), "B next");
-        rowColor[0] = CLR_CYAN;
-        rowColor[1] = scriptCount > 0 ? CLR_YELLOW : CLR_GREY;
+        snprintf(rowBuf[1], sizeof(rowBuf[1]), "STATE      choose payload");
+        rowColor[1] = scriptCount > 0 ? CLR_CYAN : CLR_GREY;
     }
 
     for (int i = 0; i < 4; ++i) {
@@ -2985,7 +3059,7 @@ void DisplayManager::drawRecon(MissionProfile selectedProfile) {
         lv_obj_remove_flag(_reconScriptValue, LV_OBJ_FLAG_HIDDEN);
     }
     if (_reconStatusValue) {
-        lv_label_set_text(_reconStatusValue, "Select to lock runtime");
+        lv_label_set_text(_reconStatusValue, "READY TO LAUNCH");
         lv_obj_set_style_text_color(_reconStatusValue, lv_color_hex(CLR_CYAN), 0);
         lv_obj_remove_flag(_reconStatusValue, LV_OBJ_FLAG_HIDDEN);
     }
@@ -2995,27 +3069,36 @@ void DisplayManager::drawRecon(MissionProfile selectedProfile) {
         lv_obj_add_flag(_reconDetailValue, LV_OBJ_FLAG_HIDDEN);
     }
 
-    char posture[56] = {};
+    char posture[3][56] = {};
+    uint32_t postureColor[3] = {CLR_WHITE, CLR_WHITE, CLR_WHITE};
     switch (selectedProfile) {
         case MISSION_RECON:
-            snprintf(posture, sizeof(posture), "Bias: passive wifi sweep and subghz monitor");
+            snprintf(posture[0], sizeof(posture[0]), "WIFI     passive + entities");
+            snprintf(posture[1], sizeof(posture[1]), "SUBGHZ   monitor + discover");
+            snprintf(posture[2], sizeof(posture[2]), "MODE     collection only");
+            postureColor[2] = CLR_GREEN;
             break;
         case MISSION_PWNY:
-            snprintf(posture, sizeof(posture), "Bias: target lock and capture pressure");
+            snprintf(posture[0], sizeof(posture[0]), "WIFI     target + capture");
+            snprintf(posture[1], sizeof(posture[1]), "SUBGHZ   radio reserved");
+            snprintf(posture[2], sizeof(posture[2]), "MODE     active pressure");
+            postureColor[2] = CLR_RED;
             break;
         case MISSION_UPLINK:
-            snprintf(posture, sizeof(posture), "Bias: sync pipeline and export relay");
+            snprintf(posture[0], sizeof(posture[0]), "WIFI     publish queue");
+            snprintf(posture[1], sizeof(posture[1]), "PHONE    enrich + export");
+            snprintf(posture[2], sizeof(posture[2]), "MODE     transfer first");
+            postureColor[2] = CLR_GREEN;
             break;
         default:
-            posture[0] = '\0';
             break;
     }
 
     for (int i = 0; i < 4; ++i) {
         if (!_reconOpLabels[i]) continue;
-        if (i == 0 && posture[0]) {
-            lv_label_set_text(_reconOpLabels[i], posture);
-            lv_obj_set_style_text_color(_reconOpLabels[i], lv_color_hex(CLR_GREY), 0);
+        if (i < 3 && posture[i][0]) {
+            lv_label_set_text(_reconOpLabels[i], posture[i]);
+            lv_obj_set_style_text_color(_reconOpLabels[i], lv_color_hex(postureColor[i]), 0);
             lv_obj_remove_flag(_reconOpLabels[i], LV_OBJ_FLAG_HIDDEN);
         } else {
             lv_label_set_text(_reconOpLabels[i], "");
@@ -3044,13 +3127,10 @@ void DisplayManager::drawSystem(float battV, unsigned long uptimeMs,
     uint32_t storageMaintenanceLastDurationMs;
     uint16_t storageUsedPct;
     uint32_t storageFreeBytes;
-    uint32_t entityTotal;
-    uint32_t entityNearby;
+    uint32_t storagePending;
     uint32_t storageDropped;
-    uint32_t storageDeduped;
     uint16_t battVoltageMv;
     uint16_t battRuntimeMin;
-    int battPercent;
     uint8_t powerSource;
     uint8_t powerState;
     bool charging;
@@ -3072,13 +3152,10 @@ void DisplayManager::drawSystem(float battV, unsigned long uptimeMs,
     storageMaintenanceLastDurationMs = g_state.storageMaintenanceLastDurationMs;
     storageUsedPct = g_state.storageUsedPct;
     storageFreeBytes = g_state.storageFreeBytes;
-    entityTotal = g_state.entityTotal;
-    entityNearby = g_state.entityNearby;
+    storagePending = g_state.storagePending;
     storageDropped = g_state.storageDropped;
-    storageDeduped = g_state.storageDeduped;
     battVoltageMv = g_state.battVoltageMv;
     battRuntimeMin = g_state.battRuntimeMin;
-    battPercent = g_state.battPercent;
     powerSource = g_state.powerSource;
     powerState = g_state.powerState;
     charging = g_state.charging;
@@ -3136,15 +3213,17 @@ void DisplayManager::drawSystem(float battV, unsigned long uptimeMs,
     if (showRepairRequired) {
         snprintf(pendingLine, sizeof(pendingLine), "REPAIR");
     } else {
-        snprintf(pendingLine, sizeof(pendingLine), "%lu/%lu",
-                 static_cast<unsigned long>(entityTotal),
-                 static_cast<unsigned long>(entityNearby));
+        snprintf(pendingLine, sizeof(pendingLine), "%lu",
+                 static_cast<unsigned long>(storagePending));
     }
 
     char dedupeLine[24];
-    snprintf(dedupeLine, sizeof(dedupeLine), "%lu/%lu",
-             static_cast<unsigned long>(storageDeduped),
-             static_cast<unsigned long>(storageDropped));
+    if (storageDropped > 0) {
+        snprintf(dedupeLine, sizeof(dedupeLine), "%lu DROP",
+                 static_cast<unsigned long>(storageDropped));
+    } else {
+        snprintf(dedupeLine, sizeof(dedupeLine), "0");
+    }
 
     const char* maintStateText = "UNKNOWN";
     uint32_t maintColor = CLR_GREY;
@@ -3219,13 +3298,19 @@ void DisplayManager::drawSystem(float battV, unsigned long uptimeMs,
     char radioLine[24];
     snprintf(radioLine, sizeof(radioLine), "%s %s", linkState, ext ? "EX" : "IN");
 
-    // Compact power readout: state tag + voltage. Battery %, charge state,
-    // and runtime are already surfaced in the status bar, so this cell carries
-    // the diagnostic voltage that isn't shown elsewhere.
+    // Compact power readout prioritizes remaining field runtime. Voltage is
+    // retained for USB/fallback states where a runtime estimate is unavailable.
     char cfgLine[24];
     if (powerSource == POWER_SOURCE_USB) {
         snprintf(cfgLine, sizeof(cfgLine), "USB %.1fV",
-                 battVoltageMv > 0 ? (static_cast<float>(battVoltageMv) / 1000.0f) : battV);
+                  battVoltageMv > 0 ? (static_cast<float>(battVoltageMv) / 1000.0f) : battV);
+    } else if (battRuntimeMin > 0) {
+        const char* label = powerState == POWER_STATE_BATTERY_CRITICAL ? "CRT" :
+                            powerState == POWER_STATE_BATTERY_ECONOMY ? "ECO" : "BAT";
+        snprintf(cfgLine, sizeof(cfgLine), "%s %uh%02u",
+                 label,
+                 static_cast<unsigned>(battRuntimeMin / 60U),
+                 static_cast<unsigned>(battRuntimeMin % 60U));
     } else if (battVoltageMv > 0) {
         const char* label = powerState == POWER_STATE_BATTERY_CRITICAL ? "CRT" :
                             powerState == POWER_STATE_BATTERY_ECONOMY ? "ECO" : "BAT";
@@ -3273,7 +3358,7 @@ void DisplayManager::drawSystem(float battV, unsigned long uptimeMs,
     lv_obj_set_style_text_color(_sysPendingValue, lv_color_hex(pendingColor), 0);
     lv_label_set_text(_sysDedupeValue, dedupeLine);
     lv_obj_set_style_text_color(_sysDedupeValue,
-                                lv_color_hex(storageDropped > 0 ? CLR_YELLOW : CLR_CYAN), 0);
+                                lv_color_hex(storageDropped > 0 ? CLR_RED : CLR_GREEN), 0);
 
     lv_label_set_text(_sysModeValue, maintLine);
     lv_obj_set_style_text_color(_sysModeValue, lv_color_hex(maintColor), 0);
@@ -3437,7 +3522,7 @@ void DisplayManager::_buildScreenMissionSummary() {
     const uint32_t accent = displayAccentColor();
     static lv_point_precise_t sep[] = {{0,26},{THEME_CONTENT_W,26}};
 
-    _makeLabel(_missionSummaryContent, "BOOT SUMMARY", accent, FONT_HEADER,
+    _makeLabel(_missionSummaryContent, "HISTORY", accent, FONT_HEADER,
                LV_ALIGN_TOP_LEFT, 4, 4);
     _missionSummaryHeaderStatus =
         makeClippedLabel(_missionSummaryContent, "--", CLR_CYAN,
@@ -3463,11 +3548,11 @@ void DisplayManager::_buildScreenMissionSummary() {
     makeSummaryPair(126,  30, "BOOT", &_missionSummaryRecordValue);
     makeSummaryPair(4,    48, "HEAP", &_missionSummaryCaptureValue);
     makeSummaryPair(126,  48, "STORE", &_missionSummaryUniqueValue);
-    makeSummaryPair(4,    66, "TIME", &_missionSummaryPendingValue);
+    makeSummaryPair(4,    66, "CLOCK", &_missionSummaryPendingValue);
     makeSummaryPair(126,  66, "FW", &_missionSummaryEnrichValue);
     makeSummaryPair(4,    84, "REC", &_missionSummaryGpsValue);
-    makeSummaryPair(126,  84, "UPL", &_missionSummaryContextValue);
-    makeSummaryPair(4,   102, "RUN", &_missionSummaryTagValue);
+    makeSummaryPair(126,  84, "QUEUE", &_missionSummaryContextValue);
+    makeSummaryPair(4,   102, "LAST", &_missionSummaryTagValue);
 }
 
 void DisplayManager::drawMissionSummary(unsigned long uptimeMs) {

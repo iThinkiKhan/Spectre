@@ -162,7 +162,7 @@ async function runUpload({service, setResult}: SafeRunArgs) {
   setResult({phase: 'loading', body: '...', ts: t});
   try {
     await service.uploadNow();
-    setResult({phase: 'ok', ts: Date.now(), body: 'upload resume requested'});
+    setResult({phase: 'ok', ts: Date.now(), body: 'upload queued'});
   } catch (err: any) {
     setResult({phase: 'error', body: err?.message ?? String(err), ts: Date.now()});
   }
@@ -221,7 +221,7 @@ const SAFE_ACTIONS: Array<{
   run: (args: SafeRunArgs) => Promise<void>;
 }> = [
   {key: 'enrich',   label: 'Enrich now',     opcode: 0x20, run: runEnrich},
-  {key: 'upload',   label: 'Upload resume',  opcode: 0x21, run: runUpload},
+  {key: 'upload',   label: 'Upload now',     opcode: 0x21, run: runUpload},
   {key: 'tag',      label: 'Tag session',    opcode: 0x22, run: runTag},
   {key: 'location', label: 'Save location',  opcode: 0x23, run: runLocation},
   {key: 'screen',   label: 'Next screen',    opcode: 0x24, run: runScreen},

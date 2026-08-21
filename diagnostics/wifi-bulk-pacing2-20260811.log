@@ -1,0 +1,29 @@
+=== capture opened 2026-08-11T14:05:42.6634466-05:00 ===
+=== send: companion status ===
+companion status
+[COMP] enabled=1
+[COMP] external accessory=0 bleProxy=0 phoneConnected=0 phone=unknown rssi=0 ageMs=0
+[COMP] wio link=idle sx1262=0 textInput=0
+[COMP] phone=AVAILABLE work=IDLE
+[COMP] bleBegun=1 bleRadio=1 bleState=SUBSCRIBED
+[COMP] ready link=1 gps=1 freshGps=1 ctrl=1 enrich=1
+[COMP] bleInitAgeMs=12840 scanStartAgeMs=12321 disconnReason=0
+[COMP] pendingEnrichMission=0 pendingEnrichNoise=0 pendingEnrichTotal=0
+[COMP] lastProbeAgeMs=12827 lastEnrichAgeMs=8360
+[COMP] radioOwner=ble_gps
+[30004][I][HEAP] heap free=4455KB min=4452KB largest=4352KB frag=2% internalFree=37KB internalLargest=29KB psramFree=4418KB core=0/0% owner=BLE_GPS nets=1 pendingUpload=2 pendingEnrich=0
+[HEALTH] time=2026-08-11 14:05:44 src=ntp
+[HEALTH] heap used=3992/8446KB free=4455KB min=4452KB largest=4352KB frag=2%
+[HEALTH] internal used=217/254KB free=37KB min=34KB largest=29KB
+[HEALTH] psram used=3775/8192KB free=4418KB largest=4352KB
+[HEALTH] stack free_min: core0=17KB/22KB core1=13KB/18KB
+[HEALTH] core usage: core0=0% core1=0%
+[HEALTH] power=usb state=usb batt=100% 4232mV trend=0mV/min runtime=0min cap=1100mAh charging=0
+[HEALTH] radio=BLE_GPS wifi=0 ble=1 gps=0 nets=1 pendingUpload=2 pendingEnrich=0
+[HEALTH] subghz=NONE mode=OFF pkts=0 nodes=0
+[30007][I][STORAGE] RAMSpool enq=0 cons=0 inflight=0/1024 high=0 pressure=0 drop[full=0 big=0 noise=0 p3Evict=0 p3Drop=0 p2Drop=0 p1Fail=0] free=1024
+[30007][I][STORAGE] RAMSpool enqueue probe[ok=0 drop=0] device[ok=0 drop=0]
+[30008][I][STORAGE] RAMSpool worker probe[ok=0 sup=0 drop=0 fail=0 slow=0] device[ok=0 sup=0 drop=0 fail=0 slow=0] slowTotal=0 maxMs=0
+[30008][I][STORAGE] RAMSpool prioEnq p0=0 p1=0 p2=0 p3=0
+[30009][I][STORAGE] RAMSpool lanes p1=0/0 p2=0/0 p3=0/0
+=== capture closed 2026-08-11T14:05:50.7164499-05:00 ===

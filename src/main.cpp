@@ -8,6 +8,9 @@
 #include <freertos/queue.h>
 #include <freertos/task.h>
 #include <esp_heap_caps.h>
+#include <esp_idf_version.h>
+#include <esp_memory_utils.h>
+#include <esp_system.h>
 #include <esp_wifi.h>
 #if defined(CONFIG_ESP_COREDUMP_ENABLE_TO_FLASH)
 #include <esp_core_dump.h>
@@ -22,6 +25,8 @@
 #include "config.h"
 #include "core/BootInfo.h"
 #include "core/CrashBreadcrumb.h"
+#include "core/PsramObject.h"
+#include <esp_bt.h>
 #include "core/EventBus.h"
 #include "core/MissionRuntime.h"
 #include "core/ExecutionPolicy.h"
@@ -30,6 +35,7 @@
 #include "core/NotifTypes.h"
 #include "core/RuntimeContracts.h"
 #include "core/ScreenInfo.h"
+#include "core/ScreenNavigation.h"
 #include "core/StorageExclusiveWindow.h"
 #include "core/StorageUiMirror.h"
 #include "managers/ButtonHandler.h"
@@ -69,7 +75,9 @@
 // setup() peaks at 2044 bytes on the normal boot path. The early field-link
 // AP resume also runs here, so retain more than 3 KB of additional headroom
 // while avoiding an otherwise permanently parked 8 KB framework stack.
-static constexpr size_t SPECTRE_LOOP_TASK_STACK_BYTES = 5120;
+// Measured peak under load is 2164 B; 4096 left only 1932 B of margin, which
+// is under this project's 2 KB floor for a task that runs application code.
+static constexpr size_t SPECTRE_LOOP_TASK_STACK_BYTES = 5120;  // peak 2164B + ~3KB
 SET_LOOP_TASK_STACK_SIZE(SPECTRE_LOOP_TASK_STACK_BYTES);
 
 // ── Hardware objects ──
@@ -119,7 +127,7 @@ namespace {
     uint32_t g_deferredBootOptionalInitAtMs = 0;
 
     struct DisplayFrameState {
-    Screen      currentScreen = SCREEN_LORA;
+    Screen      currentScreen = DEFAULT_GENERAL_SCREEN;
     MascotState mascotState = MASCOT_STANDBY;
     bool     uploadActive;
     bool     radioBusy;
@@ -204,7 +212,7 @@ namespace {
     uint8_t runContext = static_cast<uint8_t>(RUN_CONTEXT_GENERAL);
     uint8_t activeMissionProfile = static_cast<uint8_t>(MISSION_RECON);
     uint8_t missionSelection = static_cast<uint8_t>(MISSION_RECON);
-    Screen currentScreen = SCREEN_LORA;
+    Screen currentScreen = DEFAULT_GENERAL_SCREEN;
     };
 
     struct CoreLoadMonitor {
@@ -290,7 +298,7 @@ static void _updateCoreLoad(uint32_t nowMs) {
 }
 
     struct UiRefreshState {
-        Screen currentScreen = SCREEN_LORA;
+        Screen currentScreen = DEFAULT_GENERAL_SCREEN;
         bool debriefActive = false;
         uint8_t activeMissionProfile = static_cast<uint8_t>(MISSION_RECON);
     };
@@ -307,14 +315,20 @@ uint8_t s_buttonEventQueueBuffer[BUTTON_EVENT_QUEUE_DEPTH * sizeof(ButtonEvent)]
 QueueHandle_t s_buttonEventQueue = nullptr;
 
 
-// Stack high-water marks (2026-08-11, after phone bulk/localization field runs):
-// TaskDisplay min_free=13 KB of 18 KB, TaskHardware min_free=15 KB of 22 KB.
+// Stack high-water marks (2026-08-15 field return): TaskHardware fell to
+// 2.5 KB free with a 14 KB stack during BLE/offload scheduling. Restore enough
+// headroom for the deepest authenticated handoff path.
 // FreeRTOS reports the minimum free stack ever observed for the task; this
 // watermark can fall after deep MQTT/WiFi call paths and will not rebound.
 // Keep 6-8 KB above the measured peak while returning scarce internal SRAM.
 // Revisit if min_free ever drops below 4 KB on either task.
+// REVERTED to 10240 after the 2026-08-19 field panic. The 8192 trim left only
+// 3 KB of margin on the bench (core1=3KB/8KB) - under this project's 4 KB
+// guard-rail - and the field crash was a DoubleException with a destroyed
+// stack surfacing in TaskButtons, whose TCB sits directly below this task's.
+// The 2 KB saved is meaningless now that the BLE teardown returns 68 KB.
 static constexpr uint32_t TASK_DISPLAY_STACK_BYTES  = 10240;
-static constexpr uint32_t TASK_HARDWARE_STACK_BYTES = 14336;
+static constexpr uint32_t TASK_HARDWARE_STACK_BYTES = 15360;  // peak 11760B + 3.5KB
 static constexpr uint32_t TASK_BUTTON_STACK_BYTES   = 4096;
 static constexpr uint32_t STACK_LOG_INTERVAL_MS     = 30000UL;
 static constexpr uint32_t HEALTH_LOG_INTERVAL_MS    = 30000UL;
@@ -538,7 +552,22 @@ const char* _buttonEventName(ButtonEvent evt);
 const char* _buttonActionName(SpectreButtonAction action);
 static MissionProfile _sanitizeMissionProfile(uint8_t rawProfile);
 const char* _screenName(Screen screen);
+// heap_caps_get_minimum_free_size() sums per-region low watermarks taken at
+// different times, so with four internal regions it reads far below the true
+// global minimum (the IDF header documents this). Track our own by sampling the
+// summed current free, which is a real global figure.
+static uint32_t g_dramMinObserved = UINT32_MAX;
+
+static inline uint32_t _sampleDramFree() {
+    const uint32_t freeNow = heap_caps_get_free_size(SPECTRE_CAP_DRAM);
+    if (freeNow < g_dramMinObserved) g_dramMinObserved = freeNow;
+    return freeNow;
+}
+
 void _logRuntimeHealth(uint32_t nowMs);
+void _enforceCaptureHeapGuard(uint32_t nowMs);
+void _releaseIdleBleStack(uint32_t nowMs);
+void _runBleMemProbe(bool manageRadio);
 bool _waitForDisplayLayerReady(uint32_t timeoutMs);
 void _publishStorageState(bool storageOk, const String& storageUsed);
 static void _refreshStorageCounterMirror();
@@ -555,6 +584,8 @@ static void _clearStorageSummaryMirror();
 static bool _refreshStorageSummaryMirror(bool force);
 static bool _forceQuickNtp(const char* reason);
 static const char* _resetReasonName(esp_reset_reason_t r);
+static bool _resetReasonIsCrashLike(esp_reset_reason_t r);
+static uint32_t _auditTaskStackPlacement(bool verbose);
 static const char* _fieldVaultPowerSourceName(PowerSource source);
 static const char* _fieldVaultPowerStateName(PowerState state);
 static bool _detectBootRecoveryRequest();
@@ -566,6 +597,10 @@ void _appendFieldVaultRunSample(uint8_t radioOwner,
                                 const char* reason);
 void _applyPowerSnapshotToState(const PowerSnapshot& power);
 void _initializeHardwareManagers(uint32_t& lastWifiTick);
+void _writeFieldVaultBootRecords();
+// Set when the vault was not ready at hardware-ready (deferred boot init under
+// heap pressure); the main loop flushes the record once the vault comes up.
+static bool g_fieldVaultBootRecordPending = false;
 static void _logHardwareSectionIfSlow(const char* section,
                                       uint32_t startMs,
                                       bool storageOk);
@@ -747,7 +782,19 @@ struct QueuedEnrichBatch {
 // the NimBLE receive path and immediately consumed by the flash writer; placing
 // this hot handoff buffer in PSRAM caused a reproducible panic between
 // consumeEnrichmentBatch() and enqueueEnrichBatch() on the S3.
-static QueuedEnrichBatch enrichQueue[ENRICH_QUEUE_DEPTH];
+// ~2.1 KB of internal DRAM as a plain array. The enrichment path runs on the
+// hardware task (never an ISR), so PSRAM latency is harmless here.
+static QueuedEnrichBatch* enrichQueue = nullptr;
+static QueuedEnrichBatch* _enrichQueueStorage() {
+    if (!enrichQueue) {
+        enrichQueue = static_cast<QueuedEnrichBatch*>(
+            allocateManagerStorage(sizeof(QueuedEnrichBatch) * ENRICH_QUEUE_DEPTH));
+        // allocateManagerStorage() falls back to internal DRAM, so a null here
+        // means both pools are exhausted; there is no safe way to continue.
+        configASSERT(enrichQueue);
+    }
+    return enrichQueue;
+}
 static size_t    enrichQueueHead  = 0;
 static size_t    enrichQueueTail  = 0;
 static size_t    enrichQueueSize  = 0;
@@ -957,6 +1004,7 @@ struct CompanionCmd {
     volatile bool link   = false;
     volatile bool probe  = false;
     volatile bool enrich = false;
+    volatile bool upload = false;
     volatile bool cancel = false;
 };
 static CompanionCmd g_companionCmd;
@@ -967,6 +1015,13 @@ static CompanionCmd g_companionCmd;
 // the next hardware tick.
 void companionRequestEnrichNow() {
     g_companionCmd.enrich = true;
+}
+
+// Phone upload commands are acknowledged on the secure BLE channel first,
+// then consumed by TaskHardware. This keeps radio teardown and the potentially
+// expensive upload-index build out of the command response path.
+void companionRequestUploadNow() {
+    g_companionCmd.upload = true;
 }
 
 // The authenticated phone control channel uses the same scheduler-owned
@@ -1527,6 +1582,13 @@ static bool shouldRunPhoneProbe(const CompanionScheduler& cs) {
     }
     const bool priority = companionHasProbePriorityReason(cs);
     if (!priority && automaticCompanionShouldYieldToUpload()) {
+        return false;
+    }
+    // Apply the enrichment cadence before taking the radio, not only after a
+    // phone has been found. This prevents stale/rapidly changing mirror counts
+    // from spending another BLE probe window during the post-enrich cooldown.
+    if (!priority && cs.lastEnrichMs != 0 &&
+        millis() - cs.lastEnrichMs < ENRICH_MIN_GAP_MS) {
         return false;
     }
     const bool bypassGap = (cs.lastProbeMs == 0) || priority;
@@ -2434,14 +2496,15 @@ static void _finishPhoneEnrichment(CompanionScheduler& cs, bool success) {
 // Enrichment pipeline queue helpers.
 
 static void initEnrichQueue() {
+    _enrichQueueStorage();  // PSRAM-backed; allocated on first use
     enrichQueueHead  = 0;
     enrichQueueTail  = 0;
     enrichQueueSize  = 0;
     enrichClaimedCount = 0;
     memset(enrichClaimedEventIds, 0, sizeof(enrichClaimedEventIds));
     for (size_t i = 0; i < ENRICH_QUEUE_DEPTH; ++i) {
-        enrichQueue[i].count    = 0;
-        enrichQueue[i].queuedMs = 0;
+        _enrichQueueStorage()[i].count    = 0;
+        _enrichQueueStorage()[i].queuedMs = 0;
     }
 }
 
@@ -2514,7 +2577,7 @@ static bool enrichQueueHasRoom() {
 static bool enqueueEnrichBatch(const PendingEnrichment* records, size_t count, const char* logTag) {
     if (enrichQueueSize >= ENRICH_QUEUE_DEPTH || count == 0) return false;
     const size_t n = std::min(count, PHONE_ENRICH_BATCH_MAX);
-    QueuedEnrichBatch& slot = enrichQueue[enrichQueueTail];
+    QueuedEnrichBatch& slot = _enrichQueueStorage()[enrichQueueTail];
     memcpy(slot.records, records, n * sizeof(PendingEnrichment));
     slot.count    = n;
     slot.queuedMs = millis();
@@ -2535,7 +2598,7 @@ enum class EnrichDrainMode : uint8_t {
 
 static uint32_t enrichQueueOldestAgeMs() {
     if (enrichQueueSize == 0) return 0;
-    const uint32_t qms = enrichQueue[enrichQueueHead].queuedMs;
+    const uint32_t qms = _enrichQueueStorage()[enrichQueueHead].queuedMs;
     if (qms == 0) return 0;
     const uint32_t now = millis();
     return (now >= qms) ? (now - qms) : 0U;
@@ -2659,7 +2722,7 @@ static size_t runEnrichDrain(CompanionScheduler& cs, const char* tagHint = nullp
 static void drainOneEnrichBatch(CompanionScheduler& cs) {
     if (enrichQueueSize == 0) return;
     const char* logTag = companionTransportTag(cs);
-    QueuedEnrichBatch& oldest = enrichQueue[enrichQueueHead];
+    QueuedEnrichBatch& oldest = _enrichQueueStorage()[enrichQueueHead];
     uint32_t batchApplied = 0, batchFailed = 0, batchDeferred = 0, batchStorageMs = 0;
     DLOG_INFO(logTag, "Enrich drain begin count=%u queueSize=%u ageMs=%lu",
               static_cast<unsigned>(oldest.count),
@@ -3059,6 +3122,7 @@ void _printUsbConsoleHelp() {
     Serial.println("[USB]   companion link    (hold secure BLE link until cancel)");
     Serial.println("[USB]   companion probe   (one-shot manual BLE probe)");
     Serial.println("[USB]   companion enrich  (manual enrichment; probes first if needed)");
+    Serial.println("[USB]   companion offload prep  (exercise BLE upload-index preparation)");
     Serial.println("[USB]   companion cancel  (clear all pending companion requests)");
     Serial.println("[USB]   time | time sync   (clock status; 'sync' forces NTP now)");
     Serial.println("[USB]   heap status      (internal/PSRAM heap snapshot)");
@@ -3075,6 +3139,8 @@ void _printUsbConsoleHelp() {
     Serial.println("[USB]   fieldvault clear   (delete retained FieldVault records)");
     Serial.println("[USB]   fieldvault upload  (upload pending FieldVault records only)");
     Serial.println("[USB]   crash log         (print retained crash breadcrumb ring)");
+    Serial.println("[USB]   crash clear       (wipe ring + NVS snapshot + alloc-fail)");
+    Serial.println("[USB]   stack audit       (flag any task stack outside internal DRAM)");
     Serial.println("[USB]   ble rxdiag        (print retained BLE receive crash stage)");
     Serial.println("[USB]   upload now         (manual MQTT upload of pending records)");
     Serial.println("[USB]   upload stop        (safely stop the active MQTT upload)");
@@ -3207,12 +3273,65 @@ void _printUsbWioStatus() {
 // the argument rides here rather than through the shared signature.
 uint32_t g_usbRewindToEventId = 0;
 
+
+// Minimal read-only filesystem inspection over USB serial. Exists so the
+// contents of /config/vault (known locations, BadUSB scripts) can be captured
+// off the device before a repartition wipes LittleFS -- there is no other way
+// to get those files out. Read-only by construction: no write, no delete.
+void _usbFsList(const String& dir) {
+    fs::File d = LittleFS.open(dir.length() ? dir : String("/"));
+    if (!d || !d.isDirectory()) {
+        Serial.printf("[FS] not a directory: %s\r\n", dir.c_str());
+        if (d) d.close();
+        return;
+    }
+    Serial.printf("[FS] ls %s\r\n", dir.c_str());
+    size_t count = 0;
+    uint32_t totalBytes = 0;
+    for (fs::File e = d.openNextFile(); e; e = d.openNextFile()) {
+        const String name = String(e.name());
+        if (e.isDirectory()) {
+            Serial.printf("  <dir>  %s\r\n", name.c_str());
+        } else {
+            Serial.printf("  %6u %s\r\n",
+                          static_cast<unsigned>(e.size()), name.c_str());
+            totalBytes += e.size();
+        }
+        count++;
+        e.close();
+    }
+    d.close();
+    Serial.printf("[FS] %u entries, %lu bytes\r\n",
+                  static_cast<unsigned>(count),
+                  static_cast<unsigned long>(totalBytes));
+}
+
+void _usbFsCat(const String& path) {
+    fs::File f = LittleFS.open(path, "r");
+    if (!f || f.isDirectory()) {
+        Serial.printf("[FS] cannot read: %s\r\n", path.c_str());
+        if (f) f.close();
+        return;
+    }
+    // Delimited so a captured serial log can be sliced back into a file.
+    Serial.printf("[FS] ---8<--- BEGIN %s (%u bytes)\r\n",
+                  path.c_str(), static_cast<unsigned>(f.size()));
+    while (f.available()) {
+        const int c = f.read();
+        if (c < 0) break;
+        Serial.write(static_cast<uint8_t>(c));
+    }
+    Serial.printf("\r\n[FS] ---8<--- END %s\r\n", path.c_str());
+    f.close();
+}
+
 enum UsbSpoolCommandKind : uint8_t {
     USB_SPOOL_AUDIT = 0,
     USB_SPOOL_COUNT,
     USB_SPOOL_ENRICH,
     USB_SPOOL_REPAIR,
     USB_SPOOL_DIAG,
+    USB_SPOOL_SELFTEST,
     USB_SPOOL_UPLOAD_REWIND
 };
 
@@ -3278,6 +3397,9 @@ void _runUsbSpoolCommandInStorageWindow(UsbSpoolCommandKind command,
             break;
         case USB_SPOOL_DIAG:
             STORAGE.spoolDiagToSerial();
+            break;
+        case USB_SPOOL_SELFTEST:
+            STORAGE.spoolCodecSelfTestToSerial();
             break;
         case USB_SPOOL_UPLOAD_REWIND: {
             const uint32_t rewound =
@@ -3736,6 +3858,25 @@ void _handleUsbConsoleLine(const char* rawLine) {
         return;
     }
 
+    if (lower == "companion offload prep") {
+        if (!RADIO_ARB.isOwner(RADIO_BLE_GPS) ||
+            !BLE_MGR.isPhoneCompanionReady()) {
+            Serial.printf("[COMP] offload prep refused owner=%s phoneReady=%d\r\n",
+                          RadioArbiter::ownerName(RADIO_ARB.currentOwner()),
+                          BLE_MGR.isPhoneCompanionReady() ? 1 : 0);
+            return;
+        }
+        CmdOffloadBeginResponseV1 response = {};
+        const bool ready = PHONE_OFFLOAD.begin(response);
+        Serial.printf("[COMP] offload prep requested ready=%d prep=%d active=%d indexed=%lu pending=%lu\r\n",
+                      ready ? 1 : 0,
+                      PHONE_OFFLOAD.preparationPending() ? 1 : 0,
+                      PHONE_OFFLOAD.active() ? 1 : 0,
+                      static_cast<unsigned long>(response.indexedTotal),
+                      static_cast<unsigned long>(response.pendingTotal));
+        return;
+    }
+
     if (lower == "companion cancel") {
         g_companionCmd.cancel = true;
         Serial.println("[COMP] cancel queued");
@@ -3779,9 +3920,9 @@ void _handleUsbConsoleLine(const char* rawLine) {
         const uint32_t totalInternal =
             heap_caps_get_total_size(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
         const uint32_t freeInternal =
-            heap_caps_get_free_size(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
+            heap_caps_get_free_size(SPECTRE_CAP_DRAM);
         const uint32_t largestInternal =
-            heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
+            heap_caps_get_largest_free_block(SPECTRE_CAP_DRAM);
         const uint32_t totalPsram = heap_caps_get_total_size(MALLOC_CAP_SPIRAM);
         const uint32_t freePsram = heap_caps_get_free_size(MALLOC_CAP_SPIRAM);
         const uint32_t largestPsram = heap_caps_get_largest_free_block(MALLOC_CAP_SPIRAM);
@@ -3793,6 +3934,15 @@ void _handleUsbConsoleLine(const char* rawLine) {
                       static_cast<unsigned long>(kb(totalInternal)),
                       static_cast<unsigned long>(kb(freeInternal)),
                       static_cast<unsigned long>(kb(largestInternal)));
+        // RTC slow-memory heap is reported separately: it is only touched as a
+        // last-resort spill, so any drop below its idle ~7.6 KB means DRAM ran dry.
+        Serial.printf("[HEAP] dram low-water observed=%luB (sampled global min)\r\n",
+                      static_cast<unsigned long>(
+                          g_dramMinObserved == UINT32_MAX ? 0UL : g_dramMinObserved));
+        Serial.printf("[HEAP] rtc-slow free=%luKB (spill indicator; DRAM dry if falling)\r\n",
+                      static_cast<unsigned long>(
+                          (heap_caps_get_free_size(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT) -
+                           heap_caps_get_free_size(SPECTRE_CAP_DRAM)) / 1024));
         Serial.printf("[HEAP] psram total=%luKB free=%luKB largest=%luKB\r\n",
                       static_cast<unsigned long>(kb(totalPsram)),
                       static_cast<unsigned long>(kb(freePsram)),
@@ -3842,6 +3992,168 @@ void _handleUsbConsoleLine(const char* rawLine) {
 
 #if BLE_SMOKE_ENABLED
     // ── BLE smoke test ───────────────────────────────────────────────────────
+    // Walk the internal heap block-by-block to answer "why is largest free only
+    // ~15 KB when 60-90 KB is free". heap_caps_print_heap_info() writes via
+    // printf, which does not reach the USB CDC on this build.
+    //
+    // The walker callback runs with the heap lock held, so it must not print or
+    // allocate - doing so hung TaskHardware into a watchdog reset. Records are
+    // collected into a fixed static buffer and printed after the walk returns.
+    // Move the internal/external malloc split point at runtime.
+    //
+    // CONFIG_SPIRAM_MALLOC_ALWAYSINTERNAL=4096 forces every plain malloc() of
+    // 4 KB or less into internal DRAM. The heap map shows ~35 KB of live blocks
+    // sitting in the 1-4 KB band, so lowering the limit lets them land in PSRAM
+    // instead. Only affects allocations made AFTER the call, and only plain
+    // malloc/calloc/new - anything requesting MALLOC_CAP_INTERNAL or
+    // MALLOC_CAP_DMA explicitly (task stacks, driver DMA buffers) is unaffected.
+    if (lower.startsWith("heap extmem")) {
+        const int sp = lower.indexOf(' ', 11);
+        long limit = -1;
+        if (sp > 0) limit = lower.substring(sp + 1).toInt();
+        if (limit < 0) {
+            Serial.println("[EXTMEM] usage: heap extmem <bytes>  (current default 4096)");
+            return;
+        }
+        const uint32_t before = heap_caps_get_free_size(SPECTRE_CAP_DRAM);
+        heap_caps_malloc_extmem_enable(static_cast<size_t>(limit));
+        Serial.printf("[EXTMEM] split point set to %ld B (dram free now %luB; "
+                      "effect appears as allocations churn)\r\n",
+                      limit, (unsigned long)before);
+        Serial.flush();
+        return;
+    }
+
+    if (lower == "heap map" || lower == "heap frag") {
+        static constexpr size_t MAP_MAX = 48;
+        struct GapRec {
+            uint32_t addr;
+            uint32_t size;
+            uint32_t allocBytesBefore;
+            uint32_t allocBlocksBefore;
+        };
+        static GapRec  s_gaps[MAP_MAX];
+        static GapRec  s_allocs[MAP_MAX];   // largest allocated blocks
+        static uint32_t s_regionStart[8];
+        static uint32_t s_regionEnd[8];
+
+        struct MapCtx {
+            uint32_t  gapCount;
+            uint32_t  regionCount;
+            uint32_t  totalGaps;
+            uint32_t  allocRunBytes;
+            uint32_t  allocRunBlocks;
+            uint32_t  allocCount;
+            uint32_t  smallestKept;
+            uintptr_t curRegion;
+        };
+        MapCtx ctx = {};
+
+        auto walker = [](walker_heap_into_t heap, walker_block_info_t blk, void* ud) -> bool {
+            MapCtx* c = static_cast<MapCtx*>(ud);
+            if (static_cast<uintptr_t>(heap.start) != c->curRegion) {
+                c->curRegion = static_cast<uintptr_t>(heap.start);
+                if (c->regionCount < 8) {
+                    s_regionStart[c->regionCount] = static_cast<uint32_t>(heap.start);
+                    s_regionEnd[c->regionCount]   = static_cast<uint32_t>(heap.end);
+                }
+                c->regionCount++;
+                c->allocRunBytes = 0;
+                c->allocRunBlocks = 0;
+            }
+
+            if (blk.used) {
+                c->allocRunBytes += blk.size;
+                c->allocRunBlocks++;
+                // Keep the MAP_MAX largest allocated blocks: insertion into a
+                // small array beats sorting 350+ entries under the heap lock.
+                if (blk.size >= 1024) {
+                    uint32_t slot = c->allocCount;
+                    if (slot < MAP_MAX) {
+                        c->allocCount++;
+                    } else {
+                        uint32_t smallest = 0;
+                        for (uint32_t i = 1; i < MAP_MAX; i++) {
+                            if (s_allocs[i].size < s_allocs[smallest].size) smallest = i;
+                        }
+                        if (s_allocs[smallest].size >= blk.size) return true;
+                        slot = smallest;
+                    }
+                    s_allocs[slot].addr = static_cast<uint32_t>(
+                        reinterpret_cast<uintptr_t>(blk.ptr));
+                    s_allocs[slot].size = static_cast<uint32_t>(blk.size);
+                    s_allocs[slot].allocBytesBefore = 0;
+                    s_allocs[slot].allocBlocksBefore = 0;
+                }
+                return true;
+            }
+
+            c->totalGaps++;
+            if (blk.size >= 1024 && c->gapCount < MAP_MAX) {
+                s_gaps[c->gapCount].addr = static_cast<uint32_t>(
+                    reinterpret_cast<uintptr_t>(blk.ptr));
+                s_gaps[c->gapCount].size = static_cast<uint32_t>(blk.size);
+                s_gaps[c->gapCount].allocBytesBefore  = c->allocRunBytes;
+                s_gaps[c->gapCount].allocBlocksBefore = c->allocRunBlocks;
+                c->gapCount++;
+            }
+            c->allocRunBytes = 0;
+            c->allocRunBlocks = 0;
+            return true;
+        };
+
+        heap_caps_walk(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT, walker, &ctx);
+
+        multi_heap_info_t info = {};
+        heap_caps_get_info(&info, MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
+        Serial.printf("[HEAPMAP] free=%u largest=%u minFree=%u blocks free=%u alloc=%u total=%u\r\n",
+                      (unsigned)info.total_free_bytes,
+                      (unsigned)info.largest_free_block,
+                      (unsigned)info.minimum_free_bytes,
+                      (unsigned)info.free_blocks,
+                      (unsigned)info.allocated_blocks,
+                      (unsigned)info.total_blocks);
+        for (uint32_t i = 0; i < ctx.regionCount && i < 8; i++) {
+            Serial.printf("[HEAPMAP] region %u 0x%08X-0x%08X (%u B)\r\n",
+                          (unsigned)(i + 1), (unsigned)s_regionStart[i],
+                          (unsigned)s_regionEnd[i],
+                          (unsigned)(s_regionEnd[i] - s_regionStart[i]));
+        }
+        Serial.printf("[HEAPMAP] gaps>=1KB listed=%u of %u total free blocks\r\n",
+                      (unsigned)ctx.gapCount, (unsigned)ctx.totalGaps);
+        Serial.printf("[HEAPMAP] largest allocated blocks (>=1KB, top %u)\r\n",
+                      (unsigned)ctx.allocCount);
+        // simple selection print, largest first
+        for (uint32_t n = 0; n < ctx.allocCount; n++) {
+            uint32_t best = 0;
+            bool found = false;
+            for (uint32_t i = 0; i < ctx.allocCount; i++) {
+                if (s_allocs[i].size == 0) continue;
+                if (!found || s_allocs[i].size > s_allocs[best].size) { best = i; found = true; }
+            }
+            if (!found) break;
+            Serial.printf("  ALLOC %6u B @0x%08X\r\n",
+                          (unsigned)s_allocs[best].size, (unsigned)s_allocs[best].addr);
+            s_allocs[best].size = 0;
+            Serial.flush();
+        }
+
+        for (uint32_t i = 0; i < ctx.gapCount; i++) {
+            Serial.printf("  FREE %6u B @0x%08X  preceded by %u alloc blocks / %u B\r\n",
+                          (unsigned)s_gaps[i].size, (unsigned)s_gaps[i].addr,
+                          (unsigned)s_gaps[i].allocBlocksBefore,
+                          (unsigned)s_gaps[i].allocBytesBefore);
+            Serial.flush();
+        }
+        Serial.flush();
+        return;
+    }
+
+    if (lower == "ble memprobe") {
+        _runBleMemProbe(true);
+        return;
+    }
+
     if (lower == "ble smoke") {
         Serial.println("[BLE_SMOKE] requested");
 
@@ -3924,6 +4236,40 @@ void _handleUsbConsoleLine(const char* rawLine) {
         return;
     }
 
+    if (lower == "fs ls" || lower.startsWith("fs ls ")) {
+        const String dir = (line.length() > 6) ? line.substring(6) : String("/");
+        _usbFsList(dir);
+        return;
+    }
+
+    if (lower.startsWith("fs cat ")) {
+        _usbFsCat(line.substring(7));
+        return;
+    }
+
+    if (lower == "fs backup") {
+        // Everything on LittleFS that a repartition would destroy and that
+        // cannot be regenerated from NVS or re-captured in the field.
+        static const char* kBackupPaths[] = {
+            PATH_STORE_KNOWN_LOCATIONS,
+            PATH_STORE_LEGACY_KNOWN_LOCATIONS,
+            PATH_BADUSB_INDEX,
+        };
+        Serial.println("[FS] backup begin");
+        for (const char* pth : kBackupPaths) {
+            if (LittleFS.exists(pth)) _usbFsCat(String(pth));
+        }
+        _usbFsList(String(PATH_BADUSB_DIR));
+        Serial.println("[FS] backup end -- capture this log before repartitioning");
+        return;
+    }
+
+    if (lower == "spool selftest" || lower == "spool codec") {
+        _runUsbSpoolCommandInStorageWindow(USB_SPOOL_SELFTEST,
+                                           "manual_spool_selftest");
+        return;
+    }
+
     if (lower == "spool quarantine list") {
         STORAGE.spoolQuarantineListToSerial();
         return;
@@ -3977,6 +4323,19 @@ void _handleUsbConsoleLine(const char* rawLine) {
 
     if (lower == "crash log" || lower == "crash ring") {
         crashLogPrint();
+        return;
+    }
+
+    if (lower == "stack audit" || lower == "stacks") {
+        _auditTaskStackPlacement(true);
+        return;
+    }
+
+    if (lower == "crash clear" || lower == "crash reset") {
+        crashLogClear();
+        // The ring's sequence restarts at 0, so the vault's dedup watermark
+        // must go with it or every future crash is silently deduped away.
+        FieldVault::resetCrashWatermark();
         return;
     }
 
@@ -4494,10 +4853,9 @@ static bool _shouldEnterBootHeapTriage(bool storageOk) {
     }
 
     const uint32_t pending = STORAGE.getPendingEventCount();
-    const uint32_t freeInternal =
-        heap_caps_get_free_size(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
+    const uint32_t freeInternal = _sampleDramFree();
     const uint32_t largestInternal =
-        heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
+        heap_caps_get_largest_free_block(SPECTRE_CAP_DRAM);
 
     if (pending >= BOOT_TRIAGE_PENDING_UPLOAD_THRESHOLD ||
         freeInternal < BOOT_TRIAGE_FREE_INTERNAL_HEAP_BYTES ||
@@ -4557,6 +4915,10 @@ void _loadKnownLocationsIntoState() {
 
 static void _runOptionalBootInitialization() {
     DebugLog::begin();
+    // Continuous field captures reconnect after USB re-enumerates, so emit the
+    // crash-latched BLE stage here (rather than only during the first 250 ms of
+    // setup) while it is still protected from live BLE marker updates.
+    BLE_MGR.printRxCrashDiag();
     FieldVault::begin();
     _loadKnownLocationsIntoState();
     if (STORAGE.hasStorageMaintenanceWork()) {
@@ -4826,10 +5188,16 @@ void _initializeHardwareManagers(uint32_t& lastWifiTick) {
     MESHTASTIC.begin();
 #endif
 
+    DLOG_INFO("BOOTSTEP", "session begin");
     SESS.begin();
+    DLOG_INFO("BOOTSTEP", "session ready");
     ENTITY_MGR.begin();
+    DLOG_INFO("BOOTSTEP", "entity ready");
     WIFI_MGR.begin();
+    DLOG_INFO("BOOTSTEP", "wifi manager ready allocated=%d",
+              WIFI_MGR.isAllocated() ? 1 : 0);
     RADIO_ARB.begin();
+    DLOG_INFO("BOOTSTEP", "radio arbiter ready");
 
     // A phone bulk transfer may have deliberately rebooted between its BLE
     // command phase and private Wi-Fi phase. Adopt and prepare that AP before
@@ -4845,7 +5213,9 @@ void _initializeHardwareManagers(uint32_t& lastWifiTick) {
     g_state.missionSelection = MISSION_RECON;
     g_state.generalScreen = static_cast<uint8_t>(g_state.currentScreen);
     STATE_WRITE_END();
+    DLOG_INFO("BOOTSTEP", "presentation sync begin");
     syncRuntimePresentation();
+    DLOG_INFO("BOOTSTEP", "presentation sync ready");
 
     // Write FieldVault records now that sessionId is populated. Heavy file
     // work intentionally happens here (not in setup() or in a crash/panic
@@ -4854,7 +5224,38 @@ void _initializeHardwareManagers(uint32_t& lastWifiTick) {
     // Order matters for human readability of field.jsonl: a crash from the
     // prior boot (if any) is written first, then this boot's summary, so
     // each boot's narrative reads "prior crash → new boot".
-    if (FieldVault::isReady()) {
+    //
+    // Under boot heap pressure FieldVault::begin() is deferred into the main
+    // loop, so the vault is NOT ready here and every boot/crash record was
+    // being dropped on the floor — silently, and precisely when the device is
+    // most likely to be crashing. Latch instead, and let the loop flush once
+    // the vault comes up. Crossing BOOT_TRIAGE_PENDING_UPLOAD_THRESHOLD made
+    // this fire on every boot and cost us both reboots on 2026-08-20.
+    if (!FieldVault::isReady()) {
+        g_fieldVaultBootRecordPending = true;
+        DLOG_WARN("STOR",
+                  "FieldVault not ready at hardware-ready; boot record deferred");
+    } else {
+        _writeFieldVaultBootRecords();
+    }
+
+    // Silent unless something is wrong: a task stack outside internal DRAM is
+    // a latent DoubleException and must never ship unnoticed again.
+    (void)_auditTaskStackPlacement(false);
+
+    DLOG_INFO("WIFI", "Allocation: %s",
+              WIFI_MGR.isAllocated() ? "OK" : "FAIL");
+    lastWifiTick = millis();
+    if (!PHONE_OFFLOAD.wifiBulkActive()) {
+        RADIO_ARB.ensureDefaultCapture("boot");
+    }
+}
+
+// Writes this boot's vault records. Safe to call once the vault is ready and
+// g_state.sessionId is populated; both call sites satisfy that.
+void _writeFieldVaultBootRecords() {
+    if (!FieldVault::isReady()) return;
+    {
         const esp_reset_reason_t rr = esp_reset_reason();
         const uint32_t pending =
             STORAGE.isReady() ? STORAGE.getPendingEventCount() : 0;
@@ -4891,13 +5292,7 @@ void _initializeHardwareManagers(uint32_t& lastWifiTick) {
                                isoBuf,
                                usbSerialAttached);
     }
-
-    DLOG_INFO("WIFI", "Allocation: %s",
-              WIFI_MGR.isAllocated() ? "OK" : "FAIL");
-    lastWifiTick = millis();
-    if (!PHONE_OFFLOAD.wifiBulkActive()) {
-        RADIO_ARB.ensureDefaultCapture("boot");
-    }
+    g_fieldVaultBootRecordPending = false;
 }
 
 void _publishHardwareReadyState() {
@@ -5162,21 +5557,6 @@ static MissionProfile _sanitizeMissionProfile(uint8_t rawProfile) {
     return static_cast<MissionProfile>(rawProfile);
 }
 
-static Screen _nextGeneralScreen(Screen screen) {
-    switch (screen) {
-        case SCREEN_LORA:       return SCREEN_MESHTASTIC;
-        case SCREEN_MESHTASTIC: return SCREEN_WIFI;
-        case SCREEN_WIFI:       return SCREEN_BLE;
-        case SCREEN_BLE:        return SCREEN_BADUSB;
-        case SCREEN_BADUSB:     return SCREEN_RECON;
-        case SCREEN_RECON:      return SCREEN_SYSTEM;
-        case SCREEN_SYSTEM:     return SCREEN_MISSION_SUMMARY;
-        case SCREEN_MISSION_SUMMARY:
-        case SCREEN_MISSION:
-        default:                return SCREEN_LORA;
-    }
-}
-
 static bool _routeUsesBadUsb(const ButtonRoutingState& route) {
     return route.currentScreen == SCREEN_BADUSB;
 }
@@ -5249,7 +5629,250 @@ const char* _screenName(Screen screen) {
     return screenLongName(screen);
 }
 
+// NimBLE holds ~62 KB of internal DRAM from the moment it initialises, and
+// RADIO_BLE_GPS deliberately never tore it down: calling deinit(true) on the
+// probe-timeout handoff panicked, because _releaseWorkerTask() bails out when
+// the worker is still inside a blocking connect()/auth call and shutdown()
+// used to deinit anyway. That left the 62 KB pinned for the rest of the boot,
+// straight through every WiFi capture window - the single largest reclaimable
+// block on this board.
+//
+// shutdown() now refuses to deinit under a busy worker, so the teardown is
+// safe as long as we only attempt it once the stack is genuinely idle.
+// readyForWifiHandoff() is exactly that predicate (radio off, worker not busy,
+// disconnect settle elapsed). Re-init costs ~16 ms, so paying it per BLE
+// session is a good trade for 62 KB of capture headroom.
+// DISABLED pending a fix for the teardown panic below.
+//
+// Attempted 2026-08-18 and reverted. Gating the teardown on
+// readyForWifiHandoff() (radio off, worker idle, settle elapsed) is NOT enough:
+// NimBLEDevice::deinit(true) itself panics. The coredump is unambiguous —
+//
+//   assert failed: heap_caps_free heap_caps_base.c:80
+//   (heap != NULL && "free() target pointer is outside heap areas")
+//
+// deinit(true) calls esp_bt_controller_mem_release(), which *unregisters* the
+// BT memory region from the heap; a host structure allocated out of that region
+// is then freed afterwards, against a heap that no longer exists. That is an
+// ordering bug inside the NimBLE/controller teardown, not something the caller
+// can gate around — which is why the original RADIO_BLE_GPS comment simply
+// refused to deinit.
+//
+// The prize is real and measured: a boot that has not yet initialised NimBLE
+// shows heapFree=103K during capture; after NimBLE init the same phase shows
+// 36K. ~67 KB of capture headroom is pinned for the rest of the boot.
+//
+// Next experiment: NimBLEDevice::deinit(false), which skips the object
+// destruction (and possibly the mem_release) path — but it must be checked for
+// leaking the server/client/scan objects across a begin()/shutdown() cycle
+// before it can be trusted.
+static constexpr bool     BLE_IDLE_TEARDOWN_ENABLED = true;
+static constexpr uint32_t BLE_IDLE_TEARDOWN_MS = 5000UL;
+
+void _releaseIdleBleStack(uint32_t nowMs) {
+    static uint32_t idleSinceMs = 0;
+
+    if (!BLE_IDLE_TEARDOWN_ENABLED) return;
+
+    if (!BLE_MGR.isBegun()) {
+        idleSinceMs = 0;
+        return;
+    }
+
+    // Never tear down while BLE owns the radio, or while a BLE lease is queued
+    // - that would just pay the re-init cost immediately.
+    const bool bleWanted =
+        RADIO_ARB.isOwner(RADIO_BLE_GPS)  || RADIO_ARB.isOwner(RADIO_BLE_TEXT) ||
+        RADIO_ARB.hasPendingOwner(RADIO_BLE_GPS) ||
+        RADIO_ARB.hasPendingOwner(RADIO_BLE_TEXT);
+
+    if (bleWanted || !BLE_MGR.readyForWifiHandoff()) {
+        idleSinceMs = 0;
+        return;
+    }
+
+    if (idleSinceMs == 0) {
+        idleSinceMs = nowMs ? nowMs : 1;
+        return;
+    }
+    if ((nowMs - idleSinceMs) < BLE_IDLE_TEARDOWN_MS) {
+        return;
+    }
+    idleSinceMs = 0;
+
+    const uint32_t before =
+        heap_caps_get_free_size(SPECTRE_CAP_DRAM);
+
+    BLE_MGR.shutdown();
+
+    const uint32_t after =
+        heap_caps_get_free_size(SPECTRE_CAP_DRAM);
+
+    if (BLE_MGR.isBegun()) {
+        // shutdown() declined (worker went busy in the meantime); retry later.
+        DLOG_INFO("CORE", "idle BLE teardown deferred");
+        return;
+    }
+
+    DLOG_WARN("CORE", "idle BLE teardown reclaimed %luB internal (%luB -> %luB)",
+              static_cast<unsigned long>(after > before ? after - before : 0),
+              static_cast<unsigned long>(before),
+              static_cast<unsigned long>(after));
+}
+
+// Internal-DRAM floor for an active promiscuous capture.
+//
+// Steady-state capture sits at ~20 KB free / ~12 KB largest on this board, so
+// these floors sit below normal operation and only trip when the WiFi driver's
+// dynamic buffers have grown well past their usual footprint - which is what a
+// dense RF environment does, and what panicked the device five times during the
+// 2026-08-18 city run (crash ring recorded min=2K internal free).
+static constexpr uint32_t CAPTURE_HEAP_FLOOR_BYTES         = 12U * 1024U;
+static constexpr uint32_t CAPTURE_HEAP_LARGEST_FLOOR_BYTES =  6U * 1024U;
+static constexpr uint32_t CAPTURE_HEAP_GUARD_COOLDOWN_MS   = 30000UL;
+
+static uint32_t g_captureHeapGuardTrips = 0;
+
+// Recycle the WiFi driver when capture is about to run the internal heap dry.
+// pauseRadio() only clears promiscuous mode and leaves the driver initialised,
+// so the ~30 KB of driver buffers is only reclaimed by a full suspendRadio()
+// (WIFI_OFF) followed by a fresh startPromiscuous(). Costs a sub-second capture
+// gap instead of a panic.
+void _enforceCaptureHeapGuard(uint32_t nowMs) {
+    static uint32_t lastGuardMs = 0;
+
+    if (!RADIO_ARB.isOwner(RADIO_WIFI_CAPTURE)) return;
+
+    const uint32_t freeInternal = _sampleDramFree();
+    const uint32_t largestInternal =
+        heap_caps_get_largest_free_block(SPECTRE_CAP_DRAM);
+
+    if (freeInternal >= CAPTURE_HEAP_FLOOR_BYTES &&
+        largestInternal >= CAPTURE_HEAP_LARGEST_FLOOR_BYTES) {
+        return;
+    }
+
+    // Don't thrash the radio if the recycle didn't buy much headroom.
+    if (lastGuardMs != 0 &&
+        (nowMs - lastGuardMs) < CAPTURE_HEAP_GUARD_COOLDOWN_MS) {
+        return;
+    }
+    lastGuardMs = nowMs;
+    g_captureHeapGuardTrips++;
+
+    const uint32_t pending =
+        (STORAGE.isReady() && STORAGE.isPendingEventCountAuthoritative())
+            ? STORAGE.getPendingEventCount() : 0U;
+
+    DLOG_WARN("CORE",
+              "capture heap guard: free=%luB largest=%luB floor=%luB/%luB trips=%lu",
+              static_cast<unsigned long>(freeInternal),
+              static_cast<unsigned long>(largestInternal),
+              static_cast<unsigned long>(CAPTURE_HEAP_FLOOR_BYTES),
+              static_cast<unsigned long>(CAPTURE_HEAP_LARGEST_FLOOR_BYTES),
+              static_cast<unsigned long>(g_captureHeapGuardTrips));
+
+    // Breadcrumb so a panic *during* the recycle is still attributable.
+    crashCheckpoint(CrashPhase::RADIO_RESUME,
+                    static_cast<uint8_t>(RADIO_ARB.currentOwner()),
+                    pending);
+
+    WIFI_MGR.suspendRadio();
+    const uint32_t freedInternal =
+        heap_caps_get_free_size(SPECTRE_CAP_DRAM);
+
+    if (!WIFI_MGR.startPromiscuous()) {
+        DLOG_ERROR("CORE", "capture heap guard: promiscuous restart failed");
+    }
+
+    crashBreadcrumbClear(CrashPhase::RADIO_RESUME);
+
+    DLOG_WARN("CORE",
+              "capture heap guard recycled driver: free %luB -> %luB",
+              static_cast<unsigned long>(freeInternal),
+              static_cast<unsigned long>(freedInternal));
+}
+
+// Split the NimBLE init cost into controller vs host. Runs before BLE has
+// initialised - at boot when SPECTRE_BOOT_MEMPROBE is on, since the phone
+// probe brings NimBLE up ~11 s in, well before the console takes commands.
+void _runBleMemProbe(bool manageRadio) {
+        if (BLE_MGR.isBegun()) {
+            Serial.println("[MEMPROBE] BLE already initialised - measurement invalid");
+            return;
+        }
+
+        if (!manageRadio) {
+            // Boot path: USB CDC has not enumerated yet, so wait for the host
+            // to attach or the whole measurement is written into the void.
+            const uint32_t waitUntil = millis() + 8000UL;
+            while (!Serial && static_cast<int32_t>(millis() - waitUntil) < 0) {
+                delay(50);
+            }
+            delay(600);
+        }
+
+        if (manageRadio) {
+            WIFI_MGR.suspendRadio();
+            delay(300);
+        }
+
+        auto freeInt = []() {
+            return heap_caps_get_free_size(SPECTRE_CAP_DRAM);
+        };
+        auto largestInt = []() {
+            return heap_caps_get_largest_free_block(SPECTRE_CAP_DRAM);
+        };
+
+        const uint32_t base = freeInt();
+        Serial.printf("[MEMPROBE] baseline free=%lu largest=%lu status=%d\r\n",
+                      (unsigned long)base, (unsigned long)largestInt(),
+                      (int)esp_bt_controller_get_status());
+
+        esp_bt_controller_config_t cfg = BT_CONTROLLER_INIT_CONFIG_DEFAULT();
+        cfg.ble_max_act = 3;  // what NimBLE itself passes (1 conn + bcast + obs)
+        Serial.printf("[MEMPROBE] cfg ble_max_act=%d task_stack=%d normal_adv=%d mesh_adv=%d\r\n",
+                      (int)cfg.ble_max_act, (int)cfg.controller_task_stack_size,
+                      (int)cfg.normal_adv_size, (int)cfg.mesh_adv_size);
+
+        esp_err_t err = esp_bt_controller_init(&cfg);
+        const uint32_t afterInit = freeInt();
+        Serial.printf("[MEMPROBE] controller_init err=%s free=%lu largest=%lu (cost=%ld)\r\n",
+                      esp_err_to_name(err), (unsigned long)afterInit,
+                      (unsigned long)largestInt(), (long)base - (long)afterInit);
+
+        if (err == ESP_OK) {
+            err = esp_bt_controller_enable(ESP_BT_MODE_BLE);
+            const uint32_t afterEnable = freeInt();
+            Serial.printf("[MEMPROBE] controller_enable err=%s free=%lu largest=%lu (cost=%ld)\r\n",
+                          esp_err_to_name(err), (unsigned long)afterEnable,
+                          (unsigned long)largestInt(), (long)afterInit - (long)afterEnable);
+
+            if (err == ESP_OK) {
+                err = esp_bt_controller_disable();
+                Serial.printf("[MEMPROBE] controller_disable err=%s free=%lu\r\n",
+                              esp_err_to_name(err), (unsigned long)freeInt());
+            }
+            err = esp_bt_controller_deinit();
+            Serial.printf("[MEMPROBE] controller_deinit err=%s free=%lu largest=%lu\r\n",
+                          esp_err_to_name(err), (unsigned long)freeInt(),
+                          (unsigned long)largestInt());
+        }
+
+        Serial.printf("[MEMPROBE] recovered=%ld of %lu (status=%d)\r\n",
+                      (long)freeInt() - (long)base + 0L, (unsigned long)base,
+                      (int)esp_bt_controller_get_status());
+        Serial.flush();
+        if (manageRadio) {
+            WIFI_MGR.startPromiscuous();
+        }
+    }
+
+
 void _logRuntimeHealth(uint32_t nowMs) {
+    // Keep the global low-water honest across every radio state, not just
+    // the capture windows the heap guard runs in.
+    (void)_sampleDramFree();
     static uint32_t lastHealthLogMs = 0;
     static uint32_t lastHeapCheckMs = 0;
 
@@ -5331,11 +5954,11 @@ void _logRuntimeHealth(uint32_t nowMs) {
         const uint32_t totalInternal =
             heap_caps_get_total_size(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
         const uint32_t freeInternal =
-            heap_caps_get_free_size(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
+            heap_caps_get_free_size(SPECTRE_CAP_DRAM);
         const uint32_t minInternal =
-            heap_caps_get_minimum_free_size(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
+            heap_caps_get_minimum_free_size(SPECTRE_CAP_DRAM);
         const uint32_t largestInternal =
-            heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
+            heap_caps_get_largest_free_block(SPECTRE_CAP_DRAM);
         const uint32_t totalPsram = heap_caps_get_total_size(MALLOC_CAP_SPIRAM);
         const uint32_t freePsram = heap_caps_get_free_size(MALLOC_CAP_SPIRAM);
         const uint32_t largestPsram = heap_caps_get_largest_free_block(MALLOC_CAP_SPIRAM);
@@ -5511,7 +6134,7 @@ bool _runButtonAction(SpectreButtonAction action, bool storageOk) {
                 return false;
             }
             STATE_WRITE_BEGIN();
-            g_state.currentScreen = _nextGeneralScreen(g_state.currentScreen);
+            g_state.currentScreen = nextGeneralScreen(g_state.currentScreen);
             g_state.generalScreen = static_cast<uint8_t>(g_state.currentScreen);
             g_state.screenChanged = true;
             STATE_WRITE_END();
@@ -6509,9 +7132,9 @@ void TaskHardware(void* pvParameters) {
 
     DLOG_INFO("CORE", "Storage begin start heapFree=%lu largest=%lu",
               static_cast<unsigned long>(
-                  heap_caps_get_free_size(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT)),
+                  heap_caps_get_free_size(SPECTRE_CAP_DRAM)),
               static_cast<unsigned long>(
-                  heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT)));
+                  heap_caps_get_largest_free_block(SPECTRE_CAP_DRAM)));
     crashCheckpoint(CrashPhase::STORAGE_BOOT,
                     static_cast<uint8_t>(RADIO_ARB.currentOwner()),
                     0);
@@ -6522,9 +7145,9 @@ void TaskHardware(void* pvParameters) {
               STORAGE.isReady() ? 1 : 0,
               STORAGE.isReady() ? static_cast<unsigned long>(STORAGE.getPendingEventCount()) : 0UL,
               static_cast<unsigned long>(
-                  heap_caps_get_free_size(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT)),
+                  heap_caps_get_free_size(SPECTRE_CAP_DRAM)),
               static_cast<unsigned long>(
-                  heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT)));
+                  heap_caps_get_largest_free_block(SPECTRE_CAP_DRAM)));
     if (storageOk && STORAGE.hasMaintenanceWork() &&
         STORAGE.isCaptureSafeToResume()) {
         crashCheckpoint(CrashPhase::STORAGE_BOOT,
@@ -6548,9 +7171,9 @@ void TaskHardware(void* pvParameters) {
     const bool bootHeapPressure =
         STORAGE.isReady() &&
         (STORAGE.getPendingEventCount() >= BOOT_TRIAGE_PENDING_UPLOAD_THRESHOLD ||
-         heap_caps_get_free_size(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT) <
+         heap_caps_get_free_size(SPECTRE_CAP_DRAM) <
              BOOT_TRIAGE_FREE_INTERNAL_HEAP_BYTES ||
-         heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT) <
+         heap_caps_get_largest_free_block(SPECTRE_CAP_DRAM) <
              BOOT_TRIAGE_LARGEST_INTERNAL_HEAP_BYTES);
 
     // Phase 1 shadow plumbing: PSRAM slot pool + pinned worker on Core 1.
@@ -6566,9 +7189,9 @@ void TaskHardware(void* pvParameters) {
                       "Deferring optional boot init pending=%lu freeInternal=%lu largestInternal=%lu",
                       static_cast<unsigned long>(STORAGE.getPendingEventCount()),
                       static_cast<unsigned long>(
-                          heap_caps_get_free_size(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT)),
+                          heap_caps_get_free_size(SPECTRE_CAP_DRAM)),
                       static_cast<unsigned long>(
-                          heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT)));
+                          heap_caps_get_largest_free_block(SPECTRE_CAP_DRAM)));
         } else {
             _runOptionalBootInitialization();
         }
@@ -6647,6 +7270,13 @@ void TaskHardware(void* pvParameters) {
             static_cast<uint8_t>(RADIO_ARB.currentOwner());
 
         if (FieldVault::isReady()) {
+            // Deferred boot init means this boot's record could not be written
+            // at hardware-ready. Flush it now, before anything else, so the
+            // vault still reads "prior crash -> new boot" in order.
+            if (g_fieldVaultBootRecordPending) {
+                _writeFieldVaultBootRecords();
+            }
+
             const bool duePowerSample =
                 lastFieldVaultPowerSampleMs == 0 ||
                 (loopNow - lastFieldVaultPowerSampleMs) >= FIELDVAULT_POWER_SAMPLE_INTERVAL_MS;
@@ -7129,6 +7759,11 @@ void TaskHardware(void* pvParameters) {
         // Expire abandoned transfers from the hardware loop even when the
         // companion scheduler is disabled or no more commands arrive.
         PHONE_OFFLOAD.expireIfStale();
+        // OFFLOAD_BEGIN only queues the expensive LittleFS index walk. Run it
+        // here so TaskHardware remains the sole persistent-storage mutator;
+        // the storage scanners yield periodically to keep both idle-task
+        // watchdogs serviced while the field backlog is indexed.
+        PHONE_OFFLOAD.servicePreparation();
 
         if (!companion.enabled) {
             // Companion disabled: discard any console-queued requests so they
@@ -7136,6 +7771,7 @@ void TaskHardware(void* pvParameters) {
             g_companionCmd.link   = false;
             g_companionCmd.probe  = false;
             g_companionCmd.enrich = false;
+            g_companionCmd.upload = false;
             g_companionCmd.cancel = false;
             endManualEnrichmentExclusive(companion, "companion_disabled");
             companion.workState = COMPANION_WORK_IDLE;
@@ -7157,10 +7793,17 @@ void TaskHardware(void* pvParameters) {
 
             // Drain console-issued companion commands into the scheduler.
             // The console (also running on TaskHardware via _pollUsbSerialConsole)
-            // writes g_companionCmd.{link,probe,enrich,cancel}; we read-and-clear here
+            // writes g_companionCmd.{link,probe,enrich,upload,cancel}; we read-and-clear here
             // so the priority flags are visible to companionHasPriorityReason()
             // for the rest of this same tick. Cancel is processed first so a
             // simultaneously-queued probe/enrich is also wiped.
+            const bool phoneUploadRequested = g_companionCmd.upload;
+            if (phoneUploadRequested) {
+                g_companionCmd.upload = false;
+                // Upload owns Wi-Fi exclusively. Reuse the normal companion
+                // cancel path to commit queued enrichment and release BLE first.
+                g_companionCmd.cancel = true;
+            }
             if (g_companionCmd.cancel) {
                 g_companionCmd.cancel = false;
                 g_companionCmd.link   = false;
@@ -7215,6 +7858,23 @@ void TaskHardware(void* pvParameters) {
                     RADIO_ARB.release(RADIO_BLE_GPS, "companion_cancel");
                 }
                 companion.externalTransportActive = false;
+            }
+            if (phoneUploadRequested) {
+                MQTT_MGR.requestUploadResume("phone_upload_now");
+                const int pending = MQTT_MGR.uploadReadyCount();
+                const MQTTState state = MQTT_MGR.getState();
+                if (state != MQTT_IDLE) {
+                    DLOG_INFO("CMD", "phone upload-now accepted: already active state=%s pending=%d",
+                              _mqttStateName(state), pending);
+                } else if (pending <= 0) {
+                    DLOG_INFO("CMD", "phone upload-now accepted: no pending records");
+                } else if (MQTT_MGR.requestDump(true)) {
+                    DLOG_INFO("CMD", "phone upload-now queued pending=%d", pending);
+                } else {
+                    DLOG_WARN("CMD", "phone upload-now deferred owner=%s pending=%d",
+                              RadioArbiter::ownerName(RADIO_ARB.currentOwner()),
+                              pending);
+                }
             }
             if (g_companionCmd.link) {
                 g_companionCmd.link = false;
@@ -7754,6 +8414,14 @@ void TaskHardware(void* pvParameters) {
             _logHardwareSectionIfSlow("stack_log", sectionStartMs, storageOk);
         }
         sectionStartMs = millis();
+        _releaseIdleBleStack(now);
+        _logHardwareSectionIfSlow("ble_idle_teardown", sectionStartMs, storageOk);
+
+        sectionStartMs = millis();
+        _enforceCaptureHeapGuard(now);
+        _logHardwareSectionIfSlow("capture_heap_guard", sectionStartMs, storageOk);
+
+        sectionStartMs = millis();
         _logRuntimeHealth(now);
         _logHardwareSectionIfSlow("health_log", sectionStartMs, storageOk);
 
@@ -7818,6 +8486,58 @@ void _checkLocationTag() {
 
 // ── Setup ──
 
+// Report any task whose stack is not in internal DRAM.
+//
+// A stack in PSRAM is a latent DoubleException: spi_flash disables the cache
+// for a write, PSRAM goes with it, and the next register-window spill faults
+// inside the exception handler. That took the device down repeatedly on
+// 2026-08-20 (BLEWorker, explicitly created with MALLOC_CAP_SPIRAM).
+//
+// It can also happen without anyone asking for it: pvPortMallocStack resolves
+// to pvPortMalloc -> MALLOC_CAP_8BIT, which matches internal AND PSRAM, so a
+// plain xTaskCreate() falls back to PSRAM when internal DRAM is too tight or
+// too fragmented to satisfy the request. That makes it a pressure-dependent
+// bug that will not reproduce on a quiet bench.
+//
+// Returns the number of offending tasks. `verbose` also lists the clean ones.
+static uint32_t _auditTaskStackPlacement(bool verbose) {
+    const UBaseType_t count = uxTaskGetNumberOfTasks();
+    TaskStatus_t* tasks = static_cast<TaskStatus_t*>(
+        heap_caps_calloc(count, sizeof(TaskStatus_t),
+                         MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT));
+    if (!tasks) {
+        Serial.println("[STACK] audit skipped (no internal memory for snapshot)");
+        return 0;
+    }
+
+    const UBaseType_t got = uxTaskGetSystemState(tasks, count, nullptr);
+    uint32_t offenders = 0;
+    for (UBaseType_t i = 0; i < got; i++) {
+        const void* base = static_cast<const void*>(tasks[i].pxStackBase);
+        const bool internal = esp_ptr_internal(base);
+        if (!internal) offenders++;
+        if (!internal || verbose) {
+            Serial.printf("[STACK] %-16s base=%p %s\r\n",
+                          tasks[i].pcTaskName ? tasks[i].pcTaskName : "?",
+                          base,
+                          internal ? "internal" : "*** EXTERNAL (PSRAM) ***");
+        }
+    }
+
+    if (offenders > 0) {
+        Serial.printf("[STACK] *** %lu task stack(s) in PSRAM — DoubleException risk ***\r\n",
+                      static_cast<unsigned long>(offenders));
+        DLOG_WARN("CORE", "%lu task stack(s) in PSRAM — DoubleException risk",
+                  static_cast<unsigned long>(offenders));
+    } else if (verbose) {
+        Serial.printf("[STACK] all %lu task stacks internal\r\n",
+                      static_cast<unsigned long>(got));
+    }
+
+    heap_caps_free(tasks);
+    return offenders;
+}
+
 static const char* _resetReasonName(esp_reset_reason_t r) {
     switch (r) {
         case ESP_RST_POWERON:   return "power_on";
@@ -7830,7 +8550,38 @@ static const char* _resetReasonName(esp_reset_reason_t r) {
         case ESP_RST_DEEPSLEEP: return "deep_sleep_wake";
         case ESP_RST_BROWNOUT:  return "brownout";
         case ESP_RST_SDIO:      return "sdio";
+#if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 1, 0)
+        // IDF 5.1+ splits reasons that used to fall through to "unknown". USB
+        // is the common one on this board: the 1200bps-touch flash, a replug
+        // and host re-enumeration all reset the chip through the USB
+        // peripheral, and reporting that as unknown made every flash look like
+        // a crash on the boot summary screen.
+        case ESP_RST_USB:        return "usb_peripheral";
+        case ESP_RST_JTAG:       return "jtag";
+        case ESP_RST_EFUSE:      return "efuse_error";
+        case ESP_RST_PWR_GLITCH: return "power_glitch";
+        case ESP_RST_CPU_LOCKUP: return "cpu_lockup";
+#endif
         default:                return "unknown";
+    }
+}
+
+// Crash-like = the firmware lost control. USB/JTAG/SDIO resets and deliberate
+// software restarts are not faults and must not be reported as such.
+static bool _resetReasonIsCrashLike(esp_reset_reason_t r) {
+    switch (r) {
+        case ESP_RST_PANIC:
+        case ESP_RST_INT_WDT:
+        case ESP_RST_TASK_WDT:
+        case ESP_RST_WDT:
+        case ESP_RST_BROWNOUT:
+#if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 1, 0)
+        case ESP_RST_PWR_GLITCH:
+        case ESP_RST_CPU_LOCKUP:
+#endif
+            return true;
+        default:
+            return false;
     }
 }
 
@@ -7936,7 +8687,7 @@ void _appendFieldVaultRunSample(uint8_t radioOwner,
     const uint32_t heapFreeKb =
         heap_caps_get_free_size(MALLOC_CAP_8BIT) / 1024UL;
     const uint32_t internalFreeKb =
-        heap_caps_get_free_size(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT) / 1024UL;
+        heap_caps_get_free_size(SPECTRE_CAP_DRAM) / 1024UL;
 
     if (!FieldVault::appendRunSample(sessionId,
                                      uptimeMs,
@@ -8004,6 +8755,30 @@ void setup() {
     Serial.begin(115200);
     delay(250);
     g_usbSerialAttachedAtBoot = static_cast<bool>(Serial);
+
+    // Open a new crash-ring boot generation before any checkpoint is written,
+    // so entries left unresolved by the previous boot stay evictable.
+    crashLogBeginBoot();
+
+    // Arm the heap allocation-failure hook before anything else allocates, so
+    // the first failed request of the boot is always attributable.
+    crashAllocFailInstall();
+
+#if SPECTRE_EXTMEM_MALLOC_LIMIT > 0
+    // Lower the internal/external malloc split before anything allocates, so the
+    // 1-4 KB band lands in PSRAM instead of scarce internal DRAM. See the
+    // `heap extmem` command for the rationale and for sweeping the value live.
+    heap_caps_malloc_extmem_enable(SPECTRE_EXTMEM_MALLOC_LIMIT);
+#endif
+
+#if SPECTRE_BOOT_MEMPROBE
+    _runBleMemProbe(false);
+#endif
+
+    // Preserve the final BLE receive-stage marker before the freshly booted
+    // TaskHardware loop can overwrite it.  This only snapshots crash resets;
+    // ordinary boots retain the most recent crash evidence for USB diagnosis.
+    BLE_MGR.latchRxCrashDiag();
 
     // Apply the compile-time debug profile before any DLOG_* call so disabled
     // logs cost nothing from boot onward.
@@ -8076,18 +8851,33 @@ void setup() {
             DLOG_WARN("CORE", "brownout reset — check flash write during active radio window");
         }
 
+#if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 1, 0)
+        if (rr == ESP_RST_CPU_LOCKUP) {
+            Serial.printf("[BOOT] *** CPU LOCKUP — double exception, no panic handler ran ***\n");
+            DLOG_WARN("CORE", "cpu lockup reset — fault inside the fault handler");
+        }
+
+        if (rr == ESP_RST_PWR_GLITCH) {
+            Serial.printf("[BOOT] *** POWER GLITCH — supply transient detected ***\n");
+            DLOG_WARN("CORE", "power glitch reset — check battery contacts and rail decoupling");
+        }
+#endif
+
         // RTC crash ring — last CRASH_LOG_DEPTH checkpoints survive across resets.
         // Entries persist until overwritten; connect any time after a crash.
         crashLogPrint();
 #else
-        if (rr == ESP_RST_PANIC ||
-            rr == ESP_RST_TASK_WDT ||
-            rr == ESP_RST_INT_WDT ||
-            rr == ESP_RST_WDT ||
-            rr == ESP_RST_BROWNOUT) {
+        if (_resetReasonIsCrashLike(rr)) {
             DLOG_WARN("CORE", "reset_reason=%d (%s)", (int)rr, _resetReasonName(rr));
         }
 #endif
+
+        // A failed allocation from the previous boot names the request that
+        // preceded the panic, which the ring alone cannot identify. This is the
+        // only code that disarms the record, so it must run at every verbosity
+        // or a stale failure is reported for the life of the device. It is
+        // silent unless a record is actually waiting.
+        crashAllocFailPrint();
     }
     // ── end boot diagnostics ─────────────────────────────────────────────────
 

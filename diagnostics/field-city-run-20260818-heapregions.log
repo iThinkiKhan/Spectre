@@ -1,0 +1,14 @@
+===== CMD: ble smoke =====
+ble smoke
+[BLE_SMOKE] requested
+[715838][I][WIFI] Radio paused
+[715993][I][WIFI] Radio suspended
+[BLE_SMOKE] wifi_mode=0 err=ESP_ERR_WIFI_NOT_INIT
+[BLE_SMOKE] internal free=50616 largest=31732 dma_free=42952
+[BLE_SMOKE] psram free=4518112 largest=4456436
+[BLE_SMOKE] --- internal heap regions ---
+[BLE_SMOKE] --- end regions ---
+[BLE_SMOKE] before NimBLEDevice::init
+[BLE_SMOKE] after NimBLEDevice::init
+[BLE_SMOKE] after setPower
+

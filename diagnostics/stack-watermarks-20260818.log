@@ -1,0 +1,32 @@
+===== CMD: debug status =====
+debug status
+[USB] debug enabled=1 level=I mask=0x00000fff
+[USB] debug focus=ops
+[718539][I][STORAGE] capture write allowed owner=WIFI_CAPTURE path=/events/counter.txt reason=capture_micro_idle ms=77 ok=1
+[718633][I][STORAGE] capture write allowed owner=WIFI_CAPTURE path=/events/meta.json reason=capture_micro_idle ms=93 ok=1
+[718964][I][STORAGE] capture write allowed owner=WIFI_CAPTURE path=/spool/index.json reason=capture_micro_idle ms=328 ok=1
+[718965][I][STORAGE] worker ui refresh serviced uiRefreshServiceCount=48 uiDeferred=64 uiFlush=48 pressure=0 usedPct=3 pending=76
+[718966][W][STORAGE] worker metadata flush reason=capture_micro_idle ms=504 ok=1 dirty=0
+[718966][I][STORAGE] worker metadata flush metadataFlushCount=13 reason=capture_micro_idle entryMetadataDirtyPending=1 entryUiRefreshPending=1 metadataDirtyPending=0 uiDeferred=64 uiFlush=48 uiRefreshServiceCount
+[718967][W][CORE] TaskHardware slow section=capture_storage_maintenance ms=505 owner=WIFI_CAPTURE pendingUpload=76 maintPending=1
+[718977][W][CORE] TaskHardware loop gap=516ms owner=WIFI_CAPTURE pendingUpload=76 maintPending=1 suppressed=1
+[720118][I][HEAP] heap free=4433KB min=4425KB largest=4352KB frag=1% internalFree=20KB internalLargest=8KB psramFree=4413KB core=5/4% owner=WIFI_CAPTURE nets=9 pendingUpload=76 pendingEnrich=7
+[HEALTH] time=2026-08-18 15:53:37 src=gps
+[HEALTH] heap used=4019/8452KB free=4433KB min=4425KB largest=4352KB frag=1%
+[HEALTH] internal used=240/260KB free=20KB min=12KB largest=8KB
+[HEALTH] psram used=3779/8192KB free=4413KB largest=4352KB
+[HEALTH] stack free_min: core0=7KB/18KB core1=5KB/10KB
+[HEALTH] loopTask free_min=3080B/5120B
+[HEALTH] core usage: core0=5% core1=4%
+[HEALTH] power=usb state=usb batt=100% 4709mV trend=2mV/min runtime=0min cap=1100mAh charging=0
+[HEALTH] radio=WIFI_CAPTURE wifi=0 ble=0 gps=0 nets=9 pendingUpload=76 pendingEnrich=7
+[HEALTH] subghz=NONE mode=OFF pkts=0 nodes=0
+[720121][I][STACK] TaskStorage watermark=1920B
+[720121][I][STORAGE] RAMSpool enq=58 cons=58 inflight=0/1024 high=2 pressure=0 drop[full=0 big=0 noise=0 p3Evict=0 p3Drop=0 p2Drop=0 p1Fail=0] free=1024
+[720121][I][STORAGE] RAMSpool enqueue probe[ok=48 drop=0] device[ok=10 drop=0]
+[720122][I][STORAGE] RAMSpool worker probe[ok=48 sup=0 drop=0 fail=0 slow=0] device[ok=9 sup=1 drop=0 fail=0 slow=0] slowTotal=0 maxMs=0
+[720122][I][STORAGE] RAMSpool prioEnq p0=0 p1=0 p2=58 p3=0
+[720122][I][STORAGE] RAMSpool lanes p1=0/0 p2=0/1 p3=0/0
+[721050][I][STACK] TaskButtons watermark=2088B min=2088B
+[721200][I][STACK] TaskHardware watermark=6672B min=6672B
+

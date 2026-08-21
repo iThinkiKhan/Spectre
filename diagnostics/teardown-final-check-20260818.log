@@ -1,0 +1,79 @@
+===== CMD: crash log =====
+crash log
+[BOOT] crash log: 10 entries, seq 0..3638 (oldest first)
+[BOOT] #1 seq=2495 [CRASH?] phase=wifi_capture owner=1 pendingUpload=276 heapFree=36K largest=27K min=36K uptime=47s
+[907807][W][CORE] crash? seq=2495 phase=wifi_capture owner=1 pendingUpload=276 heapFree=36K largest=27K min=36K uptime=47s
+[BOOT] #2 seq=2536 [CRASH?] phase=wifi_capture owner=1 pendingUpload=276 heapFree=36K largest=27K min=36K uptime=48s
+[907808][W][CORE] crash? seq=2536 phase=wifi_capture owner=1 pendingUpload=276 heapFree=36K largest=27K min=36K uptime=48s
+[BOOT] #3 seq=2572 [CRASH?] phase=wifi_capture owner=1 pendingUpload=276 heapFree=103K largest=63K min=103K uptime=14s
+[907809][W][CORE] crash? seq=2572 phase=wifi_capture owner=1 pendingUpload=276 heapFree=103K largest=63K min=103K uptime=14s
+[BOOT] #4 seq=3180 [CRASH?] phase=wifi_capture owner=1 pendingUpload=1044 heapFree=33K largest=18K min=4K uptime=9974s
+[907809][W][CORE] crash? seq=3180 phase=wifi_capture owner=1 pendingUpload=1044 heapFree=33K largest=18K min=4K uptime=9974s
+[BOOT] #5 seq=3241 [CRASH?] phase=wifi_capture owner=1 pendingUpload=1018 heapFree=36K largest=27K min=35K uptime=57s
+[907810][W][CORE] crash? seq=3241 phase=wifi_capture owner=1 pendingUpload=1018 heapFree=36K largest=27K min=35K uptime=57s
+[BOOT] #6 seq=3296 [CRASH?] phase=wifi_capture owner=1 pendingUpload=1018 heapFree=36K largest=27K min=36K uptime=72s
+[907810][W][CORE] crash? seq=3296 phase=wifi_capture owner=1 pendingUpload=1018 heapFree=36K largest=27K min=36K uptime=72s
+[BOOT] #7 seq=3358 [CRASH?] phase=wifi_capture owner=1 pendingUpload=1046 heapFree=33K largest=21K min=27K uptime=211s
+[907811][W][CORE] crash? seq=3358 phase=wifi_capture owner=1 pendingUpload=1046 heapFree=33K largest=21K min=27K uptime=211s
+[BOOT] #8 seq=3551 [CRASH?] phase=wifi_capture owner=1 pendingUpload=1238 heapFree=34K largest=16K min=1K uptime=1724s
+[907812][W][CORE] crash? seq=3551 phase=wifi_capture owner=1 pendingUpload=1238 heapFree=34K largest=16K min=1K uptime=1724s
+[BOOT] #9 seq=3637 [ok] phase=storage_append owner=7 pendingUpload=1335 heapFree=64K largest=17K min=24K uptime=877s
+[BOOT] #10 seq=3638 [ok] phase=runtime_health owner=7 pendingUpload=1335 heapFree=64K largest=17K min=24K uptime=900s
+[909499][I][OFFLOAD] automatic handoff ended reason=automatic_offload_timeout started=0 retryIn=300s
+[909500][I][BLE] probe resource release
+[909501][I][BLE] advertising stop
+[909501][I][BLE] client soft drop reason=radio_disabled
+[909502][I][BLE] radio disabled handoffSettle=75ms workerRetained=1
+[909502][I][BLE] probe release waiting for BLE handoff settle
+[909506][I][BLE] peer disconnect ignored after radio release reason=534
+[909661][I][WIFI] Radio suspended
+[909672][I][STORAGE] RAMSpool worker paused inflight=0 lastInflight=0
+[909672][I][STORAGE] Exclusive window begin kind=maintenance reason=radio_owner_window workerPaused=1 displaySuspended=1
+[909672][I][STORAGE] Maintenance start reason=radio_owner_window budgetMs=5000 flags=dirty_spool_index|dirty_summary|snapshot_lagged captureSafe=1
+[910377][I][STORAGE] worker ui refresh serviced uiRefreshServiceCount=69 uiDeferred=88 uiFlush=69 pressure=0 usedPct=11 pending=1335
+[910378][W][STORAGE] worker metadata flush reason=radio_owner_window ms=705 ok=1 dirty=0
+[910378][I][STORAGE] worker metadata flush metadataFlushCount=11 reason=radio_owner_window entryMetadataDirtyPending=1 entryUiRefreshPending=1 metadataDirtyPending=0 uiDeferred=88 uiFlush=69 uiRefreshServiceCount
+[910951][I][STORAGE] Maintenance continuity log wrote clean=1 reason=radio_owner_window completed=dirty_spool_index|dirty_summary|boot_safe_deferred_persist|snapshot_lagged|upload_enrich_cursor_dirty remaining=no
+[910951][I][STORAGE] Maintenance done reason=radio_owner_window actions=dirty_spool_index|dirty_summary|boot_safe_deferred_persist|snapshot_lagged|upload_enrich_cursor_dirty|continuity_pass skipped=none remaining
+[910952][I][STORAGE] RAMSpool worker resumed
+[910952][I][STORAGE] Exclusive window end kind=maintenance result=capture_safe reason=radio_owner_window
+[910953][I][STORAGE] maintenance owner window ms=1281 captureSafe=1 remaining=none
+[911012][I][WIFI] Promiscuous: YES
+[911013][I][WIFI] Promiscuous mode started data=0
+[911019][W][CORE] TaskHardware loop gap=1348ms owner=WIFI_CAPTURE pendingUpload=1335 maintPending=0 suppressed=4
+[911465][I][STORAGE] worker ui refresh serviced uiRefreshServiceCount=70 uiDeferred=89 uiFlush=70 pressure=0 usedPct=11 pending=1336
+[912903][I][STORAGE] Routine maintenance requests coalesced count=3 latest=dirty_summary source=ramspool_idle flags=dirty_spool_index|dirty_summary|snapshot_lagged
+[914502][I][BLE] shutdown
+[914503][I][BLE] shutdown phase=worker_delete
+[914503][I][BLE] shutdown phase=nimble_deinit
+[914506][I][BLE] shutdown phase=nimble_deinit_ok
+[914506][I][BLE] controller released 0B (98316B -> 98316B) status=idle
+[914506][W][CORE] idle BLE teardown reclaimed 68100B internal (30216B -> 98316B)
+[916468][I][STORAGE] worker ui refresh serviced uiRefreshServiceCount=71 uiDeferred=90 uiFlush=71 pressure=0 usedPct=11 pending=1337
+===== CMD: heap status =====
+heap status
+[HEAP] 8bit total=8457KB free=4512KB largest=4352KB
+[HEAP] internal total=265KB free=96KB largest=17KB
+[HEAP] psram total=8192KB free=4416KB largest=4352KB
+[HEAP] uploadIndex=0 enrichWindow=0 maint=dirty_spool_index|snapshot_lagged owner=WIFI_CAPTURE
+[928509][I][STORAGE] worker ui refresh serviced uiRefreshServiceCount=72 uiDeferred=93 uiFlush=72 pressure=0 usedPct=11 pending=1340
+[930218][I][HEAP] heap free=4512KB min=4429KB largest=4352KB frag=3% internalFree=96KB internalLargest=17KB psramFree=4416KB core=5/4% owner=WIFI_CAPTURE nets=9 pendingUpload=1340 pendingEnrich=5
+[HEALTH] time=2026-08-18 21:04:42 src=ntp
+[HEALTH] heap used=3946/8457KB free=4512KB min=4429KB largest=4352KB frag=3%
+[HEALTH] internal used=169/265KB free=96KB min=24KB largest=17KB
+[HEALTH] psram used=3776/8192KB free=4416KB largest=4352KB
+[HEALTH] stack free_min: core0=8KB/15KB core1=3KB/8KB
+[HEALTH] loopTask free_min=3084B/5120B
+[HEALTH] core usage: core0=5% core1=4%
+[HEALTH] power=usb state=usb batt=100% 4743mV trend=0mV/min runtime=0min cap=1100mAh charging=0
+[HEALTH] radio=WIFI_CAPTURE wifi=0 ble=0 gps=0 nets=9 pendingUpload=1340 pendingEnrich=5
+[HEALTH] subghz=NONE mode=OFF pkts=0 nodes=0
+[930221][I][STACK] TaskStorage watermark=2436B
+[930221][I][STORAGE] RAMSpool enq=86 cons=86 inflight=0/1024 high=2 pressure=0 drop[full=0 big=0 noise=0 p3Evict=0 p3Drop=0 p2Drop=0 p1Fail=0] free=1024
+[930221][I][STORAGE] RAMSpool enqueue probe[ok=78 drop=0] device[ok=8 drop=0]
+[930221][I][STORAGE] RAMSpool worker probe[ok=78 sup=0 drop=0 fail=0 slow=0] device[ok=8 sup=0 drop=0 fail=0 slow=0] slowTotal=0 maxMs=0
+[930222][I][STORAGE] RAMSpool prioEnq p0=0 p1=0 p2=86 p3=0
+[930222][I][STORAGE] RAMSpool lanes p1=0/0 p2=0/1 p3=0/0
+[930980][I][STACK] TaskButtons watermark=1776B min=1776B
+[931934][I][STACK] TaskHardware watermark=7864B min=7864B
+

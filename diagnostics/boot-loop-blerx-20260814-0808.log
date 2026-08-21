@@ -1,0 +1,24 @@
+=== capture opened 2026-08-14T08:07:12.3015484-05:00 ===
+=== send: ble rxdiag ===
+ble rxdiag
+[BLE] rxdiag stage=121 len=0 uptimeMs=149178
+[150023][I][HEAP] heap free=4478KB min=4472KB largest=4352KB frag=2% internalFree=61KB internalLargest=31KB psramFree=4417KB core=0/0% owner=BLE_GPS nets=3 pendingUpload=66 pendingEnrich=0
+[HEALTH] time=2026-08-14 08:06:50 src=gps
+[HEALTH] heap used=3973/8451KB free=4478KB min=4472KB largest=4352KB frag=2%
+[HEALTH] internal used=198/259KB free=61KB min=55KB largest=31KB
+[HEALTH] psram used=3775/8192KB free=4417KB largest=4352KB
+[HEALTH] stack free_min: core0=7KB/14KB core1=5KB/10KB
+[HEALTH] loopTask free_min=3080B/5120B
+[HEALTH] core usage: core0=0% core1=0%
+[HEALTH] power=usb state=usb batt=100% 4683mV trend=42mV/min runtime=0min cap=1100mAh charging=1
+[HEALTH] radio=BLE_GPS wifi=0 ble=1 gps=0 nets=3 pendingUpload=66 pendingEnrich=0
+[HEALTH] subghz=NONE mode=OFF pkts=0 nodes=0
+[150026][I][STACK] TaskStorage watermark=2248B
+[150026][I][STORAGE] RAMSpool enq=0 cons=0 inflight=0/1024 high=0 pressure=0 drop[full=0 big=0 noise=0 p3Evict=0 p3Drop=0 p2Drop=0 p1Fail=0] free=1024
+[150026][I][STORAGE] RAMSpool enqueue probe[ok=0 drop=0] device[ok=0 drop=0]
+[150026][I][STORAGE] RAMSpool worker probe[ok=0 sup=0 drop=0 fail=0 slow=0] device[ok=0 sup=0 drop=0 fail=0 slow=0] slowTotal=0 maxMs=0
+[150027][I][STORAGE] RAMSpool prioEnq p0=0 p1=0 p2=0 p3=0
+[150027][I][STORAGE] RAMSpool lanes p1=0/0 p2=0/0 p3=0/0
+[150991][I][STACK] TaskButtons watermark=1068B
+[151050][I][STACK] TaskHardware watermark=7040B min=7040B
+=== capture closed 2026-08-14T08:07:22.3797437-05:00 ===

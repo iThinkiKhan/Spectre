@@ -293,6 +293,14 @@ private:
     int           _queuedRecords = 0;
     bool          _sessionCleared = false;
     int           _lastPublished = 0;
+    // Drain throughput accounting. A high-backlog upload is judged on
+    // records/second, not just on whether it finished, so the dump plan
+    // tracks wall time and the fill/publish split across the whole run.
+    uint32_t _dumpStartMs = 0;
+    uint32_t _dumpFillMs = 0;
+    uint32_t _dumpPublishMs = 0;
+    int      _dumpLastRateLogPublished = 0;
+    uint32_t _dumpLastRateLogMs = 0;
     int           _lastFailed    = 0;
     uint32_t      _qos1AckedThisDump = 0;
     bool          _qos1FirstAckLogged = false;
@@ -365,6 +373,16 @@ private:
                          const char* payload,
                          size_t payloadLen,
                          bool retained = false);
+    // Service PubSubClient's parser, but never while the raw QoS1 publisher
+    // owns the socket. See MQTTManager.cpp for why the two cannot interleave.
+    void _serviceMqttLink();
+
+    // Raw MQTT PINGREQ, used to hold the broker's keepalive open during a dump
+    // (PubSubClient's own keepalive is suppressed while dumping).
+    void _sendRawPingreq();
+
+    uint32_t _lastRawLinkActivityMs = 0;
+
     bool _publishPayloadQos1(const char* topic,
                              const char* payload,
                              size_t payloadLen,

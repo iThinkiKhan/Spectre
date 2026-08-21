@@ -1,0 +1,17 @@
+=== capture opened 2026-08-10T16:34:47.8925534-05:00 ===
+[30003][I][HEAP] heap free=7676KB min=7672KB largest=7552KB frag=1% internalFree=37KB internalLargest=26KB psramFree=7639KB core=0/0% owner=WIFI_CAPTURE nets=1 pendingUpload=1547 pendingEnrich=2203
+[HEALTH] time=2026-08-10 16:33:56 src=ntp
+[HEALTH] heap used=742/8418KB free=7676KB min=7672KB largest=7552KB frag=1%
+[HEALTH] internal used=189/226KB free=37KB min=33KB largest=26KB
+[HEALTH] psram used=553/8192KB free=7639KB largest=7552KB
+[HEALTH] stack free_min: core0=17KB/22KB core1=13KB/18KB
+[HEALTH] core usage: core0=0% core1=0%
+[HEALTH] power=usb state=usb batt=100% 4691mV trend=0mV/min runtime=0min cap=1100mAh charging=0
+[HEALTH] radio=WIFI_CAPTURE wifi=0 ble=0 gps=0 nets=1 pendingUpload=1547 pendingEnrich=2203
+[HEALTH] subghz=NONE mode=OFF pkts=0 nodes=0
+[30006][I][STORAGE] RAMSpool enq=14 cons=14 inflight=0/1024 high=3 pressure=0 drop[full=0 big=0 noise=0 p3Evict=0 p3Drop=0 p2Drop=0 p1Fail=0] free=1024
+[30006][I][STORAGE] RAMSpool enqueue probe[ok=11 drop=0] device[ok=3 drop=0]
+[30006][I][STORAGE] RAMSpool worker probe[ok=4 sup=7 drop=0 fail=0 slow=0] device[ok=3 sup=0 drop=0 fail=0 slow=0] slowTotal=0 maxMs=0
+[30007][I][STORAGE] RAMSpool prioEnq p0=0 p1=0 p2=14 p3=0
+[30007][I][STORAGE] RAMSpool lanes p1=0/0 p2=0/2 p3=0/0
+=== capture closed 2026-08-10T16:34:48.9347311-05:00 ===

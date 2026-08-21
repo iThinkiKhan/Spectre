@@ -45,6 +45,24 @@
 #undef CONFIG_NIMBLE_TASK_STACK_SIZE
 #endif
 #define CONFIG_BT_NIMBLE_HOST_TASK_STACK_SIZE 8192
+
+// TRIED AND REVERTED 2026-08-19: trimming NimBLE's mbuf/ACL pools
+// (MSYS_2_BLOCK_COUNT 24->16, TRANSPORT_ACL_FROM_LL_COUNT 24->16) moved
+// NimBLEDevice::init()'s internal cost by **8 bytes** (63,012 -> 63,004).
+// Those pools go through nimble_platform_mem_malloc(), which the
+// MEM_ALLOC_MODE_EXTERNAL override above already routes to PSRAM - so shrinking
+// them frees PSRAM, not the DRAM we care about. NimBLE's 63 KB of internal DRAM
+// is the BT controller (~33 KB, precompiled) plus the host task stack, neither
+// of which is reachable from here. Not a lever.
+
+// TRIED AND REVERTED 2026-08-18: shrinking the controller's duplicate-scan
+// caches from here (CONFIG_BT_CTRL_BLE_MESH_SCAN_DUPL_EN=FALSE, which zeroes the
+// unused 100-entry BLE Mesh cache, plus CONFIG_BT_CTRL_SCAN_DUPL_CACHE_SIZE
+// 100->20) changed esp_bt_controller_init()'s cost by 44 bytes out of 32,948.
+// The pools are statically sized inside the precompiled libble_app.a; the
+// runtime config only bounds how much of them is used. Not a lever - do not
+// retry without rebuilding the Arduino core. See `ble memprobe`.
+
 #define CONFIG_BT_NIMBLE_TASK_STACK_SIZE 8192
 #define CONFIG_NIMBLE_TASK_STACK_SIZE 8192
 #endif

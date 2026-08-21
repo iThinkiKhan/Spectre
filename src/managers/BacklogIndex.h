@@ -99,7 +99,11 @@ struct SpoolEnrichmentDelta {
     float lon = 0.0f;
     float alt = 0.0f;
     float acc = 0.0f;
-    String tag;
+    // Keep the tag inline with the PSRAM-allocated map node. Arduino String
+    // stores its character buffer in internal RAM; thousands of enriched
+    // field records previously exhausted the Wi-Fi/TCP packet-buffer pool
+    // while the resident upload index was active.
+    char tag[32] = "";
     uint32_t ts = 0;
     uint32_t gpsTs = 0;
     // When true, this delta records that the event is terminally

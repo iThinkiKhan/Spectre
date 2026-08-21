@@ -1,0 +1,85 @@
+=== capture opened 2026-08-11T15:20:50.8821430-05:00 ===
+[5935][I][WIO] Accessory not detected within 2500ms
+[5935][I][XPORT] transport=internal_ble previous=internal_ble reason=initial wio.available=0 wio.proxy=0 ble.begun=0 ble.state=0 transitions=0
+[5936][I][WIO_SX] SX1262 not present; backend idle (Reyax fallback)
+[6537][I][MESH] Meshtastic client ready node=0x334B7A38 chanHash=0x08 (disabled)
+[6719][I][ENTITY] Boot selftest accepted=1 idempotent=1 result=pass
+[7356][I][ENTITY] Rebuild complete entities=7 observations=36 ms=546
+[7356][I][ENTITY] Ready entities=7 observations=36 links=98304 psram=3088KB selftest=pass rebuild=ok
+[7367][I][PWNY] PMKID capture index loaded count=0
+[7368][I][WIFI] WiFiManager initialized
+[7716][I][WIFI] Allocation: OK
+[7818][I][WIFI] Promiscuous: YES
+[7818][I][WIFI] Promiscuous mode started data=0
+[7822][I][CORE] Hardware ready
+[7998][I][COMP] Automatic phone offload recovery requested
+[10008][I][WIFI] Radio paused
+[10169][I][WIFI] Radio suspended
+[10170][I][BLE] BLE payload buffers in PSRAM bytes=6276
+[10246][I][BLE] begin phase=nimble_pre bt=idle/0 heap=107020 largest=34804 stack=17056 devLen=14
+[10246][I][BLE] begin phase=nimble_init
+[10256][I][BLE] begin phase=nimble_init_ok bt=enabled/2 heap=44036 largest=31732 stack=17056
+[10257][I][BLE] BLE SM disabled; app-layer P-256/AES-GCM required
+[10258][I][BLE] begin phase=server_ok
+[10259][I][BLE] scanner configured legacy=1 active=0 interval=30 window=30 srTimeout=200
+[10259][I][BLE] begin phase=scanner_ok
+[10259][I][BLE] begin phase=worker_ok
+[10260][I][BLE] begin ready
+[10260][I][BLE] radio enabled settle=500ms
+[10262][I][BLE] advertising start
+[10262][I][BLE] companion link requested reason=offload_prep mode=fresh_scan timeout=15s settle=500ms cacheAge=0ms rssi=0
+[10268][I][BLE] Phone probe lease granted reason=offload_prep cachedFirst=1 hold=60000ms
+[10279][W][CORE] TaskHardware loop gap=272ms owner=BLE_GPS pendingUpload=36 maintPending=0 suppressed=0
+[10776][I][BLE] scan start
+[10777][I][BLE] scan start diag=1 deliverDuplicates=1 diagLeft=44483 state=1 window=8000ms weakRecent=0 lastRssi=0
+[10879][I][BLE] target found matchedBy=service cachePeer=0 addr=45:e8:07:a8:00:fa name=SpectrePhone rssi=-63
+[10881][I][BLE] target found matchedBy=service cachePeer=0 addr=45:e8:07:a8:00:fa name=SpectrePhone rssi=-63
+[10884][I][BLE] scan stop; connect pending addr=45:e8:07:a8:00:fa
+[11134][I][BLE] connect pending settled addr=45:e8:07:a8:00:fa
+[11135][I][BLE] connect attempt addr=45:e8:07:a8:00:fa name=SpectrePhone
+[11135][I][BLE] connect params timeoutMs=45000 scanItvl=16 scanWin=16 addrType=1
+[11225][I][BLE] connect result ok=1 err=0 addr=45:e8:07:a8:00:fa
+[11225][I][BLE] BLE link connected; starting app-layer auth watchdog=50000ms
+[11226][I][BLE] remote service lookup begin core=1 internalFree=41432 largest=31732
+[11270][I][BLE] remote service lookup end found=1 err=0
+[11270][I][BLE] remote characteristic discovery begin
+[11358][I][BLE] remote characteristic discovery end count=13 err=0
+[11388][I][BLE] remote descriptor discovery char=auth count=2 err=0
+[11388][I][BLE] auth notify subscribe begin
+[11418][I][BLE] auth notify subscribe end ok=1 err=0
+[11727][I][BLE] auth challenge write bytes=163 mtu=247 attPayload=244 mode=response
+[12271][I][BLE] app secure session ready alg=P-256+ECDH+AES-256-GCM
+[12272][I][BLE] phone auth confirmed; caching peer addr=45:e8:07:a8:00:fa ttl=300000ms rssi=-63
+[12318][I][BLE] remote descriptor discovery char=enrichment count=2 err=0
+[12378][I][BLE] remote descriptor discovery char=command_req count=2 err=0
+[12498][I][BLE] remote bound gps=1 ctrl=1 meta=1 batch=1 enrich=1 auth=1 authReq=1 storage=1 cmdReq=1 cmdResp=1 logStream=1 dashStream=1 notification=1 notify(gps=0 ctrl=0 enrich=1 auth=1 cmdReq=1) mtu=247 a
+[12499][I][BLE] probe_summary seen=1 matchedBy=service rssi=-63 scanMs=1496
+[12499][I][BLE] phone_session_summary auth=ok mtu=247 gps=1 ctrl=1 enrich=1 storage=1
+[12527][I][BLE] storage snapshot sent pendingUp=0/36 pendingEnrich=0/0 usedPct=4
+[12533][I][BLE] Phone probe succeeded ??? backoff reset
+[12537][I][BLE] Phone probe promoted to enrichment pendingEnrich=0 maxBatch=18
+[12538][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[12539][I][BLE] Enrichment pending scan done count=0
+[12539][I][BLE] Phone enrichment finished successfully
+[12557][I][BLE] storage snapshot sent pendingUp=0/36 pendingEnrich=0/0 usedPct=4
+[12558][I][BLE] Localization complete; retaining phone link for offload pending=36
+[12558][I][BLE] Enrichment complete; persistent companion link retained
+[12573][I][BLE] link ready state=4
+[30007][I][HEAP] heap free=4453KB min=4450KB largest=4352KB frag=2% internalFree=37KB internalLargest=29KB psramFree=4416KB core=0/0% owner=BLE_GPS nets=1 pendingUpload=36 pendingEnrich=0
+[HEALTH] time=2026-08-11 15:21:03 src=ntp
+[HEALTH] heap used=3993/8446KB free=4453KB min=4450KB largest=4352KB frag=2%
+[HEALTH] internal used=217/254KB free=37KB min=34KB largest=29KB
+[HEALTH] psram used=3776/8192KB free=4416KB largest=4352KB
+[HEALTH] stack free_min: core0=17KB/22KB core1=13KB/18KB
+[HEALTH] core usage: core0=0% core1=0%
+[HEALTH] power=battery state=battery_normal batt=100% 4285mV trend=0mV/min runtime=206min cap=1100mAh charging=0
+[HEALTH] radio=BLE_GPS wifi=0 ble=1 gps=0 nets=1 pendingUpload=36 pendingEnrich=0
+[HEALTH] subghz=NONE mode=OFF pkts=0 nodes=0
+[30010][I][STORAGE] RAMSpool enq=0 cons=0 inflight=0/1024 high=0 pressure=0 drop[full=0 big=0 noise=0 p3Evict=0 p3Drop=0 p2Drop=0 p1Fail=0] free=1024
+[30010][I][STORAGE] RAMSpool enqueue probe[ok=0 drop=0] device[ok=0 drop=0]
+[30010][I][STORAGE] RAMSpool worker probe[ok=0 sup=0 drop=0 fail=0 slow=0] device[ok=0 sup=0 drop=0 fail=0 slow=0] slowTotal=0 maxMs=0
+[30011][I][STORAGE] RAMSpool prioEnq p0=0 p1=0 p2=0 p3=0
+[30011][I][STORAGE] RAMSpool lanes p1=0/0 p2=0/0 p3=0/0
+[31008][I][STACK] TaskDisplay watermark=13128B min=13128B
+[31015][I][STACK] TaskHardware watermark=17056B min=17056B
+=== capture closed 2026-08-11T15:21:25.9617217-05:00 ===

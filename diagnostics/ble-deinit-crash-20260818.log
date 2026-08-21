@@ -1,0 +1,43 @@
+===== CMD: crash log =====
+crash log
+[BOOT] crash log: 10 entries, seq 0..2575 (oldest first)
+[BOOT] #1 seq=2132 [CRASH?] phase=backlog_enrich owner=7 pendingUpload=31 heapFree=66K largest=30K min=63K uptime=15s
+[111303][W][CORE] crash? seq=2132 phase=backlog_enrich owner=7 pendingUpload=31 heapFree=66K largest=30K min=63K uptime=15s
+[BOOT] #2 seq=2167 [CRASH?] phase=backlog_enrich owner=7 pendingUpload=31 heapFree=66K largest=30K min=63K uptime=15s
+[111304][W][CORE] crash? seq=2167 phase=backlog_enrich owner=7 pendingUpload=31 heapFree=66K largest=30K min=63K uptime=15s
+[BOOT] #3 seq=2202 [CRASH?] phase=backlog_enrich owner=7 pendingUpload=31 heapFree=66K largest=30K min=62K uptime=14s
+[111304][W][CORE] crash? seq=2202 phase=backlog_enrich owner=7 pendingUpload=31 heapFree=66K largest=30K min=62K uptime=14s
+[BOOT] #4 seq=2364 [CRASH?] phase=wifi_capture owner=1 pendingUpload=251 heapFree=35K largest=17K min=16K uptime=1690s
+[111305][W][CORE] crash? seq=2364 phase=wifi_capture owner=1 pendingUpload=251 heapFree=35K largest=17K min=16K uptime=1690s
+[BOOT] #5 seq=2414 [CRASH?] phase=wifi_capture owner=1 pendingUpload=276 heapFree=36K largest=27K min=35K uptime=49s
+[111306][W][CORE] crash? seq=2414 phase=wifi_capture owner=1 pendingUpload=276 heapFree=36K largest=27K min=35K uptime=49s
+[BOOT] #6 seq=2454 [CRASH?] phase=wifi_capture owner=1 pendingUpload=276 heapFree=36K largest=27K min=36K uptime=50s
+[111306][W][CORE] crash? seq=2454 phase=wifi_capture owner=1 pendingUpload=276 heapFree=36K largest=27K min=36K uptime=50s
+[BOOT] #7 seq=2495 [CRASH?] phase=wifi_capture owner=1 pendingUpload=276 heapFree=36K largest=27K min=36K uptime=47s
+[111307][W][CORE] crash? seq=2495 phase=wifi_capture owner=1 pendingUpload=276 heapFree=36K largest=27K min=36K uptime=47s
+[BOOT] #8 seq=2536 [CRASH?] phase=wifi_capture owner=1 pendingUpload=276 heapFree=36K largest=27K min=36K uptime=48s
+[111307][W][CORE] crash? seq=2536 phase=wifi_capture owner=1 pendingUpload=276 heapFree=36K largest=27K min=36K uptime=48s
+[BOOT] #9 seq=2572 [CRASH?] phase=wifi_capture owner=1 pendingUpload=276 heapFree=103K largest=63K min=103K uptime=14s
+[111308][W][CORE] crash? seq=2572 phase=wifi_capture owner=1 pendingUpload=276 heapFree=103K largest=63K min=103K uptime=14s
+[BOOT] #10 seq=2575 [ok] phase=runtime_health owner=1 pendingUpload=291 heapFree=98K largest=53K min=93K uptime=90s
+[120028][I][HEAP] heap free=4523KB min=4508KB largest=4352KB frag=3% internalFree=98KB internalLargest=54KB psramFree=4425KB core=1/0% owner=WIFI_CAPTURE nets=9 pendingUpload=292 pendingEnrich=19
+[HEALTH] time=2026-08-18 17:05:22 src=ntp
+[HEALTH] heap used=3934/8457KB free=4523KB min=4508KB largest=4352KB frag=3%
+[HEALTH] internal used=167/265KB free=98KB min=83KB largest=54KB
+[HEALTH] psram used=3767/8192KB free=4425KB largest=4352KB
+[HEALTH] stack free_min: core0=4KB/15KB core1=3KB/8KB
+[HEALTH] loopTask free_min=3080B/5120B
+[HEALTH] core usage: core0=1% core1=0%
+[HEALTH] power=usb state=usb batt=100% 4746mV trend=22mV/min runtime=0min cap=1100mAh charging=1
+[HEALTH] radio=WIFI_CAPTURE wifi=0 ble=0 gps=0 nets=9 pendingUpload=292 pendingEnrich=19
+[HEALTH] subghz=NONE mode=OFF pkts=0 nodes=0
+[120030][I][STACK] TaskStorage watermark=2496B
+[120031][I][STORAGE] RAMSpool enq=16 cons=16 inflight=0/1024 high=2 pressure=0 drop[full=0 big=0 noise=0 p3Evict=0 p3Drop=0 p2Drop=0 p1Fail=0] free=1024
+[120031][I][STORAGE] RAMSpool enqueue probe[ok=9 drop=0] device[ok=7 drop=0]
+[120031][I][STORAGE] RAMSpool worker probe[ok=9 sup=0 drop=0 fail=0 slow=0] device[ok=7 sup=0 drop=0 fail=0 slow=1] slowTotal=1 maxMs=298
+[120032][I][STORAGE] RAMSpool prioEnq p0=0 p1=0 p2=16 p3=0
+[120032][I][STORAGE] RAMSpool lanes p1=0/0 p2=0/1 p3=0/0
+[121016][I][STACK] TaskButtons watermark=2092B min=2092B
+[121073][I][STACK] TaskHardware watermark=3604B min=3604B
+[124791][I][STORAGE] worker ui refresh serviced uiRefreshServiceCount=10 uiDeferred=17 uiFlush=10 pressure=0 usedPct=4 pending=293
+

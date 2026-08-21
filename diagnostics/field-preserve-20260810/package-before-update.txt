@@ -1,0 +1,364 @@
+Activity Resolver Table:
+  Non-Data Actions:
+      android.intent.action.MAIN:
+        46807be com.spectre.companion/.MainActivity filter d9b601f
+          Action: "android.intent.action.MAIN"
+          Category: "android.intent.category.LAUNCHER"
+
+Receiver Resolver Table:
+  Non-Data Actions:
+      androidx.profileinstaller.action.SAVE_PROFILE:
+        96b8f6c com.spectre.companion/androidx.profileinstaller.ProfileInstallReceiver filter 51fdf3b
+          Action: "androidx.profileinstaller.action.SAVE_PROFILE"
+      androidx.profileinstaller.action.INSTALL_PROFILE:
+        96b8f6c com.spectre.companion/androidx.profileinstaller.ProfileInstallReceiver filter 2072935
+          Action: "androidx.profileinstaller.action.INSTALL_PROFILE"
+      androidx.profileinstaller.action.SKIP_FILE:
+        96b8f6c com.spectre.companion/androidx.profileinstaller.ProfileInstallReceiver filter f98e1ca
+          Action: "androidx.profileinstaller.action.SKIP_FILE"
+      androidx.profileinstaller.action.BENCHMARK_OPERATION:
+        96b8f6c com.spectre.companion/androidx.profileinstaller.ProfileInstallReceiver filter 7383658
+          Action: "androidx.profileinstaller.action.BENCHMARK_OPERATION"
+
+Domain verification status:
+
+Permissions:
+  Permission [com.spectre.companion.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION] (e4ba646):
+    sourcePackage=com.spectre.companion
+    uid=10498 gids=[] type=0 prot=signature
+    perm=PermissionInfo{77a86cd com.spectre.companion.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION}
+    flags=0x0
+
+Registered ContentProviders:
+  com.spectre.companion/androidx.startup.InitializationProvider:
+    Provider{3cc0b82 com.spectre.companion/androidx.startup.InitializationProvider}
+
+ContentProvider Authorities:
+  [com.spectre.companion.androidx-startup]:
+    Provider{3cc0b82 com.spectre.companion/androidx.startup.InitializationProvider}
+      applicationInfo=ApplicationInfo{3035007 com.spectre.companion}
+
+Key Set Manager:
+  [com.spectre.companion]
+      Signing KeySets: 197
+
+Packages:
+  Package [com.spectre.companion] (95ceeed):
+    appId=10498
+    pkg=Package{dbd02d0 com.spectre.companion}
+    codePath=/data/app/~~6T8OhDlqG-He7WVjL-3gaQ==/com.spectre.companion-S4CVkYbRpFWPFSk17XefVA==
+    resourcePath=/data/app/~~6T8OhDlqG-He7WVjL-3gaQ==/com.spectre.companion-S4CVkYbRpFWPFSk17XefVA==
+    legacyNativeLibraryDir=/data/app/~~6T8OhDlqG-He7WVjL-3gaQ==/com.spectre.companion-S4CVkYbRpFWPFSk17XefVA==/lib
+    extractNativeLibs=false
+    primaryCpuAbi=arm64-v8a
+    secondaryCpuAbi=null
+    cpuAbiOverride=null
+    versionCode=1 minSdk=24 targetSdk=36
+    minExtensionVersions=[]
+    versionName=0.1.0
+    hiddenApiEnforcementPolicy=2
+    usesNonSdkApi=false
+    splits=[base]
+    apkSigningVersion=2
+    flags=[ HAS_CODE ALLOW_CLEAR_USER_DATA ALLOW_BACKUP KILL_AFTER_RESTORE ]
+    privateFlags=[ PRIVATE_FLAG_ACTIVITIES_RESIZE_MODE_RESIZEABLE_VIA_SDK_VERSION ALLOW_AUDIO_PLAYBACK_CAPTURE PRIVATE_FLAG_ALLOW_NATIVE_HEAP_POINTER_TAGGING ]
+    forceQueryable=false
+    pageSizeCompat=0
+    scannedAsStoppedSystemApp=false
+    supportsScreens=[small, medium, large, xlarge, resizeable, anyDensity]
+    timeStamp=2026-08-07 13:14:25
+    lastUpdateTime=2026-08-07 13:14:26
+    installerPackageName=null
+    installerPackageUid=-1
+    initiatingPackageName=com.android.shell
+    originatingPackageName=null
+    category=manifest: -1, override: -1, by user: -1
+    packageSource=1
+    appMetadataFilePath=null
+    appMetadataSource=0
+    signatures=PackageSignatures{e85823 version:2, signatures:[3105dcdf], past signatures:[]}
+    installPermissionsFixed=false
+    pkgFlags=[ HAS_CODE ALLOW_CLEAR_USER_DATA ALLOW_BACKUP KILL_AFTER_RESTORE ]
+    privatePkgFlags=[ PRIVATE_FLAG_ACTIVITIES_RESIZE_MODE_RESIZEABLE_VIA_SDK_VERSION ALLOW_AUDIO_PLAYBACK_CAPTURE PRIVATE_FLAG_ALLOW_NATIVE_HEAP_POINTER_TAGGING ]
+    apexModuleName=null
+    componentsDeclared=6
+    declared permissions:
+      com.spectre.companion.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION: prot=signature
+    requested permissions:
+      android.permission.POST_NOTIFICATIONS
+      android.permission.ACCESS_FINE_LOCATION
+      com.spectre.companion.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION
+      android.permission.FOREGROUND_SERVICE
+      android.permission.FOREGROUND_SERVICE_LOCATION
+      android.permission.BLUETOOTH_CONNECT
+      android.permission.INTERNET
+      android.permission.ACCESS_COARSE_LOCATION
+      android.permission.ACCESS_NETWORK_STATE
+      android.permission.BLUETOOTH_ADVERTISE
+      android.permission.FOREGROUND_SERVICE_CONNECTED_DEVICE
+      android.permission.BLUETOOTH_SCAN
+    install permissions:
+      com.spectre.companion.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION: granted=true
+      android.permission.FOREGROUND_SERVICE: granted=true
+      android.permission.FOREGROUND_SERVICE_LOCATION: granted=true
+      android.permission.INTERNET: granted=true
+      android.permission.ACCESS_NETWORK_STATE: granted=true
+      android.permission.FOREGROUND_SERVICE_CONNECTED_DEVICE: granted=true
+    User 0: ceDataInode=433397 deDataInode=449491 installed=true hidden=false suspended=false distractionFlags=0 stopped=false notLaunched=false enabled=0 instant=false virtual=false quarantined=false
+      installReason=0
+      dataDir=/data/user/0/com.spectre.companion
+      firstInstallTime=2026-06-10 17:11:48
+      uninstallReason=0
+      gids=[3003]
+      runtime permissions:
+        android.permission.POST_NOTIFICATIONS: granted=true, flags=[ USER_SET|USER_SENSITIVE_WHEN_GRANTED|USER_SENSITIVE_WHEN_DENIED]
+        android.permission.ACCESS_FINE_LOCATION: granted=true, flags=[ USER_SET|USER_SENSITIVE_WHEN_GRANTED|USER_SENSITIVE_WHEN_DENIED|524288]
+        android.permission.BLUETOOTH_CONNECT: granted=true, flags=[ USER_SET|USER_SENSITIVE_WHEN_GRANTED|USER_SENSITIVE_WHEN_DENIED]
+        android.permission.ACCESS_COARSE_LOCATION: granted=true, flags=[ USER_SET|USER_SENSITIVE_WHEN_GRANTED|USER_SENSITIVE_WHEN_DENIED]
+        android.permission.BLUETOOTH_ADVERTISE: granted=true, flags=[ USER_SET|USER_SENSITIVE_WHEN_GRANTED|USER_SENSITIVE_WHEN_DENIED]
+        android.permission.BLUETOOTH_SCAN: granted=true, flags=[ USER_SET|USER_SENSITIVE_WHEN_GRANTED|USER_SENSITIVE_WHEN_DENIED]
+    User 150: ceDataInode=0 deDataInode=0 installed=false hidden=false suspended=false distractionFlags=0 stopped=true notLaunched=true enabled=0 instant=false virtual=false quarantined=false
+      installReason=0
+      dataDir=null
+      firstInstallTime=2026-06-10 17:11:48
+      uninstallReason=0
+      gids=[3003]
+      runtime permissions:
+
+Queries:
+  system apps queryable: false
+  queries via forceQueryable:
+  queries via package name:
+  queries via component:
+    com.samsung.android.bixby.agent:
+      com.spectre.companion
+    com.android.settings.intelligence:
+      com.spectre.companion
+    com.samsung.android.mocca:
+      com.spectre.companion
+    com.google.android.apps.accessibility.voiceaccess:
+      com.spectre.companion
+    com.google.android.as:
+      com.spectre.companion
+    com.google.android.as.oss:
+      com.spectre.companion
+    com.samsung.android.spay:
+      com.spectre.companion
+    com.zhiliaoapp.musically:
+      com.spectre.companion
+    com.amazon.mShop.android.shopping:
+      com.spectre.companion
+    com.localweather.radar.climate:
+      com.spectre.companion
+    com.facebook.orca:
+      com.spectre.companion
+    com.facebook.katana:
+      com.spectre.companion
+    com.wireguard.android:
+      com.spectre.companion
+    ai.perplexity.app.android:
+      com.spectre.companion
+    com.audible.application:
+      com.spectre.companion
+    us.zoom.videomeetings:
+      com.spectre.companion
+    com.discoverfinancial.mobile:
+      com.spectre.companion
+    com.tmobile.m1:
+      com.spectre.companion
+    com.dd.doordash:
+      com.spectre.companion
+    com.nothing.smartcenter:
+      com.spectre.companion
+    com.microsoft.office.outlook:
+      com.spectre.companion
+    com.instagram.android:
+      com.spectre.companion
+    com.ecffri.arrows:
+      com.spectre.companion
+  queryable via interaction:
+    User 0:
+      [com.samsung.drm,com.sec.android.app.factorykeystring,com.android.server.telecom,com.samsung.android.messageguardsync,com.samsung.android.knox.zt.framework,com.samsung.android.hdmapp,com.sec.android.app.SecSetupWizard,com.samsung.android.provider.filterprovider,com.sec.android.app.RilPhoneNumberService,com.samsung.android.globalpostprocmgr,com.sec.android.soagent,com.android.settings,com.samsung.android.photoremasterservice,com.samsung.android.bixby.wakeup,com.sec.android.sdhms,com.samsung.android.qmdservice,com.samsung.android.smartswitchassistant,com.samsung.android.cameraxservice,com.samsung.android.ese,com.skms.android.agent,com.samsung.oda.agent,com.samsung.android.dqagent,com.samsung.gpuwatchapp,com.samsung.android.da.daagent,com.android.keychain,com.sec.epdg,com.samsung.android.knox.pushmanager,com.sec.android.app.setupwizard,com.sec.android.app.uwbtest,com.samsung.oda.service,com.samsung.unifiedtp,com.samsung.android.biometrics.app.setting,com.sec.modem.settings,com.samsung.android.app.dressroom,com.android.inputdevices,com.sec.android.iaft,com.samsung.android.app.esimkeystring,com.samsung.android.smartface,com.sec.automation,com.sec.imsservice,com.samsung.android.camerasdkservice,com.sec.android.smartfpsadjuster,com.samsung.InputEventApp,com.android.dynsystem,com.sec.app.RilErrorNotifier,com.sec.android.app.parser,com.samsung.android.forest,com.samsung.android.brightnessbackupservice,com.samsung.android.mdecservice,com.sec.bcservice,com.sec.android.diagmonagent,com.samsung.android.knox.mpos,com.sec.android.emergencylauncher,com.samsung.android.stickercenter,com.samsung.sdm,com.wssyncmldm,com.android.localtransport,com.samsung.android.svcagent,com.sec.android.app.hwmoduletest,com.sec.sve,com.samsung.android.vexfwk.service,com.sec.android.CcInfo,com.sec.android.Cdfs,com.samsung.android.dck.timesync,com.qualcomm.qti.services.systemhelper,com.qti.snapdragon.qdcm_ff,com.samsung.aasaservice,android,com.sec.factory.camera,com.samsung.android.bbc.bbcagent,com.sec.android.app.wlantest,com.android.location.fused,com.sec.usbsettings,com.samsung.android.sead,com.samsung.android.emergency,com.samsung.android.wifi.intelligence,com.samsung.sait.sohservice,com.samsung.android.themecenter,com.samsung.android.fmm,com.sec.android.app.servicemodeapp,com.samsung.android.motionphoto.app,com.samsung.accessibility,com.samsung.android.vtcamerasettings,com.samsung.android.app.omcagent,com.sec.imslogger,com.android.providers.settings,com.sec.mhs.smarttethering,com.sec.android.app.quicktool,com.samsung.android.wifi.ai,com.samsung.android.providers.factory,com.sem.factoryapp,com.samsung.android.knox.attestation,com.sec.android.app.personalization,com.samsung.SMT,com.sec.facatfunction,com.samsung.euicc,com.samsung.ts43authservice,com.samsung.android.aircommandmanager,com.samsung.android.lool]:
+        com.spectre.companion
+      [com.samsung.android.app.routines,com.samsung.android.app.aodservice,com.android.systemui]:
+        com.spectre.companion
+      com.samsung.android.smartsuggestions:
+        com.spectre.companion
+      com.sec.android.app.launcher:
+        com.spectre.companion
+      com.samsung.android.honeyboard:
+        com.spectre.companion
+      com.google.android.gms:
+        com.spectre.companion
+      com.google.android.ext.services:
+        com.spectre.companion
+      com.samsung.android.game.gamehome:
+        com.spectre.companion
+      [com.samsung.drm,com.sec.android.app.factorykeystring,com.android.server.telecom,com.samsung.android.messageguardsync,com.samsung.android.knox.zt.framework,com.samsung.android.hdmapp,com.sec.android.app.SecSetupWizard,com.samsung.android.provider.filterprovider,com.sec.android.app.RilPhoneNumberService,com.samsung.android.globalpostprocmgr,com.sec.android.soagent,com.android.settings,com.samsung.android.photoremasterservice,com.samsung.android.bixby.wakeup,com.sec.android.sdhms,com.samsung.android.qmdservice,com.samsung.android.smartswitchassistant,com.samsung.android.cameraxservice,com.samsung.android.ese,com.skms.android.agent,com.samsung.oda.agent,com.samsung.android.dqagent,com.samsung.gpuwatchapp,com.samsung.android.da.daagent,com.android.keychain,com.sec.epdg,com.samsung.android.knox.pushmanager,com.sec.android.app.setupwizard,com.sec.android.app.uwbtest,com.samsung.oda.service,com.samsung.unifiedtp,com.samsung.android.biometrics.app.setting,com.sec.modem.settings,com.samsung.android.app.dressroom,com.android.inputdevices,com.sec.android.iaft,com.samsung.android.app.esimkeystring,com.samsung.android.smartface,com.sec.automation,com.sec.imsservice,com.samsung.android.camerasdkservice,com.sec.android.smartfpsadjuster,com.samsung.InputEventApp,com.android.dynsystem,com.sec.app.RilErrorNotifier,com.sec.android.app.parser,com.samsung.android.forest,com.samsung.android.brightnessbackupservice,com.samsung.android.mdecservice,com.sec.bcservice,com.sec.android.diagmonagent,com.samsung.android.knox.mpos,com.sec.android.emergencylauncher,com.samsung.android.stickercenter,com.samsung.sdm,com.wssyncmldm,com.android.localtransport,com.samsung.android.svcagent,com.sec.android.app.hwmoduletest,com.sec.sve,com.samsung.android.vexfwk.service,com.sec.android.CcInfo,com.sec.android.Cdfs,com.samsung.android.dck.timesync,com.qualcomm.qti.services.systemhelper,com.qti.snapdragon.qdcm_ff,com.samsung.aasaservice,android,com.sec.factory.camera,com.samsung.android.bbc.bbcagent,com.sec.android.app.wlantest,com.android.location.fused,com.sec.usbsettings,com.samsung.android.sead,com.samsung.android.emergency,com.samsung.android.wifi.intelligence,com.samsung.sait.sohservice,com.samsung.android.themecenter,com.samsung.android.fmm,com.sec.android.app.servicemodeapp,com.samsung.android.motionphoto.app,com.samsung.accessibility,com.samsung.android.vtcamerasettings,com.samsung.android.app.omcagent,com.sec.imslogger,com.android.providers.settings,com.sec.mhs.smarttethering,com.sec.android.app.quicktool,com.samsung.android.wifi.ai,com.samsung.android.providers.factory,com.sem.factoryapp,com.samsung.android.knox.attestation,com.sec.android.app.personalization,com.samsung.SMT,com.sec.facatfunction,com.samsung.euicc,com.samsung.ts43authservice,com.samsung.android.aircommandmanager,com.samsung.android.lool]:
+        com.spectre.companion
+    User 150:
+  queryable via uses-library:
+
+Dexopt state:
+  [com.spectre.companion]
+    path: /data/app/~~6T8OhDlqG-He7WVjL-3gaQ==/com.spectre.companion-S4CVkYbRpFWPFSk17XefVA==/base.apk
+      arm64: [status=speed-profile] [reason=install-spqr] [primary-abi]
+        [location is /data/app/~~6T8OhDlqG-He7WVjL-3gaQ==/com.spectre.companion-S4CVkYbRpFWPFSk17XefVA==/oat/arm64/base.odex]
+
+SPEG state:
+  Event #6: 09-07-2026 06:52:44.986 Success org.chromium.webapk.abda499ce664c06b7_v2 took 2146 ms
+  Event #5: 20-06-2026 08:40:12.864 Success com.nebula.mahjongtile took 2153 ms
+  Event #4: 20-06-2026 08:39:58.695 Success io.supercent.ageofdinosaurs took 2266 ms
+  Event #3: 20-06-2026 08:39:47.779 Success com.zynga.gotslots took 2149 ms
+  Event #2: 09-06-2026 15:46:44.104 Failure com.spectre.companion took 2010 ms
+  Event #1: 20-05-2026 10:10:46.539 Success com.spectre.companion took 2162 ms
+  Event #0: 27-12-2025 18:39:45.444 Success org.fdroid.fdroid took 2137 ms
+
+Profile utilization state:
+  Current state:
+    Version: 2.1.2
+    Start reason: boot-after-ota
+    Start time: Sun Jul 19 04:05:20 CDT 2026 ts=1784451920406
+    Finish time: Sun Jul 19 05:33:00 CDT 2026 ts=1784457180039
+    Took time 5259sec
+    PU_StatusWatcher:
+      Initial thermal status: 0
+      Thermal status: 0
+      Screen off: true
+      Low battery: false
+    PU_DexoptTrigger:
+      Dexopt concurrency: 4
+      Dexopting: false
+      Hot apps list:
+        com.zhiliaoapp.musically, w=37, s=OPTIMIZED, optTimeMs=1784457180039, cancelCount=3, dexopt=PERFORMED, [dex2oatTimeMs=41372, filter=speed-profile]
+        com.spotify.music, w=53, s=OPTIMIZED, optTimeMs=1784457156762, cancelCount=3, dexopt=PERFORMED, [dex2oatTimeMs=18209, filter=speed-profile]
+        com.sec.android.app.sbrowser, w=66, s=OPTIMIZED, optTimeMs=1784457146571, cancelCount=3, dexopt=PERFORMED, [primaryDex=true, reason=bg-dexopt, dex2oatTimeMs=8089, filter=speed-profile]
+        com.facebook.katana, w=68, s=OPTIMIZED, optTimeMs=1784457157494, cancelCount=3, dexopt=PERFORMED, [dex2oatTimeMs=18886, filter=speed-profile]
+        com.android.chrome, w=75, s=OPTIMIZED, optTimeMs=1784457149525, cancelCount=0, dexopt=PERFORMED, [dex2oatTimeMs=983, filter=speed-profile], [dex2oatTimeMs=1411, filter=speed-profile], [dex2oatTimeMs=0, filter=verify], [dex2oatTimeMs=0, filter=verify], [dex2oatTimeMs=0, filter=verify]
+        com.google.android.gm, w=77, s=OPTIMIZED, optTimeMs=1784457159854, cancelCount=0, dexopt=PERFORMED, [dex2oatTimeMs=10023, filter=speed-profile]
+        com.sec.android.app.camera, w=94, s=OPTIMIZED, optTimeMs=1784457156874, cancelCount=0, dexopt=SKIPPED, [primaryDex=true, reason=bg-dexopt, dex2oatTimeMs=0, filter=speed-profile]
+        com.termux, w=98, s=OPTIMIZED, optTimeMs=1784457157726, cancelCount=0, dexopt=PERFORMED, [primaryDex=true, reason=profile-utilization, dex2oatTimeMs=801, filter=speed-profile]
+        com.x8bit.bitwarden, w=109, s=OPTIMIZED, optTimeMs=1784457159417, cancelCount=0, dexopt=PERFORMED, [dex2oatTimeMs=1819, filter=speed-profile]
+        com.tmobile.vvm.application, w=113, s=OPTIMIZED, optTimeMs=1784457159273, cancelCount=0, dexopt=PERFORMED, [primaryDex=true, reason=profile-utilization, dex2oatTimeMs=1386, filter=speed-profile]
+        com.samsung.android.dialer, w=118, s=OPTIMIZED, optTimeMs=1784457159332, cancelCount=0, dexopt=SKIPPED, [primaryDex=true, reason=boot-after-ota, dex2oatTimeMs=0, filter=speed-profile]
+        com.android.settings, w=120, s=OPTIMIZED, optTimeMs=1784457159433, cancelCount=0, dexopt=SKIPPED, [primaryDex=true, reason=bg-dexopt, dex2oatTimeMs=0, filter=verify]
+        com.sec.android.easyMover, w=121, s=OPTIMIZED, optTimeMs=1784457162496, cancelCount=0, dexopt=PERFORMED, [dex2oatTimeMs=2946, filter=speed-profile]
+        com.google.android.apps.messaging, w=122, s=OPTIMIZED, optTimeMs=1784457172351, cancelCount=0, dexopt=PERFORMED, [dex2oatTimeMs=12746, filter=speed-profile], [dex2oatTimeMs=0, filter=verify], [dex2oatTimeMs=0, filter=verify], [dex2oatTimeMs=0, filter=verify]
+        com.sec.android.app.clockpackage, w=124, s=OPTIMIZED, optTimeMs=1784457162922, cancelCount=0, dexopt=PERFORMED, [primaryDex=true, reason=profile-utilization, dex2oatTimeMs=2962, filter=speed-profile]
+        com.google.android.googlequicksearchbox, w=125, s=OPTIMIZED, optTimeMs=1784457175732, cancelCount=0, dexopt=PERFORMED, [dex2oatTimeMs=13015, filter=speed-profile]
+        com.sec.android.app.voicenote, w=125, s=OPTIMIZED, optTimeMs=1784457168945, cancelCount=0, dexopt=PERFORMED, [dex2oatTimeMs=5857, filter=speed-profile]
+        com.samsung.android.calendar, w=129, s=OPTIMIZED, optTimeMs=1784457171352, cancelCount=0, dexopt=PERFORMED, [primaryDex=true, reason=profile-utilization, dex2oatTimeMs=2301, filter=speed-profile]
+        com.sec.android.app.shealth, w=129, s=OPTIMIZED, optTimeMs=1784457177359, cancelCount=0, dexopt=PERFORMED, [dex2oatTimeMs=5812, filter=speed-profile]
+        com.google.android.apps.photos, w=132, s=OPTIMIZED, optTimeMs=1784457178735, cancelCount=0, dexopt=PERFORMED, [dex2oatTimeMs=6225, filter=speed-profile]
+        com.samsung.android.app.notes, w=134, s=OPTIMIZED, optTimeMs=1784457179026, cancelCount=0, dexopt=PERFORMED, [dex2oatTimeMs=3214, filter=speed-profile]
+        com.samsung.android.game.gamehome, w=138, s=OPTIMIZED, optTimeMs=1784457178446, cancelCount=0, dexopt=PERFORMED, [primaryDex=true, reason=profile-utilization, dex2oatTimeMs=1042, filter=speed-profile]
+        com.samsung.android.app.sketchbook, w=146, s=OPTIMIZED, optTimeMs=1784457178489, cancelCount=0, dexopt=SKIPPED, [primaryDex=true, reason=vdex, dex2oatTimeMs=0, filter=verify]
+    PU_Storage:
+      Stored apps:
+        com.zhiliaoapp.musically 37
+        com.spotify.music 53
+        com.sec.android.app.sbrowser 66
+        com.facebook.katana 68
+        com.android.chrome 75
+        com.google.android.gm 77
+        com.sec.android.app.camera 94
+        com.termux 98
+        com.x8bit.bitwarden 109
+        com.tmobile.vvm.application 113
+        com.samsung.android.dialer 118
+        com.android.settings 120
+        com.sec.android.easyMover 121
+        com.google.android.apps.messaging 122
+        com.sec.android.app.clockpackage 124
+        com.google.android.googlequicksearchbox 125
+        com.sec.android.app.voicenote 125
+        com.samsung.android.calendar 129
+        com.sec.android.app.shealth 129
+        com.google.android.apps.photos 132
+        com.samsung.android.app.notes 134
+        com.samsung.android.game.gamehome 138
+        com.samsung.android.app.sketchbook 146
+        com.acmeaom.android.myradar 149
+        com.google.android.apps.tachyon 149
+        com.samsung.android.app.contacts 153
+        com.cronometer.android.gold 155
+        com.discord 161
+        com.google.android.calendar 161
+        com.microsoft.office.outlook 163
+        com.samsung.android.app.find 186
+    Stored PU state:
+      Service:
+        Version: 2.1.2
+        Start reason: boot-after-ota
+        Start time: Sun Jul 19 04:05:20 CDT 2026 ts=1784451920406
+        Finish time: Sun Jul 19 05:33:00 CDT 2026 ts=1784457180039
+        Took time 5259sec
+      Watcher:
+        Initial thermal status: 0
+        Thermal status: 0
+        Screen off: true
+        Low battery: false
+      Metrics:
+        Predicted and launched apps: 13
+        Predicted apps: 23
+        Launched apps: 13
+        Best f1Score: 0.7647059, prefixCount: 21, precision: 0.61904764, recall: 1.0
+      Trigger:
+        Dexopt concurrency: 4
+        Dexopting: false
+        Hot apps list:
+          com.zhiliaoapp.musically, w=37, s=OPTIMIZED, optTimeMs=1784457180039, cancelCount=3, dexopt=PERFORMED, [primaryDex=true, reason=profile-utilization, dex2oatTimeMs=41372, filter=speed-profile]
+          com.spotify.music, w=53, s=OPTIMIZED, optTimeMs=1784457156762, cancelCount=3, dexopt=PERFORMED, [primaryDex=true, reason=profile-utilization, dex2oatTimeMs=18209, filter=speed-profile]
+          com.sec.android.app.sbrowser, w=66, s=OPTIMIZED, optTimeMs=1784457146571, cancelCount=3, dexopt=PERFORMED, [primaryDex=true, reason=profile-utilization, dex2oatTimeMs=8089, filter=speed-profile]
+          com.facebook.katana, w=68, s=OPTIMIZED, optTimeMs=1784457157494, cancelCount=3, dexopt=PERFORMED, [primaryDex=true, reason=profile-utilization, dex2oatTimeMs=18886, filter=speed-profile]
+          com.android.chrome, w=75, s=OPTIMIZED, optTimeMs=1784457149525, cancelCount=0, dexopt=PERFORMED, [primaryDex=true, reason=profile-utilization, dex2oatTimeMs=983, filter=speed-profile], [primaryDex=true, reason=profile-utilization, dex2oatTimeMs=1411, filter=speed-profile], [primaryDex=true, reason=vdex-dm, dex2oatTimeMs=0, filter=verify], [primaryDex=true, reason=vdex-dm, dex2oatTimeMs=0, filter=verify], [primaryDex=true, reason=vdex-dm, dex2oatTimeMs=0, filter=verify]
+          com.google.android.gm, w=77, s=OPTIMIZED, optTimeMs=1784457159854, cancelCount=0, dexopt=PERFORMED, [primaryDex=true, reason=profile-utilization, dex2oatTimeMs=10023, filter=speed-profile]
+          com.sec.android.app.camera, w=94, s=OPTIMIZED, optTimeMs=1784457156874, cancelCount=0, dexopt=SKIPPED, [primaryDex=true, reason=boot-after-ota, dex2oatTimeMs=0, filter=speed-profile]
+          com.termux, w=98, s=OPTIMIZED, optTimeMs=1784457157726, cancelCount=0, dexopt=PERFORMED, [primaryDex=true, reason=profile-utilization, dex2oatTimeMs=801, filter=speed-profile]
+          com.x8bit.bitwarden, w=109, s=OPTIMIZED, optTimeMs=1784457159417, cancelCount=0, dexopt=PERFORMED, [primaryDex=true, reason=profile-utilization, dex2oatTimeMs=1819, filter=speed-profile]
+          com.tmobile.vvm.application, w=113, s=OPTIMIZED, optTimeMs=1784457159273, cancelCount=0, dexopt=PERFORMED, [primaryDex=true, reason=profile-utilization, dex2oatTimeMs=1386, filter=speed-profile]
+          com.samsung.android.dialer, w=118, s=OPTIMIZED, optTimeMs=1784457159332, cancelCount=0, dexopt=SKIPPED, [primaryDex=true, reason=boot-after-ota, dex2oatTimeMs=0, filter=speed-profile]
+          com.android.settings, w=120, s=OPTIMIZED, optTimeMs=1784457159433, cancelCount=0, dexopt=SKIPPED, [primaryDex=true, reason=vdex, dex2oatTimeMs=0, filter=verify]
+          com.sec.android.easyMover, w=121, s=OPTIMIZED, optTimeMs=1784457162496, cancelCount=0, dexopt=PERFORMED, [primaryDex=true, reason=profile-utilization, dex2oatTimeMs=2946, filter=speed-profile]
+          com.google.android.apps.messaging, w=122, s=OPTIMIZED, optTimeMs=1784457172351, cancelCount=0, dexopt=PERFORMED, [primaryDex=true, reason=profile-utilization, dex2oatTimeMs=12746, filter=speed-profile], [primaryDex=false, reason=vdex, dex2oatTimeMs=0, filter=verify], [primaryDex=false, reason=vdex, dex2oatTimeMs=0, filter=verify], [primaryDex=false, reason=vdex, dex2oatTimeMs=0, filter=verify]
+          com.sec.android.app.clockpackage, w=124, s=OPTIMIZED, optTimeMs=1784457162922, cancelCount=0, dexopt=PERFORMED, [primaryDex=true, reason=profile-utilization, dex2oatTimeMs=2962, filter=speed-profile]
+          com.google.android.googlequicksearchbox, w=125, s=OPTIMIZED, optTimeMs=1784457175732, cancelCount=0, dexopt=PERFORMED, [primaryDex=true, reason=profile-utilization, dex2oatTimeMs=13015, filter=speed-profile]
+          com.sec.android.app.voicenote, w=125, s=OPTIMIZED, optTimeMs=1784457168945, cancelCount=0, dexopt=PERFORMED, [primaryDex=true, reason=profile-utilization, dex2oatTimeMs=5857, filter=speed-profile]
+          com.samsung.android.calendar, w=129, s=OPTIMIZED, optTimeMs=1784457171352, cancelCount=0, dexopt=PERFORMED, [primaryDex=true, reason=profile-utilization, dex2oatTimeMs=2301, filter=speed-profile]
+          com.sec.android.app.shealth, w=129, s=OPTIMIZED, optTimeMs=1784457177359, cancelCount=0, dexopt=PERFORMED, [primaryDex=true, reason=profile-utilization, dex2oatTimeMs=5812, filter=speed-profile]
+          com.google.android.apps.photos, w=132, s=OPTIMIZED, optTimeMs=1784457178735, cancelCount=0, dexopt=PERFORMED, [primaryDex=true, reason=profile-utilization, dex2oatTimeMs=6225, filter=speed-profile]
+          com.samsung.android.app.notes, w=134, s=OPTIMIZED, optTimeMs=1784457179026, cancelCount=0, dexopt=PERFORMED, [primaryDex=true, reason=profile-utilization, dex2oatTimeMs=3214, filter=speed-profile]
+          com.samsung.android.game.gamehome, w=138, s=OPTIMIZED, optTimeMs=1784457178446, cancelCount=0, dexopt=PERFORMED, [primaryDex=true, reason=profile-utilization, dex2oatTimeMs=1042, filter=speed-profile]
+          com.samsung.android.app.sketchbook, w=146, s=OPTIMIZED, optTimeMs=1784457178489, cancelCount=0, dexopt=SKIPPED, [primaryDex=true, reason=vdex, dex2oatTimeMs=0, filter=verify]
+    Stored SCPM state:
+      packages-9a07:
+        [                                            ]
+      disable-2bb4:
+        [                                            ]
+
+HeimdAllFS state:
+  [com.spectre.companion]
+    path: /data/app/~~6T8OhDlqG-He7WVjL-3gaQ==/com.spectre.companion-S4CVkYbRpFWPFSk17XefVA==/base.apk
+    Compressed? False
+  [ Summary ]
+    # of packages: 1 / # of packages in DATA: 1 (1)
+    Compressed apks info - sum of orig size: 12732 / sum of compr size : 12732
+  [Lfo status]
+    packageName: com.samsung.android.offline.languagemodel
+    Path: /data/app/~~Gu8EJLl90wiLKCfy7z3ESw==/com.samsung.android.offline.languagemodel-jz6PZPaUA3Qu7tGp60gOBQ==/base.apk
+    Fragmented: 1
+    Extent Count: 83
+    Version: 0
+    Flag: 0
+    Level: 0
+    Count: 0
+    
+    packageName: com.samsung.android.vision.model
+    Path: /data/app/~~_JuUGeZMFmC69DVmVRuCMA==/com.samsung.android.vision.model-Pd34uxaoxFuZN8VAg7sH1g==/base.apk
+    Fragmented: 1
+    Extent Count: 109
+    Version: 0
+    Flag: 0
+    Level: 0
+    Count: 0
+    

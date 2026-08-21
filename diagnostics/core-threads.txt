@@ -1,0 +1,41 @@
+[New process 1070522208]
+[New process 1070325460]
+[New process 1070323932]
+[New process 1070522952]
+[New process 1070522580]
+[New process 1070382240]
+[New process 1070317908]
+[New process 1070516392]
+[New process 1070329036]
+[New process 1070509652]
+[New process 1070305864]
+[New process 1070383600]
+[New process 1070383972]
+[New process 1070301272]
+[New process 1070410060]
+[New process 1070452568]
+[New process 1070302736]
+[New process 1070316116]
+[New process 1070472268]
+#0  0x00000004 in ?? ()
+[Current thread is 1 (process 1070522208)]
+  Id   Target Id          Frame 
+* 1    process 1070522208 0x00000004 in ?? ()
+  2    process 1070325460 esp_vApplicationIdleHook () at /home/runner/work/esp32-arduino-lib-builder/esp32-arduino-lib-builder/esp-idf/components/esp_system/freertos_hooks.c:46
+  3    process 1070323932 0x400559e0 in ?? ()
+  4    process 1070522952 0x42014079 in TaskHardware (pvParameters=<optimized out>) at src/main.cpp:8252
+  5    process 1070522580 TaskDisplay (pvParameters=<optimized out>) at src/main.cpp:6520
+  6    process 1070382240 0x400559e0 in ?? ()
+  7    process 1070317908 0x400559e0 in ?? ()
+  8    process 1070516392 0x4200b1a0 in loop () at src/main.cpp:8666
+  9    process 1070329036 0x4038415a in prvProcessReceivedCommands () at /home/runner/work/esp32-arduino-lib-builder/esp32-arduino-lib-builder/esp-idf/components/freertos/FreeRTOS-Kernel/timers.c:856
+  10   process 1070509652 0x400559e0 in ?? ()
+  11   process 1070305864 0x400559e0 in ?? ()
+  12   process 1070383600 0x400559e0 in ?? ()
+  13   process 1070383972 0x400559e0 in ?? ()
+  14   process 1070301272 0x400559e0 in ?? ()
+  15   process 1070410060 0x400559e0 in ?? ()
+  16   process 1070452568 0x400559e0 in ?? ()
+  17   process 1070302736 0x400559e0 in ?? ()
+  18   process 1070316116 0x400559e0 in ?? ()
+  19   process 1070472268 0x400559e0 in ?? ()

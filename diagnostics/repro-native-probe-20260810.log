@@ -1,0 +1,63 @@
+companion probe
+[COMP] manual probe queued
+[466967][I][COMP] Manual probe request received; probe backoff bypassed
+[466968][I][WIFI] Radio paused
+[467128][I][WIFI] Radio suspended
+[467212][I][BLE] BLE payload buffers in PSRAM bytes=6276
+[467289][I][BLE] begin phase=nimble_pre bt=idle/0 heap=104356 largest=31732 stack=14944 devLen=14
+[467289][I][BLE] begin phase=nimble_init
+[467299][I][BLE] begin phase=nimble_init_ok bt=enabled/2 heap=41288 largest=31732 stack=14944
+[467300][I][BLE] BLE SM disabled; app-layer P-256/AES-GCM required
+[467301][I][BLE] begin phase=server_ok
+[467302][I][BLE] scanner configured legacy=1 active=0 interval=30 window=30 srTimeout=200
+[467302][I][BLE] begin phase=scanner_ok
+[467302][I][BLE] begin phase=worker_ok
+[467302][I][BLE] begin ready
+[467303][I][BLE] radio enabled settle=500ms
+[467305][I][BLE] advertising start
+[467305][I][BLE] companion link requested reason=manual_probe mode=fresh_scan timeout=15s settle=500ms cacheAge=0ms rssi=0
+[467370][I][BLE] Phone probe lease granted reason=manual_probe cachedFirst=0 hold=60000ms
+[467381][W][CORE] TaskHardware loop gap=416ms owner=BLE_GPS pendingUpload=1994 maintPending=1 suppressed=0
+[467830][I][BLE] scan start
+[467831][I][BLE] scan start diag=1 deliverDuplicates=1 diagLeft=44473 state=1 window=8000ms weakRecent=0 lastRssi=0
+[468064][I][BLE] target found matchedBy=service cachePeer=0 addr=5e:5f:9d:05:61:15 name=SpectrePhone rssi=-71
+[468065][I][BLE] target found matchedBy=service cachePeer=0 addr=5e:5f:9d:05:61:15 name=SpectrePhone rssi=-71
+[468137][I][BLE] scan stop; connect pending addr=5e:5f:9d:05:61:15
+[468437][I][BLE] connect pending settled addr=5e:5f:9d:05:61:15
+[468438][I][BLE] connect attempt addr=5e:5f:9d:05:61:15 name=SpectrePhone
+[468438][I][BLE] connect params timeoutMs=45000 scanItvl=16 scanWin=16 addrType=1
+[468582][I][BLE] connect result ok=1 err=0 addr=5e:5f:9d:05:61:15
+[468582][I][BLE] BLE link connected; starting app-layer auth watchdog=50000ms
+[468583][I][BLE] remote service lookup begin core=1 internalFree=38776 largest=30708
+[468671][I][BLE] remote service lookup end found=1 err=0
+[468671][I][BLE] remote characteristic discovery begin
+[468850][I][BLE] remote characteristic discovery end count=13 err=0
+[468911][I][BLE] remote descriptor discovery char=auth count=2 err=0
+[468911][I][BLE] auth notify subscribe begin
+[468970][I][BLE] auth notify subscribe end ok=1 err=0
+[469244][I][BLE] auth challenge write bytes=163 mtu=247 attPayload=244 mode=response
+[470218][I][BLE] app secure session ready alg=P-256+ECDH+AES-256-GCM
+[470219][I][BLE] phone auth confirmed; caching peer addr=5e:5f:9d:05:61:15 ttl=300000ms rssi=-71
+[470261][I][BLE] remote descriptor discovery char=enrichment count=2 err=0
+[470381][I][BLE] remote descriptor discovery char=command_req count=2 err=0
+[470621][I][BLE] remote bound gps=1 ctrl=1 meta=1 batch=1 enrich=1 auth=1 authReq=1 storage=1 cmdReq=1 cmdResp=1 logStream=1 dashStream=1 notification=1 notify(gps=0 ctrl=0 enrich=1 auth=1 cmdReq=1) mtu=247 a
+[470621][I][BLE] probe_summary seen=1 matchedBy=service rssi=-71 scanMs=2390
+[470622][I][BLE] phone_session_summary auth=ok mtu=247 gps=1 ctrl=1 enrich=1 storage=1
+[470680][I][BLE] storage snapshot sent pendingUp=0/1994 pendingEnrich=0/45 usedPct=11
+[470685][I][BLE] Phone probe succeeded ??? backoff reset
+[470689][I][BLE] Phone probe promoted to enrichment pendingEnrich=45 maxBatch=18
+[470689][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[470690][I][STORAGE] batch_load_ids_enter freeInternal=35480 segments=51
+[470690][I][STORAGE] load_ids_reserve count=1949 freeInternal=35480 largest=27636
+[470691][I][STORAGE] load_ids_reserved freeInternal=35480
+[471024][I][STORAGE] load_ids_loop_done scanned=4 skipped=47 idsCollected=1949 freeInternal=35480
+[471026][I][STORAGE] batch_load_ids_done count=1949 capacity=1949 freeInternal=35480
+[471026][I][STORAGE] batch_pending_loop_enter segments=51 maxCount=18 streaming=1 freeInternal=35480
+[471132][I][STORAGE] batch_pending_loop_break_streaming outCount=18 maxCount=18
+[471132][I][STORAGE] batch_pending_loop_done scanned=3 skipped=48 outCount=18 timeHit=0 elapsedMs=106 freeInternal=35480
+[471133][I][BLE] Enrichment pending scan done count=18
+[471133][I][BLE] enrichment request queued count=18 bytes=180
+[471133][I][BLE] Requested enrichment batch count=18 queued=0
+[471147][I][BLE] link ready state=4
+[471251][I][BLE] enrichment send mtu=247 attPayload=244 bytes=180 count=18
+[471298][I][BLE] enrichment batch sent plain=180 sealed=202 count=18 writeOk=1

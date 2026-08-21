@@ -25,6 +25,10 @@ public:
     bool end(uint8_t transferId, const char* reason = nullptr);
     void abandonPreparation(const char* reason = nullptr);
     void expireIfStale();
+    // Runs queued index preparation from TaskHardware, the sole persistent
+    // storage owner. Kept separate from begin() so the BLE command response
+    // can be returned before the bounded LittleFS scan starts.
+    void servicePreparation();
     bool startWifiBulk(const uint8_t* payload, size_t len);
     bool resumeWifiBulkEarly();
     void discardRetainedWifiBulkResume();
@@ -64,7 +68,6 @@ private:
 
     bool loadNextRecord(bool callerOwnsStorageWindow = false);
     bool startPreparation();
-    static void preparationTask(void* arg);
     void runPreparation();
     bool flushCheckpointIfDue(bool force, bool callerOwnsStorageWindow = false);
     bool buildRecordBody(ArduinoJson::JsonObjectConst record,
@@ -91,7 +94,6 @@ private:
     uint8_t _beginFlags = 0;
     volatile uint8_t _prepState = PREP_IDLE;
     volatile bool _prepAbandonRequested = false;
-    TaskHandle_t _prepTask = nullptr;
     bool _storageBatchOpen = false;
 
     std::vector<String> _sessions;

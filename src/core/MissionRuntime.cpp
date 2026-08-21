@@ -3,6 +3,7 @@
 
 #include "DebugLog.h"
 #include "ScreenEnum.h"
+#include "ScreenNavigation.h"
 #include "SpectreState.h"
 #include "../managers/MQTTManager.h"
 #include "../managers/RadioArbiter.h"
@@ -48,7 +49,7 @@ void _applyMissionConfiguration(MissionProfile profile) {
 
 Screen _sanitizeScreen(uint8_t raw) {
     if (raw >= static_cast<uint8_t>(SCREEN_COUNT)) {
-        return SCREEN_LORA;
+        return DEFAULT_GENERAL_SCREEN;
     }
     return static_cast<Screen>(raw);
 }
@@ -116,7 +117,7 @@ const char* currentSessionContextLabel() {
 void syncRuntimePresentation() {
     RunContext context = RUN_CONTEXT_GENERAL;
     MissionProfile profile = MISSION_RECON;
-    Screen screen = SCREEN_LORA;
+    Screen screen = DEFAULT_GENERAL_SCREEN;
     RadioOwner owner = RADIO_NONE;
     uint8_t powerState = POWER_STATE_BATTERY_NORMAL;
 

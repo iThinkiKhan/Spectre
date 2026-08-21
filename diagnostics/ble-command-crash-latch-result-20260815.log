@@ -1,0 +1,42 @@
+=== reconnecting capture opened 2026-08-15T21:06:03.2880803-05:00 port=COM13 ===
+=== serial connected 2026-08-15T21:06:03.3054761-05:00 attempt=1 ===
+=== send: ble rxdiag ===
+[14437][I][ENTITY] Rebuild complete entities=73 observations=1287 ms=6803
+[14438][I][ENTITY] Ready entities=73 observations=1287 links=98304 psram=3088KB selftest=pass rebuild=ok
+[14454][I][PWNY] PMKID capture index loaded count=0
+[14454][I][WIFI] WiFiManager initialized
+[14665][I][WIFI] Allocation: OK
+[14823][I][WIFI] Radio suspended
+[14823][I][CORE] Hardware ready
+ble rxdiag
+[BLE] rxdiag unavailable
+[15100][I][STORAGE] RAMSpool worker paused inflight=0 lastInflight=0
+[15100][I][STORAGE] Exclusive window begin kind=maintenance reason=radio_owner_window workerPaused=1 displaySuspended=1
+[15100][I][STORAGE] Maintenance start reason=radio_owner_window budgetMs=30000 flags=dirty_summary|counter_untrusted|segment_audit|fs_audit captureSafe=0
+[15530][I][STORAGE] Segment lifecycle seg=552 sealed->indexed trust=trusted pending=100
+[16369][I][STORAGE] Spool repair start reason=maintenance_repair segs=31
+[16449][I][STORAGE] Spool repair checkpoint seg=550 off=42213 records=220 events=110 enrich=110
+[16566][I][STORAGE] Spool repair checkpoint seg=551 off=38420 records=200 events=100 enrich=100
+[16683][I][STORAGE] Spool repair checkpoint seg=552 off=37933 records=200 events=100 enrich=100
+[16787][I][STORAGE] Spool repair checkpoint seg=553 off=14576 records=76 events=38 enrich=38
+[16890][I][STORAGE] Spool repair checkpoint seg=554 off=10851 records=58 events=28 enrich=30
+[17092][I][STORAGE] Spool repair checkpoint seg=562 off=8215 records=42 events=22 enrich=20
+[17201][I][STORAGE] Spool repair checkpoint seg=563 off=26683 records=140 events=70 enrich=70
+[17300][I][STORAGE] Spool repair checkpoint seg=569 off=7600 records=40 events=20 enrich=20
+[17403][I][STORAGE] Spool repair checkpoint seg=571 off=16505 records=84 events=44 enrich=40
+[17502][I][STORAGE] Spool repair checkpoint seg=572 off=8668 records=44 events=22 enrich=22
+[17608][I][STORAGE] Spool repair checkpoint seg=574 off=26257 records=138 events=69 enrich=69
+[17645][I][STORAGE] Maintenance skip action=counter_recount reason=repair_in_progress flags=dirty_summary|counter_untrusted|segment_audit|fs_audit
+[19170][I][FSAUDIT] pass done files=77 dirs=14 valid=77 invalid=0 legacy=0 forensic=0 tmp=0 unknown=0 vaulted=0 missing=0 skipped=0 actions del=0 quar=0 rebuild=0 salv=0 evict=0 skip=0 fail=0 spool_seg=31 maxSeg
+[19267][I][STORAGE] fs_audit done mode=1 complete=1 files=77 invalid=0 tmp=0 missing=0 del=0 quar=0 rebuild=0 salv=0 evict=0 skip=0 fail=0 drift=0 ms=1524
+[19368][I][STORAGE] Maintenance done reason=radio_owner_window actions=segment_audit|fs_audit skipped=dirty_summary|counter_untrusted|segment_audit remaining=dirty_summary|counter_untrusted|segment_audit elapsed
+[19369][I][STORAGE] RAMSpool worker resumed
+[19369][I][STORAGE] Exclusive window end kind=maintenance result=pending reason=radio_owner_window
+[19370][I][STORAGE] maintenance owner window ms=4270 captureSafe=0 remaining=dirty_summary|counter_untrusted|segment_audit
+[19528][I][WIFI] Radio suspended
+[19529][W][CORE] TaskHardware loop gap=4706ms owner=STORAGE_MAINT pendingUpload=1274 maintPending=1 suppressed=0
+[19532][I][STORAGE] RAMSpool worker paused inflight=0 lastInflight=0
+[19532][I][STORAGE] Exclusive window begin kind=maintenance reason=radio_owner_window workerPaused=1 displaySuspended=1
+[19533][I][STORAGE] Maintenance start reason=radio_owner_window budgetMs=30000 flags=dirty_summary|counter_untrusted|segment_audit captureSafe=0
+[19728][I][STORAGE] Segment lifecycle seg=553 sealed->indexed trust=trusted pending=38
+=== reconnecting capture closed 2026-08-15T21:06:11.2964856-05:00 ===

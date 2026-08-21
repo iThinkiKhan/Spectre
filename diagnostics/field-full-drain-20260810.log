@@ -1,0 +1,7 @@
+=== capture opened 2026-08-10T16:10:04.3781748-05:00 ===
+ESP-ROM:esp32s3-20210327
+Build:Mar 27 2021
+rst:0x15 (USB_UART_CHIP_RESET),boot:0x0 (DOWNLOAD(USB/UART0))
+Saved PC:0x40041a76
+waiting for download
+=== send: companion link ===

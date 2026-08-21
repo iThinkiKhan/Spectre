@@ -1,0 +1,97 @@
+companion enrich
+[COMP] manual enrich queued
+[416675][I][COMP] Manual enrich request received; probe backoff bypassed
+[416676][I][WIFI] Radio paused
+[416832][I][WIFI] Radio suspended
+[416974][I][BLE] BLE payload buffers in PSRAM bytes=6276
+[417050][I][BLE] begin phase=nimble_pre bt=idle/0 heap=105144 largest=32756 stack=10832 devLen=14
+[417050][I][BLE] begin phase=nimble_init
+[417060][I][BLE] begin phase=nimble_init_ok bt=enabled/2 heap=42136 largest=31732 stack=10832
+[417061][I][BLE] BLE SM disabled; app-layer P-256/AES-GCM required
+[417062][I][BLE] begin phase=server_ok
+[417062][I][BLE] scanner configured legacy=1 active=0 interval=30 window=30 srTimeout=200
+[417063][I][BLE] begin phase=scanner_ok
+[417063][I][BLE] begin phase=worker_ok
+[417063][I][BLE] begin ready
+[417063][I][BLE] radio enabled settle=500ms
+[417065][I][BLE] advertising start
+[417066][I][BLE] companion link requested reason=manual_probe mode=fresh_scan timeout=15s settle=500ms cacheAge=0ms rssi=0
+[417070][I][BLE] Phone probe lease granted reason=manual_probe cachedFirst=0 hold=60000ms
+[417081][W][CORE] TaskHardware loop gap=408ms owner=BLE_GPS pendingUpload=1921 maintPending=1 suppressed=0
+[417676][I][BLE] scan start
+[417677][I][BLE] scan start diag=1 deliverDuplicates=1 diagLeft=44387 state=1 window=8000ms weakRecent=0 lastRssi=0
+[417809][I][BLE] target found matchedBy=service cachePeer=0 addr=6e:9b:08:73:13:db name=SpectrePhone rssi=-59
+[417810][I][BLE] target found matchedBy=service cachePeer=0 addr=6e:9b:08:73:13:db name=SpectrePhone rssi=-59
+[417828][I][BLE] scan stop; connect pending addr=6e:9b:08:73:13:db
+[418128][I][BLE] connect pending settled addr=6e:9b:08:73:13:db
+[418129][I][BLE] connect attempt addr=6e:9b:08:73:13:db name=SpectrePhone
+[418129][I][BLE] connect params timeoutMs=45000 scanItvl=16 scanWin=16 addrType=1
+[418313][I][BLE] connect result ok=1 err=0 addr=6e:9b:08:73:13:db
+[418313][I][BLE] BLE link connected; starting app-layer auth watchdog=50000ms
+[418314][I][BLE] remote service lookup begin core=1 internalFree=39464 largest=30708
+[418372][I][BLE] remote service lookup end found=1 err=0
+[418372][I][BLE] remote characteristic discovery begin
+[418551][I][BLE] remote characteristic discovery end count=13 err=0
+[418612][I][BLE] remote descriptor discovery char=auth count=2 err=0
+[418612][I][BLE] auth notify subscribe begin
+[418671][I][BLE] auth notify subscribe end ok=1 err=0
+[418945][I][BLE] auth challenge write bytes=163 mtu=247 attPayload=244 mode=response
+[419921][I][BLE] app secure session ready alg=P-256+ECDH+AES-256-GCM
+[419921][I][BLE] phone auth confirmed; caching peer addr=6e:9b:08:73:13:db ttl=300000ms rssi=-59
+[419962][I][BLE] remote descriptor discovery char=enrichment count=2 err=0
+[420082][I][BLE] remote descriptor discovery char=command_req count=2 err=0
+[420322][I][BLE] remote bound gps=1 ctrl=1 meta=1 batch=1 enrich=1 auth=1 authReq=1 storage=1 cmdReq=1 cmdResp=1 logStream=1 dashStream=1 notification=1 notify(gps=0 ctrl=0 enrich=1 auth=1 cmdReq=1) mtu=247 a
+[420322][I][BLE] probe_summary seen=1 matchedBy=service rssi=-59 scanMs=2246
+[420322][I][BLE] phone_session_summary auth=ok mtu=247 gps=1 ctrl=1 enrich=1 storage=1
+[420381][I][BLE] storage snapshot sent pendingUp=0/1921 pendingEnrich=0/1912 usedPct=11
+[420386][I][BLE] Phone probe succeeded ??? backoff reset
+[420390][I][BLE] Phone probe promoted to enrichment pendingEnrich=1912 maxBatch=18
+[420391][I][STORAGE] RAMSpool worker paused inflight=0 lastInflight=0
+[420391][I][STORAGE] Exclusive window begin kind=enrichment reason=manual_enrich_window workerPaused=1 displaySuspended=1
+[420393][I][STORAGE] Enrichment window build started limit=1912 enrichedIdReserve=1877 segments=47 freeInternal=36136 freePsram=4521560
+[420714][I][STORAGE] Enrichment IDs ready records=1877 scanned=3 skipped=44 ms=321
+[421152][I][STORAGE] Maintenance requested reason=dirty_spool_index source=enrichment_window_reconciled flags=dirty_spool_index|snapshot_lagged
+[421153][I][STORAGE] Enrichment window slice scanned=14 skipped=2 nextSegment=16/47 candidates=0 ms=760
+[421153][I][STORAGE] RAMSpool worker resumed
+[421153][I][STORAGE] Exclusive window end kind=enrichment result=manual_index_slice reason=manual_enrich_window
+[421167][I][BLE] link ready state=4
+[421169][I][STORAGE] RAMSpool worker paused inflight=0 lastInflight=0
+[421170][I][STORAGE] Exclusive window begin kind=enrichment reason=manual_enrich_window workerPaused=1 displaySuspended=1
+[421958][I][STORAGE] Enrichment window slice scanned=14 skipped=8 nextSegment=38/47 candidates=0 ms=788
+[421959][I][STORAGE] RAMSpool worker resumed
+[421959][I][STORAGE] Exclusive window end kind=enrichment result=manual_index_slice reason=manual_enrich_window
+[421960][I][STACK] TaskHardware watermark=10832B min=10832B
+[421962][I][HEAP] heap free=4451KB min=4439KB largest=4352KB frag=2% internalFree=35KB internalLargest=27KB psramFree=4416KB core=7/6% owner=BLE_GPS nets=2 pendingUpload=1921 pendingEnrich=1912
+[HEALTH] time=2026-08-10 13:12:42 src=ntp
+[HEALTH] heap used=4002/8453KB free=4451KB min=4439KB largest=4352KB frag=2%
+[HEALTH] internal used=226/261KB free=35KB min=24KB largest=27KB
+[HEALTH] psram used=3776/8192KB free=4416KB largest=4352KB
+[HEALTH] stack free_min: core0=11KB/22KB core1=12KB/18KB
+[HEALTH] core usage: core0=7% core1=6%
+[HEALTH] power=usb state=usb batt=100% 4766mV trend=6mV/min runtime=0min cap=1100mAh charging=1
+[HEALTH] radio=BLE_GPS wifi=0 ble=1 gps=0 nets=2 pendingUpload=1921 pendingEnrich=1912
+[HEALTH] subghz=NONE mode=OFF pkts=0 nodes=0
+[421965][I][STORAGE] RAMSpool enq=102 cons=102 inflight=0/1024 high=5 pressure=0 drop[full=0 big=0 noise=0 p3Evict=0 p3Drop=0 p2Drop=0 p1Fail=0] free=1024
+[421965][I][STORAGE] RAMSpool enqueue probe[ok=85 drop=0] device[ok=17 drop=0]
+[421965][I][STORAGE] RAMSpool worker probe[ok=5 sup=80 drop=0 fail=0 slow=0] device[ok=17 sup=0 drop=0 fail=0 slow=0] slowTotal=0 maxMs=0
+[421966][I][STORAGE] RAMSpool prioEnq p0=0 p1=0 p2=102 p3=0
+[421966][I][STORAGE] RAMSpool lanes p1=0/0 p2=0/4 p3=0/0
+[421977][I][STORAGE] RAMSpool worker paused inflight=0 lastInflight=0
+[421977][I][STORAGE] Exclusive window begin kind=enrichment reason=manual_enrich_window workerPaused=1 displaySuspended=1
+[422440][I][STORAGE] Enrichment window ready records=41 truncated=0 buildMs=2048 freeInternal=36136 freePsram=4529116
+[422441][I][BLE] Manual enrichment window batch count=18 active=1 noData=0 budgetExhausted=0 timeHit=0
+[422441][I][STORAGE] RAMSpool worker resumed
+[422442][I][STORAGE] Exclusive window end kind=enrichment result=manual_batch_built reason=manual_enrich_window
+[422442][I][BLE] enrichment request queued count=18 bytes=180
+[422442][I][BLE] Requested enrichment batch count=18 queued=0
+[422456][I][BLE] enrichment send mtu=247 attPayload=244 bytes=180 count=18
+[422511][I][BLE] enrichment batch sent plain=180 sealed=202 count=18 writeOk=1
+[422756][I][BLE] enrichment rx chunk cipher=222 queued=0
+[422907][I][BLE] enrichment rx chunk cipher=222 queued=0
+[423058][I][BLE] enrichment rx chunk cipher=222 queued=1
+[423059][I][BLE] enrichment rx chunk cipher=222 queued=0
+[423210][I][BLE] enrichment rx chunk cipher=68 queued=0
+[423211][I][BLE] enrich_xfer_perf count=18 sendMs=56 waitMs=700 rxBytes=846
+[423212][I][BLE] enrichment batch received count=18 bytes=846
+[423212][I][BLE] enrichment batch consumed count=18
+

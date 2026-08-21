@@ -1,0 +1,34 @@
+{
+  "generatedAt": "2026-08-10T18:37:25.6762816Z",
+  "source": "serial:COM13",
+  "nonDestructive": true,
+  "recordCount": 0,
+  "parseErrorCount": 0,
+  "sequence": {
+    "first": null,
+    "last": null,
+    "gaps": [],
+    "duplicates": []
+  },
+  "typeCounts": {},
+  "boot": {
+    "recordCount": 0,
+    "readySampleCount": 0,
+    "slowCount": 0,
+    "slowThresholdMs": 8000,
+    "slow": [],
+    "bleAdjacent": []
+  },
+  "crash": {
+    "count": 0,
+    "records": []
+  },
+  "power": {
+    "sampleCount": 0,
+    "usbSampleCount": 0,
+    "minUsbMv": null,
+    "maxUsbMv": null
+  },
+  "latestRun": null,
+  "auditProblemCount": 0
+}

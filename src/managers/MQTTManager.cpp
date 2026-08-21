@@ -239,6 +239,9 @@ static constexpr uint32_t kBrokerConnectAttemptGapMs = 2000UL;
 static constexpr uint32_t kUploadPublishSettleMs   = 0UL;
 static constexpr uint32_t kUploadPublishRetryDelayMs = 750UL;
 static constexpr uint32_t kQos1PubackTimeoutMs      = 5000UL;
+// Well inside PubSubClient's 15 s keepalive, so the broker never times
+// out a dump that pauses for storage work.
+static constexpr uint32_t kRawKeepaliveIdleMs       = 5000UL;
 static constexpr size_t   kMaxMqttPayloadBytes     = 1535U;
 // Streaming upload buffer. Storage walks the spool directly; MQTT only stages
 // a small payload window at a time before publishing/checkpointing/yielding.
@@ -324,7 +327,7 @@ void MQTTManager::tick() {
     // Dump slices now run inline on TaskHardware, so only service the MQTT
     // client from the idle/non-dumping path.
     if (_state != MQTT_DUMPING && _mqtt.connected()) {
-        _mqtt.loop();
+        _serviceMqttLink();
     }
     // Opportunistic one-shot: if FieldVault has pending records and the boot
     // grace has elapsed, fire a single short field-only dump. Sets the latch
@@ -631,6 +634,18 @@ void MQTTManager::_prefetchFirstUploadEvent() {
     (void)_fillUploadBucketRadioQuiet(1);
 }
 
+// Adds its lifetime to a running total. Used to split drain wall time into
+// "reading records off the spool" vs "getting them onto the wire", which is
+// the first question when a high-backlog upload is slower than expected.
+namespace {
+struct ScopedElapsedAccumulator {
+    uint32_t& total;
+    uint32_t startMs;
+    ScopedElapsedAccumulator(uint32_t& t, uint32_t start) : total(t), startMs(start) {}
+    ~ScopedElapsedAccumulator() { total += millis() - startMs; }
+};
+}  // namespace
+
 bool MQTTManager::_fillUploadBucketRadioQuiet(uint16_t maxRecords) {
     if (!STORAGE.isReady() || maxRecords == 0) {
         return false;
@@ -663,7 +678,7 @@ bool MQTTManager::_fillUploadBucketRadioQuiet(uint16_t maxRecords) {
     const uint32_t indexedRecords =
         STORAGE.isReady() ? STORAGE.getUploadIndexResidentEventCount() : 0U;
     const uint32_t internalFreeBefore =
-        heap_caps_get_free_size(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
+        heap_caps_get_free_size(SPECTRE_CAP_DRAM);
     uint16_t heapBoundedMax = maxRecords;
     if (internalFreeBefore < 12288UL) {
         heapBoundedMax = std::min<uint16_t>(heapBoundedMax, 1U);
@@ -684,6 +699,7 @@ bool MQTTManager::_fillUploadBucketRadioQuiet(uint16_t maxRecords) {
     }
 
     const uint32_t fillStartMs = millis();
+    ScopedElapsedAccumulator fillAccum(_dumpFillMs, fillStartMs);
     if (_dumpCtx.uploadBucket.capacity() < fillLimit) {
         _dumpCtx.uploadBucket.reserve(fillLimit);
     }
@@ -890,7 +906,7 @@ bool MQTTManager::_fillUploadBucketRadioQuiet(uint16_t maxRecords) {
                           static_cast<unsigned>(_dumpCtx.bucketNumber),
                           static_cast<unsigned>(stagedCount),
                           static_cast<unsigned long>(eventId),
-                          static_cast<unsigned long>(heap_caps_get_free_size(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT)),
+                          static_cast<unsigned long>(heap_caps_get_free_size(SPECTRE_CAP_DRAM)),
                           static_cast<unsigned long>(heap_caps_get_free_size(MALLOC_CAP_SPIRAM)));
                 vTaskDelay(pdMS_TO_TICKS(1));
             }
@@ -1080,8 +1096,13 @@ void MQTTManager::_runStateMachine() {
                               static_cast<uint32_t>(_lastPublished),
                               _dumpCtx.maxEventsThisLease,
                               true);
-            if (_mqtt.connected()) {
-                _mqtt.loop();
+            // PubSubClient's keepalive is suppressed while dumping, so hold the
+            // broker's timer open ourselves if publishing has gone quiet (a slow
+            // storage slice or a publish backoff can outlast the keepalive).
+            if (_lastRawLinkActivityMs == 0) {
+                _lastRawLinkActivityMs = millis();
+            } else if (millis() - _lastRawLinkActivityMs >= kRawKeepaliveIdleMs) {
+                _sendRawPingreq();
             }
             if (_runDumpSlice()) {
                 const bool ok =
@@ -1283,6 +1304,11 @@ bool MQTTManager::_connectBroker() {
 void MQTTManager::_startDumpPlan() {
     _lastPublished = 0;
     _lastFailed = 0;
+    _dumpStartMs = millis();
+    _dumpFillMs = 0;
+    _dumpPublishMs = 0;
+    _dumpLastRateLogPublished = 0;
+    _dumpLastRateLogMs = _dumpStartMs;
     _qos1AckedThisDump = 0;
     _qos1FirstAckLogged = false;
 
@@ -1444,12 +1470,12 @@ bool MQTTManager::_runDumpSlice() {
 
             while (_dumpCtx.uploadBucketIndex < _dumpCtx.uploadBucket.size()) {
                 if ((millis() - sliceStartMs) >= kDumpSliceBudgetMs) {
-                    _mqtt.loop();
+                    _serviceMqttLink();
                     return false;
                 }
 
                 if (recordsThisSlice >= kDumpMaxRecordsPerSlice) {
-                    _mqtt.loop();
+                    _serviceMqttLink();
                     return false;
                 }
 
@@ -1459,7 +1485,7 @@ bool MQTTManager::_runDumpSlice() {
                 if (_dumpCtx.publishRetryAtMs != 0 &&
                     static_cast<int32_t>(millis() - _dumpCtx.publishRetryAtMs) < 0) {
                     if (_mqtt.connected()) {
-                        _mqtt.loop();
+                        _serviceMqttLink();
                     }
                     return false;
                 }
@@ -1499,7 +1525,7 @@ bool MQTTManager::_runDumpSlice() {
                         _dumpCtx.phase = DUMP_PHASE_FAILED;
                         return true;
                     }
-                    _mqtt.loop();
+                    _serviceMqttLink();
                 }
 
                 const uint32_t publishT0 = millis();
@@ -1508,6 +1534,7 @@ bool MQTTManager::_runDumpSlice() {
                                                            record.payloadLen,
                                                            false);
                 const uint32_t publishDt = millis() - publishT0;
+                _dumpPublishMs += publishDt;
                 if (!publishOk) {
                     const bool samePoisonRecord =
                         (_lastPoisonEventId == record.eventId &&
@@ -1535,7 +1562,7 @@ bool MQTTManager::_runDumpSlice() {
                         _dumpCtx.publishRetryAtMs =
                             millis() + kUploadPublishRetryDelayMs;
                         if (_mqtt.connected()) {
-                            _mqtt.loop();
+                            _serviceMqttLink();
                         }
                         DLOG_WARN("MQTT",
                                   "Publish retry deferred event=%lu nextIn=%lums",
@@ -1565,7 +1592,7 @@ bool MQTTManager::_runDumpSlice() {
                 _lastPoisonEventFailures = 0;
 
                 if (_mqtt.connected()) {
-                    _mqtt.loop();
+                    _serviceMqttLink();
                 }
                 _dumpSlicePause();
 
@@ -1594,7 +1621,7 @@ bool MQTTManager::_runDumpSlice() {
                 // Post-record time yield: placed here so a slow fetch cannot
                 // prevent processing at least one record per call.
                 if ((millis() - sliceStartMs) >= kDumpSliceBudgetMs) {
-                    _mqtt.loop();
+                    _serviceMqttLink();
                     return false;
                 }
 
@@ -1615,6 +1642,33 @@ bool MQTTManager::_runDumpSlice() {
                               static_cast<unsigned>(_dumpCtx.sessionIds.size()),
                               static_cast<unsigned long>(_dumpCtx.sinceId),
                               static_cast<unsigned>(_dumpCtx.maxEventsThisLease));
+
+                    // Instantaneous rate over the window since the last log,
+                    // plus the cumulative average. The two diverging is the
+                    // signal that the drain is degrading as it goes -- which is
+                    // what an O(N^2) record lookup looks like from the outside.
+                    const uint32_t nowMs = millis();
+                    const uint32_t windowMs = nowMs - _dumpLastRateLogMs;
+                    const int windowPub = _lastPublished - _dumpLastRateLogPublished;
+                    const uint32_t totalMs = nowMs - _dumpStartMs;
+                    DLOG_INFO("MQTT",
+                              "Dump rate pub=%d window=%d/%lums (%lu.%02lu rec/s) "
+                              "avg=%lu.%02lu rec/s fillMs=%lu pubMs=%lu",
+                              _lastPublished,
+                              windowPub,
+                              static_cast<unsigned long>(windowMs),
+                              windowMs ? static_cast<unsigned long>(
+                                  (windowPub * 1000UL) / windowMs) : 0UL,
+                              windowMs ? static_cast<unsigned long>(
+                                  ((windowPub * 100000UL) / windowMs) % 100UL) : 0UL,
+                              totalMs ? static_cast<unsigned long>(
+                                  (_lastPublished * 1000UL) / totalMs) : 0UL,
+                              totalMs ? static_cast<unsigned long>(
+                                  ((_lastPublished * 100000UL) / totalMs) % 100UL) : 0UL,
+                              static_cast<unsigned long>(_dumpFillMs),
+                              static_cast<unsigned long>(_dumpPublishMs));
+                    _dumpLastRateLogMs = nowMs;
+                    _dumpLastRateLogPublished = _lastPublished;
                 }
             }
 
@@ -1636,7 +1690,7 @@ bool MQTTManager::_runDumpSlice() {
                 // it doesn't need a radio-quiet window. Service the MQTT
                 // client briefly so the broker keepalive doesn't fire.
                 if (_mqtt.connected()) {
-                    _mqtt.loop();
+                    _serviceMqttLink();
                 }
 
                 if ((_lastPublished - _dumpCtx.lastCheckpointPublished) >=
@@ -1711,7 +1765,7 @@ bool MQTTManager::_runDumpSlice() {
                     return false;
                 }
                 if (_mqtt.connected()) {
-                    _mqtt.loop();
+                    _serviceMqttLink();
                 }
                 return false;
             }
@@ -1767,11 +1821,27 @@ bool MQTTManager::_runDumpSlice() {
                                            "post_upload");
             }
 
-            DLOG_INFO("MQTT", "upload_session_summary pub=%d acked=%lu failed=%d remain=%d leaseMs=%lu",
-                      _lastPublished,
-                      static_cast<unsigned long>(_qos1AckedThisDump),
-                      _lastFailed, _queuedRecords,
-                      static_cast<unsigned long>(_uploadLeaseHoldMs));
+            {
+                const uint32_t drainMs = millis() - _dumpStartMs;
+                DLOG_INFO("MQTT",
+                          "upload_session_summary pub=%d acked=%lu failed=%d remain=%d "
+                          "leaseMs=%lu drainMs=%lu rate=%lu.%02lu rec/s "
+                          "fillMs=%lu pubMs=%lu otherMs=%lu",
+                          _lastPublished,
+                          static_cast<unsigned long>(_qos1AckedThisDump),
+                          _lastFailed, _queuedRecords,
+                          static_cast<unsigned long>(_uploadLeaseHoldMs),
+                          static_cast<unsigned long>(drainMs),
+                          drainMs ? static_cast<unsigned long>(
+                              (_lastPublished * 1000UL) / drainMs) : 0UL,
+                          drainMs ? static_cast<unsigned long>(
+                              ((_lastPublished * 100000UL) / drainMs) % 100UL) : 0UL,
+                          static_cast<unsigned long>(_dumpFillMs),
+                          static_cast<unsigned long>(_dumpPublishMs),
+                          static_cast<unsigned long>(
+                              drainMs > (_dumpFillMs + _dumpPublishMs)
+                                  ? drainMs - (_dumpFillMs + _dumpPublishMs) : 0UL));
+            }
 
             _dumpCtx.phase = (_lastFailed == 0) ? DUMP_PHASE_DONE : DUMP_PHASE_FAILED;
             return true;
@@ -2204,11 +2274,11 @@ bool MQTTManager::_publishPayload(const char* topic,
     };
 
     if (_mqtt.connected()) {
-        _mqtt.loop();
+        _serviceMqttLink();
     }
     bool ok = publishOnce();
     if (!ok && _mqtt.connected()) {
-        _mqtt.loop();
+        _serviceMqttLink();
         _dumpSlicePause();
         ok = publishOnce();
     }
@@ -2222,6 +2292,35 @@ bool MQTTManager::_publishPayload(const char* topic,
                   _mqtt.connected() ? 1 : 0);
     }
     return ok;
+}
+
+void MQTTManager::_serviceMqttLink() {
+    // PubSubClient and _publishPayloadQos1() share one TCP socket but each has
+    // its own MQTT parser, and they cannot both read it.
+    //
+    // The QoS1 publisher writes a PUBLISH frame directly to the socket and then
+    // reads until it sees the matching PUBACK, discarding every other packet it
+    // encounters - including PubSubClient's PINGRESP. PubSubClient in turn
+    // consumes whatever is pending when loop() runs, which can be the PUBACK the
+    // publisher is still waiting for. Either way one side loses a packet it
+    // needed: the publisher stalls for the full 5 s PUBACK timeout, or
+    // PubSubClient never clears pingOutstanding and drops the link with stop().
+    //
+    // That is what limited the 2026-08-18 backlog drain to ~2.7 records/s, with
+    // a 5 s timeout and reconnect every few publishes. While a dump is in
+    // flight the raw publisher owns the socket exclusively.
+    if (_state == MQTT_DUMPING) return;
+    if (!_mqtt.connected()) return;
+    _mqtt.loop();
+}
+
+void MQTTManager::_sendRawPingreq() {
+    if (!_wifiClient.connected()) return;
+    const uint8_t ping[2] = {0xC0U, 0x00U};
+    if (_wifiClient.write(ping, sizeof(ping)) == sizeof(ping)) {
+        _lastRawLinkActivityMs = millis();
+    }
+    // The PINGRESP is drained (and ignored) by the next QoS1 PUBACK read.
 }
 
 bool MQTTManager::_publishPayloadQos1(const char* topic,
@@ -2347,6 +2446,7 @@ bool MQTTManager::_publishPayloadQos1(const char* topic,
                                       second);
             if (ackId == packetId) {
                 _qos1AckedThisDump++;
+                _lastRawLinkActivityMs = millis();
                 if (!_qos1FirstAckLogged) {
                     _qos1FirstAckLogged = true;
                     DLOG_INFO("MQTT", "QoS1 PUBACK received packetId=%u",
@@ -2420,11 +2520,11 @@ bool MQTTManager::_publishJson(const char* topic,
 
     // Drain broker ACKs before writing so the TCP send buffer never backs up.
     if (_mqtt.connected()) {
-        _mqtt.loop();
+        _serviceMqttLink();
     }
     bool ok = publishOnce();
     if (!ok && _mqtt.connected()) {
-        _mqtt.loop();
+        _serviceMqttLink();
         _dumpSlicePause();
         ok = publishOnce();
     }

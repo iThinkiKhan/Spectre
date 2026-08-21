@@ -1,0 +1,10 @@
+=== capture opened 2026-08-14T08:05:58.0532549-05:00 ===
+=== send: crash log ===
+crash log
+[BOOT] crash log: 5 entries, seq 0..113 (oldest first)
+[BOOT] #1 seq=109 [ok] phase=backlog_probe owner=7 pendingUpload=0 heapFree=64K largest=30K min=64K uptime=10s
+[BOOT] #2 seq=110 [ok] phase=ble_auth owner=7 pendingUpload=0 heapFree=62K largest=30K min=59K uptime=11s
+[BOOT] #3 seq=111 [ok] phase=backlog_enrich owner=7 pendingUpload=8 heapFree=60K largest=30K min=57K uptime=12s
+[BOOT] #4 seq=112 [ok] phase=runtime_health owner=7 pendingUpload=66 heapFree=60K largest=30K min=54K uptime=30s
+[BOOT] #5 seq=113 [ok] phase=runtime_health owner=7 pendingUpload=66 heapFree=60K largest=30K min=54K uptime=60s
+=== capture closed 2026-08-14T08:06:13.1051369-05:00 ===

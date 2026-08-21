@@ -5,6 +5,7 @@
 #include <freertos/task.h>
 #include "Session.h"
 #include "ScreenEnum.h"
+#include "ScreenNavigation.h"
 #include "RunContext.h"
 #include "../ui/Theme.h"
 #include "../ui/MascotState.h"
@@ -253,7 +254,7 @@ struct SpectreState {
     uint8_t runContext = RUN_CONTEXT_GENERAL;
     uint8_t activeMissionProfile = MISSION_RECON;
     uint8_t missionSelection = MISSION_RECON;
-    uint8_t generalScreen = SCREEN_LORA;
+    uint8_t generalScreen = DEFAULT_GENERAL_SCREEN;
     bool    exportLastOk    = false;
     uint32_t exportLastEvents = 0;
     uint16_t exportLastFiles = 0;
@@ -297,7 +298,7 @@ struct SpectreState {
     char     uploadPhase[16]   = "";
 
     // UI control — Core 0 writes, Core 1 reads
-    Screen      currentScreen   = SCREEN_LORA;
+    Screen      currentScreen   = DEFAULT_GENERAL_SCREEN;
     MascotState mascotState     = MASCOT_STANDBY;
     bool        requestSleep    = false;
     uint32_t    sleepRequestSeq = 0;

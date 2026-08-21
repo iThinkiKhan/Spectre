@@ -1,0 +1,4 @@
+=== reconnecting capture opened 2026-08-15T18:45:40.5445078-05:00 port=COM13 ===
+=== serial connected 2026-08-15T18:45:40.5604019-05:00 attempt=1 ===
+=== send: crashlog ===
+=== reconnecting capture closed 2026-08-15T18:45:55.6059193-05:00 ===

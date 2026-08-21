@@ -59,8 +59,26 @@ static constexpr uint8_t OFF = 0;
 #define BOOT_RECOVERY_HOLD_MS       1500UL
 
 #define BLE_SMOKE_ENABLED           ON
+// One-shot boot-time BLE controller/host memory split measurement.
+#define SPECTRE_BOOT_MEMPROBE       0
 
-#define PWNY_ACTIVE_ATTACKS_ENABLED OFF
+// Internal/external malloc split point, in bytes. Plain malloc() requests
+// LARGER than this may be satisfied from PSRAM; requests at or below it are
+// always internal. The framework default (CONFIG_SPIRAM_MALLOC_ALWAYSINTERNAL)
+// is 4096. 0 = leave the framework default alone.
+// Measured 2026-08-19, internal free during WIFI_CAPTURE:
+//   4096 (framework default) -> 82-84 KB
+//   2048                     -> 86-87 KB
+//   1024                     -> chosen
+//    512                     -> 92 KB, but puts sub-KB allocations in PSRAM
+// 1024 keeps every sub-kilobyte allocation internal - those are the most
+// numerous and the most likely to be touched from an ISR or with the flash
+// cache disabled, which is the failure mode PSRAM placement causes. The blocks
+// that dominate the map (19,456 B, 15,872 B, 7 x 2,176 B) never move at any
+// setting: they request MALLOC_CAP_INTERNAL/DMA explicitly and must stay.
+#define SPECTRE_EXTMEM_MALLOC_LIMIT 1024
+
+#define PWNY_ACTIVE_ATTACKS_ENABLED ON
 
 // Timing
 
@@ -127,7 +145,7 @@ static constexpr uint8_t OFF = 0;
 // a segment, so it stays gated until that is understood.
 #define SPECTRE_PUBLISH_NETWORKS      0
 
-#define MQTT_UPLOAD_READY_THRESHOLD   40000
+#define MQTT_UPLOAD_READY_THRESHOLD   30000
 // Low-water mark: drain mode exits once pending drops below this, so the next
 // upload only fires after pending climbs back to MQTT_UPLOAD_READY_THRESHOLD.
 // Keep it well below the threshold so each burst flushes most of the batch.
@@ -241,7 +259,7 @@ static constexpr uint8_t OFF = 0;
 #ifndef BOOT_SEQUENCE_VERBOSE_ACTIVE
   #if (BOOT_SEQUENCE_VERBOSE == ON) || \
       ((BOOT_SEQUENCE_VERBOSE_IN_DEBUG == ON) && (SPECTRE_DEBUG_PROFILE >= SPECTRE_DEBUG_PROFILE_DEBUG))
-    #define BOOT_SEQUENCE_VERBOSE_ACTIVE OFF
+    #define BOOT_SEQUENCE_VERBOSE_ACTIVE ON
   #else
     #define BOOT_SEQUENCE_VERBOSE_ACTIVE OFF
   #endif

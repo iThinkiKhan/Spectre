@@ -140,4 +140,13 @@ bool clearLive();
 // Broader than clearLive: removes live and .1 backup after a serial dump.
 bool clearRetained();
 
+// Forget which crash breadcrumb was last vaulted.
+//
+// vaultUnresolvedCrashIfNew() suppresses any breadcrumb whose seqNum is at or
+// below this watermark. Clearing the crash ring restarts its sequence at 0,
+// which leaves the watermark far ahead of every future breadcrumb and silently
+// swallows real crashes — that is what cost the five panics on 2026-08-20
+// their crash records. Anything that resets the ring must reset this too.
+void resetCrashWatermark();
+
 }  // namespace FieldVault

@@ -145,7 +145,11 @@ class SpectreFieldService : Service() {
     const val ACTION_SET_GPS = "com.spectre.companion.action.SET_GPS"
     const val EXTRA_ACTIVE = "com.spectre.companion.extra.ACTIVE"
     const val NOTIFICATION_ID = 4201
-    private const val SERVICE_KICK_INTERVAL_MS = 5_000L
+    // Belt-and-braces liveness poke for the peripheral module, which runs its
+    // own adaptive advertising watchdog. At 5s this re-armed that watchdog
+    // often enough that it could never fire on its own, and cost ~17k
+    // main-thread wakeups a day for a check that is almost always a no-op.
+    private const val SERVICE_KICK_INTERVAL_MS = 30_000L
 
     fun setBleActive(context: Context, active: Boolean) {
       updateFlag(context, ACTION_SET_BLE, active)

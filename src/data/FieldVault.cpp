@@ -3,6 +3,7 @@
 
 #include <LittleFS.h>
 #include <Preferences.h>
+#include <esp_idf_version.h>
 #include <esp_system.h>
 #include <stdio.h>
 #include <string.h>
@@ -161,6 +162,13 @@ const char* _inferCrashReason(uint8_t resetReason, CrashPhase phase) {
         case ESP_RST_EXT:       rrAdj = "external reset";      break;
         case ESP_RST_SW:        rrAdj = "software reset";      break;
         case ESP_RST_SDIO:      rrAdj = "sdio reset";          break;
+#if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 1, 0)
+        case ESP_RST_USB:        rrAdj = "usb reset";           break;
+        case ESP_RST_JTAG:       rrAdj = "jtag reset";          break;
+        case ESP_RST_EFUSE:      rrAdj = "efuse error";         break;
+        case ESP_RST_PWR_GLITCH: rrAdj = "power glitch";        break;
+        case ESP_RST_CPU_LOCKUP: rrAdj = "cpu lockup";          break;
+#endif
         default:                rrAdj = "reset";               break;
     }
     snprintf(buf, sizeof(buf), "%s during %s", rrAdj, phName);
@@ -179,6 +187,7 @@ int _findNewestUnresolvedIdx() {
         const CrashLogEntry& e = g_crashLog.entries[i];
         if (!_entryValid(e)) continue;
         if (e.resolved) continue;
+        if (e.vaulted) continue;  // already recorded by this or an earlier boot
         if (!any || e.seqNum > newestSeq) {
             newestSeq = e.seqNum;
             newestIdx = i;
@@ -264,6 +273,10 @@ bool _resetReasonLooksCrashLike(uint8_t resetReason) {
         case ESP_RST_TASK_WDT:
         case ESP_RST_WDT:
         case ESP_RST_BROWNOUT:
+#if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 1, 0)
+        case ESP_RST_PWR_GLITCH:
+        case ESP_RST_CPU_LOCKUP:
+#endif
             return true;
         default:
             return false;
@@ -370,10 +383,29 @@ bool appendSeriallessResetCrashIfNeeded(uint8_t resetReason,
     const char* rname   = (resetName && resetName[0]) ? resetName : "unknown";
     const char* psrc    = (powerSource && powerSource[0]) ? powerSource : "unknown";
 
+    // Carry the crash breadcrumb phase into the persisted record. The RTC ring
+    // holds it too, but later checkpoints recycle it - after the 2026-08-19
+    // field panic the device ran for hours before it was read and the phase was
+    // gone, leaving only a coredump to work from. This survives.
+    const char* crashPhase = "none";
+    uint32_t    crashUptimeS = 0;
+    {
+        const CrashLogEntry* newest = nullptr;
+        for (uint8_t i = 0; i < CRASH_LOG_DEPTH; i++) {
+            const CrashLogEntry& e = g_crashLog.entries[i];
+            if (!_entryValid(e) || e.resolved) continue;
+            if (!newest || e.seqNum > newest->seqNum) newest = &e;
+        }
+        if (newest) {
+            crashPhase   = crashPhaseName(static_cast<CrashPhase>(newest->phase));
+            crashUptimeS = newest->uptimeMs / 1000U;
+        }
+    }
+
     int n = snprintf(line, sizeof(line),
         "{\"type\":\"reset_crash\",\"seq\":%lu,\"ts_ms\":%lu,\"ts_iso\":\"%s\","
         "\"session\":\"%s\",\"reset\":\"%s\",\"reset_code\":%u,"
-        "\"power\":\"%s\",\"heap_kb\":%lu,\"pending\":%lu,\"serial\":0}\n",
+        "\"power\":\"%s\",\"heap_kb\":%lu,\"pending\":%lu,\"phase\":\"%s\",\"phase_uptime_s\":%lu,\"serial\":0}\n",
         static_cast<unsigned long>(seq),
         static_cast<unsigned long>(tsMs),
         iso,
@@ -382,7 +414,9 @@ bool appendSeriallessResetCrashIfNeeded(uint8_t resetReason,
         static_cast<unsigned>(resetReason),
         psrc,
         static_cast<unsigned long>(freeHeapKb),
-        static_cast<unsigned long>(pendingUploads));
+        static_cast<unsigned long>(pendingUploads),
+        crashPhase,
+        static_cast<unsigned long>(crashUptimeS));
 
     if (n <= 0) return false;
     if (static_cast<size_t>(n) >= sizeof(line)) {
@@ -398,6 +432,18 @@ bool appendSeriallessResetCrashIfNeeded(uint8_t resetReason,
 
     _nextSeq++;
     return true;
+}
+
+void resetCrashWatermark() {
+    _lastVaultedCrashSeq = 0;
+    _haveLvcs = false;
+
+    Preferences prefs;
+    if (prefs.begin(kPrefsNamespace, false)) {
+        prefs.remove(kPrefsKeyLvcs);
+        prefs.end();
+    }
+    DLOG_WARN("STOR", "FieldVault crash watermark reset");
 }
 
 bool vaultUnresolvedCrashIfNew(uint8_t resetReason,
@@ -468,9 +514,14 @@ bool vaultUnresolvedCrashIfNew(uint8_t resetReason,
     _nextSeq++;
     _lastVaultedCrashSeq = bcrumbSeq;
     _haveLvcs = true;
+
+    // Primary dedup: the breadcrumb itself, in RTC memory, which survives the
+    // same resets the entry does and cannot fail the way an NVS write can.
+    crashBreadcrumbMarkVaulted(bcrumbSeq);
+
+    // Secondary dedup: the NVS watermark still covers the case where RTC memory
+    // is lost (a full power cycle) but the vault file survives.
     if (!_persistLvcs(bcrumbSeq)) {
-        // Persist failure leaves lvcs in RAM only; next boot may re-vault. We
-        // accept that over swallowing a real crash record for the user.
         DLOG_WARN("STOR", "FieldVault lvcs persist failed (seq=%lu)",
                   static_cast<unsigned long>(bcrumbSeq));
     }

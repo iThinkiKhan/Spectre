@@ -1,0 +1,280 @@
+{
+  "generatedAt": "2026-08-10T17:36:28.6058831Z",
+  "source": "serial:COM13",
+  "nonDestructive": true,
+  "recordCount": 474,
+  "parseErrorCount": 0,
+  "sequence": {
+    "first": 3360,
+    "last": 3833,
+    "gaps": [],
+    "duplicates": []
+  },
+  "typeCounts": {
+    "boot": 22,
+    "crash": 17,
+    "enrich_summary": 1,
+    "fs_audit_summary": 7,
+    "power_sample": 102,
+    "reset_crash": 1,
+    "run_sample": 324
+  },
+  "boot": {
+    "recordCount": 22,
+    "readySampleCount": 27,
+    "slowCount": 19,
+    "slowThresholdMs": 8000,
+    "slow": [
+      {
+        "seq": 3538,
+        "readyMs": 16604,
+        "millivolts": 4596,
+        "source": "usb"
+      },
+      {
+        "seq": 3542,
+        "readyMs": 8786,
+        "millivolts": 4598,
+        "source": "usb"
+      },
+      {
+        "seq": 3599,
+        "readyMs": 9740,
+        "millivolts": 4580,
+        "source": "usb"
+      },
+      {
+        "seq": 3603,
+        "readyMs": 9101,
+        "millivolts": 4610,
+        "source": "usb"
+      },
+      {
+        "seq": 3609,
+        "readyMs": 9340,
+        "millivolts": 4606,
+        "source": "usb"
+      },
+      {
+        "seq": 3615,
+        "readyMs": 9514,
+        "millivolts": 4610,
+        "source": "usb"
+      },
+      {
+        "seq": 3621,
+        "readyMs": 8821,
+        "millivolts": 4578,
+        "source": "usb"
+      },
+      {
+        "seq": 3625,
+        "readyMs": 9010,
+        "millivolts": 4634,
+        "source": "usb"
+      },
+      {
+        "seq": 3632,
+        "readyMs": 9402,
+        "millivolts": 4636,
+        "source": "usb"
+      },
+      {
+        "seq": 3641,
+        "readyMs": 9690,
+        "millivolts": 4658,
+        "source": "usb"
+      },
+      {
+        "seq": 3647,
+        "readyMs": 9973,
+        "millivolts": 4630,
+        "source": "usb"
+      },
+      {
+        "seq": 3697,
+        "readyMs": 18764,
+        "millivolts": 4004,
+        "source": "battery"
+      },
+      {
+        "seq": 3702,
+        "readyMs": 19543,
+        "millivolts": 3888,
+        "source": "battery"
+      },
+      {
+        "seq": 3806,
+        "readyMs": 25586,
+        "millivolts": 4694,
+        "source": "usb"
+      },
+      {
+        "seq": 3811,
+        "readyMs": 20976,
+        "millivolts": 4666,
+        "source": "usb"
+      },
+      {
+        "seq": 3815,
+        "readyMs": 12543,
+        "millivolts": 4686,
+        "source": "usb"
+      },
+      {
+        "seq": 3819,
+        "readyMs": 12501,
+        "millivolts": 4686,
+        "source": "usb"
+      },
+      {
+        "seq": 3825,
+        "readyMs": 12228,
+        "millivolts": 4678,
+        "source": "usb"
+      },
+      {
+        "seq": 3832,
+        "readyMs": 13993,
+        "millivolts": 4684,
+        "source": "usb"
+      }
+    ],
+    "bleAdjacent": [
+      {
+        "bootSeq": 3815,
+        "priorRunSeq": 3814,
+        "priorPending": 1764,
+        "priorInternalHeapKb": 18
+      },
+      {
+        "bootSeq": 3819,
+        "priorRunSeq": 3818,
+        "priorPending": 1778,
+        "priorInternalHeapKb": 19
+      }
+    ]
+  },
+  "crash": {
+    "count": 17,
+    "records": [
+      {
+        "seq": 3408,
+        "phase": "storage_boot",
+        "reason": "reset during storage_boot",
+        "reset": "unknown"
+      },
+      {
+        "seq": 3482,
+        "phase": "storage_boot",
+        "reason": "reset during storage_boot",
+        "reset": "unknown"
+      },
+      {
+        "seq": 3494,
+        "phase": "storage_boot",
+        "reason": "reset during storage_boot",
+        "reset": "unknown"
+      },
+      {
+        "seq": 3507,
+        "phase": "storage_boot",
+        "reason": "reset during storage_boot",
+        "reset": "unknown"
+      },
+      {
+        "seq": 3512,
+        "phase": "storage_boot",
+        "reason": "reset during storage_boot",
+        "reset": "unknown"
+      },
+      {
+        "seq": 3526,
+        "phase": "storage_boot",
+        "reason": "reset during storage_boot",
+        "reset": "unknown"
+      },
+      {
+        "seq": 3531,
+        "phase": "storage_boot",
+        "reason": "reset during storage_boot",
+        "reset": "unknown"
+      },
+      {
+        "seq": 3540,
+        "phase": "storage_boot",
+        "reason": "reset during storage_boot",
+        "reset": "unknown"
+      },
+      {
+        "seq": 3597,
+        "phase": "storage_boot",
+        "reason": "reset during storage_boot",
+        "reset": "unknown"
+      },
+      {
+        "seq": 3601,
+        "phase": "storage_boot",
+        "reason": "reset during storage_boot",
+        "reset": "unknown"
+      },
+      {
+        "seq": 3607,
+        "phase": "storage_boot",
+        "reason": "reset during storage_boot",
+        "reset": "unknown"
+      },
+      {
+        "seq": 3613,
+        "phase": "storage_boot",
+        "reason": "reset during storage_boot",
+        "reset": "unknown"
+      },
+      {
+        "seq": 3619,
+        "phase": "storage_boot",
+        "reason": "reset during storage_boot",
+        "reset": "unknown"
+      },
+      {
+        "seq": 3623,
+        "phase": "storage_boot",
+        "reason": "reset during storage_boot",
+        "reset": "unknown"
+      },
+      {
+        "seq": 3630,
+        "phase": "storage_boot",
+        "reason": "task watchdog during storage_boot",
+        "reset": "task_wdt"
+      },
+      {
+        "seq": 3639,
+        "phase": "storage_boot",
+        "reason": "reset during storage_boot",
+        "reset": "unknown"
+      },
+      {
+        "seq": 3645,
+        "phase": "storage_boot",
+        "reason": "reset during storage_boot",
+        "reset": "unknown"
+      }
+    ]
+  },
+  "power": {
+    "sampleCount": 102,
+    "usbSampleCount": 87,
+    "minUsbMv": 3803,
+    "maxUsbMv": 4766
+  },
+  "latestRun": {
+    "seq": 3833,
+    "uptimeSeconds": 0,
+    "owner": 1,
+    "pendingUpload": 1825,
+    "pendingEnrichment": 0,
+    "internalHeapKb": 59
+  },
+  "auditProblemCount": 0
+}

@@ -129,7 +129,7 @@ if (-not $SkipReboot) {
         $env:PYTHONIOENCODING = 'utf-8'; $env:PYTHONUTF8 = '1'
         $py = "C:\Users\JimSchneider\.platformio\penv\Scripts\python.exe"
         & $py C:\pio\packages\tool-esptoolpy\esptool.py --chip esp32s3 --port $dlPort `
-            --before default-reset --after hard-reset read-mac 2>&1 |
+            --before default-reset --after watchdog-reset read-mac 2>&1 |
             Select-Object -Last 3 | ForEach-Object { Log "  esptool: $_" }
     } else {
         Log "WARN: no download port appeared; device may not have reset"

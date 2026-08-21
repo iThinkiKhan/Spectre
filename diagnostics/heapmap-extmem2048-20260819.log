@@ -1,0 +1,36 @@
+===== CMD: heap map =====
+[29734][W][STORAGE] Spool audit slow reason=boot_small_repair segs=89 recs=13865 ms=25132
+[29735][I][STORAGE] Spool audit[boot_small_repair] scannedSegs=89 scannedRecords=13865 validEvents=6935 uploadedRetained=0 validEnrichDeltas=6930 invalidRecords=0 skippedRecords=0 quarantined=0 unreadable=0 pend
+[29735][I][STORAGE] Routine maintenance requests coalesced count=1 latest=dirty_summary source=boot_small_repair flags=dirty_summary|counter_untrusted
+[29736][W][STORAGE] Counter trust=trusted_snapshot_lagged reason=boot_small_repair_summary since=29736
+[29736][W][STORAGE] Fast boot: small backlog exact repair complete pending=6935 nextEventId=68738 records=6935
+[29742][W][STORAGE] Unclean reset (4); pending counter untrusted pending=6935 stored=6935
+[29743][I][STORAGE] Maintenance requested reason=counter_untrusted source=unclean_reset_counter_recount flags=dirty_summary|snapshot_lagged|counter_untrusted|segment_audit
+[29743][I][STORAGE] Maintenance requested reason=segment_audit source=unclean_reset_counter_recount flags=dirty_summary|snapshot_lagged|counter_untrusted|segment_audit
+[29744][W][STORAGE] Counter trust=degraded reason=unclean_reset_counter_recount since=29743
+[29744][I][STORAGE] Config synced from settings for: Spectre
+[30273][I][STORAGE] Ready. Used=3380KB / 8128KB Free=4748KB / 8128KB
+[30362][I][STORAGE] Spool diag[ensure_ready] validSegments=89 untrustedSegments=0 invalidSegments=0 activeSegment=800 totalRecords=13865 storedEvents=6935 pendingUpload=6935 nextEventId=68738
+[30368][I][CORE] Storage begin done ok=1 ready=1 pending=6935 heapFree=162880 largest=126964
+[30369][W][CORE] Boot maintenance deferred until runtime pending=6935 flags=dirty_summary|snapshot_lagged|counter_untrusted|segment_audit
+[30383][I][STORAGE] RAMSpool ready slots=1024 slotBytes=416 total=416KB core=1
+[30383][I][STORAGE] RAMSpool worker started on core 1
+[30393][I][DLOG] DebugLog started - build Aug 19 2026 14:49:24
+[BLE] rxdiag crash stage=138 len=0 uptimeMs=121009
+[BLE] workerdiag crash stage=172 detail=8 uptimeMs=115363
+[31021][I][STACK] TaskButtons watermark=2092B min=2092B
+[31105][I][STOR] Loaded 0 known locations
+[31106][I][STORAGE] Initial storage summary deferred until maintenance completes
+[31106][I][STORAGE] Maintenance requested reason=fs_audit source=boot_fs_audit_recovery flags=dirty_summary|snapshot_lagged|counter_untrusted|segment_audit|fs_audit
+[31134][W][MQTT] Backlog degraded: counter trust degraded pending=6935
+[31338][I][BADUSB] Loaded 0 scripts
+[31338][I][BADUSB] IDLE
+[31340][I][WIO] UART1 begin tx=1 rx=2 baud=115200
+[33850][I][WIO] Accessory not detected within 2500ms
+[33850][I][XPORT] transport=internal_ble previous=internal_ble reason=initial wio.available=0 wio.proxy=0 ble.begun=0 ble.state=0 transitions=0
+[33851][I][WIO_SX] SX1262 not present; backend idle (Reyax fallback)
+[34452][I][MESH] Meshtastic client ready node=0x334B7A38 chanHash=0x08 (disabled)
+[34452][I][BOOTSTEP] session begin
+[34453][I][BOOTSTEP] session ready
+[34634][I][ENTITY] Boot selftest accepted=1 idempotent=1 result=pass
+

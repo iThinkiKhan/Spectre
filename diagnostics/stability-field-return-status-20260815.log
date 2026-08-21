@@ -1,0 +1,86 @@
+=== reconnecting capture opened 2026-08-15T18:46:43.3812029-05:00 port=COM13 ===
+=== serial connected 2026-08-15T18:46:43.4042324-05:00 attempt=1 ===
+=== send: companion status ===
+companion status
+[COMP] enabled=1
+[COMP] external accessory=0 bleProxy=0 phoneConnected=0 phone=unknown rssi=0 ageMs=0
+[COMP] wio link=idle sx1262=0 textInput=0
+[COMP] phone=UNKNOWN work=IDLE
+[COMP] bleBegun=1 bleRadio=0 bleState=IDLE
+[COMP] ready link=0 gps=0 freshGps=0 ctrl=0 enrich=0
+[COMP] bleInitAgeMs=190455 scanStartAgeMs=47689 disconnReason=534
+[COMP] pendingEnrichMission=0 pendingEnrichNoise=0 pendingEnrichTotal=0
+[COMP] hold manual=0 autoOffload=0 managerActive=0 prep=0 deadlineInMs=0 retryInMs=286025
+[COMP] lastProbeAgeMs=48185 lastEnrichAgeMs=43982
+[COMP] radioOwner=wifi_capture
+[210012][I][HEAP] heap free=4430KB min=4418KB largest=4352KB frag=1% internalFree=20KB internalLargest=7KB psramFree=4411KB core=0/0% owner=WIFI_CAPTURE nets=7 pendingUpload=1007 pendingEnrich=79
+[HEALTH] time=2026-08-15 18:46:59 src=ntp
+[HEALTH] heap used=4022/8452KB free=4430KB min=4418KB largest=4352KB frag=1%
+[HEALTH] internal used=241/260KB free=20KB min=15KB largest=7KB
+[HEALTH] psram used=3781/8192KB free=4411KB largest=4352KB
+[HEALTH] stack free_min: core0=7KB/18KB core1=5KB/10KB
+[HEALTH] loopTask free_min=3080B/5120B
+[HEALTH] core usage: core0=0% core1=0%
+[HEALTH] power=usb state=usb batt=100% 4630mV trend=26mV/min runtime=0min cap=1100mAh charging=1
+[HEALTH] radio=WIFI_CAPTURE wifi=0 ble=0 gps=0 nets=7 pendingUpload=1007 pendingEnrich=79
+[HEALTH] subghz=NONE mode=OFF pkts=0 nodes=0
+[210014][I][STACK] TaskStorage watermark=1912B
+[210015][I][STORAGE] RAMSpool enq=13 cons=13 inflight=0/1024 high=2 pressure=0 drop[full=0 big=0 noise=0 p3Evict=0 p3Drop=0 p2Drop=0 p1Fail=0] free=1024
+[210015][I][STORAGE] RAMSpool enqueue probe[ok=8 drop=0] device[ok=5 drop=0]
+[210015][I][STORAGE] RAMSpool worker probe[ok=8 sup=0 drop=0 fail=0 slow=0] device[ok=5 sup=0 drop=0 fail=0 slow=0] slowTotal=0 maxMs=0
+[210016][I][STORAGE] RAMSpool prioEnq p0=0 p1=0 p2=13 p3=0
+[210016][I][STORAGE] RAMSpool lanes p1=0/0 p2=0/1 p3=0/0
+[210916][I][WIFI] Radio paused
+[210991][I][STACK] TaskButtons watermark=1864B min=1864B
+[211075][I][WIFI] Radio suspended
+[211075][I][BLE] radio enabled settle=500ms
+[211076][I][BLE] advertising start
+[211077][I][BLE] companion link requested reason=backlog_probe mode=fresh_scan timeout=15s settle=500ms cacheAge=0ms rssi=0
+[211082][I][BLE] Phone probe lease granted reason=backlog_probe cachedFirst=1 hold=60000ms
+[211083][I][BLE] worker stack free=7380B min=7380B
+[211587][I][BLE] scan start
+[211588][I][BLE] scan start diag=1 deliverDuplicates=1 diagLeft=44489 state=1 window=8000ms weakRecent=0 lastRssi=0
+[211656][I][BLE] target found matchedBy=service cachePeer=0 addr=4f:a5:a9:5a:62:22 name=SpectrePhone rssi=-96
+[211657][I][BLE] target found matchedBy=service cachePeer=0 addr=4f:a5:a9:5a:62:22 name=SpectrePhone rssi=-96
+[211659][I][BLE] scan stop; connect pending addr=4f:a5:a9:5a:62:22
+[211920][I][BLE] connect pending settled addr=4f:a5:a9:5a:62:22
+[211921][I][BLE] connect attempt addr=4f:a5:a9:5a:62:22 name=SpectrePhone
+[211921][I][BLE] connect params timeoutMs=15000 scanItvl=16 scanWin=16 addrType=1
+[212595][I][STACK] TaskHardware watermark=6720B min=6720B
+[213383][I][BLE] connect result ok=1 err=0 addr=4f:a5:a9:5a:62:22
+[213383][I][BLE] BLE link connected; starting app-layer auth watchdog=50000ms
+[213384][I][BLE] remote service lookup begin core=1 internalFree=53280 largest=15860
+[213412][I][BLE] remote service lookup end found=1 err=0
+[213412][I][BLE] remote characteristic discovery begin
+[213501][I][BLE] remote characteristic discovery end count=13 err=0
+[213531][I][BLE] remote descriptor discovery char=auth count=2 err=0
+[213532][I][BLE] auth notify subscribe begin
+[213561][I][BLE] auth notify subscribe end ok=1 err=0
+[213835][I][BLE] auth challenge write bytes=163 mtu=247 attPayload=244 mode=response
+[214328][I][BLE] app secure session ready alg=P-256+ECDH+AES-256-GCM
+[214329][I][BLE] phone auth confirmed; caching peer addr=4f:a5:a9:5a:62:22 ttl=300000ms rssi=-96
+[214356][I][BLE] remote descriptor discovery char=enrichment count=2 err=0
+[214416][I][BLE] remote descriptor discovery char=command_req count=2 err=0
+[214536][I][BLE] remote bound gps=1 ctrl=1 meta=1 batch=1 enrich=1 auth=1 authReq=1 storage=1 cmdReq=1 cmdResp=1 logStream=1 dashStream=1 notification=1 notify(gps=0 ctrl=0 enrich=1 auth=1 cmdReq=1) mtu=247 a
+[214537][I][BLE] probe_summary seen=1 matchedBy=service rssi=-96 scanMs=2743
+[214537][I][BLE] phone_session_summary auth=ok mtu=247 gps=1 ctrl=1 enrich=1 storage=1
+[214566][I][BLE] storage snapshot sent pendingUp=0/1007 pendingEnrich=0/79 usedPct=10
+[214571][I][BLE] Phone probe succeeded ??? backoff reset
+[214575][I][BLE] Phone probe promoted to enrichment pendingEnrich=79 maxBatch=18
+[214576][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[214576][I][STORAGE] batch_load_ids_enter freeInternal=50336 segments=23
+[214576][I][STORAGE] load_ids_reserve count=967 freeInternal=50336 largest=15860
+[214577][I][STORAGE] load_ids_reserved freeInternal=50336
+[215784][I][STORAGE] load_ids_loop_done scanned=21 skipped=2 idsCollected=1025 freeInternal=50336
+[215785][I][STORAGE] batch_load_ids_done count=1005 capacity=1934 freeInternal=50336
+[215785][I][STORAGE] batch_pending_loop_enter segments=23 maxCount=18 streaming=1 freeInternal=50336
+[216330][I][STORAGE] batch_pending_loop_done scanned=10 skipped=13 outCount=0 timeHit=0 elapsedMs=544 freeInternal=50336
+[216330][I][BLE] Enrichment pending scan done count=0
+[216330][I][BLE] Phone enrichment finished successfully
+[216351][I][BLE] storage snapshot sent pendingUp=0/1007 pendingEnrich=0/0 usedPct=10
+[216352][I][OFFLOAD] automatic handoff opened reason=localization_complete commandWindow=30s active=0
+[216352][I][OFFLOAD] localization complete; bounded handoff pending=1007
+[216352][I][BLE] Enrichment complete; persistent companion link retained
+[216366][W][CORE] TaskHardware loop gap=1821ms owner=BLE_GPS pendingUpload=1007 maintPending=1 suppressed=1
+[216370][I][BLE] link ready state=4
+=== reconnecting capture closed 2026-08-15T18:46:51.3921835-05:00 ===

@@ -1,13 +1,11 @@
-
-
-
 # Name,   Type, SubType, Offset,   Size,     Flags
+# app1 is trimmed by 64K (the project has no OTA path; firmware is ~2.3MB, so a
+# 3.94MB slot is still ample) to make room for the coredump partition WITHOUT
+# moving spiffs. Keeping spiffs at 0x810000/0x7F0000 preserves the LittleFS
+# filesystem across this repartition - the spool, FieldVault and config survive.
 nvs,      data, nvs,     0x9000,   0x5000,
 otadata,  data, ota,     0xe000,   0x2000,
 app0,     app,  ota_0,   0x10000,  0x400000,
-app1,     app,  ota_1,   0x410000, 0x400000,
+app1,     app,  ota_1,   0x410000, 0x3F0000,
+coredump, data, coredump,0x800000, 0x10000,
 spiffs,   data, spiffs,   0x810000, 0x7F0000,
-
-
-
-

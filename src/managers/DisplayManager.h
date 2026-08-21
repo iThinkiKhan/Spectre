@@ -5,6 +5,7 @@
 #include "../config.h"
 #include "../core/RunContext.h"
 #include "../core/ScreenEnum.h"
+#include "../core/ScreenNavigation.h"
 #include "../core/SpectreState.h"
 #include "../ui/Mascot_LVGL.h"
 #include "../ui/Theme.h"
@@ -158,7 +159,7 @@ private:
     // Glitch state
     bool        _reducedEffects = false;
     bool        _glitchPending  = false;
-    Screen      _glitchTarget   = SCREEN_LORA;
+    Screen      _glitchTarget   = DEFAULT_GENERAL_SCREEN;
     bool        _criticalPowerFxActive = false;
     bool        _pwnyPmkidFlashActive = false;
     uint32_t    _pwnyPmkidFlashStartedMs = 0;
@@ -170,14 +171,18 @@ private:
     bool        _alertPending   = false;
     lv_obj_t*   _rssiLabel      = nullptr;
     lv_obj_t*   _snrLabel       = nullptr;
+    lv_obj_t*   _loraHeaderStatus = nullptr;
     lv_obj_t*   _loraPacketsValue = nullptr;
     lv_obj_t*   _loraPayloadValue = nullptr;
     lv_obj_t*   _subGhzMetaValue = nullptr;
     lv_obj_t*   _meshNodeValue = nullptr;
+    lv_obj_t*   _meshHeaderStatus = nullptr;
     lv_obj_t*   _meshChannelValue = nullptr;
+    lv_obj_t*   _meshTxValue = nullptr;
     lv_obj_t*   _meshLastMessageValue = nullptr;
     lv_obj_t*   _meshStatsValue = nullptr;
     lv_obj_t*   _wifiNetworksValue = nullptr;
+    lv_obj_t*   _wifiHeaderStatus = nullptr;
     lv_obj_t*   _wifiDevicesValue = nullptr;
     lv_obj_t*   _wifiProbesValue = nullptr;
     lv_obj_t*   _wifiLastSSIDValue = nullptr;

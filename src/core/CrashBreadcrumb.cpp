@@ -5,6 +5,9 @@
 #include "DebugLog.h"
 #include "../config.h"
 #include <Preferences.h>
+#include <freertos/FreeRTOS.h>
+#include <freertos/task.h>
+#include <string.h>
 
 constexpr const char* CRASH_PREF_NAMESPACE = "spectre_crash";
 constexpr const char* CRASH_PREF_KEY = "log";
@@ -46,6 +49,108 @@ static bool _restoreCrashLog() {
 
 // RTC slow memory survives software/panic/watchdog resets; validate before use.
 RTC_NOINIT_ATTR CrashLog g_crashLog;
+RTC_NOINIT_ATTR AllocFailRecord g_allocFail;
+
+// Runs inside the failing allocation's context, which may be an ISR and may
+// hold heap locks. It therefore touches only RTC memory: no heap calls, no
+// Serial, no flash. Heap sizes at the time of failure are already carried by
+// the crash-breadcrumb ring entry for the active phase.
+static void _onAllocFailed(size_t size, uint32_t caps, const char* fnName) {
+    (void)fnName;
+
+    if (g_allocFail.magic != ALLOC_FAIL_MAGIC) {
+        g_allocFail.magic = ALLOC_FAIL_MAGIC;
+        g_allocFail.count = 0;
+    }
+    g_allocFail.count++;
+
+    // Keep the first failure of the boot; it is the one that starts the
+    // cascade. Later failures only bump the counter.
+    if (g_allocFail.count > 1) return;
+
+    g_allocFail.size     = static_cast<uint32_t>(size);
+    g_allocFail.caps     = caps;
+    g_allocFail.uptimeMs = static_cast<uint32_t>(millis());
+
+    const char* task = "isr";
+    if (!xPortInIsrContext()) {
+        const char* name = pcTaskGetName(nullptr);
+        if (name) task = name;
+    }
+    strlcpy(g_allocFail.task, task, sizeof(g_allocFail.task));
+}
+
+void crashLogBeginBoot() {
+    // RTC slow memory survives resets but not power loss; fall back to the
+    // NVS snapshot so a battery-pull still reports the last crash.
+    if (!_logReady()) {
+        (void)_restoreCrashLog();
+    }
+    if (!_logReady()) {
+        _initLog();
+    }
+    g_crashLog.bootGen++;
+    (void)crashBreadcrumbPersist();
+}
+
+void crashAllocFailInstall() {
+    // Arm a fresh record only if one is not already waiting to be reported.
+    if (g_allocFail.magic != ALLOC_FAIL_MAGIC) {
+        memset(&g_allocFail, 0, sizeof(g_allocFail));
+    }
+    const esp_err_t err = heap_caps_register_failed_alloc_callback(_onAllocFailed);
+    if (err != ESP_OK) {
+        DLOG_WARN("CORE", "alloc-fail hook not installed (%d)", static_cast<int>(err));
+    }
+}
+
+bool crashAllocFailValid() {
+    return g_allocFail.magic == ALLOC_FAIL_MAGIC && g_allocFail.count > 0;
+}
+
+void crashAllocFailPrint() {
+    if (!crashAllocFailValid()) return;
+
+    Serial.printf("[BOOT] ALLOC FAIL: %lu bytes caps=0x%lx task=%s uptime=%lus (%lu total)\r\n",
+                  static_cast<unsigned long>(g_allocFail.size),
+                  static_cast<unsigned long>(g_allocFail.caps),
+                  g_allocFail.task,
+                  static_cast<unsigned long>(g_allocFail.uptimeMs / 1000),
+                  static_cast<unsigned long>(g_allocFail.count));
+    DLOG_WARN("CORE",
+              "alloc fail %lu bytes caps=0x%lx task=%s uptime=%lus count=%lu",
+              static_cast<unsigned long>(g_allocFail.size),
+              static_cast<unsigned long>(g_allocFail.caps),
+              g_allocFail.task,
+              static_cast<unsigned long>(g_allocFail.uptimeMs / 1000),
+              static_cast<unsigned long>(g_allocFail.count));
+
+    // Disarm so the next boot does not re-report a stale failure.
+    memset(&g_allocFail, 0, sizeof(g_allocFail));
+}
+
+void crashLogClear() {
+    // Wipe the RTC ring, the NVS snapshot that would otherwise restore it on
+    // the next cold boot, and any armed allocation-failure record. Keeps the
+    // current boot generation so entries written after this call still sort
+    // and age correctly.
+    const uint32_t bootGen = _logReady() ? g_crashLog.bootGen : 0;
+    _initLog();
+    g_crashLog.bootGen = bootGen;
+    memset(&g_allocFail, 0, sizeof(g_allocFail));
+
+    Preferences prefs;
+    if (prefs.begin(CRASH_PREF_NAMESPACE, false)) {
+        prefs.remove(CRASH_PREF_KEY);
+        prefs.end();
+    }
+    // Re-seed the snapshot so a restore finds an empty-but-valid ring rather
+    // than falling back to whatever a stale key held.
+    (void)crashBreadcrumbPersist();
+
+    Serial.println("[BOOT] crash ring cleared (RTC + NVS snapshot + alloc-fail)");
+    DLOG_WARN("CORE", "crash ring cleared by operator");
+}
 
 void crashLogPrint() {
     bool restoredFromNvs = false;
@@ -79,13 +184,22 @@ void crashLogPrint() {
         Serial.printf("[BOOT] crash log restored from persistent snapshot\n");
     }
 
-    // Walk ring oldest→newest.  head points to the next write slot, so
-    // iterating from head gives the oldest entry first.
+    // Slots are claimed by age/resolved-state rather than in ring order, so
+    // walk them in ascending seqNum to print oldest→newest.
     uint8_t printed = 0;
-    for (uint8_t i = 0; i < CRASH_LOG_DEPTH; i++) {
-        const uint8_t idx = (g_crashLog.head + i) % CRASH_LOG_DEPTH;
+    bool    emitted[CRASH_LOG_DEPTH] = {false};
+    for (uint8_t n = 0; n < CRASH_LOG_DEPTH; n++) {
+        uint8_t idx = CRASH_LOG_DEPTH;
+        for (uint8_t i = 0; i < CRASH_LOG_DEPTH; i++) {
+            if (emitted[i] || !_entryValid(g_crashLog.entries[i])) continue;
+            if (idx == CRASH_LOG_DEPTH ||
+                g_crashLog.entries[i].seqNum < g_crashLog.entries[idx].seqNum) {
+                idx = i;
+            }
+        }
+        if (idx == CRASH_LOG_DEPTH) break;
+        emitted[idx] = true;
         const CrashLogEntry& e = g_crashLog.entries[idx];
-        if (!_entryValid(e)) continue;
 
         printed++;
         const CrashPhase phase = static_cast<CrashPhase>(e.phase);

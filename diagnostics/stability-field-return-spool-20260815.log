@@ -1,0 +1,6 @@
+=== reconnecting capture opened 2026-08-15T18:46:52.3334465-05:00 port=COM13 ===
+=== serial connected 2026-08-15T18:46:52.3500029-05:00 attempt=1 ===
+=== send: spool count ===
+spool count
+[SPOOL] deferred owner=BLE_GPS reason=manual_spool_count
+=== reconnecting capture closed 2026-08-15T18:47:04.3892974-05:00 ===

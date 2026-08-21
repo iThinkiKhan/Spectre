@@ -1,0 +1,49 @@
+[90970][I][STORAGE] capture write allowed owner=WIFI_CAPTURE path=/spool/index.json reason=capture_micro_idle ms=369 ok=1
+[90970][W][STORAGE] worker metadata flush reason=capture_micro_idle ms=733 ok=1 dirty=0
+[90971][I][STORAGE] worker metadata flush metadataFlushCount=3 reason=capture_micro_idle entryMetadataDirtyPending=1 entryUiRefreshPending=0 metadataDirtyPending=0 uiDeferred=12 uiFlush=7 uiRefreshServiceCount=8
+[90972][W][CORE] TaskHardware slow section=capture_storage_maintenance ms=811 owner=WIFI_CAPTURE pendingUpload=10 maintPending=0
+[90982][W][CORE] TaskHardware loop gap=822ms owner=WIFI_CAPTURE pendingUpload=10 maintPending=0 suppressed=0
+spool diag
+[90986][I][WIFI] Radio paused
+[91146][I][WIFI] Radio suspended
+[91147][I][STORAGE] RAMSpool worker paused inflight=0 lastInflight=0
+[91147][I][STORAGE] Exclusive window begin kind=maintenance reason=manual_spool_diag workerPaused=1 displaySuspended=1
+[SPOOL] validSegments=2 untrustedSegments=0 invalidSegments=0 active=506 oldest=505
+[SPOOL] indexedTotalRecords=124 storedEvents=68 uploadedRetainedEstimate=58
+[SPOOL] pendingUpload=10 nextEventId=34816 sessions=2
+[SPOOL] pendingEnrich mission=0 noise=10 total=10
+[SPOOL] exact enrichment scan deferred reason=heap_guard freeInternal=58464 largestInternal=17396
+[SPOOL] used=324KB / 8128KB auditRepairReq=0 summaryRebuildPending=0
+[SPOOL]   seg=505 fmt=bin_v2 trust=trusted records=112 storedEvents=56 storedLaneEvents=56 pendingUpload=0 pendingMission=0 pendingNoise=0 pendingEnrich=0 summaryOk=1 active=0
+[SPOOL]   seg=506 fmt=bin_v2 trust=trusted records=12 storedEvents=12 storedLaneEvents=12 pendingUpload=10 pendingMission=0 pendingNoise=10 pendingEnrich=10 summaryOk=1 active=1
+[91257][I][STORAGE] Spool diag[manual_diag] validSegments=2 untrustedSegments=0 invalidSegments=0 activeSegment=506 totalRecords=124 storedEvents=68 pendingUpload=10 nextEventId=34816
+[91257][I][STORAGE] RAMSpool worker resumed
+[91257][I][STORAGE] Exclusive window end kind=maintenance result=done reason=manual_spool_diag
+[91320][I][WIFI] Promiscuous: YES
+[91320][I][WIFI] Promiscuous mode started data=0
+[91326][I][STACK] TaskHardware watermark=10000B min=10000B
+spool count
+[94980][I][WIFI] Radio paused
+[95140][I][WIFI] Radio suspended
+[95141][I][STORAGE] RAMSpool worker paused inflight=0 lastInflight=0
+[95141][I][STORAGE] Exclusive window begin kind=maintenance reason=manual_spool_count workerPaused=1 displaySuspended=1
+[SPOOL] count starting...
+[95237][I][STORAGE] Spool audit[manual_count] scannedSegs=2 scannedRecords=124 validEvents=68 uploadedRetained=58 validEnrichDeltas=56 invalidRecords=0 skippedRecords=0 quarantined=0 unreadable=0 pendingUpload=1
+[95238][I][STORAGE] Maintenance requested reason=delete_drained source=manual_count flags=delete_drained
+[SPOOL] totalRecords=124 validEvents=68 uploadedRetained=58 validEnrichDeltas=56 scannedRecords=124 ok=1 fatal=0
+[SPOOL] validSegments=2 untrustedSegments=0 invalidSegments=0 active=506 oldest=505
+[SPOOL] indexedTotalRecords=124 storedEvents=68 uploadedRetainedEstimate=58
+[95484][I][STORAGE] Manual count reconcile clean summaryPending=0 flags=delete_drained
+[SPOOL] reconciled pendingUpload 10->10 nextEventId 34816->34816 persisted=1
+[SPOOL] pendingUpload=10 nextEventId=34816 sessions=2
+[SPOOL] used=324KB / 8128KB auditRepairReq=0 summaryRebuildPending=0
+[95485][I][STORAGE] RAMSpool worker resumed
+[95485][I][STORAGE] Exclusive window end kind=maintenance result=done reason=manual_spool_count
+[95548][I][WIFI] Promiscuous: YES
+[95548][I][WIFI] Promiscuous mode started data=0
+heap status
+[HEAP] 8bit total=8451KB free=4456KB largest=4352KB
+[HEAP] internal total=259KB free=33KB largest=21KB
+[HEAP] psram total=8192KB free=4423KB largest=4352KB
+[HEAP] uploadIndex=0 enrichWindow=0 maint=delete_drained owner=WIFI_CAPTURE
+

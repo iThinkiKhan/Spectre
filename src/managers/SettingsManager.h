@@ -3,6 +3,9 @@
 
 #pragma once
 
+#include "../core/PsramObject.h"
+#include <new>
+
 #include <Arduino.h>
 #include <Preferences.h>
 #include "../config.h"
@@ -49,8 +52,13 @@ struct RuntimeSettings {
 class SettingsManager {
 public:
     static SettingsManager& getInstance() {
-        static SettingsManager instance;
-        return instance;
+        // ~1.3 KB of internal DRAM; settings access is cold-path only.
+        static SettingsManager* instance = []() {
+            void* storage = allocateManagerStorage(sizeof(SettingsManager));
+            configASSERT(storage);
+            return new (storage) SettingsManager();
+        }();
+        return *instance;
     }
 
     bool begin();

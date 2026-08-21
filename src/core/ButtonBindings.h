@@ -84,7 +84,7 @@ static inline const char* spectreButtonActionLabel(SpectreButtonAction action,
         case BUTTON_ACTION_MISSION_LIST_SELECT:return "SELECT";
         case BUTTON_ACTION_MISSION_LIST_DOWN: return "DOWN";
         case BUTTON_ACTION_MISSION_LIST_CLOSE:return "CLOSE";
-        case BUTTON_ACTION_UPLINK_TRIGGER:    return "SYNC";
+        case BUTTON_ACTION_UPLINK_TRIGGER:    return "UPLOAD";
         case BUTTON_ACTION_DEBRIEF_EXPORT:    return "EXPORT";
         case BUTTON_ACTION_DEBRIEF_CLEAR:     return "CLEAR";
         case BUTTON_ACTION_DEBRIEF_BACK:      return "BACK";

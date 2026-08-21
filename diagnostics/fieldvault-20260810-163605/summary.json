@@ -1,0 +1,886 @@
+{
+  "generatedAt": "2026-08-10T21:37:07.9284831Z",
+  "source": "serial:COM13",
+  "nonDestructive": true,
+  "recordCount": 472,
+  "parseErrorCount": 0,
+  "sequence": {
+    "first": 3613,
+    "last": 4084,
+    "gaps": [],
+    "duplicates": []
+  },
+  "typeCounts": {
+    "boot": 47,
+    "crash": 32,
+    "enrich_summary": 5,
+    "fs_audit_summary": 16,
+    "power_sample": 86,
+    "reset_crash": 12,
+    "run_sample": 274
+  },
+  "boot": {
+    "recordCount": 47,
+    "readySampleCount": 54,
+    "slowCount": 53,
+    "slowThresholdMs": 8000,
+    "slow": [
+      {
+        "seq": 3615,
+        "readyMs": 9514,
+        "millivolts": 4610,
+        "source": "usb"
+      },
+      {
+        "seq": 3621,
+        "readyMs": 8821,
+        "millivolts": 4578,
+        "source": "usb"
+      },
+      {
+        "seq": 3625,
+        "readyMs": 9010,
+        "millivolts": 4634,
+        "source": "usb"
+      },
+      {
+        "seq": 3632,
+        "readyMs": 9402,
+        "millivolts": 4636,
+        "source": "usb"
+      },
+      {
+        "seq": 3641,
+        "readyMs": 9690,
+        "millivolts": 4658,
+        "source": "usb"
+      },
+      {
+        "seq": 3647,
+        "readyMs": 9973,
+        "millivolts": 4630,
+        "source": "usb"
+      },
+      {
+        "seq": 3697,
+        "readyMs": 18764,
+        "millivolts": 4004,
+        "source": "battery"
+      },
+      {
+        "seq": 3702,
+        "readyMs": 19543,
+        "millivolts": 3888,
+        "source": "battery"
+      },
+      {
+        "seq": 3806,
+        "readyMs": 25586,
+        "millivolts": 4694,
+        "source": "usb"
+      },
+      {
+        "seq": 3811,
+        "readyMs": 20976,
+        "millivolts": 4666,
+        "source": "usb"
+      },
+      {
+        "seq": 3815,
+        "readyMs": 12543,
+        "millivolts": 4686,
+        "source": "usb"
+      },
+      {
+        "seq": 3819,
+        "readyMs": 12501,
+        "millivolts": 4686,
+        "source": "usb"
+      },
+      {
+        "seq": 3825,
+        "readyMs": 12228,
+        "millivolts": 4678,
+        "source": "usb"
+      },
+      {
+        "seq": 3832,
+        "readyMs": 13993,
+        "millivolts": 4684,
+        "source": "usb"
+      },
+      {
+        "seq": 3838,
+        "readyMs": 13812,
+        "millivolts": 4674,
+        "source": "usb"
+      },
+      {
+        "seq": 3846,
+        "readyMs": 15378,
+        "millivolts": 4668,
+        "source": "usb"
+      },
+      {
+        "seq": 3849,
+        "readyMs": 14169,
+        "millivolts": 4670,
+        "source": "usb"
+      },
+      {
+        "seq": 3855,
+        "readyMs": 14629,
+        "millivolts": 4706,
+        "source": "usb"
+      },
+      {
+        "seq": 3863,
+        "readyMs": 15422,
+        "millivolts": 4684,
+        "source": "usb"
+      },
+      {
+        "seq": 3867,
+        "readyMs": 15072,
+        "millivolts": 4680,
+        "source": "usb"
+      },
+      {
+        "seq": 3874,
+        "readyMs": 15118,
+        "millivolts": 4686,
+        "source": "usb"
+      },
+      {
+        "seq": 3879,
+        "readyMs": 14709,
+        "millivolts": 4686,
+        "source": "usb"
+      },
+      {
+        "seq": 3885,
+        "readyMs": 14812,
+        "millivolts": 4688,
+        "source": "usb"
+      },
+      {
+        "seq": 3890,
+        "readyMs": 15353,
+        "millivolts": 4698,
+        "source": "usb"
+      },
+      {
+        "seq": 3893,
+        "readyMs": 15442,
+        "millivolts": 4724,
+        "source": "usb"
+      },
+      {
+        "seq": 3899,
+        "readyMs": 16665,
+        "millivolts": 4724,
+        "source": "usb"
+      },
+      {
+        "seq": 3907,
+        "readyMs": 16480,
+        "millivolts": 4680,
+        "source": "usb"
+      },
+      {
+        "seq": 3913,
+        "readyMs": 16761,
+        "millivolts": 4716,
+        "source": "usb"
+      },
+      {
+        "seq": 3922,
+        "readyMs": 16845,
+        "millivolts": 4686,
+        "source": "usb"
+      },
+      {
+        "seq": 3929,
+        "readyMs": 15629,
+        "millivolts": 4680,
+        "source": "usb"
+      },
+      {
+        "seq": 3934,
+        "readyMs": 15848,
+        "millivolts": 4708,
+        "source": "usb"
+      },
+      {
+        "seq": 3941,
+        "readyMs": 21394,
+        "millivolts": 4718,
+        "source": "usb"
+      },
+      {
+        "seq": 3948,
+        "readyMs": 16593,
+        "millivolts": 4710,
+        "source": "usb"
+      },
+      {
+        "seq": 3956,
+        "readyMs": 16289,
+        "millivolts": 4674,
+        "source": "usb"
+      },
+      {
+        "seq": 3960,
+        "readyMs": 16584,
+        "millivolts": 4678,
+        "source": "usb"
+      },
+      {
+        "seq": 3964,
+        "readyMs": 16904,
+        "millivolts": 4678,
+        "source": "usb"
+      },
+      {
+        "seq": 3970,
+        "readyMs": 24161,
+        "millivolts": 4712,
+        "source": "usb"
+      },
+      {
+        "seq": 3976,
+        "readyMs": 20405,
+        "millivolts": 4666,
+        "source": "usb"
+      },
+      {
+        "seq": 3983,
+        "readyMs": 18524,
+        "millivolts": 4678,
+        "source": "usb"
+      },
+      {
+        "seq": 3989,
+        "readyMs": 20358,
+        "millivolts": 4676,
+        "source": "usb"
+      },
+      {
+        "seq": 3995,
+        "readyMs": 19517,
+        "millivolts": 4676,
+        "source": "usb"
+      },
+      {
+        "seq": 4000,
+        "readyMs": 19728,
+        "millivolts": 4710,
+        "source": "usb"
+      },
+      {
+        "seq": 4006,
+        "readyMs": 19271,
+        "millivolts": 4678,
+        "source": "usb"
+      },
+      {
+        "seq": 4011,
+        "readyMs": 19347,
+        "millivolts": 4690,
+        "source": "usb"
+      },
+      {
+        "seq": 4015,
+        "readyMs": 19473,
+        "millivolts": 4726,
+        "source": "usb"
+      },
+      {
+        "seq": 4021,
+        "readyMs": 21094,
+        "millivolts": 4680,
+        "source": "usb"
+      },
+      {
+        "seq": 4027,
+        "readyMs": 19623,
+        "millivolts": 4720,
+        "source": "usb"
+      },
+      {
+        "seq": 4034,
+        "readyMs": 21362,
+        "millivolts": 4682,
+        "source": "usb"
+      },
+      {
+        "seq": 4041,
+        "readyMs": 21732,
+        "millivolts": 4680,
+        "source": "usb"
+      },
+      {
+        "seq": 4048,
+        "readyMs": 20650,
+        "millivolts": 4676,
+        "source": "usb"
+      },
+      {
+        "seq": 4071,
+        "readyMs": 21773,
+        "millivolts": 4708,
+        "source": "usb"
+      },
+      {
+        "seq": 4076,
+        "readyMs": 8801,
+        "millivolts": 4688,
+        "source": "usb"
+      },
+      {
+        "seq": 4081,
+        "readyMs": 21658,
+        "millivolts": 4718,
+        "source": "usb"
+      }
+    ],
+    "bleAdjacent": [
+      {
+        "bootSeq": 3815,
+        "priorRunSeq": 3814,
+        "priorPending": 1764,
+        "priorInternalHeapKb": 18
+      },
+      {
+        "bootSeq": 3819,
+        "priorRunSeq": 3818,
+        "priorPending": 1778,
+        "priorInternalHeapKb": 19
+      },
+      {
+        "bootSeq": 3854,
+        "priorRunSeq": 3851,
+        "priorPending": 1895,
+        "priorInternalHeapKb": 40
+      },
+      {
+        "bootSeq": 3855,
+        "priorRunSeq": 3851,
+        "priorPending": 1895,
+        "priorInternalHeapKb": 40
+      },
+      {
+        "bootSeq": 3862,
+        "priorRunSeq": 3860,
+        "priorPending": 1921,
+        "priorInternalHeapKb": 38
+      },
+      {
+        "bootSeq": 3863,
+        "priorRunSeq": 3860,
+        "priorPending": 1921,
+        "priorInternalHeapKb": 38
+      },
+      {
+        "bootSeq": 3878,
+        "priorRunSeq": 3876,
+        "priorPending": 1968,
+        "priorInternalHeapKb": 38
+      },
+      {
+        "bootSeq": 3879,
+        "priorRunSeq": 3876,
+        "priorPending": 1968,
+        "priorInternalHeapKb": 38
+      },
+      {
+        "bootSeq": 3884,
+        "priorRunSeq": 3882,
+        "priorPending": 1994,
+        "priorInternalHeapKb": 38
+      },
+      {
+        "bootSeq": 3885,
+        "priorRunSeq": 3882,
+        "priorPending": 1994,
+        "priorInternalHeapKb": 38
+      },
+      {
+        "bootSeq": 3912,
+        "priorRunSeq": 3909,
+        "priorPending": 2035,
+        "priorInternalHeapKb": 37
+      },
+      {
+        "bootSeq": 3913,
+        "priorRunSeq": 3909,
+        "priorPending": 2035,
+        "priorInternalHeapKb": 37
+      },
+      {
+        "bootSeq": 3921,
+        "priorRunSeq": 3918,
+        "priorPending": 2044,
+        "priorInternalHeapKb": 36
+      },
+      {
+        "bootSeq": 3922,
+        "priorRunSeq": 3918,
+        "priorPending": 2044,
+        "priorInternalHeapKb": 36
+      },
+      {
+        "bootSeq": 3933,
+        "priorRunSeq": 3931,
+        "priorPending": 2082,
+        "priorInternalHeapKb": 37
+      },
+      {
+        "bootSeq": 3934,
+        "priorRunSeq": 3931,
+        "priorPending": 2082,
+        "priorInternalHeapKb": 37
+      },
+      {
+        "bootSeq": 3940,
+        "priorRunSeq": 3938,
+        "priorPending": 2080,
+        "priorInternalHeapKb": 38
+      },
+      {
+        "bootSeq": 3941,
+        "priorRunSeq": 3938,
+        "priorPending": 2080,
+        "priorInternalHeapKb": 38
+      },
+      {
+        "bootSeq": 3947,
+        "priorRunSeq": 3944,
+        "priorPending": 2093,
+        "priorInternalHeapKb": 36
+      },
+      {
+        "bootSeq": 3948,
+        "priorRunSeq": 3944,
+        "priorPending": 2093,
+        "priorInternalHeapKb": 36
+      },
+      {
+        "bootSeq": 3955,
+        "priorRunSeq": 3952,
+        "priorPending": 2090,
+        "priorInternalHeapKb": 38
+      },
+      {
+        "bootSeq": 3956,
+        "priorRunSeq": 3952,
+        "priorPending": 2090,
+        "priorInternalHeapKb": 38
+      },
+      {
+        "bootSeq": 3969,
+        "priorRunSeq": 3966,
+        "priorPending": 2130,
+        "priorInternalHeapKb": 36
+      },
+      {
+        "bootSeq": 3970,
+        "priorRunSeq": 3966,
+        "priorPending": 2130,
+        "priorInternalHeapKb": 36
+      },
+      {
+        "bootSeq": 3975,
+        "priorRunSeq": 3973,
+        "priorPending": 2137,
+        "priorInternalHeapKb": 33
+      },
+      {
+        "bootSeq": 3976,
+        "priorRunSeq": 3973,
+        "priorPending": 2137,
+        "priorInternalHeapKb": 33
+      },
+      {
+        "bootSeq": 3988,
+        "priorRunSeq": 3985,
+        "priorPending": 2152,
+        "priorInternalHeapKb": 36
+      },
+      {
+        "bootSeq": 3989,
+        "priorRunSeq": 3985,
+        "priorPending": 2152,
+        "priorInternalHeapKb": 36
+      },
+      {
+        "bootSeq": 3999,
+        "priorRunSeq": 3997,
+        "priorPending": 2148,
+        "priorInternalHeapKb": 36
+      },
+      {
+        "bootSeq": 4000,
+        "priorRunSeq": 3997,
+        "priorPending": 2148,
+        "priorInternalHeapKb": 36
+      },
+      {
+        "bootSeq": 4010,
+        "priorRunSeq": 4008,
+        "priorPending": 2163,
+        "priorInternalHeapKb": 42
+      },
+      {
+        "bootSeq": 4011,
+        "priorRunSeq": 4008,
+        "priorPending": 2163,
+        "priorInternalHeapKb": 42
+      },
+      {
+        "bootSeq": 4020,
+        "priorRunSeq": 4018,
+        "priorPending": 2163,
+        "priorInternalHeapKb": 59
+      },
+      {
+        "bootSeq": 4021,
+        "priorRunSeq": 4018,
+        "priorPending": 2163,
+        "priorInternalHeapKb": 59
+      },
+      {
+        "bootSeq": 4026,
+        "priorRunSeq": 4024,
+        "priorPending": 2169,
+        "priorInternalHeapKb": 36
+      },
+      {
+        "bootSeq": 4027,
+        "priorRunSeq": 4024,
+        "priorPending": 2169,
+        "priorInternalHeapKb": 36
+      },
+      {
+        "bootSeq": 4033,
+        "priorRunSeq": 4031,
+        "priorPending": 2169,
+        "priorInternalHeapKb": 16
+      },
+      {
+        "bootSeq": 4034,
+        "priorRunSeq": 4031,
+        "priorPending": 2169,
+        "priorInternalHeapKb": 16
+      },
+      {
+        "bootSeq": 4040,
+        "priorRunSeq": 4038,
+        "priorPending": 2126,
+        "priorInternalHeapKb": 36
+      },
+      {
+        "bootSeq": 4041,
+        "priorRunSeq": 4038,
+        "priorPending": 2126,
+        "priorInternalHeapKb": 36
+      },
+      {
+        "bootSeq": 4070,
+        "priorRunSeq": 4068,
+        "priorPending": 0,
+        "priorInternalHeapKb": 32
+      },
+      {
+        "bootSeq": 4071,
+        "priorRunSeq": 4068,
+        "priorPending": 0,
+        "priorInternalHeapKb": 32
+      }
+    ]
+  },
+  "crash": {
+    "count": 44,
+    "records": [
+      {
+        "seq": 3613,
+        "phase": "storage_boot",
+        "reason": "reset during storage_boot",
+        "reset": "unknown"
+      },
+      {
+        "seq": 3619,
+        "phase": "storage_boot",
+        "reason": "reset during storage_boot",
+        "reset": "unknown"
+      },
+      {
+        "seq": 3623,
+        "phase": "storage_boot",
+        "reason": "reset during storage_boot",
+        "reset": "unknown"
+      },
+      {
+        "seq": 3629,
+        "phase": null,
+        "reason": null,
+        "reset": "task_wdt"
+      },
+      {
+        "seq": 3630,
+        "phase": "storage_boot",
+        "reason": "task watchdog during storage_boot",
+        "reset": "task_wdt"
+      },
+      {
+        "seq": 3639,
+        "phase": "storage_boot",
+        "reason": "reset during storage_boot",
+        "reset": "unknown"
+      },
+      {
+        "seq": 3645,
+        "phase": "storage_boot",
+        "reason": "reset during storage_boot",
+        "reset": "unknown"
+      },
+      {
+        "seq": 3853,
+        "phase": null,
+        "reason": null,
+        "reset": "panic"
+      },
+      {
+        "seq": 3861,
+        "phase": null,
+        "reason": null,
+        "reset": "panic"
+      },
+      {
+        "seq": 3877,
+        "phase": null,
+        "reason": null,
+        "reset": "panic"
+      },
+      {
+        "seq": 3883,
+        "phase": null,
+        "reason": null,
+        "reset": "panic"
+      },
+      {
+        "seq": 3888,
+        "phase": null,
+        "reason": null,
+        "reset": "int_wdt"
+      },
+      {
+        "seq": 3897,
+        "phase": null,
+        "reason": null,
+        "reset": "panic"
+      },
+      {
+        "seq": 3905,
+        "phase": "storage_boot",
+        "reason": "reset during storage_boot",
+        "reset": "unknown"
+      },
+      {
+        "seq": 3910,
+        "phase": null,
+        "reason": null,
+        "reset": "panic"
+      },
+      {
+        "seq": 3911,
+        "phase": "storage_boot",
+        "reason": "panic during storage_boot",
+        "reset": "panic"
+      },
+      {
+        "seq": 3919,
+        "phase": null,
+        "reason": null,
+        "reset": "panic"
+      },
+      {
+        "seq": 3920,
+        "phase": "storage_boot",
+        "reason": "panic during storage_boot",
+        "reset": "panic"
+      },
+      {
+        "seq": 3927,
+        "phase": "storage_boot",
+        "reason": "reset during storage_boot",
+        "reset": "unknown"
+      },
+      {
+        "seq": 3932,
+        "phase": "storage_boot",
+        "reason": "reset during storage_boot",
+        "reset": "unknown"
+      },
+      {
+        "seq": 3939,
+        "phase": "storage_boot",
+        "reason": "reset during storage_boot",
+        "reset": "unknown"
+      },
+      {
+        "seq": 3945,
+        "phase": null,
+        "reason": null,
+        "reset": "panic"
+      },
+      {
+        "seq": 3946,
+        "phase": "storage_boot",
+        "reason": "panic during storage_boot",
+        "reset": "panic"
+      },
+      {
+        "seq": 3954,
+        "phase": "storage_boot",
+        "reason": "reset during storage_boot",
+        "reset": "unknown"
+      },
+      {
+        "seq": 3958,
+        "phase": "storage_boot",
+        "reason": "reset during storage_boot",
+        "reset": "unknown"
+      },
+      {
+        "seq": 3962,
+        "phase": "storage_boot",
+        "reason": "reset during storage_boot",
+        "reset": "unknown"
+      },
+      {
+        "seq": 3967,
+        "phase": null,
+        "reason": null,
+        "reset": "panic"
+      },
+      {
+        "seq": 3968,
+        "phase": "storage_boot",
+        "reason": "panic during storage_boot",
+        "reset": "panic"
+      },
+      {
+        "seq": 3974,
+        "phase": "storage_boot",
+        "reason": "reset during storage_boot",
+        "reset": "unknown"
+      },
+      {
+        "seq": 3981,
+        "phase": "storage_boot",
+        "reason": "reset during storage_boot",
+        "reset": "unknown"
+      },
+      {
+        "seq": 3986,
+        "phase": null,
+        "reason": null,
+        "reset": "panic"
+      },
+      {
+        "seq": 3987,
+        "phase": "storage_boot",
+        "reason": "panic during storage_boot",
+        "reset": "panic"
+      },
+      {
+        "seq": 3993,
+        "phase": "storage_boot",
+        "reason": "reset during storage_boot",
+        "reset": "unknown"
+      },
+      {
+        "seq": 3998,
+        "phase": "storage_boot",
+        "reason": "reset during storage_boot",
+        "reset": "unknown"
+      },
+      {
+        "seq": 4004,
+        "phase": "storage_boot",
+        "reason": "reset during storage_boot",
+        "reset": "unknown"
+      },
+      {
+        "seq": 4009,
+        "phase": "storage_boot",
+        "reason": "reset during storage_boot",
+        "reset": "unknown"
+      },
+      {
+        "seq": 4013,
+        "phase": "storage_boot",
+        "reason": "reset during storage_boot",
+        "reset": "unknown"
+      },
+      {
+        "seq": 4019,
+        "phase": "storage_boot",
+        "reason": "reset during storage_boot",
+        "reset": "unknown"
+      },
+      {
+        "seq": 4025,
+        "phase": "storage_boot",
+        "reason": "reset during storage_boot",
+        "reset": "unknown"
+      },
+      {
+        "seq": 4032,
+        "phase": "storage_boot",
+        "reason": "reset during storage_boot",
+        "reset": "unknown"
+      },
+      {
+        "seq": 4039,
+        "phase": "storage_boot",
+        "reason": "reset during storage_boot",
+        "reset": "unknown"
+      },
+      {
+        "seq": 4046,
+        "phase": "storage_boot",
+        "reason": "reset during storage_boot",
+        "reset": "unknown"
+      },
+      {
+        "seq": 4069,
+        "phase": "storage_boot",
+        "reason": "reset during storage_boot",
+        "reset": "unknown"
+      },
+      {
+        "seq": 4079,
+        "phase": "storage_boot",
+        "reason": "reset during storage_boot",
+        "reset": "unknown"
+      }
+    ]
+  },
+  "power": {
+    "sampleCount": 86,
+    "usbSampleCount": 71,
+    "minUsbMv": 3803,
+    "maxUsbMv": 4766
+  },
+  "latestRun": {
+    "seq": 4084,
+    "uptimeSeconds": 30,
+    "owner": 5,
+    "pendingUpload": 1540,
+    "pendingEnrichment": 115,
+    "internalHeapKb": 119
+  },
+  "auditProblemCount": 0
+}

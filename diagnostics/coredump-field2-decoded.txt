@@ -1,0 +1,205 @@
+espcoredump.py v1.16.0
+===============================================================
+==================== ESP32 CORE DUMP START ====================
+The ROM ELF file won't be loaded automatically since you are running the utility out of IDF.
+
+Crashed task handle: 0x3fcedf60, name: '', GDB name: 'process 1070522208'
+Crashed task is not in the interrupt context
+
+================== CURRENT THREAD REGISTERS ===================
+exccause       0x42 (DoubleException)
+excvaddr       0xffffffe0
+epc1           0x40377c87
+epc2           0x0
+epc3           0x0
+epc4           0x0
+epc5           0x0
+epc6           0x4037408f
+eps2           0x0
+eps3           0x0
+eps4           0x0
+eps5           0x0
+eps6           0x60330
+
+
+==================== CURRENT THREAD STACK =====================
+pc             0x4                 0x4
+lbeg           0x3fc9f5c0          1070200256
+lend           0x3fcee820          1070524448
+lcount         0x0                 0
+sar            0x3fcd6216          1070424598
+ps             0x0                 0
+threadptr      <unavailable>
+br             <unavailable>
+scompare1      <unavailable>
+acclo          <unavailable>
+acchi          <unavailable>
+m0             <unavailable>
+m1             <unavailable>
+m2             <unavailable>
+m3             <unavailable>
+expstate       <unavailable>
+f64r_lo        <unavailable>
+f64r_hi        <unavailable>
+f64s           <unavailable>
+fcr            <unavailable>
+fsr            <unavailable>
+a0             0x0                 0
+a1             0x8038aa14          -2143770092
+a2             0x3fcecda0          1070517664
+a3             0x3fc9f63c          1070200380
+a4             0x0                 0
+a5             0x3fcd4144          1070416196
+a6             0x0                 0
+a7             0x3fcecf50          1070518096
+a8             0x3fcee78c          1070524300
+a9             0x8038aa4c          -2143770036
+a10            0x3fcecdc0          1070517696
+a11            0x3fc9f5c0          1070200256
+a12            0x0                 0
+a13            0x3fcd621a          1070424602
+a14            0x4                 4
+a15            0x3fcee78c          1070524300
+
+======================== THREADS INFO =========================
+#0  0x00000004 in ?? ()
+Backtrace stopped: Cannot access memory at address 0x4
+Retrying reading threads information...
+
+
+       TCB             NAME PRIO C/B  STACK USED/FREE
+---------- ---------------- -------- ----------------
+0x3fcedf60                 1070517852/3          324/592
+0x3fcbded4                 1070324304/0          136/608
+0x3fcbd8dc                 1070322776/0          128/752
+0x3fcee248                 1070357672/2      149980/2384
+0x3fcee0d4                 1070329504/2      184952/1168
+0x3fccbca0                 1070393532/18        15836/752
+0x3fcbc154                 1070373548/2        61720/800
+0x3fcec8a8                 1070511012/1          316/608
+0x3fcbeccc                 1070325832/1          144/592
+0x3fceae54                 1070505296/24          328/752
+0x3fcb9248                 1070303684/24          188/784
+0x3fccc1f0                 1070398400/20        19340/784
+0x3fccc364                 1070403268/19        23336/944
+0x3fcb8058                 1070300180/23          124/672
+0x3fcd294c                 1012741576/2     57658304/704
+0x3fcdcf58                 1070447188/21          316/768
+0x3fcb8610                 1070301644/24          132/672
+0x3fcbba54                 1070306896/22          584/672
+0x3fce1c4c                 1070410900/23        57328/736
+
+==================== THREAD 1 (TCB: 0x3fcedf60, name: '') =====================
+
+
+==================== THREAD 2 (TCB: 0x3fcbded4, name: '') =====================
+
+
+==================== THREAD 3 (TCB: 0x3fcbd8dc, name: '') =====================
+
+
+==================== THREAD 4 (TCB: 0x3fcee248, name: '') =====================
+
+
+==================== THREAD 5 (TCB: 0x3fcee0d4, name: '') =====================
+
+
+==================== THREAD 6 (TCB: 0x3fccbca0, name: '') =====================
+
+
+==================== THREAD 7 (TCB: 0x3fcbc154, name: '') =====================
+
+
+==================== THREAD 8 (TCB: 0x3fcec8a8, name: '') =====================
+
+
+==================== THREAD 9 (TCB: 0x3fcbeccc, name: '') =====================
+
+
+==================== THREAD 10 (TCB: 0x3fceae54, name: '') =====================
+
+
+==================== THREAD 11 (TCB: 0x3fcb9248, name: '') =====================
+
+
+==================== THREAD 12 (TCB: 0x3fccc1f0, name: '') =====================
+
+
+==================== THREAD 13 (TCB: 0x3fccc364, name: '') =====================
+
+
+==================== THREAD 14 (TCB: 0x3fcb8058, name: '') =====================
+
+
+==================== THREAD 15 (TCB: 0x3fcd294c, name: '') =====================
+
+
+==================== THREAD 16 (TCB: 0x3fcdcf58, name: '') =====================
+
+
+==================== THREAD 17 (TCB: 0x3fcb8610, name: '') =====================
+
+
+==================== THREAD 18 (TCB: 0x3fcbba54, name: '') =====================
+
+
+==================== THREAD 19 (TCB: 0x3fce1c4c, name: '') =====================
+
+
+
+======================= ALL MEMORY REGIONS ========================
+Name   Address   Size   Attrs
+.rtc.text 0x600fe000 0x5c R XA
+.rtc.force_fast 0x600fe05c 0x4 RW A
+.rtc.force_slow 0x50000494 0x20 RW A
+.iram0.vectors 0x40374000 0x404 R XA
+.iram0.text 0x40374404 0x18603 R XA
+.dram0.data 0x3fc9cb00 0x67b2 RW A
+.flash.text 0x42000020 0x1a26bc R XA
+.flash.appdesc 0x3c1b0020 0x100 R  A
+.flash.rodata 0x3c1b0120 0x70434 RW A
+.iram0.data 0x4038cb00 0x0 RW  
+.iram0.bss 0x4038cb00 0x0 RW  
+.dram0.heap_start 0x3fcb6ef0 0x0 RW  
+.coredump.tasks.data 0x3fcedf60 0x160 RW 
+.coredump.tasks.data 0x3fcecd60 0x10f0 RW 
+.coredump.tasks.data 0x3fcbded4 0x160 RW 
+.coredump.tasks.data 0x3fcbdc20 0x260 RW 
+.coredump.tasks.data 0x3fcbd8dc 0x160 RW 
+.coredump.tasks.data 0x3fcbd5a0 0x2f0 RW 
+.coredump.tasks.data 0x3fcee248 0x160 RW 
+.coredump.tasks.data 0x3fcc8f50 0x950 RW 
+.coredump.tasks.data 0x3fcee0d4 0x160 RW 
+.coredump.tasks.data 0x3fcc0a00 0x490 RW 
+.coredump.tasks.data 0x3fccbca0 0x160 RW 
+.coredump.tasks.data 0x3fccf7c0 0x2f0 RW 
+.coredump.tasks.data 0x3fcbc154 0x160 RW 
+.coredump.tasks.data 0x3fccaf80 0x320 RW 
+.coredump.tasks.data 0x3fcec8a8 0x160 RW 
+.coredump.tasks.data 0x3fcec540 0x260 RW 
+.coredump.tasks.data 0x3fcbeccc 0x160 RW 
+.coredump.tasks.data 0x3fcbea20 0x250 RW 
+.coredump.tasks.data 0x3fceae54 0x160 RW 
+.coredump.tasks.data 0x3fceaa50 0x2f0 RW 
+.coredump.tasks.data 0x3fcb9248 0x160 RW 
+.coredump.tasks.data 0x3fcb8eb0 0x310 RW 
+.coredump.tasks.data 0x3fccc1f0 0x160 RW 
+.coredump.tasks.data 0x3fcd0aa0 0x310 RW 
+.coredump.tasks.data 0x3fccc364 0x160 RW 
+.coredump.tasks.data 0x3fcd1b10 0x3b0 RW 
+.coredump.tasks.data 0x3fcb8058 0x160 RW 
+.coredump.tasks.data 0x3fcb7d70 0x2a0 RW 
+.coredump.tasks.data 0x3fcd294c 0x160 RW 
+.coredump.tasks.data 0x3c5d5b00 0x2c0 RW 
+.coredump.tasks.data 0x3fcdcf58 0x160 RW 
+.coredump.tasks.data 0x3fcdcb50 0x300 RW 
+.coredump.tasks.data 0x3fcb8610 0x160 RW 
+.coredump.tasks.data 0x3fcb8320 0x2a0 RW 
+.coredump.tasks.data 0x3fcbba54 0x160 RW 
+.coredump.tasks.data 0x3fcbb5a0 0x2a0 RW 
+.coredump.tasks.data 0x3fce1c4c 0x160 RW 
+.coredump.tasks.data 0x3fcd39b0 0x2e0 RW 
+
+===================== ESP32 CORE DUMP END =====================
+===============================================================
+Done!

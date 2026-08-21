@@ -1,0 +1,495 @@
+=== capture opened 2026-08-10T15:43:19.1810477-05:00 ===
+[20639][I][ENTITY] Rebuild complete entities=1102 observations=2184 ms=11537
+[20639][I][ENTITY] Ready entities=1102 observations=2184 links=98304 psram=3088KB selftest=pass rebuild=ok
+[20657][I][PWNY] PMKID capture index loaded count=0
+[20658][I][WIFI] WiFiManager initialized
+[20984][I][WIFI] Allocation: OK
+[21087][I][WIFI] Promiscuous: YES
+[21087][I][WIFI] Promiscuous mode started data=0
+[21092][I][CORE] Hardware ready
+[28694][I][STORAGE] Spool rotate index deferred owner=WIFI_CAPTURE reason=capture seg=459 format=bin_v2
+[28775][I][STORAGE] Routine maintenance requests coalesced count=1 latest=snapshot_lagged source=append_metadata_deferred flags=dirty_spool_index|snapshot_lagged
+[29036][I][STORAGE] worker ui refresh serviced uiRefreshServiceCount=1 uiDeferred=2 uiFlush=1 pressure=0 usedPct=16 pending=2165
+[30011][I][HEAP] heap free=4538KB min=4535KB largest=4352KB frag=4% internalFree=71KB internalLargest=31KB psramFree=4468KB core=0/0% owner=WIFI_CAPTURE nets=1 pendingUpload=2165 pendingEnrich=91
+[HEALTH] time=2026-08-10 15:42:47 src=ntp
+[HEALTH] heap used=3913/8451KB free=4538KB min=4535KB largest=4352KB frag=4%
+[HEALTH] internal used=188/259KB free=71KB min=67KB largest=31KB
+[HEALTH] psram used=3724/8192KB free=4468KB largest=4352KB
+[HEALTH] stack free_min: core0=17KB/22KB core1=13KB/18KB
+[HEALTH] core usage: core0=0% core1=0%
+[HEALTH] power=usb state=usb batt=100% 4685mV trend=0mV/min runtime=0min cap=1100mAh charging=0
+[HEALTH] radio=WIFI_CAPTURE wifi=0 ble=0 gps=0 nets=1 pendingUpload=2165 pendingEnrich=91
+[HEALTH] subghz=NONE mode=OFF pkts=0 nodes=0
+[30014][I][STORAGE] RAMSpool enq=2 cons=2 inflight=0/1024 high=2 pressure=0 drop[full=0 big=0 noise=0 p3Evict=0 p3Drop=0 p2Drop=0 p1Fail=0] free=1024
+[30015][I][STORAGE] RAMSpool enqueue probe[ok=1 drop=0] device[ok=1 drop=0]
+[30015][I][STORAGE] RAMSpool worker probe[ok=1 sup=0 drop=0 fail=0 slow=0] device[ok=1 sup=0 drop=0 fail=0 slow=0] slowTotal=0 maxMs=0
+[30016][I][STORAGE] RAMSpool prioEnq p0=0 p1=0 p2=2 p3=0
+[30016][I][STORAGE] RAMSpool lanes p1=0/0 p2=0/1 p3=0/0
+[31005][I][STACK] TaskDisplay watermark=13212B min=13212B
+[31029][I][STACK] TaskHardware watermark=16932B min=16932B
+[37887][I][STORAGE] worker ui refresh serviced uiRefreshServiceCount=2 uiDeferred=7 uiFlush=2 pressure=0 usedPct=16 pending=2169
+=== send: companion link ===
+companion link
+[COMP] persistent link queued
+[47843][I][COMP] Persistent link request received; holding until release
+[47844][I][WIFI] Radio paused
+[48005][I][WIFI] Radio suspended
+[48006][I][BLE] BLE payload buffers in PSRAM bytes=6276
+[48083][I][BLE] begin phase=nimble_pre bt=idle/0 heap=102664 largest=31732 stack=16932 devLen=14
+[48083][I][BLE] begin phase=nimble_init
+[48093][I][BLE] begin phase=nimble_init_ok bt=enabled/2 heap=39692 largest=26612 stack=16932
+[48094][I][BLE] BLE SM disabled; app-layer P-256/AES-GCM required
+[48095][I][BLE] begin phase=server_ok
+[48096][I][BLE] scanner configured legacy=1 active=0 interval=30 window=30 srTimeout=200
+[48096][I][BLE] begin phase=scanner_ok
+[48096][I][BLE] begin phase=worker_ok
+[48097][I][BLE] begin ready
+[48097][I][BLE] radio enabled settle=500ms
+[48099][I][BLE] advertising start
+[48099][I][BLE] companion link requested reason=manual_probe mode=fresh_scan timeout=15s settle=500ms cacheAge=0ms rssi=0
+[48105][I][BLE] Phone probe lease granted reason=manual_probe cachedFirst=0 hold=60000ms
+[48117][W][CORE] TaskHardware loop gap=276ms owner=BLE_GPS pendingUpload=2169 maintPending=1 suppressed=0
+[48720][I][BLE] scan start
+[48721][I][BLE] scan start diag=1 deliverDuplicates=1 diagLeft=44376 state=1 window=8000ms weakRecent=0 lastRssi=0
+[48769][I][BLE] target found matchedBy=service cachePeer=0 addr=4c:22:58:c1:0b:83 name=SpectrePhone rssi=-56
+[48770][I][BLE] target found matchedBy=service cachePeer=0 addr=4c:22:58:c1:0b:83 name=SpectrePhone rssi=-56
+[48872][I][BLE] scan stop; connect pending addr=4c:22:58:c1:0b:83
+[49185][I][BLE] connect pending settled addr=4c:22:58:c1:0b:83
+[49185][I][BLE] connect attempt addr=4c:22:58:c1:0b:83 name=SpectrePhone
+[49186][I][BLE] connect params timeoutMs=45000 scanItvl=16 scanWin=16 addrType=1
+[49363][I][BLE] connect result ok=1 err=0 addr=4c:22:58:c1:0b:83
+[49363][I][BLE] BLE link connected; starting app-layer auth watchdog=50000ms
+[49365][I][BLE] remote service lookup begin core=1 internalFree=36576 largest=26612
+[49390][I][BLE] remote service lookup end found=1 err=0
+[49391][I][BLE] remote characteristic discovery begin
+[49480][I][BLE] remote characteristic discovery end count=13 err=0
+[49512][I][BLE] remote descriptor discovery char=auth count=2 err=0
+[49512][I][BLE] auth notify subscribe begin
+[49540][I][BLE] auth notify subscribe end ok=1 err=0
+[49876][I][BLE] auth challenge write bytes=163 mtu=247 attPayload=244 mode=response
+[50853][I][BLE] app secure session ready alg=P-256+ECDH+AES-256-GCM
+[50854][I][BLE] phone auth confirmed; caching peer addr=4c:22:58:c1:0b:83 ttl=300000ms rssi=-56
+[50890][I][BLE] remote descriptor discovery char=enrichment count=2 err=0
+[50950][I][BLE] remote descriptor discovery char=command_req count=2 err=0
+[51071][I][BLE] remote bound gps=1 ctrl=1 meta=1 batch=1 enrich=1 auth=1 authReq=1 storage=1 cmdReq=1 cmdResp=1 logStream=1 dashStream=1 notification=1 notify(gps=0 ctrl=0 enrich=1 auth=1 cmdReq=1) mtu=247 a
+[51073][I][BLE] probe_summary seen=1 matchedBy=service rssi=-56 scanMs=2134
+[51073][I][BLE] phone_session_summary auth=ok mtu=247 gps=1 ctrl=1 enrich=1 storage=1
+[51100][I][BLE] storage snapshot sent pendingUp=0/2169 pendingEnrich=0/95 usedPct=16
+[51104][I][BLE] Phone probe succeeded ??? backoff reset
+[51105][I][BLE] Persistent companion link established
+[51186][I][BLE] link ready state=4
+[60013][I][HEAP] heap free=4488KB min=4485KB largest=4352KB frag=3% internalFree=32KB internalLargest=24KB psramFree=4456KB core=0/0% owner=BLE_GPS nets=1 pendingUpload=2169 pendingEnrich=95
+[HEALTH] time=2026-08-10 15:43:17 src=ntp
+[HEALTH] heap used=3963/8451KB free=4488KB min=4485KB largest=4352KB frag=3%
+[HEALTH] internal used=227/259KB free=32KB min=29KB largest=24KB
+[HEALTH] psram used=3736/8192KB free=4456KB largest=4352KB
+[HEALTH] stack free_min: core0=17KB/22KB core1=13KB/18KB
+[HEALTH] core usage: core0=0% core1=0%
+[HEALTH] power=usb state=usb batt=100% 4766mV trend=135mV/min runtime=0min cap=1100mAh charging=1
+[HEALTH] radio=BLE_GPS wifi=0 ble=1 gps=0 nets=1 pendingUpload=2169 pendingEnrich=95
+[HEALTH] subghz=NONE mode=OFF pkts=0 nodes=0
+[60016][I][STORAGE] RAMSpool enq=7 cons=7 inflight=0/1024 high=4 pressure=0 drop[full=0 big=0 noise=0 p3Evict=0 p3Drop=0 p2Drop=0 p1Fail=0] free=1024
+[60016][I][STORAGE] RAMSpool enqueue probe[ok=4 drop=0] device[ok=3 drop=0]
+[60016][I][STORAGE] RAMSpool worker probe[ok=3 sup=1 drop=0 fail=0 slow=0] device[ok=3 sup=0 drop=0 fail=0 slow=0] slowTotal=0 maxMs=0
+[60017][I][STORAGE] RAMSpool prioEnq p0=0 p1=0 p2=7 p3=0
+[60017][I][STORAGE] RAMSpool lanes p1=0/0 p2=0/3 p3=0/0
+[61031][I][STACK] TaskHardware watermark=16932B min=16932B
+[78245][I][BLE] worker stack free=7384B min=7384B
+[90016][I][HEAP] heap free=4488KB min=4485KB largest=4352KB frag=3% internalFree=32KB internalLargest=24KB psramFree=4456KB core=0/0% owner=BLE_GPS nets=1 pendingUpload=2169 pendingEnrich=95
+[HEALTH] time=2026-08-10 15:43:47 src=ntp
+[HEALTH] heap used=3963/8451KB free=4488KB min=4485KB largest=4352KB frag=3%
+[HEALTH] internal used=227/259KB free=32KB min=29KB largest=24KB
+[HEALTH] psram used=3736/8192KB free=4456KB largest=4352KB
+[HEALTH] stack free_min: core0=17KB/22KB core1=13KB/18KB
+[HEALTH] core usage: core0=0% core1=0%
+[HEALTH] power=usb state=usb batt=100% 4766mV trend=76mV/min runtime=0min cap=1100mAh charging=1
+[HEALTH] radio=BLE_GPS wifi=0 ble=1 gps=0 nets=1 pendingUpload=2169 pendingEnrich=95
+[HEALTH] subghz=NONE mode=OFF pkts=0 nodes=0
+[90019][I][STORAGE] RAMSpool enq=7 cons=7 inflight=0/1024 high=4 pressure=0 drop[full=0 big=0 noise=0 p3Evict=0 p3Drop=0 p2Drop=0 p1Fail=0] free=1024
+[90020][I][STORAGE] RAMSpool enqueue probe[ok=4 drop=0] device[ok=3 drop=0]
+[90020][I][STORAGE] RAMSpool worker probe[ok=3 sup=1 drop=0 fail=0 slow=0] device[ok=3 sup=0 drop=0 fail=0 slow=0] slowTotal=0 maxMs=0
+[90020][I][STORAGE] RAMSpool prioEnq p0=0 p1=0 p2=7 p3=0
+[90020][I][STORAGE] RAMSpool lanes p1=0/0 p2=0/3 p3=0/0
+[91033][I][STACK] TaskHardware watermark=16932B min=16932B
+[108256][I][BLE] worker stack free=7384B min=7384B
+[120017][I][HEAP] heap free=4488KB min=4485KB largest=4352KB frag=3% internalFree=32KB internalLargest=24KB psramFree=4456KB core=0/0% owner=BLE_GPS nets=1 pendingUpload=2169 pendingEnrich=95
+[HEALTH] time=2026-08-10 15:44:17 src=ntp
+[HEALTH] heap used=3963/8451KB free=4488KB min=4485KB largest=4352KB frag=3%
+[HEALTH] internal used=227/259KB free=32KB min=29KB largest=24KB
+[HEALTH] psram used=3736/8192KB free=4456KB largest=4352KB
+[HEALTH] stack free_min: core0=17KB/22KB core1=13KB/18KB
+[HEALTH] core usage: core0=0% core1=0%
+[HEALTH] power=usb state=usb batt=100% 4770mV trend=55mV/min runtime=0min cap=1100mAh charging=1
+[HEALTH] radio=BLE_GPS wifi=0 ble=1 gps=0 nets=1 pendingUpload=2169 pendingEnrich=95
+[HEALTH] subghz=NONE mode=OFF pkts=0 nodes=0
+[120172][I][STORAGE] RAMSpool enq=7 cons=7 inflight=0/1024 high=4 pressure=0 drop[full=0 big=0 noise=0 p3Evict=0 p3Drop=0 p2Drop=0 p1Fail=0] free=1024
+[120172][I][STORAGE] RAMSpool enqueue probe[ok=4 drop=0] device[ok=3 drop=0]
+[120173][I][STORAGE] RAMSpool worker probe[ok=3 sup=1 drop=0 fail=0 slow=0] device[ok=3 sup=0 drop=0 fail=0 slow=0] slowTotal=0 maxMs=0
+[120173][I][STORAGE] RAMSpool prioEnq p0=0 p1=0 p2=7 p3=0
+[120173][I][STORAGE] RAMSpool lanes p1=0/0 p2=0/3 p3=0/0
+[121037][I][STACK] TaskHardware watermark=15152B min=15152B
+[136343][I][STORAGE] RAMSpool worker paused inflight=0 lastInflight=0
+[136343][I][OFFLOAD] begin preparing index asynchronously
+[136343][I][STORAGE] Exclusive window begin kind=enrichment reason=phone_offload_prepare workerPaused=1 displaySuspended=1
+[136344][I][CMD] op=0x30 reqid=79 status=4 payload=0 elapsedMs=1
+[136620][W][STORAGE] worker append file flush reason=prepare_upload_stream seg=459 records=6 ms=276 close=1 ok=1
+[136621][I][STORAGE] Upload index rebuild begin pending=2169 window=8192 heapFree=4592072 largest=4456436
+[137038][I][STORAGE] Upload index rebuild progress segs=25 indexed=733 window=8192 heapFree=4512232 largest=4456436
+[137333][I][CMD] op=0x30 reqid=80 status=4 payload=0 elapsedMs=0
+[137458][W][STORAGE] Upload index sidecar stale seg=428 reason=coverage max=30657 last=31661 pending=9
+[137458][I][STORAGE] Maintenance requested reason=dirty_spool_index source=upload_index_sidecar_coverage flags=dirty_spool_index|snapshot_lagged
+[138253][I][CMD] op=0x30 reqid=81 status=4 payload=0 elapsedMs=1
+[138407][I][BLE] worker stack free=7384B min=7384B
+[139178][I][CMD] op=0x30 reqid=82 status=4 payload=0 elapsedMs=1
+[140115][I][CMD] op=0x30 reqid=83 status=4 payload=0 elapsedMs=1
+[140324][I][STORAGE] Upload index rebuild progress segs=50 indexed=1943 window=8192 heapFree=4226740 largest=4194292
+[140514][W][STORAGE] Upload index sidecar stale seg=445 reason=coverage max=32861 last=32879 pending=37
+[140912][I][CMD] op=0x30 reqid=84 status=4 payload=0 elapsedMs=0
+[141100][W][STORAGE] Upload index sidecar stale seg=448 reason=coverage max=32894 last=32912 pending=2
+[141719][I][CMD] op=0x30 reqid=85 status=4 payload=0 elapsedMs=0
+[142529][I][CMD] op=0x30 reqid=86 status=4 payload=0 elapsedMs=0
+[142615][I][STORAGE] Upload window rebuild accepted indexed=2169 window=8192 pending=2169 sessions=52 skipped=0 failedSegs=0 sidecarLoaded=67 sidecarStale=4 truncated=0 heapFree=4167680 largest=4128756
+[142616][I][STORAGE] Upload stream prepare index built ok=1 resident=1 ms=5995
+[142616][I][STORAGE] Upload stream prepare ready=1 pending=2169 budgetMs=45000 ms=6272 internalFree=16612 internalLargest=7156 psramFree=4151068
+[142617][I][STORAGE] RAMSpool worker resumed
+[142617][I][STORAGE] Exclusive window end kind=enrichment result=index_ready reason=phone_offload_prepare
+[142617][I][OFFLOAD] index preparation complete ok=1 resident=1
+[143447][I][STORAGE] Upload batch open; deferring watermark flush
+[143447][I][OFFLOAD] begin transfer=1 pending=2169 indexed=2169 sessions=52 truncated=0
+[143448][I][CMD] op=0x30 reqid=87 status=0 payload=12 elapsedMs=1
+[143601][I][STORAGE] RAMSpool worker paused inflight=0 lastInflight=0
+[143601][I][STORAGE] Exclusive window begin kind=enrichment reason=phone_offload_fetch workerPaused=1 displaySuspended=1
+[143629][I][STORAGE] RAMSpool worker resumed
+[143629][I][STORAGE] Exclusive window end kind=enrichment result=fetched reason=phone_offload_fetch
+[143631][I][CMD] op=0x31 reqid=88 status=0 payload=192 elapsedMs=30
+[143784][I][CMD] op=0x31 reqid=89 status=0 payload=192 elapsedMs=0
+[143946][I][CMD] op=0x31 reqid=90 status=0 payload=52 elapsedMs=0
+[144107][I][OFFLOAD] ack transfer=1 event=28854 pending=2168
+[144107][I][STORAGE] RAMSpool worker paused inflight=0 lastInflight=0
+[144108][I][STORAGE] Exclusive window begin kind=enrichment reason=phone_offload_fetch workerPaused=1 displaySuspended=1
+[144111][I][STORAGE] RAMSpool worker resumed
+[144112][I][STORAGE] Exclusive window end kind=enrichment result=fetched reason=phone_offload_fetch
+[144113][I][CMD] op=0x31 reqid=91 status=0 payload=192 elapsedMs=14
+[144266][I][CMD] op=0x31 reqid=92 status=0 payload=192 elapsedMs=0
+[144418][I][CMD] op=0x31 reqid=93 status=0 payload=41 elapsedMs=0
+[144578][I][OFFLOAD] ack transfer=1 event=28855 pending=2167
+[144578][I][STORAGE] RAMSpool worker paused inflight=0 lastInflight=0
+[144578][I][STORAGE] Exclusive window begin kind=enrichment reason=phone_offload_fetch workerPaused=1 displaySuspended=1
+[144582][I][STORAGE] RAMSpool worker resumed
+[144582][I][STORAGE] Exclusive window end kind=enrichment result=fetched reason=phone_offload_fetch
+[144584][I][CMD] op=0x31 reqid=94 status=0 payload=192 elapsedMs=14
+[144738][I][CMD] op=0x31 reqid=95 status=0 payload=192 elapsedMs=0
+[144890][I][CMD] op=0x31 reqid=96 status=0 payload=30 elapsedMs=0
+[145050][I][OFFLOAD] ack transfer=1 event=28856 pending=2166
+[145050][I][STORAGE] RAMSpool worker paused inflight=0 lastInflight=0
+[145051][I][STORAGE] Exclusive window begin kind=enrichment reason=phone_offload_fetch workerPaused=1 displaySuspended=1
+[145054][I][STORAGE] RAMSpool worker resumed
+[145054][I][STORAGE] Exclusive window end kind=enrichment result=fetched reason=phone_offload_fetch
+[145056][I][CMD] op=0x31 reqid=97 status=0 payload=192 elapsedMs=14
+[145208][I][CMD] op=0x31 reqid=98 status=0 payload=192 elapsedMs=0
+[145378][I][STORAGE] Segment lifecycle seg=390 partially_uploaded->fully_uploaded trust=trusted pending=0
+[145378][I][OFFLOAD] ack transfer=1 event=28857 pending=2165
+[145379][I][STORAGE] RAMSpool worker paused inflight=0 lastInflight=0
+[145379][I][STORAGE] Exclusive window begin kind=enrichment reason=phone_offload_fetch workerPaused=1 displaySuspended=1
+[145379][I][STORAGE] RAMSpool worker resumed
+[145380][I][STORAGE] Exclusive window end kind=enrichment result=fetched reason=phone_offload_fetch
+[145380][I][STORAGE] RAMSpool worker paused inflight=0 lastInflight=0
+[145380][I][STORAGE] Exclusive window begin kind=enrichment reason=phone_offload_fetch workerPaused=1 displaySuspended=1
+[145407][I][STORAGE] RAMSpool worker resumed
+[145408][I][STORAGE] Exclusive window end kind=enrichment result=fetched reason=phone_offload_fetch
+[145409][I][CMD] op=0x31 reqid=99 status=0 payload=192 elapsedMs=39
+[145563][I][CMD] op=0x31 reqid=100 status=0 payload=192 elapsedMs=0
+[145717][I][CMD] op=0x31 reqid=101 status=0 payload=30 elapsedMs=0
+[145877][I][STORAGE] Segment lifecycle seg=391 indexed->partially_uploaded trust=trusted pending=14
+[145877][I][OFFLOAD] ack transfer=1 event=28858 pending=2164
+[145878][I][STORAGE] RAMSpool worker paused inflight=0 lastInflight=0
+[145878][I][STORAGE] Exclusive window begin kind=enrichment reason=phone_offload_fetch workerPaused=1 displaySuspended=1
+[145881][I][STORAGE] RAMSpool worker resumed
+[145882][I][STORAGE] Exclusive window end kind=enrichment result=fetched reason=phone_offload_fetch
+[145884][I][CMD] op=0x31 reqid=102 status=0 payload=192 elapsedMs=15
+[146037][I][CMD] op=0x31 reqid=103 status=0 payload=192 elapsedMs=0
+[146199][I][CMD] op=0x31 reqid=104 status=0 payload=39 elapsedMs=0
+[146359][I][OFFLOAD] ack transfer=1 event=28859 pending=2163
+[146359][I][STORAGE] RAMSpool worker paused inflight=0 lastInflight=0
+[146360][I][STORAGE] Exclusive window begin kind=enrichment reason=phone_offload_fetch workerPaused=1 displaySuspended=1
+[146363][I][STORAGE] RAMSpool worker resumed
+[146363][I][STORAGE] Exclusive window end kind=enrichment result=fetched reason=phone_offload_fetch
+[146365][I][CMD] op=0x31 reqid=105 status=0 payload=192 elapsedMs=14
+[146527][I][CMD] op=0x31 reqid=106 status=0 payload=192 elapsedMs=0
+[146681][I][CMD] op=0x31 reqid=107 status=0 payload=30 elapsedMs=0
+[146841][I][OFFLOAD] ack transfer=1 event=28860 pending=2162
+[146841][I][STORAGE] RAMSpool worker paused inflight=0 lastInflight=0
+[146841][I][STORAGE] Exclusive window begin kind=enrichment reason=phone_offload_fetch workerPaused=1 displaySuspended=1
+[146845][I][STORAGE] RAMSpool worker resumed
+[146845][I][STORAGE] Exclusive window end kind=enrichment result=fetched reason=phone_offload_fetch
+[146847][I][CMD] op=0x31 reqid=108 status=0 payload=192 elapsedMs=14
+[147009][I][CMD] op=0x31 reqid=109 status=0 payload=192 elapsedMs=0
+[147162][I][CMD] op=0x31 reqid=110 status=0 payload=45 elapsedMs=0
+[147322][I][OFFLOAD] ack transfer=1 event=28861 pending=2161
+[147322][I][STORAGE] RAMSpool worker paused inflight=0 lastInflight=0
+[147322][I][STORAGE] Exclusive window begin kind=enrichment reason=phone_offload_fetch workerPaused=1 displaySuspended=1
+[147326][I][STORAGE] RAMSpool worker resumed
+[147326][I][STORAGE] Exclusive window end kind=enrichment result=fetched reason=phone_offload_fetch
+[147328][I][CMD] op=0x31 reqid=111 status=0 payload=192 elapsedMs=14
+[147480][I][CMD] op=0x31 reqid=112 status=0 payload=191 elapsedMs=0
+[147643][I][OFFLOAD] ack transfer=1 event=28862 pending=2160
+[147643][I][STORAGE] RAMSpool worker paused inflight=0 lastInflight=0
+[147644][I][STORAGE] Exclusive window begin kind=enrichment reason=phone_offload_fetch workerPaused=1 displaySuspended=1
+[147647][I][STORAGE] RAMSpool worker resumed
+[147647][I][STORAGE] Exclusive window end kind=enrichment result=fetched reason=phone_offload_fetch
+[147649][I][CMD] op=0x31 reqid=113 status=0 payload=192 elapsedMs=14
+[147802][I][CMD] op=0x31 reqid=114 status=0 payload=192 elapsedMs=0
+[147954][I][CMD] op=0x31 reqid=115 status=0 payload=30 elapsedMs=0
+[148115][I][OFFLOAD] ack transfer=1 event=28863 pending=2159
+[148115][I][STORAGE] RAMSpool worker paused inflight=0 lastInflight=0
+[148115][I][STORAGE] Exclusive window begin kind=enrichment reason=phone_offload_fetch workerPaused=1 displaySuspended=1
+[148119][I][STORAGE] RAMSpool worker resumed
+[148119][I][STORAGE] Exclusive window end kind=enrichment result=fetched reason=phone_offload_fetch
+[148121][I][CMD] op=0x31 reqid=116 status=0 payload=192 elapsedMs=14
+[148273][I][CMD] op=0x31 reqid=117 status=0 payload=191 elapsedMs=0
+[148443][I][OFFLOAD] ack transfer=1 event=28864 pending=2158
+[148443][I][STORAGE] RAMSpool worker paused inflight=0 lastInflight=0
+[148443][I][STORAGE] Exclusive window begin kind=enrichment reason=phone_offload_fetch workerPaused=1 displaySuspended=1
+[148447][I][STORAGE] RAMSpool worker resumed
+[148447][I][STORAGE] Exclusive window end kind=enrichment result=fetched reason=phone_offload_fetch
+[148449][I][CMD] op=0x31 reqid=118 status=0 payload=192 elapsedMs=14
+[148602][I][CMD] op=0x31 reqid=119 status=0 payload=192 elapsedMs=0
+[148756][I][CMD] op=0x31 reqid=120 status=0 payload=30 elapsedMs=0
+[148916][I][OFFLOAD] ack transfer=1 event=28865 pending=2157
+[148916][I][STORAGE] RAMSpool worker paused inflight=0 lastInflight=0
+[148917][I][STORAGE] Exclusive window begin kind=enrichment reason=phone_offload_fetch workerPaused=1 displaySuspended=1
+[148920][I][STORAGE] RAMSpool worker resumed
+[148920][I][STORAGE] Exclusive window end kind=enrichment result=fetched reason=phone_offload_fetch
+[148922][I][CMD] op=0x31 reqid=121 status=0 payload=192 elapsedMs=14
+[149075][I][CMD] op=0x31 reqid=122 status=0 payload=191 elapsedMs=0
+[149235][I][OFFLOAD] ack transfer=1 event=28866 pending=2156
+[149235][I][STORAGE] RAMSpool worker paused inflight=0 lastInflight=0
+[149236][I][STORAGE] Exclusive window begin kind=enrichment reason=phone_offload_fetch workerPaused=1 displaySuspended=1
+[149239][I][STORAGE] RAMSpool worker resumed
+[149239][I][STORAGE] Exclusive window end kind=enrichment result=fetched reason=phone_offload_fetch
+[149241][I][CMD] op=0x31 reqid=123 status=0 payload=192 elapsedMs=14
+[149393][I][CMD] op=0x31 reqid=124 status=0 payload=192 elapsedMs=0
+[149555][I][CMD] op=0x31 reqid=125 status=0 payload=30 elapsedMs=0
+[149717][I][OFFLOAD] ack transfer=1 event=28867 pending=2155
+[149717][I][STORAGE] RAMSpool worker paused inflight=0 lastInflight=0
+[149718][I][STORAGE] Exclusive window begin kind=enrichment reason=phone_offload_fetch workerPaused=1 displaySuspended=1
+[149721][I][STORAGE] RAMSpool worker resumed
+[149721][I][STORAGE] Exclusive window end kind=enrichment result=fetched reason=phone_offload_fetch
+[149723][I][CMD] op=0x31 reqid=126 status=0 payload=192 elapsedMs=14
+[149885][I][CMD] op=0x31 reqid=127 status=0 payload=192 elapsedMs=0
+[150022][I][HEAP] heap free=4070KB min=4056KB largest=4032KB frag=0% internalFree=16KB internalLargest=7KB psramFree=4054KB core=11/21% owner=BLE_GPS nets=1 pendingUpload=2155 pendingEnrich=95
+[HEALTH] time=2026-08-10 15:44:47 src=ntp
+[HEALTH] heap used=4381/8451KB free=4070KB min=4056KB largest=4032KB frag=0%
+[HEALTH] internal used=243/259KB free=16KB min=2KB largest=7KB
+[HEALTH] psram used=4138/8192KB free=4054KB largest=4032KB
+[HEALTH] stack free_min: core0=15KB/22KB core1=13KB/18KB
+[HEALTH] core usage: core0=11% core1=21%
+[HEALTH] power=usb state=usb batt=100% 4755mV trend=35mV/min runtime=0min cap=1100mAh charging=1
+[HEALTH] radio=BLE_GPS wifi=0 ble=1 gps=0 nets=1 pendingUpload=2155 pendingEnrich=95
+[HEALTH] subghz=NONE mode=OFF pkts=0 nodes=0
+[150024][I][STORAGE] RAMSpool enq=7 cons=7 inflight=0/1024 high=4 pressure=0 drop[full=0 big=0 noise=0 p3Evict=0 p3Drop=0 p2Drop=0 p1Fail=0] free=1024
+[150025][I][STORAGE] RAMSpool enqueue probe[ok=4 drop=0] device[ok=3 drop=0]
+[150025][I][STORAGE] RAMSpool worker probe[ok=3 sup=1 drop=0 fail=0 slow=0] device[ok=3 sup=0 drop=0 fail=0 slow=0] slowTotal=0 maxMs=0
+[150025][I][STORAGE] RAMSpool prioEnq p0=0 p1=0 p2=7 p3=0
+[150025][I][STORAGE] RAMSpool lanes p1=0/0 p2=0/3 p3=0/0
+[150047][I][CMD] op=0x31 reqid=128 status=0 payload=30 elapsedMs=0
+[150207][I][OFFLOAD] ack transfer=1 event=28868 pending=2154
+[150207][I][STORAGE] RAMSpool worker paused inflight=0 lastInflight=0
+[150208][I][STORAGE] Exclusive window begin kind=enrichment reason=phone_offload_fetch workerPaused=1 displaySuspended=1
+[150211][I][STORAGE] RAMSpool worker resumed
+[150211][I][STORAGE] Exclusive window end kind=enrichment result=fetched reason=phone_offload_fetch
+[150213][I][CMD] op=0x31 reqid=129 status=0 payload=192 elapsedMs=14
+[150365][I][CMD] op=0x31 reqid=130 status=0 payload=192 elapsedMs=0
+[150525][I][OFFLOAD] ack transfer=1 event=28869 pending=2153
+[150525][I][STORAGE] RAMSpool worker paused inflight=0 lastInflight=0
+[150526][I][STORAGE] Exclusive window begin kind=enrichment reason=phone_offload_fetch workerPaused=1 displaySuspended=1
+[150529][I][STORAGE] RAMSpool worker resumed
+[150530][I][STORAGE] Exclusive window end kind=enrichment result=fetched reason=phone_offload_fetch
+[150531][I][CMD] op=0x31 reqid=131 status=0 payload=192 elapsedMs=14
+[150687][I][CMD] op=0x31 reqid=132 status=0 payload=192 elapsedMs=0
+[150839][I][CMD] op=0x31 reqid=133 status=0 payload=44 elapsedMs=0
+[150999][I][OFFLOAD] ack transfer=1 event=28870 pending=2152
+[150999][I][STORAGE] RAMSpool worker paused inflight=0 lastInflight=0
+[151000][I][STORAGE] Exclusive window begin kind=enrichment reason=phone_offload_fetch workerPaused=1 displaySuspended=1
+[151003][I][STORAGE] RAMSpool worker resumed
+[151003][I][STORAGE] Exclusive window end kind=enrichment result=fetched reason=phone_offload_fetch
+[151005][I][CMD] op=0x31 reqid=134 status=0 payload=192 elapsedMs=14
+[151037][I][STACK] TaskHardware watermark=15152B min=15152B
+[151159][I][CMD] op=0x31 reqid=135 status=0 payload=192 elapsedMs=0
+[151311][I][CMD] op=0x31 reqid=136 status=0 payload=30 elapsedMs=0
+[151471][I][OFFLOAD] ack transfer=1 event=28871 pending=2151
+[151471][I][STORAGE] RAMSpool worker paused inflight=0 lastInflight=0
+[151472][I][STORAGE] Exclusive window begin kind=enrichment reason=phone_offload_fetch workerPaused=1 displaySuspended=1
+[151475][I][STORAGE] RAMSpool worker resumed
+[151475][I][STORAGE] Exclusive window end kind=enrichment result=fetched reason=phone_offload_fetch
+[151477][I][CMD] op=0x31 reqid=137 status=0 payload=192 elapsedMs=14
+[151631][I][CMD] op=0x31 reqid=138 status=0 payload=192 elapsedMs=0
+[151785][I][CMD] op=0x31 reqid=139 status=0 payload=45 elapsedMs=0
+[151945][I][STORAGE] Segment lifecycle seg=391 partially_uploaded->fully_uploaded trust=trusted pending=0
+[151945][I][OFFLOAD] ack transfer=1 event=28872 pending=2150
+[151946][I][STORAGE] RAMSpool worker paused inflight=0 lastInflight=0
+[151946][I][STORAGE] Exclusive window begin kind=enrichment reason=phone_offload_fetch workerPaused=1 displaySuspended=1
+[151946][I][STORAGE] RAMSpool worker resumed
+[151947][I][STORAGE] Exclusive window end kind=enrichment result=fetched reason=phone_offload_fetch
+[151947][I][STORAGE] RAMSpool worker paused inflight=0 lastInflight=0
+[151947][I][STORAGE] Exclusive window begin kind=enrichment reason=phone_offload_fetch workerPaused=1 displaySuspended=1
+[151974][I][STORAGE] RAMSpool worker resumed
+[151975][I][STORAGE] Exclusive window end kind=enrichment result=fetched reason=phone_offload_fetch
+[151977][I][CMD] op=0x31 reqid=140 status=0 payload=192 elapsedMs=39
+[152129][I][CMD] op=0x31 reqid=141 status=0 payload=192 elapsedMs=0
+[152281][I][CMD] op=0x31 reqid=142 status=0 payload=30 elapsedMs=0
+[152441][I][STORAGE] Segment lifecycle seg=392 indexed->partially_uploaded trust=trusted pending=16
+[152441][I][OFFLOAD] ack transfer=1 event=28873 pending=2149
+[152442][I][STORAGE] RAMSpool worker paused inflight=0 lastInflight=0
+[152442][I][STORAGE] Exclusive window begin kind=enrichment reason=phone_offload_fetch workerPaused=1 displaySuspended=1
+[152445][I][STORAGE] RAMSpool worker resumed
+[152446][I][STORAGE] Exclusive window end kind=enrichment result=fetched reason=phone_offload_fetch
+[152448][I][CMD] op=0x31 reqid=143 status=0 payload=192 elapsedMs=15
+[152601][I][CMD] op=0x31 reqid=144 status=0 payload=192 elapsedMs=0
+[152756][I][CMD] op=0x31 reqid=145 status=0 payload=45 elapsedMs=0
+[152916][I][OFFLOAD] ack transfer=1 event=28874 pending=2148
+[152916][I][STORAGE] RAMSpool worker paused inflight=0 lastInflight=0
+[152916][I][STORAGE] Exclusive window begin kind=enrichment reason=phone_offload_fetch workerPaused=1 displaySuspended=1
+[152920][I][STORAGE] RAMSpool worker resumed
+[152920][I][STORAGE] Exclusive window end kind=enrichment result=fetched reason=phone_offload_fetch
+[152922][I][CMD] op=0x31 reqid=146 status=0 payload=192 elapsedMs=14
+[153074][I][CMD] op=0x31 reqid=147 status=0 payload=191 elapsedMs=0
+[153234][I][OFFLOAD] ack transfer=1 event=28875 pending=2147
+[153234][I][STORAGE] RAMSpool worker paused inflight=0 lastInflight=0
+[153235][I][STORAGE] Exclusive window begin kind=enrichment reason=phone_offload_fetch workerPaused=1 displaySuspended=1
+[153238][I][STORAGE] RAMSpool worker resumed
+[153238][I][STORAGE] Exclusive window end kind=enrichment result=fetched reason=phone_offload_fetch
+[153240][I][CMD] op=0x31 reqid=148 status=0 payload=192 elapsedMs=14
+[153392][I][CMD] op=0x31 reqid=149 status=0 payload=192 elapsedMs=0
+[153544][I][CMD] op=0x31 reqid=150 status=0 payload=30 elapsedMs=0
+[153707][I][OFFLOAD] ack transfer=1 event=28876 pending=2146
+[153707][I][STORAGE] RAMSpool worker paused inflight=0 lastInflight=0
+[153708][I][STORAGE] Exclusive window begin kind=enrichment reason=phone_offload_fetch workerPaused=1 displaySuspended=1
+[153711][I][STORAGE] RAMSpool worker resumed
+[153711][I][STORAGE] Exclusive window end kind=enrichment result=fetched reason=phone_offload_fetch
+[153713][I][CMD] op=0x31 reqid=151 status=0 payload=192 elapsedMs=14
+[153875][I][CMD] op=0x31 reqid=152 status=0 payload=191 elapsedMs=0
+[154035][I][OFFLOAD] ack transfer=1 event=28877 pending=2145
+[154035][I][STORAGE] RAMSpool worker paused inflight=0 lastInflight=0
+[154036][I][STORAGE] Exclusive window begin kind=enrichment reason=phone_offload_fetch workerPaused=1 displaySuspended=1
+[154039][I][STORAGE] RAMSpool worker resumed
+[154039][I][STORAGE] Exclusive window end kind=enrichment result=fetched reason=phone_offload_fetch
+[154041][I][CMD] op=0x31 reqid=153 status=0 payload=192 elapsedMs=14
+[154194][I][CMD] op=0x31 reqid=154 status=0 payload=192 elapsedMs=0
+[154346][I][CMD] op=0x31 reqid=155 status=0 payload=30 elapsedMs=0
+[154506][I][OFFLOAD] ack transfer=1 event=28878 pending=2144
+[154506][I][CMD] op=0x32 reqid=156 status=0 payload=4 elapsedMs=8
+[154660][I][STORAGE] RAMSpool worker paused inflight=0 lastInflight=0
+[154661][I][STORAGE] Exclusive window begin kind=enrichment reason=phone_offload_finish workerPaused=1 displaySuspended=1
+[154661][I][STORAGE] Maintenance requested reason=upload_enrich_cursor_dirty source=upload_end flags=dirty_spool_index|snapshot_lagged|upload_enrich_cursor_dirty
+[154661][I][STORAGE] Maintenance requested reason=delete_drained source=upload_end flags=dirty_spool_index|snapshot_lagged|upload_enrich_cursor_dirty|delete_drained
+[154662][I][STORAGE] Upload batch closed; maintenance queued dirty=1 sidecar=1 flags=dirty_spool_index|snapshot_lagged|upload_enrich_cursor_dirty|delete_drained
+[154676][I][STORAGE] Upload index released reason=upload_batch_end indexed=2169 sessions=52
+[154677][I][STORAGE] RAMSpool worker resumed
+[154677][I][STORAGE] Exclusive window end kind=enrichment result=checkpointed reason=phone_offload_finish
+[154678][I][OFFLOAD] end transfer=1 reason=phone_end checkpoint=1
+[154678][I][CMD] op=0x33 reqid=157 status=0 payload=0 elapsedMs=18
+[155677][I][STORAGE] Routine maintenance requests coalesced count=1 latest=dirty_summary source=ramspool_idle flags=dirty_spool_index|dirty_summary|snapshot_lagged|upload_enrich_cursor_dirty|delete_drained
+[168552][I][BLE] worker stack free=7384B min=7384B
+[180022][I][HEAP] heap free=4492KB min=4056KB largest=4352KB frag=3% internalFree=37KB internalLargest=15KB psramFree=4456KB core=1/0% owner=BLE_GPS nets=1 pendingUpload=2144 pendingEnrich=95
+[HEALTH] time=2026-08-10 15:45:17 src=ntp
+[HEALTH] heap used=3959/8451KB free=4492KB min=4056KB largest=4352KB frag=3%
+[HEALTH] internal used=222/259KB free=37KB min=2KB largest=15KB
+[HEALTH] psram used=3736/8192KB free=4456KB largest=4352KB
+[HEALTH] stack free_min: core0=15KB/22KB core1=13KB/18KB
+[HEALTH] core usage: core0=1% core1=0%
+[HEALTH] power=usb state=usb batt=100% 4767mV trend=33mV/min runtime=0min cap=1100mAh charging=1
+[HEALTH] radio=BLE_GPS wifi=0 ble=1 gps=0 nets=1 pendingUpload=2144 pendingEnrich=95
+[HEALTH] subghz=NONE mode=OFF pkts=0 nodes=0
+[180025][I][STORAGE] RAMSpool enq=7 cons=7 inflight=0/1024 high=4 pressure=0 drop[full=0 big=0 noise=0 p3Evict=0 p3Drop=0 p2Drop=0 p1Fail=0] free=1024
+[180025][I][STORAGE] RAMSpool enqueue probe[ok=4 drop=0] device[ok=3 drop=0]
+[180026][I][STORAGE] RAMSpool worker probe[ok=3 sup=1 drop=0 fail=0 slow=0] device[ok=3 sup=0 drop=0 fail=0 slow=0] slowTotal=0 maxMs=0
+[180026][I][STORAGE] RAMSpool prioEnq p0=0 p1=0 p2=7 p3=0
+[180026][I][STORAGE] RAMSpool lanes p1=0/0 p2=0/3 p3=0/0
+[181040][I][STACK] TaskHardware watermark=15152B min=15152B
+[198556][I][BLE] worker stack free=7384B min=7384B
+[210027][I][HEAP] heap free=4492KB min=4056KB largest=4352KB frag=3% internalFree=37KB internalLargest=15KB psramFree=4456KB core=0/0% owner=BLE_GPS nets=1 pendingUpload=2144 pendingEnrich=95
+[HEALTH] time=2026-08-10 15:45:47 src=ntp
+[HEALTH] heap used=3959/8451KB free=4492KB min=4056KB largest=4352KB frag=3%
+[HEALTH] internal used=222/259KB free=37KB min=2KB largest=15KB
+[HEALTH] psram used=3736/8192KB free=4456KB largest=4352KB
+[HEALTH] stack free_min: core0=15KB/22KB core1=13KB/18KB
+[HEALTH] core usage: core0=0% core1=0%
+[HEALTH] power=usb state=usb batt=100% 4769mV trend=28mV/min runtime=0min cap=1100mAh charging=1
+[HEALTH] radio=BLE_GPS wifi=0 ble=1 gps=0 nets=1 pendingUpload=2144 pendingEnrich=95
+[HEALTH] subghz=NONE mode=OFF pkts=0 nodes=0
+[210030][I][STORAGE] RAMSpool enq=7 cons=7 inflight=0/1024 high=4 pressure=0 drop[full=0 big=0 noise=0 p3Evict=0 p3Drop=0 p2Drop=0 p1Fail=0] free=1024
+[210030][I][STORAGE] RAMSpool enqueue probe[ok=4 drop=0] device[ok=3 drop=0]
+[210030][I][STORAGE] RAMSpool worker probe[ok=3 sup=1 drop=0 fail=0 slow=0] device[ok=3 sup=0 drop=0 fail=0 slow=0] slowTotal=0 maxMs=0
+[210031][I][STORAGE] RAMSpool prioEnq p0=0 p1=0 p2=7 p3=0
+[210031][I][STORAGE] RAMSpool lanes p1=0/0 p2=0/3 p3=0/0
+[211044][I][STACK] TaskHardware watermark=15152B min=15152B
+[228684][I][BLE] worker stack free=7384B min=7384B
+[240032][I][HEAP] heap free=4492KB min=4056KB largest=4352KB frag=3% internalFree=37KB internalLargest=15KB psramFree=4456KB core=0/0% owner=BLE_GPS nets=1 pendingUpload=2144 pendingEnrich=95
+[HEALTH] time=2026-08-10 15:46:17 src=ntp
+[HEALTH] heap used=3959/8451KB free=4492KB min=4056KB largest=4352KB frag=3%
+[HEALTH] internal used=222/259KB free=37KB min=2KB largest=15KB
+[HEALTH] psram used=3736/8192KB free=4456KB largest=4352KB
+[HEALTH] stack free_min: core0=15KB/22KB core1=13KB/18KB
+[HEALTH] core usage: core0=0% core1=0%
+[HEALTH] power=usb state=usb batt=100% 4770mV trend=1mV/min runtime=0min cap=1100mAh charging=0
+[HEALTH] radio=BLE_GPS wifi=0 ble=1 gps=0 nets=1 pendingUpload=2144 pendingEnrich=95
+[HEALTH] subghz=NONE mode=OFF pkts=0 nodes=0
+[240123][I][STORAGE] RAMSpool enq=7 cons=7 inflight=0/1024 high=4 pressure=0 drop[full=0 big=0 noise=0 p3Evict=0 p3Drop=0 p2Drop=0 p1Fail=0] free=1024
+[240124][I][STORAGE] RAMSpool enqueue probe[ok=4 drop=0] device[ok=3 drop=0]
+[240124][I][STORAGE] RAMSpool worker probe[ok=3 sup=1 drop=0 fail=0 slow=0] device[ok=3 sup=0 drop=0 fail=0 slow=0] slowTotal=0 maxMs=0
+[240124][I][STORAGE] RAMSpool prioEnq p0=0 p1=0 p2=7 p3=0
+[240124][I][STORAGE] RAMSpool lanes p1=0/0 p2=0/3 p3=0/0
+[241048][I][STACK] TaskHardware watermark=15152B min=15152B
+[258816][I][BLE] worker stack free=7384B min=7384B
+[270034][I][HEAP] heap free=4492KB min=4056KB largest=4352KB frag=3% internalFree=37KB internalLargest=15KB psramFree=4456KB core=0/0% owner=BLE_GPS nets=1 pendingUpload=2144 pendingEnrich=95
+[HEALTH] time=2026-08-10 15:46:47 src=ntp
+[HEALTH] heap used=3959/8451KB free=4492KB min=4056KB largest=4352KB frag=3%
+[HEALTH] internal used=222/259KB free=37KB min=2KB largest=15KB
+[HEALTH] psram used=3736/8192KB free=4456KB largest=4352KB
+[HEALTH] stack free_min: core0=15KB/22KB core1=13KB/18KB
+[HEALTH] core usage: core0=0% core1=0%
+[HEALTH] power=usb state=usb batt=100% 4768mV trend=0mV/min runtime=0min cap=1100mAh charging=0
+[HEALTH] radio=BLE_GPS wifi=0 ble=1 gps=0 nets=1 pendingUpload=2144 pendingEnrich=95
+[HEALTH] subghz=NONE mode=OFF pkts=0 nodes=0
+[270037][I][STORAGE] RAMSpool enq=7 cons=7 inflight=0/1024 high=4 pressure=0 drop[full=0 big=0 noise=0 p3Evict=0 p3Drop=0 p2Drop=0 p1Fail=0] free=1024
+[270037][I][STORAGE] RAMSpool enqueue probe[ok=4 drop=0] device[ok=3 drop=0]
+[270037][I][STORAGE] RAMSpool worker probe[ok=3 sup=1 drop=0 fail=0 slow=0] device[ok=3 sup=0 drop=0 fail=0 slow=0] slowTotal=0 maxMs=0
+[270038][I][STORAGE] RAMSpool prioEnq p0=0 p1=0 p2=7 p3=0
+[270038][I][STORAGE] RAMSpool lanes p1=0/0 p2=0/3 p3=0/0
+[271051][I][STACK] TaskHardware watermark=15152B min=15152B
+[288914][I][BLE] worker stack free=7384B min=7384B
+[300038][I][HEAP] heap free=4492KB min=4056KB largest=4352KB frag=3% internalFree=37KB internalLargest=15KB psramFree=4456KB core=0/0% owner=BLE_GPS nets=1 pendingUpload=2144 pendingEnrich=95
+[HEALTH] time=2026-08-10 15:47:17 src=ntp
+[HEALTH] heap used=3959/8451KB free=4492KB min=4056KB largest=4352KB frag=3%
+[HEALTH] internal used=222/259KB free=37KB min=2KB largest=15KB
+[HEALTH] psram used=3736/8192KB free=4456KB largest=4352KB
+[HEALTH] stack free_min: core0=15KB/22KB core1=13KB/18KB
+[HEALTH] core usage: core0=0% core1=0%
+[HEALTH] power=usb state=usb batt=100% 4768mV trend=0mV/min runtime=0min cap=1100mAh charging=0
+[HEALTH] radio=BLE_GPS wifi=0 ble=1 gps=0 nets=1 pendingUpload=2144 pendingEnrich=95
+[HEALTH] subghz=NONE mode=OFF pkts=0 nodes=0
+[300040][I][STORAGE] RAMSpool enq=7 cons=7 inflight=0/1024 high=4 pressure=0 drop[full=0 big=0 noise=0 p3Evict=0 p3Drop=0 p2Drop=0 p1Fail=0] free=1024
+[300041][I][STORAGE] RAMSpool enqueue probe[ok=4 drop=0] device[ok=3 drop=0]
+[300041][I][STORAGE] RAMSpool worker probe[ok=3 sup=1 drop=0 fail=0 slow=0] device[ok=3 sup=0 drop=0 fail=0 slow=0] slowTotal=0 maxMs=0
+[300042][I][STORAGE] RAMSpool prioEnq p0=0 p1=0 p2=7 p3=0
+[300042][I][STORAGE] RAMSpool lanes p1=0/0 p2=0/3 p3=0/0
+[301054][I][STACK] TaskHardware watermark=15152B min=15152B
+[319051][I][BLE] worker stack free=7384B min=7384B
+[330048][I][HEAP] heap free=4492KB min=4056KB largest=4352KB frag=3% internalFree=37KB internalLargest=15KB psramFree=4456KB core=0/0% owner=BLE_GPS nets=1 pendingUpload=2144 pendingEnrich=95
+[HEALTH] time=2026-08-10 15:47:47 src=ntp
+[HEALTH] heap used=3959/8451KB free=4492KB min=4056KB largest=4352KB frag=3%
+[HEALTH] internal used=222/259KB free=37KB min=2KB largest=15KB
+[HEALTH] psram used=3736/8192KB free=4456KB largest=4352KB
+[HEALTH] stack free_min: core0=15KB/22KB core1=13KB/18KB
+[HEALTH] core usage: core0=0% core1=0%
+[HEALTH] power=usb state=usb batt=100% 4765mV trend=3mV/min runtime=0min cap=1100mAh charging=1
+[HEALTH] radio=BLE_GPS wifi=0 ble=1 gps=0 nets=1 pendingUpload=2144 pendingEnrich=95
+[HEALTH] subghz=NONE mode=OFF pkts=0 nodes=0
+[330050][I][STORAGE] RAMSpool enq=7 cons=7 inflight=0/1024 high=4 pressure=0 drop[full=0 big=0 noise=0 p3Evict=0 p3Drop=0 p2Drop=0 p1Fail=0] free=1024
+[330051][I][STORAGE] RAMSpool enqueue probe[ok=4 drop=0] device[ok=3 drop=0]
+[330051][I][STORAGE] RAMSpool worker probe[ok=3 sup=1 drop=0 fail=0 slow=0] device[ok=3 sup=0 drop=0 fail=0 slow=0] slowTotal=0 maxMs=0
+[330051][I][STORAGE] RAMSpool prioEnq p0=0 p1=0 p2=7 p3=0
+[330051][I][STORAGE] RAMSpool lanes p1=0/0 p2=0/3 p3=0/0
+[331056][I][STACK] TaskHardware watermark=15152B min=15152B
+[349167][I][BLE] worker stack free=7384B min=7384B

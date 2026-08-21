@@ -122,14 +122,14 @@ bool RadioArbiter::requestLease(RadioOwner owner,
     }
 
     if (_owner == RADIO_NONE) {
-        return _switchTo(owner, holdMs, reason);
+        return _switchTo(owner, holdMs, reason, force);
     }
 
     const uint8_t incomingPriority = _priorityFor(owner);
     const uint8_t currentPriority  = _priorityFor(_owner);
 
     if (incomingPriority > currentPriority) {
-        return _switchTo(owner, holdMs, reason);
+        return _switchTo(owner, holdMs, reason, force);
     }
 
     _queuePending(owner, holdMs, reason, force);
@@ -207,12 +207,17 @@ void RadioArbiter::release(RadioOwner owner,
     }
     _clearActiveOwnerState();
     _lastSwitchMs = millis();
-    if (serviceIdleOwner) {
+    if (serviceIdleOwner && BLE_MGR.readyForWifiHandoff()) {
         crashCheckpointVolatile(CrashPhase::RADIO_RESUME,
                                 static_cast<uint8_t>(owner),
                                 STORAGE.isReady() ? STORAGE.getPendingEventCount() : 0U);
         _serviceIdleOwner(reason ? reason : "release");
         crashBreadcrumbClearVolatile(CrashPhase::RADIO_RESUME);
+    } else if (serviceIdleOwner) {
+        // BLEWorker may still be returning from connect/auth. tick() will
+        // service the pending/fallback owner after BLE reports a clean handoff.
+        _nextIdleRetryMs = millis() + 25UL;
+        DLOG_INFO(TAG, "fallback deferred: BLE cleanup active");
     }
 }
 
@@ -467,7 +472,7 @@ bool RadioArbiter::_startOwner(RadioOwner owner, const char* reason) {
                 return false;
             }
             BLE_MGR.setRadioEnabled(true);
-            return true;
+            return BLE_MGR.isRadioEnabled();
         case RADIO_NONE:
         default:
             return true;
@@ -511,7 +516,10 @@ void RadioArbiter::_stopOwner(RadioOwner owner, const char* reason) {
     }
 }
 
-bool RadioArbiter::_switchTo(RadioOwner owner, uint32_t holdMs, const char* reason) {
+bool RadioArbiter::_switchTo(RadioOwner owner,
+                             uint32_t holdMs,
+                             const char* reason,
+                             bool force) {
     const char* transitionReason = reason ? reason : "switch";
     const RadioOwner previous = _owner;
 
@@ -526,6 +534,16 @@ bool RadioArbiter::_switchTo(RadioOwner owner, uint32_t holdMs, const char* reas
     if (previous != RADIO_NONE) {
         _stopOwner(previous, transitionReason);
         _clearActiveOwnerState();
+
+        if (isInternalBleOwner(previous) &&
+            !BLE_MGR.readyForWifiHandoff()) {
+            _queuePending(owner, holdMs, transitionReason, force);
+            _nextIdleRetryMs = millis() + 25UL;
+            DLOG_INFO(TAG,
+                      "transition deferred from=%s to=%s: BLE cleanup active",
+                      ownerName(previous), ownerName(owner));
+            return false;
+        }
     }
 
     // NimBLE host allocations are placed in PSRAM by NimBLEBuildOverrides.h so
@@ -571,6 +589,11 @@ bool RadioArbiter::_switchTo(RadioOwner owner, uint32_t holdMs, const char* reas
 
 void RadioArbiter::_serviceIdleOwner(const char* reason) {
     if (_owner != RADIO_NONE) {
+        return;
+    }
+
+    if (!BLE_MGR.readyForWifiHandoff()) {
+        _nextIdleRetryMs = millis() + 25UL;
         return;
     }
 

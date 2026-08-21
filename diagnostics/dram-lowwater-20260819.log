@@ -1,0 +1,9 @@
+===== CMD: heap status =====
+heap status
+[HEAP] 8bit total=8456KB free=4470KB largest=4352KB
+[HEAP] internal total=264KB free=55KB largest=31KB
+[HEAP] dram low-water observed=0B (sampled global min)
+[HEAP] rtc-slow free=7KB (spill indicator; DRAM dry if falling)
+[HEAP] psram total=8192KB free=4407KB largest=4352KB
+[HEAP] uploadIndex=0 enrichWindow=0 maint=dirty_spool_index|dirty_summary|snapshot_lagged owner=BLE_GPS
+

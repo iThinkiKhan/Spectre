@@ -2,6 +2,7 @@
 
 
 #include "StorageManager.h"
+#include <esp_system.h>
 #include "../config.h"
 #include "../core/DebugLog.h"
 #include "../core/CrashBreadcrumb.h"
@@ -23,6 +24,7 @@
 #include <functional>
 #include <freertos/semphr.h>
 #include <esp_heap_caps.h>
+#include <esp_partition.h>
 #include <new>
 
 // Upload runs with the WiFi radio active and has shown sensitivity to even
@@ -40,6 +42,14 @@ static constexpr uint8_t ENRICH_FLAG_GPS_TS = 0x02;
 // is not a trusted UTC epoch (so the phone could never look up history).
 // Coordinate fields on such records are all zero.
 static constexpr uint8_t ENRICH_FLAG_NO_DATA = 0x04;
+// v2 only. Set when this record's numeric fields are absolute rather than
+// deltas, and the reader must reset its running context. The writer sets it
+// whenever it has no in-memory context for the segment -- which is exactly
+// what happens on the first enrichment after a reboot, mid-segment. Without a
+// self-describing marker the writer would emit absolutes while a reader
+// scanning from the segment start still expected deltas, and every following
+// record would decode to garbage.
+static constexpr uint8_t ENRICH_FLAG_ABSOLUTE = 0x08;
 static constexpr uint32_t MIN_ENRICH_GPS_EPOCH = 1609459200UL;
 
 bool _isReservedEventKey(const char* key) {
@@ -177,21 +187,83 @@ enum BinaryEventTypeCode : uint8_t {
     BIN_EVT_DEVICE = 2,
     BIN_EVT_DRONE = 3,
     BIN_EVT_PMKID = 4,
-    BIN_EVT_EVENT = 5
+    BIN_EVT_EVENT = 5,
+    // "network" used to fall through to BIN_EVT_CUSTOM, which spelled the type
+    // name inline AND forced the whole record into a keyed field map. Giving it
+    // a code lets AP observations share the structured probe/device layout.
+    BIN_EVT_NETWORK = 6
 };
 
 enum BinaryPayloadFamilyCode : uint8_t {
     BIN_PAYLOAD_JSON_FALLBACK = 0,   // read-only compatibility
-    BIN_PAYLOAD_PROBE_DEVICE = 1,
+    BIN_PAYLOAD_PROBE_DEVICE = 1,    // v1 — read-only, still on disk
     BIN_PAYLOAD_PMKID = 2,
     BIN_PAYLOAD_HANDSHAKE = 3,
     BIN_PAYLOAD_DRONE = 4,
-    BIN_PAYLOAD_FIELD_MAP = 5
+    BIN_PAYLOAD_FIELD_MAP = 5,
+    // v2 probe/device/network: everything the localization sidecars added is
+    // positional behind flag bits instead of keyed in the extension map.
+    BIN_PAYLOAD_PROBE_DEVICE_V2 = 6
+};
+
+// v2 payload flag bytes. Byte 1 mirrors the v1 flags so the two layouts stay
+// readable side by side; byte 2 is the sidecar block and is only present when
+// BIN_PDV2_HAS_FLAGS2 is set.
+enum BinaryProbeV2Flags1 : uint8_t {
+    BIN_PDV2_SSID       = 0x01,
+    BIN_PDV2_RSSI       = 0x02,
+    BIN_PDV2_CHANNEL    = 0x04,
+    BIN_PDV2_IE_FP      = 0x08,
+    BIN_PDV2_PROBE_HASH = 0x10,
+    BIN_PDV2_RANDOM_MAC = 0x20,
+    BIN_PDV2_BROADCAST  = 0x40,
+    BIN_PDV2_HAS_FLAGS2 = 0x80
+};
+
+enum BinaryProbeV2Flags2 : uint8_t {
+    BIN_PDV2_SECURITY     = 0x01,
+    BIN_PDV2_HIDDEN       = 0x02,
+    BIN_PDV2_WPS          = 0x04,
+    BIN_PDV2_LOCALIZATION = 0x08,
+    BIN_PDV2_TRACK        = 0x10
+};
+
+// track_id is always one of three literal prefixes glued to a value the record
+// already stores structurally, so store the derivation, not the string.
+enum BinaryTrackMode : uint8_t {
+    BIN_TRACK_NONE    = 0,
+    BIN_TRACK_AP_MAC  = 1,   // "AP:"  + mac/bssid
+    BIN_TRACK_MAC_MAC = 2,   // "MAC:" + mac
+    BIN_TRACK_IE_FP   = 3,   // "IE:"  + ie_fingerprint
+    BIN_TRACK_LITERAL = 4    // anything else — string follows
+};
+
+enum BinarySecurityCode : uint8_t {
+    BIN_SEC_LITERAL = 0,
+    BIN_SEC_OPEN    = 1,
+    BIN_SEC_WEP     = 2,
+    BIN_SEC_WPA     = 3,
+    BIN_SEC_WPA2    = 4,
+    BIN_SEC_WPA3    = 5,
+    BIN_SEC_SAE     = 6,
+    BIN_SEC_OWE     = 7
+};
+
+enum BinarySampleReasonCode : uint8_t {
+    BIN_REASON_LITERAL      = 0,
+    BIN_REASON_NEW          = 1,
+    BIN_REASON_IDENTITY     = 2,
+    BIN_REASON_INTERVAL     = 3,
+    BIN_REASON_SIGNAL_DELTA = 4
 };
 
 enum BinarySessionMode : uint8_t {
     BIN_SESSION_INLINE = 0,
-    BIN_SESSION_SAME_AS_PREV = 1
+    BIN_SESSION_SAME_AS_PREV = 1,
+    // session_tag is a per-session property that was being written on every
+    // record. Carry it with the session string instead, so it costs bytes only
+    // when the session (or the tag) actually changes.
+    BIN_SESSION_INLINE_TAGGED = 2
 };
 
 enum BinaryMacMode : uint8_t {
@@ -291,15 +363,302 @@ static void _appendZigZag32ToBytes(std::vector<uint8_t>& out, int32_t value);
 static bool _readZigZag32FromBytes(const uint8_t*& p, const uint8_t* end, int32_t& out);
 static void _appendStringToBytes(std::vector<uint8_t>& out, const String& s);
 static bool _readStringFromBytes(const uint8_t*& p, const uint8_t* end, String& out);
+static bool _readBinarySessionField(const uint8_t*& p, const uint8_t* end,
+                                   uint8_t sessionMode, String& lastSession,
+                                   String& lastSessionTag, String& sessionId,
+                                   String& sessionTag);
+
+// Fields every decoder reconstructs for every event record regardless of
+// payload family. Storing them costs ~93 B/record and buys nothing: the read
+// path overwrites prio/lane/lane_name from the flag bytes and recomputes
+// session/ts_iso from the record header, so the stored copies are written,
+// read back, and discarded. sensor/source are compile-time device constants
+// and session_id is a third copy of the session already in the record header.
+// Auto-format on mount failure is deliberately disabled: a transient mount
+// error must never be allowed to wipe field data. But a genuinely blank
+// partition -- fresh silicon, or a repartition after erase-flash -- has no
+// filesystem to mount and no data to protect, and without this the device comes
+// up with storage permanently unavailable (every capture write returns status=5)
+// and no recovery path short of a firmware change.
+//
+// Erased NOR flash reads back as all-0xFF, so an all-0xFF prefix means "never
+// written". Anything else is a real filesystem -- possibly damaged -- and is
+// left alone for the operator to decide about.
+static bool _storagePartitionLooksBlank() {
+    const esp_partition_t* part = esp_partition_find_first(
+        ESP_PARTITION_TYPE_DATA, ESP_PARTITION_SUBTYPE_DATA_SPIFFS, nullptr);
+    if (!part) return false;
+
+    static constexpr size_t kProbeBytes = 8192;
+    uint8_t buf[256];
+    const size_t probe = (part->size < kProbeBytes) ? part->size : kProbeBytes;
+    for (size_t off = 0; off + sizeof(buf) <= probe; off += sizeof(buf)) {
+        if (esp_partition_read(part, off, buf, sizeof(buf)) != ESP_OK) {
+            return false;
+        }
+        for (size_t i = 0; i < sizeof(buf); i++) {
+            if (buf[i] != 0xFFU) return false;
+        }
+    }
+    return true;
+}
+
+// Builds a delta-coded enrichment body against `ctx` and advances it.
+// Mirrors _decodeBinaryEnrichDeltaBody exactly; the two must stay in step.
+//
+// Typical consecutive enrichments come from one walk: record ids advance by
+// one, positions by a few metres, GPS timestamps by seconds. Encoding those as
+// deltas turns four multi-byte absolutes into single bytes.
+static void _buildBinaryEnrichDeltaBodyV2(std::vector<uint8_t>& body,
+                                          BinaryEnrichContext& ctx,
+                                          uint32_t recordId,
+                                          uint32_t tsDelta,
+                                          bool sameSession,
+                                          const String& sessionStr,
+                                          const String& sessionTag,
+                                          uint8_t enrichFlags,
+                                          uint32_t targetEventId,
+                                          int32_t latE7,
+                                          int32_t lonE7,
+                                          int32_t altCm,
+                                          uint32_t accDm,
+                                          const String& tagStr,
+                                          uint32_t gpsEpochUtc) {
+    // No baseline (fresh segment, or first write after a reboot mid-segment):
+    // emit absolutes and say so on the wire.
+    const bool absolute = !ctx.have;
+    if (absolute) enrichFlags |= ENRICH_FLAG_ABSOLUTE;
+    const BinaryEnrichContext base = absolute ? BinaryEnrichContext{} : ctx;
+
+    // Record ids and timestamps are monotonic within a segment, so plain
+    // unsigned deltas suffice.
+    _appendUVarintToBytes(body, recordId >= base.recordId
+                                    ? recordId - base.recordId : 0U);
+    _appendUVarintToBytes(body, tsDelta >= base.tsDelta
+                                    ? tsDelta - base.tsDelta : 0U);
+
+    body.push_back(sameSession ? BIN_SESSION_SAME_AS_PREV
+                               : (sessionTag.length() ? BIN_SESSION_INLINE_TAGGED
+                                                      : BIN_SESSION_INLINE));
+    if (!sameSession) {
+        _appendStringToBytes(body, sessionStr);
+        if (sessionTag.length()) _appendStringToBytes(body, sessionTag);
+    }
+
+    body.push_back(enrichFlags);
+
+    _appendZigZag32ToBytes(body, static_cast<int32_t>(targetEventId) -
+                                 static_cast<int32_t>(base.eventId));
+
+    // A no-data record's coordinates are sentinel zeros: omit them entirely
+    // rather than delta-code a meaningless position.
+    if (!(enrichFlags & ENRICH_FLAG_NO_DATA)) {
+        _appendZigZag32ToBytes(body, latE7 - base.latE7);
+        _appendZigZag32ToBytes(body, lonE7 - base.lonE7);
+        _appendZigZag32ToBytes(body, altCm - base.altCm);
+        _appendUVarintToBytes(body, accDm);
+    }
+
+    if (enrichFlags & ENRICH_FLAG_TAG) _appendStringToBytes(body, tagStr);
+    if (enrichFlags & ENRICH_FLAG_GPS_TS) {
+        _appendZigZag32ToBytes(body, static_cast<int32_t>(gpsEpochUtc) -
+                                     static_cast<int32_t>(base.gpsEpochUtc));
+    }
+
+    ctx.have = true;
+    ctx.recordId = recordId;
+    ctx.tsDelta = tsDelta;
+    ctx.eventId = targetEventId;
+    if (!(enrichFlags & ENRICH_FLAG_NO_DATA)) {
+        ctx.latE7 = latE7;
+        ctx.lonE7 = lonE7;
+        ctx.altCm = altCm;
+    }
+    if (enrichFlags & ENRICH_FLAG_GPS_TS) ctx.gpsEpochUtc = gpsEpochUtc;
+}
+
+// One decoded enrichment record, shared by all three read paths.
+struct DecodedEnrichDelta {
+    uint32_t recordId      = 0;
+    uint32_t tsDelta       = 0;
+    String   sessionId;
+    String   sessionTag;
+    uint8_t  flags         = 0;
+    uint32_t targetEventId = 0;
+    int32_t  latE7         = 0;
+    int32_t  lonE7         = 0;
+    int32_t  altCm         = 0;
+    uint32_t accDm         = 0;
+    uint32_t gpsEpochUtc   = 0;
+    String   tag;
+};
+
+// Decodes both REC_ENRICH_DELTA (v1, absolute) and REC_ENRICH_DELTA_V2
+// (delta-coded) and advances `ctx`. The three call sites previously carried
+// near-identical copies of this parse; unifying them is what keeps a format
+// change from having to be made — and got wrong — three times.
+static bool _decodeBinaryEnrichDeltaBody(const uint8_t*& p,
+                                         const uint8_t* end,
+                                         uint8_t recordPrefixType,
+                                         BinaryEnrichContext& ctx,
+                                         String& lastSession,
+                                         String& lastSessionTag,
+                                         DecodedEnrichDelta& out) {
+    const bool v2 = (recordPrefixType == SpoolBin::REC_ENRICH_DELTA_V2);
+
+    if (!v2) {
+        // ---- v1: every field absolute ----
+        if (!_readUVarintFromBytes(p, end, out.recordId) ||
+            !_readUVarintFromBytes(p, end, out.tsDelta)) {
+            return false;
+        }
+        if (p >= end) return false;
+        const uint8_t sessionMode = *p++;
+        if (!_readBinarySessionField(p, end, sessionMode, lastSession,
+                                     lastSessionTag, out.sessionId,
+                                     out.sessionTag)) {
+            return false;
+        }
+        if (p >= end) return false;
+        out.flags = *p++;
+        if (!_readUVarintFromBytes(p, end, out.targetEventId) ||
+            !_readZigZag32FromBytes(p, end, out.latE7) ||
+            !_readZigZag32FromBytes(p, end, out.lonE7) ||
+            !_readZigZag32FromBytes(p, end, out.altCm) ||
+            !_readUVarintFromBytes(p, end, out.accDm)) {
+            return false;
+        }
+        if ((out.flags & ENRICH_FLAG_TAG) &&
+            !_readStringFromBytes(p, end, out.tag)) {
+            return false;
+        }
+        if ((out.flags & ENRICH_FLAG_GPS_TS) &&
+            !_readUVarintFromBytes(p, end, out.gpsEpochUtc)) {
+            return false;
+        }
+        // v1 records still seed the context, so a v1->v2 transition inside one
+        // segment (a firmware upgrade mid-segment) delta-codes correctly.
+        ctx.have = true;
+        ctx.recordId = out.recordId;
+        ctx.tsDelta = out.tsDelta;
+        ctx.eventId = out.targetEventId;
+        if (!(out.flags & ENRICH_FLAG_NO_DATA)) {
+            ctx.latE7 = out.latE7;
+            ctx.lonE7 = out.lonE7;
+            ctx.altCm = out.altCm;
+        }
+        if (out.flags & ENRICH_FLAG_GPS_TS) ctx.gpsEpochUtc = out.gpsEpochUtc;
+        return true;
+    }
+
+    // ---- v2: deltas against the previous enrichment record ----
+    uint32_t recordIdDelta = 0;
+    uint32_t tsDeltaDelta = 0;
+    if (!_readUVarintFromBytes(p, end, recordIdDelta) ||
+        !_readUVarintFromBytes(p, end, tsDeltaDelta)) {
+        return false;
+    }
+    if (p >= end) return false;
+    const uint8_t sessionMode = *p++;
+    if (!_readBinarySessionField(p, end, sessionMode, lastSession,
+                                 lastSessionTag, out.sessionId,
+                                 out.sessionTag)) {
+        return false;
+    }
+    if (p >= end) return false;
+    out.flags = *p++;
+
+    const bool absolute = (out.flags & ENRICH_FLAG_ABSOLUTE) != 0;
+    const BinaryEnrichContext base = absolute ? BinaryEnrichContext{} : ctx;
+
+    out.recordId = base.recordId + recordIdDelta;
+    out.tsDelta  = base.tsDelta + tsDeltaDelta;
+
+    int32_t eventIdDelta = 0;
+    if (!_readZigZag32FromBytes(p, end, eventIdDelta)) return false;
+    out.targetEventId =
+        static_cast<uint32_t>(static_cast<int32_t>(base.eventId) + eventIdDelta);
+
+    // A no-data record carries sentinel coordinates, so they are omitted from
+    // the wire entirely rather than delta-coded -- that keeps ~13 bytes off the
+    // record AND stops a meaningless (0,0) from poisoning the running position.
+    if (!(out.flags & ENRICH_FLAG_NO_DATA)) {
+        int32_t dLat = 0, dLon = 0, dAlt = 0;
+        if (!_readZigZag32FromBytes(p, end, dLat) ||
+            !_readZigZag32FromBytes(p, end, dLon) ||
+            !_readZigZag32FromBytes(p, end, dAlt) ||
+            !_readUVarintFromBytes(p, end, out.accDm)) {
+            return false;
+        }
+        out.latE7 = base.latE7 + dLat;
+        out.lonE7 = base.lonE7 + dLon;
+        out.altCm = base.altCm + dAlt;
+    }
+
+    if ((out.flags & ENRICH_FLAG_TAG) &&
+        !_readStringFromBytes(p, end, out.tag)) {
+        return false;
+    }
+    if (out.flags & ENRICH_FLAG_GPS_TS) {
+        int32_t dGps = 0;
+        if (!_readZigZag32FromBytes(p, end, dGps)) return false;
+        out.gpsEpochUtc =
+            static_cast<uint32_t>(static_cast<int32_t>(base.gpsEpochUtc) + dGps);
+    }
+
+    ctx.have = true;
+    ctx.recordId = out.recordId;
+    ctx.tsDelta = out.tsDelta;
+    ctx.eventId = out.targetEventId;
+    if (!(out.flags & ENRICH_FLAG_NO_DATA)) {
+        ctx.latE7 = out.latE7;
+        ctx.lonE7 = out.lonE7;
+        ctx.altCm = out.altCm;
+    }
+    if (out.flags & ENRICH_FLAG_GPS_TS) ctx.gpsEpochUtc = out.gpsEpochUtc;
+    return true;
+}
+
+static bool _isDecoderDerivedEventKey(const char* key) {
+    return strcmp(key, "prio") == 0 ||
+           strcmp(key, "lane") == 0 ||
+           strcmp(key, "lane_name") == 0 ||
+           strcmp(key, F_TIMESTAMP_ISO) == 0 ||
+           strcmp(key, F_SESSION) == 0 ||
+           strcmp(key, "session_id") == 0 ||
+           strcmp(key, "session_tag") == 0 ||
+           strcmp(key, "sensor") == 0;
+}
+
+// Localization sidecar fields carried positionally by the v2 probe/device/
+// network payload. Keyed, these cost ~120 B/record; positional, ~7 B.
+static bool _isLocalizationSidecarKey(const char* key) {
+    return strcmp(key, "track_id") == 0 ||
+           strcmp(key, "localization_sample") == 0 ||
+           strcmp(key, "sample_seq") == 0 ||
+           strcmp(key, "sample_frames") == 0 ||
+           strcmp(key, "rssi_min") == 0 ||
+           strcmp(key, "rssi_max") == 0 ||
+           strcmp(key, "sample_reason") == 0;
+}
+
+static bool _isProbeDeviceV2Type(const String& typeStr) {
+    return typeStr == "probe" || typeStr == "device" || typeStr == "network";
+}
 
 static bool _isStructuredBinaryField(const String& typeStr,
                                      const String& eventSubtype,
                                      const char* key) {
     if (!key || !key[0]) return true;
     if (_isReservedEventKey(key)) return true;
+    if (_isDecoderDerivedEventKey(key)) return true;
 
     if (strcmp(key, "event_type") == 0) {
         return (typeStr == "event" && eventSubtype == "handshake");
+    }
+
+    if (_isProbeDeviceV2Type(typeStr) && _isLocalizationSidecarKey(key)) {
+        return true;
     }
 
     if (typeStr == "probe") {
@@ -318,6 +677,21 @@ static bool _isStructuredBinaryField(const String& typeStr,
                strcmp(key, "ie_fingerprint") == 0 ||
                strcmp(key, "probe_set_hash") == 0 ||
                strcmp(key, "is_random_mac") == 0;
+    }
+
+    if (typeStr == "network" || typeStr == "device") {
+        if (strcmp(key, "source") == 0) return true;
+    }
+
+    if (typeStr == "network") {
+        return strcmp(key, "bssid") == 0 ||
+               strcmp(key, "mac") == 0 ||
+               strcmp(key, "ssid") == 0 ||
+               strcmp(key, "rssi") == 0 ||
+               strcmp(key, "channel") == 0 ||
+               strcmp(key, "security") == 0 ||
+               strcmp(key, "is_hidden") == 0 ||
+               strcmp(key, "has_wps") == 0;
     }
 
     if (typeStr == "pmkid") {
@@ -490,6 +864,7 @@ static uint8_t _binaryEventTypeCodeFromString(const char* type) {
     if (strcmp(type, "drone") == 0)  return BIN_EVT_DRONE;
     if (strcmp(type, "pmkid") == 0)  return BIN_EVT_PMKID;
     if (strcmp(type, "event") == 0)  return BIN_EVT_EVENT;
+    if (strcmp(type, "network") == 0) return BIN_EVT_NETWORK;
     return BIN_EVT_CUSTOM;
 }
 
@@ -500,8 +875,91 @@ static const char* _binaryEventTypeStringFromCode(uint8_t code) {
         case BIN_EVT_DRONE:  return "drone";
         case BIN_EVT_PMKID:  return "pmkid";
         case BIN_EVT_EVENT:  return "event";
+        case BIN_EVT_NETWORK: return "network";
         case BIN_EVT_CUSTOM:
         default:             return "";
+    }
+}
+
+static uint8_t _binarySecurityCodeFromString(const char* sec) {
+    if (!sec || !sec[0]) return BIN_SEC_LITERAL;
+    if (strcmp(sec, "OPEN") == 0) return BIN_SEC_OPEN;
+    if (strcmp(sec, "WEP")  == 0) return BIN_SEC_WEP;
+    if (strcmp(sec, "WPA")  == 0) return BIN_SEC_WPA;
+    if (strcmp(sec, "WPA2") == 0) return BIN_SEC_WPA2;
+    if (strcmp(sec, "WPA3") == 0) return BIN_SEC_WPA3;
+    if (strcmp(sec, "SAE")  == 0) return BIN_SEC_SAE;
+    if (strcmp(sec, "OWE")  == 0) return BIN_SEC_OWE;
+    return BIN_SEC_LITERAL;
+}
+
+static const char* _binarySecurityStringFromCode(uint8_t code) {
+    switch (code) {
+        case BIN_SEC_OPEN: return "OPEN";
+        case BIN_SEC_WEP:  return "WEP";
+        case BIN_SEC_WPA:  return "WPA";
+        case BIN_SEC_WPA2: return "WPA2";
+        case BIN_SEC_WPA3: return "WPA3";
+        case BIN_SEC_SAE:  return "SAE";
+        case BIN_SEC_OWE:  return "OWE";
+        default:           return "";
+    }
+}
+
+static uint8_t _binarySampleReasonCodeFromString(const char* reason) {
+    if (!reason || !reason[0]) return BIN_REASON_LITERAL;
+    if (strcmp(reason, "new") == 0)          return BIN_REASON_NEW;
+    if (strcmp(reason, "identity") == 0)     return BIN_REASON_IDENTITY;
+    if (strcmp(reason, "interval") == 0)     return BIN_REASON_INTERVAL;
+    if (strcmp(reason, "signal_delta") == 0) return BIN_REASON_SIGNAL_DELTA;
+    return BIN_REASON_LITERAL;
+}
+
+static const char* _binarySampleReasonStringFromCode(uint8_t code) {
+    switch (code) {
+        case BIN_REASON_NEW:          return "new";
+        case BIN_REASON_IDENTITY:     return "identity";
+        case BIN_REASON_INTERVAL:     return "interval";
+        case BIN_REASON_SIGNAL_DELTA: return "signal_delta";
+        default:                      return "";
+    }
+}
+
+// track_id is generated as one of three prefixes over a value already stored
+// structurally in the record. Recognise the derivation so the string itself
+// never reaches flash; fall back to a literal for anything unexpected.
+static uint8_t _binaryTrackModeFor(const String& trackId,
+                                   const String& mac,
+                                   const String& ieFingerprint) {
+    if (!trackId.length()) return BIN_TRACK_NONE;
+    if (mac.length()) {
+        if (trackId.length() == mac.length() + 3 &&
+            trackId.startsWith("AP:") && trackId.endsWith(mac)) {
+            return BIN_TRACK_AP_MAC;
+        }
+        if (trackId.length() == mac.length() + 4 &&
+            trackId.startsWith("MAC:") && trackId.endsWith(mac)) {
+            return BIN_TRACK_MAC_MAC;
+        }
+    }
+    if (ieFingerprint.length() &&
+        trackId.length() == ieFingerprint.length() + 3 &&
+        trackId.startsWith("IE:") && trackId.endsWith(ieFingerprint)) {
+        return BIN_TRACK_IE_FP;
+    }
+    return BIN_TRACK_LITERAL;
+}
+
+static String _binaryTrackIdFromMode(uint8_t mode,
+                                     const String& mac,
+                                     const String& ieFingerprint,
+                                     const String& literal) {
+    switch (mode) {
+        case BIN_TRACK_AP_MAC:  return String("AP:") + mac;
+        case BIN_TRACK_MAC_MAC: return String("MAC:") + mac;
+        case BIN_TRACK_IE_FP:   return String("IE:") + ieFingerprint;
+        case BIN_TRACK_LITERAL: return literal;
+        default:                return String();
     }
 }
 
@@ -786,6 +1244,291 @@ static bool _readMacFieldFromBytes(const uint8_t*& p,
     }
 }
 
+// =====================================================================
+// Unified payload-family decoder.
+//
+// The scan decoder (_scanSegmentRecords) and the random-access decoder
+// (_decodeBinarySpoolRecordBody) previously carried byte-identical copies of
+// every payload family. Two copies meant every format change had to be made
+// twice and every fix could be applied to only one -- which is how the
+// random-access path ended up without the reboot-safe timestamp handling the
+// scan path had. Both now call this.
+//
+// `p` is advanced past the payload. Returns false on a malformed body.
+// =====================================================================
+static bool _decodeBinaryPayloadBody(const uint8_t*& p,
+                                     const uint8_t* end,
+                                     const String& typeStr,
+                                     uint8_t payloadFamily,
+                                     uint8_t eventFlags,
+                                     JsonObject root) {
+    const bool isNetwork = (typeStr == "network");
+    const char* macKey = isNetwork ? "bssid" : "mac";
+
+    if (payloadFamily == BIN_PAYLOAD_PROBE_DEVICE ||
+        payloadFamily == BIN_PAYLOAD_PROBE_DEVICE_V2) {
+        const bool v2 = (payloadFamily == BIN_PAYLOAD_PROBE_DEVICE_V2);
+
+        String mac;
+        String ssid;
+        String ieFingerprint;
+        String probeSetHash;
+        int32_t rssi = 0;
+        uint32_t channel = 0;
+
+        if (p >= end) return false;
+        const uint8_t flags = *p++;
+
+        uint8_t lastOui[3] = {0, 0, 0};
+        bool hasLastOui = false;
+
+        if (!_readMacFieldFromBytes(p, end, mac, lastOui, hasLastOui)) return false;
+        if ((flags & BIN_PDV2_SSID) && !_readStringFromBytes(p, end, ssid)) return false;
+        if ((flags & BIN_PDV2_RSSI) && !_readZigZag32FromBytes(p, end, rssi)) return false;
+
+        root[macKey] = mac;
+        if (flags & BIN_PDV2_SSID) {
+            // probe records carry the *probed* SSID, which is a different
+            // thing from the SSID a network/device record reports.
+            root[(typeStr == "probe") ? "probed_ssid" : "ssid"] = ssid;
+        }
+        if (flags & BIN_PDV2_RSSI) root["rssi"] = rssi;
+        if (flags & BIN_PDV2_CHANNEL) {
+            if (!_readUVarintFromBytes(p, end, channel)) return false;
+            root["channel"] = channel;
+        }
+        if (flags & BIN_PDV2_IE_FP) {
+            if (!_readStringFromBytes(p, end, ieFingerprint)) return false;
+            root["ie_fingerprint"] = ieFingerprint;
+        }
+        if (flags & BIN_PDV2_PROBE_HASH) {
+            if (!_readStringFromBytes(p, end, probeSetHash)) return false;
+            root["probe_set_hash"] = probeSetHash;
+        }
+        if (flags & BIN_PDV2_RANDOM_MAC) {
+            if (p >= end) return false;
+            root["is_random_mac"] = (*p++ != 0) ? 1 : 0;
+        }
+        if (flags & BIN_PDV2_BROADCAST) {
+            if (p >= end) return false;
+            root["is_broadcast"] = (*p++ != 0) ? 1 : 0;
+        }
+
+        // v1 stops here; 0x80 is only a flags2 marker in v2.
+        if (!v2 || !(flags & BIN_PDV2_HAS_FLAGS2)) return true;
+
+        if (p >= end) return false;
+        const uint8_t flags2 = *p++;
+
+        if (flags2 & BIN_PDV2_SECURITY) {
+            if (p >= end) return false;
+            const uint8_t secCode = *p++;
+            if (secCode == BIN_SEC_LITERAL) {
+                String security;
+                if (!_readStringFromBytes(p, end, security)) return false;
+                root["security"] = security;
+            } else {
+                root["security"] = _binarySecurityStringFromCode(secCode);
+            }
+        }
+        if (flags2 & BIN_PDV2_HIDDEN) {
+            if (p >= end) return false;
+            root["is_hidden"] = (*p++ != 0) ? 1 : 0;
+        }
+        if (flags2 & BIN_PDV2_WPS) {
+            if (p >= end) return false;
+            root["has_wps"] = (*p++ != 0) ? 1 : 0;
+        }
+        if (flags2 & BIN_PDV2_LOCALIZATION) {
+            uint32_t sampleSeq = 0;
+            uint32_t sampleFrames = 0;
+            int32_t rssiMinDelta = 0;
+            int32_t rssiMaxDelta = 0;
+            if (!_readUVarintFromBytes(p, end, sampleSeq) ||
+                !_readUVarintFromBytes(p, end, sampleFrames) ||
+                !_readZigZag32FromBytes(p, end, rssiMinDelta) ||
+                !_readZigZag32FromBytes(p, end, rssiMaxDelta)) {
+                return false;
+            }
+            if (p >= end) return false;
+            const uint8_t reasonCode = *p++;
+
+            root["localization_sample"] = true;
+            root["sample_seq"] = sampleSeq;
+            root["sample_frames"] = sampleFrames;
+            // min/max are stored as deltas from rssi -- they sit within a few
+            // dB of it, so the delta is almost always a single varint byte.
+            root["rssi_min"] = rssi + rssiMinDelta;
+            root["rssi_max"] = rssi + rssiMaxDelta;
+            if (reasonCode == BIN_REASON_LITERAL) {
+                String reason;
+                if (!_readStringFromBytes(p, end, reason)) return false;
+                root["sample_reason"] = reason;
+            } else {
+                root["sample_reason"] = _binarySampleReasonStringFromCode(reasonCode);
+            }
+        }
+        if (flags2 & BIN_PDV2_TRACK) {
+            if (p >= end) return false;
+            const uint8_t trackMode = *p++;
+            String literal;
+            if (trackMode == BIN_TRACK_LITERAL &&
+                !_readStringFromBytes(p, end, literal)) {
+                return false;
+            }
+            const String trackId =
+                _binaryTrackIdFromMode(trackMode, mac, ieFingerprint, literal);
+            if (trackId.length()) root["track_id"] = trackId;
+        }
+        return true;
+    }
+
+    if (payloadFamily == BIN_PAYLOAD_PMKID) {
+        String ap, sta, ssid, pmkidHex, hashcatLine;
+        int32_t rssi = 0;
+
+        if (p >= end) return false;
+        const uint8_t flags = *p++;
+
+        uint8_t lastOui[3] = {0, 0, 0};
+        bool hasLastOui = false;
+
+        if (!_readMacFieldFromBytes(p, end, ap, lastOui, hasLastOui)) return false;
+        if (!_readMacFieldFromBytes(p, end, sta, lastOui, hasLastOui)) return false;
+        if ((flags & 0x01) && !_readStringFromBytes(p, end, ssid)) return false;
+        if ((flags & 0x02) && !_readZigZag32FromBytes(p, end, rssi)) return false;
+        if ((flags & 0x04) && !_readStringFromBytes(p, end, pmkidHex)) return false;
+        if ((flags & 0x08) && !_readStringFromBytes(p, end, hashcatLine)) return false;
+
+        root["ap"] = ap;
+        root["sta"] = sta;
+        if (flags & 0x01) root["ssid"] = ssid;
+        if (flags & 0x02) root["rssi"] = rssi;
+        if (flags & 0x04) root["pmkid_hex"] = pmkidHex;
+        if (flags & 0x08) root["hashcat_line"] = hashcatLine;
+        return true;
+    }
+
+    if (payloadFamily == BIN_PAYLOAD_HANDSHAKE) {
+        String ap, sta, ssid;
+        int32_t rssi = 0;
+        uint32_t frameMask = 0;
+        uint32_t messageNumber = 0;
+
+        if (p >= end) return false;
+        const uint8_t flags = *p++;
+
+        uint8_t lastOui[3] = {0, 0, 0};
+        bool hasLastOui = false;
+
+        if (!_readMacFieldFromBytes(p, end, ap, lastOui, hasLastOui)) return false;
+        if (!_readMacFieldFromBytes(p, end, sta, lastOui, hasLastOui)) return false;
+        if ((flags & 0x01) && !_readStringFromBytes(p, end, ssid)) return false;
+        if (!_readUVarintFromBytes(p, end, frameMask)) return false;
+        if ((flags & 0x02) && !_readZigZag32FromBytes(p, end, rssi)) return false;
+        if ((flags & 0x04) && !_readUVarintFromBytes(p, end, messageNumber)) return false;
+
+        root["ap"] = ap;
+        root["sta"] = sta;
+        if (flags & 0x01) root["ssid"] = ssid;
+        root["frame_mask"] = frameMask;
+        if (flags & 0x02) root["rssi"] = rssi;
+        if (flags & 0x04) root["message"] = messageNumber;
+        root["event_type"] = "handshake";
+        return true;
+    }
+
+    if (payloadFamily == BIN_PAYLOAD_DRONE) {
+        String droneId, mac, protocol;
+        int32_t latitudeE7 = 0, longitudeE7 = 0;
+        uint32_t channel = 0;
+        uint8_t lastOui[3] = {0, 0, 0};
+        bool hasLastOui = false;
+
+        if (p >= end) return false;
+        const uint8_t flags = *p++;
+
+        if ((flags & 0x01) && !_readStringFromBytes(p, end, droneId)) return false;
+        if ((flags & 0x02) &&
+            !_readMacFieldFromBytes(p, end, mac, lastOui, hasLastOui)) return false;
+        if (flags & 0x04) {
+            int32_t rssi = 0;
+            if (!_readZigZag32FromBytes(p, end, rssi)) return false;
+            root["rssi"] = rssi;
+        }
+        if (flags & 0x08) {
+            if (!_readUVarintFromBytes(p, end, channel)) return false;
+            root["channel"] = channel;
+        }
+        if ((flags & 0x10) && !_readStringFromBytes(p, end, protocol)) return false;
+        if (flags & 0x10) root["protocol"] = protocol;
+        if (flags & 0x20) {
+            if (!_readZigZag32FromBytes(p, end, latitudeE7) ||
+                !_readZigZag32FromBytes(p, end, longitudeE7)) {
+                return false;
+            }
+            root["latitude"] = _e7ToFloat(latitudeE7);
+            root["longitude"] = _e7ToFloat(longitudeE7);
+        }
+        if (flags & 0x40) {
+            uint32_t altitudeCenti = 0;
+            if (!_readUVarintFromBytes(p, end, altitudeCenti)) return false;
+            root["altitude_m"] = _centiToFloat(altitudeCenti);
+        }
+        if (flags & 0x80) {
+            uint32_t speedCenti = 0;
+            if (!_readUVarintFromBytes(p, end, speedCenti)) return false;
+            root["speed"] = _centiToFloat(speedCenti);
+        }
+        if (flags & 0x01) root["drone_id"] = droneId;
+        if (flags & 0x02) root["mac"] = mac;
+        return true;
+    }
+
+    if (payloadFamily == BIN_PAYLOAD_FIELD_MAP) {
+        return _readBinaryFieldMapFromBytes(p, end, root);
+    }
+
+    if (payloadFamily == BIN_PAYLOAD_JSON_FALLBACK) {
+        // Legacy fallback payload, readback only.
+        if (!(eventFlags & BIN_EVENT_HAS_PAYLOAD)) return true;
+
+        String payloadJson;
+        if (!_readStringFromBytes(p, end, payloadJson)) return false;
+        if (!payloadJson.length()) return true;
+
+        JsonDocument payloadDoc;
+        DeserializationError err = deserializeJson(payloadDoc, payloadJson);
+        if (err || !payloadDoc.is<JsonObject>()) return false;
+        for (JsonPairConst kv : payloadDoc.as<JsonObjectConst>()) {
+            root[kv.key().c_str()].set(kv.value());
+        }
+        return true;
+    }
+
+    return false;
+}
+
+// Re-attach the fields the writer deliberately stopped storing. This is the
+// decode edge: the values are constants or restatements of data already in the
+// record header, so they cost nothing on flash and are rebuilt only here, for
+// consumers (EtherGuard schema, phone offload, exports) that expect them.
+static void _applyDerivedEventFields(JsonObject root,
+                                     const String& typeStr,
+                                     const String& sessionId,
+                                     const String& sessionTag) {
+    // `sensor` is stamped on every queued event by _prepareQueuedEvent.
+    root["sensor"] = SPECTRE_MQTT_SENSOR_ID;
+    // `source` is not: only the network and device producers emit it, so
+    // restoring it everywhere would invent a field the record never had.
+    if (typeStr == "network" || typeStr == "device") {
+        root["source"] = SPECTRE_MQTT_SENSOR_ID;
+    }
+    root["session_id"] = sessionId;
+    if (sessionTag.length()) root["session_tag"] = sessionTag;
+}
+
+
 struct BinaryMetaRecord {
     SpoolDecodedRecordType recordType = SPOOL_REC_UNKNOWN;
     uint32_t eventId = 0;
@@ -798,74 +1541,80 @@ struct BinaryCheckpointScanResult {
     uint32_t nextOffset = 0;
 };
 
+// session_tag is a property of the session, not of each record, so it is
+// written only when the session string itself is written (see
+// BIN_SESSION_INLINE_TAGGED). Records that inherit their session via
+// SAME_AS_PREV inherit the tag too. This side table lets the random-access
+// decoder -- which starts at an arbitrary offset and has no previous record to
+// inherit from -- resolve the tag for a session it has seen elsewhere.
+static std::map<String, String> g_sessionTagBySession;
+static constexpr size_t kSessionTagCacheMax = 32;
+
+static void _rememberSessionTag(const String& sessionId, const String& tag) {
+    if (!sessionId.length() || !tag.length()) return;
+    if (g_sessionTagBySession.size() >= kSessionTagCacheMax &&
+        g_sessionTagBySession.find(sessionId) == g_sessionTagBySession.end()) {
+        return;
+    }
+    g_sessionTagBySession[sessionId] = tag;
+}
+
+static String _lookupSessionTag(const String& sessionId) {
+    if (!sessionId.length()) return String();
+    const auto it = g_sessionTagBySession.find(sessionId);
+    return (it == g_sessionTagBySession.end()) ? String() : it->second;
+}
+
+// Reads the session field common to every record header.
+//   SAME_AS_PREV  - inherit session (and tag) from the previous record
+//   INLINE        - session string follows
+//   INLINE_TAGGED - session string then session_tag string follow
+static bool _readBinarySessionField(const uint8_t*& p,
+                                    const uint8_t* end,
+                                    uint8_t sessionMode,
+                                    String& lastSession,
+                                    String& lastSessionTag,
+                                    String& sessionId,
+                                    String& sessionTag) {
+    if (sessionMode == BIN_SESSION_SAME_AS_PREV) {
+        sessionId = lastSession;
+        sessionTag = lastSessionTag;
+        return true;
+    }
+    if (!_readStringFromBytes(p, end, sessionId)) return false;
+    sessionTag = "";
+    if (sessionMode == BIN_SESSION_INLINE_TAGGED &&
+        !_readStringFromBytes(p, end, sessionTag)) {
+        return false;
+    }
+    lastSession = sessionId;
+    lastSessionTag = sessionTag;
+    _rememberSessionTag(sessionId, sessionTag);
+    return true;
+}
+
 static bool _decodeBinaryMetaRecord(const uint8_t* data,
                                     size_t len,
                                     uint8_t recordPrefixType,
                                     String& lastSession,
+                                    String& lastSessionTag,
+                                    BinaryEnrichContext& enrichCtx,
                                     BinaryMetaRecord& out) {
     out = {};
 
     const uint8_t* p = data;
     const uint8_t* end = data + len;
 
-    if (recordPrefixType == SpoolBin::REC_ENRICH_DELTA) {
-            uint32_t recordId = 0;
-            uint32_t tsDelta = 0;
-            uint8_t sessionMode = BIN_SESSION_INLINE;
-            uint8_t enrichFlags = 0;
-            String sessionId;
-            uint32_t targetEventId = 0;
-            int32_t latE7 = 0;
-            int32_t lonE7 = 0;
-            int32_t altCm = 0;
-            uint32_t accDm = 0;
-            uint32_t gpsEpochUtc = 0;
-            String tag;
-
-        if (!_readUVarintFromBytes(p, end, recordId) ||
-            !_readUVarintFromBytes(p, end, tsDelta)) {
+    if (recordPrefixType == SpoolBin::REC_ENRICH_DELTA ||
+        recordPrefixType == SpoolBin::REC_ENRICH_DELTA_V2) {
+        DecodedEnrichDelta d;
+        if (!_decodeBinaryEnrichDeltaBody(p, end, recordPrefixType, enrichCtx,
+                                          lastSession, lastSessionTag, d)) {
             return false;
         }
-
-        if (p >= end) return false;
-        sessionMode = *p++;
-
-        if (sessionMode == BIN_SESSION_SAME_AS_PREV) {
-            sessionId = lastSession;
-        } else {
-            if (!_readStringFromBytes(p, end, sessionId)) {
-                return false;
-            }
-            lastSession = sessionId;
-        }
-
-        if (p >= end) {
-                return false;
-            }
-            enrichFlags = *p++;
-
-            if (!_readUVarintFromBytes(p, end, targetEventId) ||
-                !_readZigZag32FromBytes(p, end, latE7) ||
-                !_readZigZag32FromBytes(p, end, lonE7) ||
-                !_readZigZag32FromBytes(p, end, altCm) ||
-                !_readUVarintFromBytes(p, end, accDm)) {
-            return false;
-        }
-
-        if (enrichFlags & ENRICH_FLAG_TAG) {
-            if (!_readStringFromBytes(p, end, tag)) {
-                return false;
-            }
-        }
-        if (enrichFlags & ENRICH_FLAG_GPS_TS) {
-            if (!_readUVarintFromBytes(p, end, gpsEpochUtc)) {
-                return false;
-            }
-        }
-
         out.recordType = SPOOL_REC_ENRICH_DELTA;
-        out.eventId = recordId;
-        out.sessionId = sessionId;
+        out.eventId = d.recordId;
+        out.sessionId = d.sessionId;
         return true;
     }
 
@@ -928,6 +1677,10 @@ static bool _scanBinarySegmentMetaRecords(const String& path,
 
     uint32_t workCounter = 0;
     String lastSession;
+    String lastSessionTag;
+    // Delta-coded enrichment records resolve against the previous enrichment
+    // record in this segment; the context resets with each segment scan.
+    BinaryEnrichContext enrichCtx;
     bool ok = true;
 
     while (f.position() < f.size()) {
@@ -973,7 +1726,7 @@ static bool _scanBinarySegmentMetaRecords(const String& path,
         }
 
         BinaryMetaRecord rec;
-        if (!_decodeBinaryMetaRecord(body.data(), body.size(), prefix.type, lastSession, rec)) {
+        if (!_decodeBinaryMetaRecord(body.data(), body.size(), prefix.type, lastSession, lastSessionTag, enrichCtx, rec)) {
             DLOG_WARN("STORAGE",
                       "Binary meta decode failed path=%s type=%u len=%u",
                       path.c_str(),
@@ -1127,6 +1880,10 @@ static SpoolScanStatus _scanBinarySegmentMetaRecordsAudit(
     uint32_t workCounter = 0;
     uint32_t skipWarnCount = 0;
     String lastSession;
+    String lastSessionTag;
+    // Delta-coded enrichment records resolve against the previous enrichment
+    // record in this segment; the context resets with each segment scan.
+    BinaryEnrichContext enrichCtx;
     bool hadSkips = false;
 
     while (f.position() < f.size()) {
@@ -1178,7 +1935,7 @@ static SpoolScanStatus _scanBinarySegmentMetaRecordsAudit(
 
         BinaryMetaRecord rec;
         if (!_decodeBinaryMetaRecord(body.data(), body.size(),
-                                     prefix.type, lastSession, rec)) {
+                                     prefix.type, lastSession, lastSessionTag, enrichCtx, rec)) {
             audit.invalidRecords++;
             audit.skippedRecords++;
             hadSkips = true;
@@ -1364,22 +2121,44 @@ bool StorageManager::begin() {
                       static_cast<unsigned long>(step),
                       label ? label : "-",
                       static_cast<unsigned long>(
-                          heap_caps_get_free_size(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT)),
+                          heap_caps_get_free_size(SPECTRE_CAP_DRAM)),
                       static_cast<unsigned long>(
-                          heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT)));
+                          heap_caps_get_largest_free_block(SPECTRE_CAP_DRAM)));
 #endif
-        crashCheckpoint(CrashPhase::STORAGE_BOOT, 0, step);
+        crashCheckpointStep(CrashPhase::STORAGE_BOOT, 0, step, true);
     };
 
     bootStep(100, "begin_entry");
     if (!LittleFS.begin(false)) {
-        DLOG_ERROR("STORAGE", "LittleFS mount failed");
+        // Only a partition that has never been written gets formatted here;
+        // see _storagePartitionLooksBlank().
+        if (_storagePartitionLooksBlank()) {
+            DLOG_WARN("STORAGE",
+                      "LittleFS partition is blank; formatting once");
 #if BOOT_SEQUENCE_VERBOSE_ACTIVE
-        Serial.printf("[STORAGE_BOOT] LittleFS mount failed; auto-format disabled\n");
+            Serial.printf("[STORAGE_BOOT] blank partition; formatting\n");
 #endif
-        return false;
+            if (!LittleFS.begin(true)) {
+                DLOG_ERROR("STORAGE", "LittleFS format failed");
+                return false;
+            }
+            DLOG_INFO("STORAGE",
+                      "LittleFS formatted total=%luB",
+                      static_cast<unsigned long>(LittleFS.totalBytes()));
+        } else {
+            DLOG_ERROR("STORAGE",
+                       "LittleFS mount failed and partition is not blank; "
+                       "refusing to auto-format");
+#if BOOT_SEQUENCE_VERBOSE_ACTIVE
+            Serial.printf("[STORAGE_BOOT] LittleFS mount failed; auto-format disabled\n");
+#endif
+            return false;
+        }
     }
     bootStep(110, "littlefs_mounted");
+    DLOG_INFO("STORAGE", "LittleFS mounted total=%luB used=%luB",
+              static_cast<unsigned long>(LittleFS.totalBytes()),
+              static_cast<unsigned long>(LittleFS.usedBytes()));
 
     _ensureDir("/config");
     _ensureDir(PATH_STORE_VAULT_DIR);
@@ -1598,6 +2377,38 @@ bool StorageManager::begin() {
         }
     }
 
+    // The pending counter is a RAM running total whose flush to meta.json is
+    // deferred to idle windows, and the per-segment split in the spool index is
+    // flushed on the same deferred path. An unclean reset therefore discards
+    // every delta since the last flush, and leaves BOTH snapshots stale by the
+    // same amount - so the split-vs-aggregate comparison above cannot detect
+    // it. That is how the 2026-08-18 panics drifted the counter (an exact audit
+    // reconciled 4973 -> 5306). Force a real recount after an unclean reset
+    // instead of trusting either snapshot.
+    {
+        const esp_reset_reason_t bootReset = esp_reset_reason();
+        const bool uncleanReset = (bootReset == ESP_RST_PANIC)    ||
+                                  (bootReset == ESP_RST_TASK_WDT) ||
+                                  (bootReset == ESP_RST_INT_WDT)  ||
+                                  (bootReset == ESP_RST_WDT)      ||
+                                  (bootReset == ESP_RST_BROWNOUT);
+        if (uncleanReset && storedEventsAtBoot > 0) {
+            DLOG_WARN("STORAGE",
+                      "Unclean reset (%d); pending counter untrusted pending=%lu stored=%lu",
+                      static_cast<int>(bootReset),
+                      static_cast<unsigned long>(_pendingEventCount),
+                      static_cast<unsigned long>(storedEventsAtBoot));
+            _pendingCountDirty = true;
+            _spoolAuditRepairRequired = true;
+            requestMaintenance(STORAGE_MAINT_COUNTER_UNTRUSTED,
+                               "unclean_reset_counter_recount");
+            requestMaintenance(STORAGE_MAINT_SEGMENT_AUDIT,
+                               "unclean_reset_counter_recount");
+            _setCounterTrustState(STORAGE_COUNTER_DEGRADED,
+                                  "unclean_reset_counter_recount");
+        }
+    }
+
     _releaseUploadIndexMemory("boot_skip_load");
 
     if (!loadConfig()) {
@@ -1608,9 +2419,9 @@ bool StorageManager::begin() {
     _resetBinaryUnsupportedAudit();
 
     const uint32_t freeInternal =
-        heap_caps_get_free_size(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
+        heap_caps_get_free_size(SPECTRE_CAP_DRAM);
     const uint32_t largestInternal =
-        heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
+        heap_caps_get_largest_free_block(SPECTRE_CAP_DRAM);
     const uint32_t pendingAtBoot = _pendingEventCount;
 
     const bool bootHeapPressure =
@@ -2511,8 +3322,8 @@ bool StorageManager::prepareUploadIndexForUpload(uint32_t budgetMs) {
               static_cast<unsigned long>(getPendingEventCount()),
               static_cast<unsigned long>(budgetMs),
               static_cast<unsigned long>(millis() - t0),
-              static_cast<unsigned long>(heap_caps_get_free_size(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT)),
-              static_cast<unsigned long>(heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT)),
+              static_cast<unsigned long>(heap_caps_get_free_size(SPECTRE_CAP_DRAM)),
+              static_cast<unsigned long>(heap_caps_get_largest_free_block(SPECTRE_CAP_DRAM)),
               static_cast<unsigned long>(heap_caps_get_free_size(MALLOC_CAP_SPIRAM)));
     return true;
 }
@@ -2583,6 +3394,9 @@ StorageLaneCounts StorageManager::_getPendingEnrichmentCounts(const String& sess
     bool allSummariesCurrent = true;
     bool anyPending = false;
     for (const auto& seg : _spoolIndex.segments) {
+        // Summary-only passes do no record-level work, so they need their own
+        // scheduler handoff on deep field spools.
+        delay(1);
         const bool summaryReady =
             seg.summaryValid &&
             seg.summaryVersion == SPOOL_SEGMENT_SUMMARY_VERSION;
@@ -2810,9 +3624,9 @@ bool StorageManager::prepareEnrichmentIndexForWindow(size_t maxRecords,
     if (!_backlog.enrichmentBuildActive) {
         releaseEnrichmentIndexMemory("prepare");
         const uint32_t freeInternal =
-            heap_caps_get_free_size(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
+            heap_caps_get_free_size(SPECTRE_CAP_DRAM);
         const uint32_t largestInternal =
-            heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
+            heap_caps_get_largest_free_block(SPECTRE_CAP_DRAM);
         const uint32_t freePsram = heap_caps_get_free_size(MALLOC_CAP_SPIRAM);
         const uint32_t largestPsram = heap_caps_get_largest_free_block(MALLOC_CAP_SPIRAM);
         if (freeInternal < kPrepareMinFreeInternal ||
@@ -2859,7 +3673,7 @@ bool StorageManager::prepareEnrichmentIndexForWindow(size_t maxRecords,
                   static_cast<unsigned>(maxRecords),
                   static_cast<unsigned>(enrichedIdReserve),
                   static_cast<unsigned>(_spoolIndex.segments.size()),
-                  static_cast<unsigned long>(heap_caps_get_free_size(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT)),
+                  static_cast<unsigned long>(heap_caps_get_free_size(SPECTRE_CAP_DRAM)),
                   static_cast<unsigned long>(heap_caps_get_free_size(MALLOC_CAP_SPIRAM)));
     }
 
@@ -3094,7 +3908,7 @@ bool StorageManager::prepareEnrichmentIndexForWindow(size_t maxRecords,
               static_cast<unsigned>(count),
               _backlog.enrichmentWindowTruncated ? 1U : 0U,
               static_cast<unsigned long>(millis() - _backlog.enrichmentBuildStartedMs),
-              static_cast<unsigned long>(heap_caps_get_free_size(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT)),
+              static_cast<unsigned long>(heap_caps_get_free_size(SPECTRE_CAP_DRAM)),
               static_cast<unsigned long>(heap_caps_get_free_size(MALLOC_CAP_SPIRAM)));
     return true;
 }
@@ -3207,7 +4021,7 @@ bool StorageManager::_getPendingEnrichmentBatch(const String& sessionId,
     SpiramVector<uint32_t> enrichedIds;
     DLOG_INFO("STORAGE",
               "batch_load_ids_enter freeInternal=%lu segments=%u",
-              static_cast<unsigned long>(heap_caps_get_free_size(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT)),
+              static_cast<unsigned long>(heap_caps_get_free_size(SPECTRE_CAP_DRAM)),
               static_cast<unsigned>(_spoolIndex.segments.size()));
     if (!_loadSpoolEnrichmentIds(sessionId, filterBySession, enrichedIds)) {
         requestMaintenance(STORAGE_MAINT_UPLOAD_ENRICH_CURSOR_DIRTY,
@@ -3218,7 +4032,7 @@ bool StorageManager::_getPendingEnrichmentBatch(const String& sessionId,
               "batch_load_ids_done count=%u capacity=%u freeInternal=%lu",
               static_cast<unsigned>(enrichedIds.size()),
               static_cast<unsigned>(enrichedIds.capacity()),
-              static_cast<unsigned long>(heap_caps_get_free_size(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT)));
+              static_cast<unsigned long>(heap_caps_get_free_size(SPECTRE_CAP_DRAM)));
 
     auto eventTypeCode = [](const char* type) -> uint8_t {
         if (!type || !type[0]) return 0;
@@ -3294,10 +4108,14 @@ bool StorageManager::_getPendingEnrichmentBatch(const String& sessionId,
               static_cast<unsigned>(_spoolIndex.segments.size()),
               static_cast<unsigned>(maxCount),
               streamingBatch ? 1U : 0U,
-              static_cast<unsigned long>(heap_caps_get_free_size(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT)));
+              static_cast<unsigned long>(heap_caps_get_free_size(SPECTRE_CAP_DRAM)));
 
     bool reconciledAnySummary = false;
     for (auto& seg : _spoolIndex.segments) {
+        // Many field segments contain fewer records than the scanner's yield
+        // interval. Yield between files so those short scans cannot accumulate
+        // into one watchdog-length critical section.
+        delay(1);
         // Stop early once the scan budget is spent, but only after we already
         // have a full batch's worth — never return empty just because the first
         // segments were slow, or a sparse backlog could stall forever.
@@ -3330,8 +4148,8 @@ bool StorageManager::_getPendingEnrichmentBatch(const String& sessionId,
                   static_cast<unsigned>(seg.segmentId),
                   static_cast<unsigned>(seg.pendingEnrichmentCount),
                   static_cast<unsigned>(seg.eventCount),
-                  static_cast<unsigned long>(heap_caps_get_free_size(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT)),
-                  static_cast<unsigned long>(heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT)),
+                  static_cast<unsigned long>(heap_caps_get_free_size(SPECTRE_CAP_DRAM)),
+                  static_cast<unsigned long>(heap_caps_get_largest_free_block(SPECTRE_CAP_DRAM)),
                   static_cast<unsigned>(outCount));
 
         // Headers-only scan: no per-record JsonDocument. We classify each
@@ -3408,7 +4226,18 @@ bool StorageManager::_getPendingEnrichmentBatch(const String& sessionId,
                       static_cast<unsigned>(seg.segmentId));
             return false;
         }
-        if (authoritativeScan && seg.pendingEnrichmentCount != exactSegmentPending) {
+        // A global scan that did not fill the streaming batch walked this
+        // segment to EOF, so its exact count is authoritative even on the
+        // normal fast path. Persist that reconciliation. Without this, an old
+        // gross pending count survived after all matching deltas were written;
+        // the UI mirror then resurrected a false backlog and churned WiFi/BLE
+        // every minute despite repeated zero-result scans.
+        const bool fullGlobalSegmentScan =
+            !filterBySession &&
+            (!excludeIds || excludeCount == 0) &&
+            (!streamingBatch || outCount < maxCount);
+        if ((authoritativeScan || fullGlobalSegmentScan) &&
+            seg.pendingEnrichmentCount != exactSegmentPending) {
             seg.pendingEnrichmentCount = exactSegmentPending;
             reconciledAnySummary = true;
         }
@@ -3440,7 +4269,7 @@ bool StorageManager::_getPendingEnrichmentBatch(const String& sessionId,
               static_cast<unsigned>(outCount),
               scanTimeBudgetHit ? 1U : 0U,
               static_cast<unsigned long>(millis() - scanStartMs),
-              static_cast<unsigned long>(heap_caps_get_free_size(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT)));
+              static_cast<unsigned long>(heap_caps_get_free_size(SPECTRE_CAP_DRAM)));
 
     return true;
 }
@@ -3462,6 +4291,10 @@ bool StorageManager::forEachStoredRecord(
     if (!_ready || !cb) return false;
     for (const auto& seg : _spoolIndex.segments) {
         if (!_scanSegmentRecords(seg.segmentId, cb)) return false;
+        // Derived-index rebuilds can traverse thousands of decoded records
+        // across many small segments. Give the idle tasks an explicit window
+        // at every segment boundary as well as inside the record scanner.
+        vTaskDelay(1);
     }
     return true;
 }
@@ -3913,11 +4746,14 @@ bool StorageManager::endUploadBatch() {
         return false;
     }
 
+    // MQTT intentionally releases WIFI_UPLOAD without resuming fallback capture
+    // before this call, leaving RADIO_NONE as the flash-safe cleanup window.
     CONTRACT_WARN_ONCE(CONTRACT_UPLOAD_BATCH_OWNER_SYNC,
                        "STORAGE",
                        !_uploadBatchActive ||
                            RADIO_ARB.isOwner(RADIO_WIFI_UPLOAD) ||
-                           RADIO_ARB.isOwner(RADIO_BLE_GPS),
+                           RADIO_ARB.isOwner(RADIO_BLE_GPS) ||
+                           RADIO_ARB.isOwner(RADIO_NONE),
                        "upload batch closing without upload owner; owner=%s",
                        RadioArbiter::ownerName(RADIO_ARB.currentOwner()));
 
@@ -4314,6 +5150,10 @@ bool StorageManager::_scanBinarySegmentRecordHeaders(
     const uint32_t tsBase = hdr.createdMs;
     const uint32_t epochBase = hdr.createdEpochUtc;
     String lastSession;
+    String lastSessionTag;
+    // Delta-coded enrichment records resolve against the previous enrichment
+    // record in this segment; the context resets with each segment scan.
+    BinaryEnrichContext enrichCtx;
 
     // Per-record body buffer reused across iterations. Capacity grows to
     // accommodate the largest body seen; never re-allocates after that.
@@ -4326,7 +5166,7 @@ bool StorageManager::_scanBinarySegmentRecordHeaders(
     // TaskHardware to feed it. A large segment (500+ records) takes ~100ms
     // and several back-to-back segments can blow past TWDT's ~5s default,
     // causing a silent reset. yieldEveryNRecords keeps each yield bounded.
-    constexpr uint32_t kYieldEveryNRecords = 128U;
+    constexpr uint32_t kYieldEveryNRecords = 32U;
     uint32_t recordsSinceYield = 0;
 
     while (f.position() < f.size()) {
@@ -4372,36 +5212,22 @@ bool StorageManager::_scanBinarySegmentRecordHeaders(
 
         DecodedSpoolRecordHeader rec;
 
-        if (prefix.type == SpoolBin::REC_ENRICH_DELTA) {
-            uint32_t recordId = 0;
-            uint32_t tsDelta = 0;
-            if (!_readUVarintFromBytes(p, end, recordId) ||
-                !_readUVarintFromBytes(p, end, tsDelta)) {
+        if (prefix.type == SpoolBin::REC_ENRICH_DELTA ||
+            prefix.type == SpoolBin::REC_ENRICH_DELTA_V2) {
+            DecodedEnrichDelta d;
+            if (!_decodeBinaryEnrichDeltaBody(p, end, prefix.type, enrichCtx,
+                                              lastSession, lastSessionTag, d)) {
                 f.close();
                 return false;
             }
-            if (p >= end) { f.close(); return false; }
-            const uint8_t sessionMode = *p++;
-            String sessionId;
-            if (sessionMode == BIN_SESSION_SAME_AS_PREV) {
-                sessionId = lastSession;
-            } else {
-                if (!_readStringFromBytes(p, end, sessionId)) { f.close(); return false; }
-                lastSession = sessionId;
-            }
-            if (p >= end) { f.close(); return false; }
-            const uint8_t enrichFlags = *p++;
-            uint32_t targetEventId = 0;
-            if (!_readUVarintFromBytes(p, end, targetEventId)) { f.close(); return false; }
-
             rec.recordType = SPOOL_REC_ENRICH_DELTA;
-            rec.eventId = recordId;
-            rec.sessionId = sessionId;
-            rec.timestampMs = _timestampFromBaseDelta(tsDelta, tsBase);
-            rec.epochUtc = _epochFromBaseDelta(tsDelta, epochBase);
+            rec.eventId = d.recordId;
+            rec.sessionId = d.sessionId;
+            rec.timestampMs = _timestampFromBaseDelta(d.tsDelta, tsBase);
+            rec.epochUtc = _epochFromBaseDelta(d.tsDelta, epochBase);
             rec.typeString = String("enrich_delta");
-            rec.eventFlags = enrichFlags;
-            rec.targetEventId = targetEventId;
+            rec.eventFlags = d.flags;
+            rec.targetEventId = d.targetEventId;
         } else {
             uint32_t recordId = 0;
             uint32_t tsDelta = 0;
@@ -4413,11 +5239,11 @@ bool StorageManager::_scanBinarySegmentRecordHeaders(
             if (p >= end) { f.close(); return false; }
             const uint8_t sessionMode = *p++;
             String sessionId;
-            if (sessionMode == BIN_SESSION_SAME_AS_PREV) {
-                sessionId = lastSession;
-            } else {
-                if (!_readStringFromBytes(p, end, sessionId)) { f.close(); return false; }
-                lastSession = sessionId;
+            String sessionTag;
+            if (!_readBinarySessionField(p, end, sessionMode, lastSession,
+                                         lastSessionTag, sessionId, sessionTag)) {
+                f.close();
+                return false;
             }
             if (p >= end) { f.close(); return false; }
             const uint8_t typeCode = *p++;
@@ -4496,7 +5322,7 @@ bool StorageManager::_scanJsonlSegmentRecords(
     // starve the task watchdog (~5s TWDT) and silently reset the device — the
     // binary scanner does the same. This path is hit by the up-front summary
     // rebuild before an upload, which can scan many segments back-to-back.
-    constexpr uint32_t kYieldEveryNRecords = 128U;
+    constexpr uint32_t kYieldEveryNRecords = 32U;
     uint32_t recordsSinceYield = 0;
 
     while (f.available()) {
@@ -4582,6 +5408,10 @@ bool StorageManager::_scanBinarySegmentRecords(
     // creation/backfill, record is unenrichable and has no recoverable UTC).
     const uint32_t epochBase = hdr.createdEpochUtc;
     String lastSession;
+    String lastSessionTag;
+    // Delta-coded enrichment records resolve against the previous enrichment
+    // record in this segment; the context resets with each segment scan.
+    BinaryEnrichContext enrichCtx;
 
     // Yield to the scheduler periodically. Callers run this under an exclusive
     // maintenance/upload window, but the task watchdog still expects
@@ -4646,92 +5476,35 @@ bool StorageManager::_scanBinarySegmentRecords(
         JsonObject root = doc.to<JsonObject>();
         DecodedSpoolRecord rec;
 
-        if (prefix.type == SpoolBin::REC_ENRICH_DELTA) {
-            uint32_t recordId = 0;
-            uint32_t tsDelta = 0;
-            uint8_t sessionMode = BIN_SESSION_INLINE;
-            uint8_t enrichFlags = 0;
-            String sessionId;
-            uint32_t targetEventId = 0;
-            int32_t latE7 = 0;
-            int32_t lonE7 = 0;
-            int32_t altCm = 0;
-            uint32_t accDm = 0;
-            uint32_t gpsEpochUtc = 0;
-            String tag;
-
-            if (!_readUVarintFromBytes(p, end, recordId) ||
-                !_readUVarintFromBytes(p, end, tsDelta)) {
+        if (prefix.type == SpoolBin::REC_ENRICH_DELTA ||
+            prefix.type == SpoolBin::REC_ENRICH_DELTA_V2) {
+            DecodedEnrichDelta d;
+            if (!_decodeBinaryEnrichDeltaBody(p, end, prefix.type, enrichCtx,
+                                              lastSession, lastSessionTag, d)) {
                 DLOG_WARN("STORAGE", "Binary enrich decode failed seg=%lu",
                           static_cast<unsigned long>(segmentId));
                 f.close();
                 return false;
             }
 
-            if (p >= end) {
-                f.close();
-                return false;
-            }
-            sessionMode = *p++;
-
-            if (sessionMode == BIN_SESSION_SAME_AS_PREV) {
-                sessionId = lastSession;
-            } else {
-                if (!_readStringFromBytes(p, end, sessionId)) {
-                    f.close();
-                    return false;
-                }
-                lastSession = sessionId;
-            }
-
-            if (p >= end) {
-                f.close();
-                return false;
-            }
-            enrichFlags = *p++;
-
-            if (!_readUVarintFromBytes(p, end, targetEventId) ||
-                !_readZigZag32FromBytes(p, end, latE7) ||
-                !_readZigZag32FromBytes(p, end, lonE7) ||
-                !_readZigZag32FromBytes(p, end, altCm) ||
-                !_readUVarintFromBytes(p, end, accDm)) {
-                DLOG_WARN("STORAGE", "Binary enrich decode failed seg=%lu",
-                          static_cast<unsigned long>(segmentId));
-                f.close();
-                return false;
-            }
-
-            if (enrichFlags & ENRICH_FLAG_TAG) {
-                if (!_readStringFromBytes(p, end, tag)) {
-                    f.close();
-                    return false;
-                }
-            }
-            if (enrichFlags & ENRICH_FLAG_GPS_TS) {
-                if (!_readUVarintFromBytes(p, end, gpsEpochUtc)) {
-                    f.close();
-                    return false;
-                }
-            }
-
-            root["id"] = recordId;
-            const uint32_t ts = _timestampFromBaseDelta(tsDelta, tsBase);
+            root["id"] = d.recordId;
+            const uint32_t ts = _timestampFromBaseDelta(d.tsDelta, tsBase);
             root["ts"] = ts;
             root["type"] = "enrich_delta";
-            root[F_SESSION] = sessionId;
-            root["event_id"] = targetEventId;
-            root["lat"] = _e7ToFloat(latE7);
-            root["lon"] = _e7ToFloat(lonE7);
-            root["alt"] = _cmToFloat(altCm);
-            root["acc"] = _dmToFloat(accDm);
-            if (enrichFlags & ENRICH_FLAG_TAG) root["tag"] = tag;
-            if (gpsEpochUtc >= MIN_ENRICH_GPS_EPOCH) {
-                root[F_GPS_TS] = gpsEpochUtc;
+            root[F_SESSION] = d.sessionId;
+            root["event_id"] = d.targetEventId;
+            root["lat"] = _e7ToFloat(d.latE7);
+            root["lon"] = _e7ToFloat(d.lonE7);
+            root["alt"] = _cmToFloat(d.altCm);
+            root["acc"] = _dmToFloat(d.accDm);
+            if (d.flags & ENRICH_FLAG_TAG) root["tag"] = d.tag;
+            if (d.gpsEpochUtc >= MIN_ENRICH_GPS_EPOCH) {
+                root[F_GPS_TS] = d.gpsEpochUtc;
             }
             // Surface the NO_DATA sentinel so downstream readers can branch
             // on it (e.g., emit STORAGE_ENRICH_NO_DATA instead of writing
             // the zero coords as a fix).
-            if (enrichFlags & ENRICH_FLAG_NO_DATA) {
+            if (d.flags & ENRICH_FLAG_NO_DATA) {
                 root["enrich_no_data"] = true;
             }
             {
@@ -4740,7 +5513,7 @@ bool StorageManager::_scanBinarySegmentRecords(
                 // millis is wrong for any record carried across a reboot. Fall
                 // back to the projection only when no UTC base was ever stamped.
                 char tsIso[24] = {};
-                const uint32_t epochUtc = _epochFromBaseDelta(tsDelta, epochBase);
+                const uint32_t epochUtc = _epochFromBaseDelta(d.tsDelta, epochBase);
                 if (epochUtc != 0) {
                     TIME_SVC.formatIsoForEpoch(epochUtc, tsIso, sizeof(tsIso));
                 } else {
@@ -4750,8 +5523,8 @@ bool StorageManager::_scanBinarySegmentRecords(
             }
 
             rec.recordType = SPOOL_REC_ENRICH_DELTA;
-            rec.eventId = recordId;
-            rec.sessionId = sessionId;
+            rec.eventId = d.recordId;
+            rec.sessionId = d.sessionId;
             rec.doc.set(doc.as<JsonVariantConst>());
 
         } else {
@@ -4759,6 +5532,8 @@ bool StorageManager::_scanBinarySegmentRecords(
             uint32_t tsDelta = 0;
             uint8_t sessionMode = BIN_SESSION_INLINE;
             String sessionId;
+            String sessionTag;
+            String tsIsoStr;
             uint8_t typeCode = BIN_EVT_CUSTOM;
             String typeStr;
             uint8_t eventFlags = 0;
@@ -4780,14 +5555,10 @@ bool StorageManager::_scanBinarySegmentRecords(
             }
             sessionMode = *p++;
 
-            if (sessionMode == BIN_SESSION_SAME_AS_PREV) {
-                sessionId = lastSession;
-            } else {
-                if (!_readStringFromBytes(p, end, sessionId)) {
-                    f.close();
-                    return false;
-                }
-                lastSession = sessionId;
+            if (!_readBinarySessionField(p, end, sessionMode, lastSession,
+                                         lastSessionTag, sessionId, sessionTag)) {
+                f.close();
+                return false;
             }
 
             if (p >= end) {
@@ -4835,330 +5606,14 @@ bool StorageManager::_scanBinarySegmentRecords(
                 } else {
                     TIME_SVC.formatIsoForMillis(ts, tsIso, sizeof(tsIso));
                 }
-                root[F_TIMESTAMP_ISO] = tsIso;
+                tsIsoStr = tsIso;
+                root[F_TIMESTAMP_ISO] = tsIsoStr;
             }
 
-            if (payloadFamily == BIN_PAYLOAD_PROBE_DEVICE) {
-                String mac;
-                String ssid;
-                String ieFingerprint;
-                String probeSetHash;
-                int32_t rssi = 0;
-                uint32_t channel = 0;
-                bool isBroadcast = false;
-                bool isRandomMac = false;
-
-                if (p >= end) {
-                    f.close();
-                    return false;
-                }
-                const uint8_t flags = *p++;
-
-                uint8_t lastOui[3] = {0, 0, 0};
-                bool hasLastOui = false;
-
-                if (!_readMacFieldFromBytes(p, end, mac, lastOui, hasLastOui)) {
-                    DLOG_WARN("STORAGE", "Binary probe/device MAC decode failed seg=%lu",
-                              static_cast<unsigned long>(segmentId));
-                    f.close();
-                    return false;
-                }
-
-                if (flags & 0x01) {
-                    if (!_readStringFromBytes(p, end, ssid)) {
-                        f.close();
-                        return false;
-                    }
-                }
-
-                if (flags & 0x02) {
-                    if (!_readZigZag32FromBytes(p, end, rssi)) {
-                        f.close();
-                        return false;
-                    }
-                }
-
-                root["mac"] = mac;
-                if (flags & 0x01) {
-                    if (typeStr == "probe") root["probed_ssid"] = ssid;
-                    else root["ssid"] = ssid;
-                }
-                if (flags & 0x02) root["rssi"] = rssi;
-                if (flags & 0x04) {
-                    if (!_readUVarintFromBytes(p, end, channel)) {
-                        f.close();
-                        return false;
-                    }
-                    root["channel"] = channel;
-                }
-                if (flags & 0x08) {
-                    if (!_readStringFromBytes(p, end, ieFingerprint)) {
-                        f.close();
-                        return false;
-                    }
-                    root["ie_fingerprint"] = ieFingerprint;
-                }
-                if (flags & 0x10) {
-                    if (!_readStringFromBytes(p, end, probeSetHash)) {
-                        f.close();
-                        return false;
-                    }
-                    root["probe_set_hash"] = probeSetHash;
-                }
-                if (flags & 0x20) {
-                    if (p >= end) {
-                        f.close();
-                        return false;
-                    }
-                    isRandomMac = (*p++ != 0);
-                    root["is_random_mac"] = isRandomMac ? 1 : 0;
-                }
-                if (flags & 0x40) {
-                    if (p >= end) {
-                        f.close();
-                        return false;
-                    }
-                    isBroadcast = (*p++ != 0);
-                    root["is_broadcast"] = isBroadcast ? 1 : 0;
-                }
-
-            } else if (payloadFamily == BIN_PAYLOAD_PMKID) {
-                String ap;
-                String sta;
-                String ssid;
-                String pmkidHex;
-                String hashcatLine;
-                int32_t rssi = 0;
-
-                if (p >= end) {
-                    f.close();
-                    return false;
-                }
-                const uint8_t flags = *p++;
-
-                uint8_t lastOui[3] = {0, 0, 0};
-                bool hasLastOui = false;
-
-                if (!_readMacFieldFromBytes(p, end, ap, lastOui, hasLastOui) ||
-                    !_readMacFieldFromBytes(p, end, sta, lastOui, hasLastOui)) {
-                    DLOG_WARN("STORAGE", "Binary pmkid MAC decode failed seg=%lu",
-                              static_cast<unsigned long>(segmentId));
-                    f.close();
-                    return false;
-                }
-
-                if (flags & 0x01) {
-                    if (!_readStringFromBytes(p, end, ssid)) {
-                        f.close();
-                        return false;
-                    }
-                }
-
-                root["ap"] = ap;
-                root["sta"] = sta;
-                root["bssid"] = ap;
-                root["client_mac"] = sta;
-                if (flags & 0x01) root["ssid"] = ssid;
-
-                if (flags & 0x02) {
-                    if (!_readZigZag32FromBytes(p, end, rssi)) {
-                        f.close();
-                        return false;
-                    }
-                    root["rssi"] = rssi;
-                }
-                if (flags & 0x04) {
-                    if (!_readStringFromBytes(p, end, pmkidHex)) {
-                        f.close();
-                        return false;
-                    }
-                    root["pmkid_hex"] = pmkidHex;
-                }
-                if (flags & 0x08) {
-                    if (!_readStringFromBytes(p, end, hashcatLine)) {
-                        f.close();
-                        return false;
-                    }
-                    root["hashcat_line"] = hashcatLine;
-                }
-
-            } else if (payloadFamily == BIN_PAYLOAD_HANDSHAKE) {
-                String ap;
-                String sta;
-                String ssid;
-                uint32_t frameMask = 0;
-                uint32_t messageNumber = 0;
-
-                if (p >= end) {
-                    f.close();
-                    return false;
-                }
-                const uint8_t flags = *p++;
-
-                uint8_t lastOui[3] = {0, 0, 0};
-                bool hasLastOui = false;
-
-                if (!_readMacFieldFromBytes(p, end, ap, lastOui, hasLastOui) ||
-                    !_readMacFieldFromBytes(p, end, sta, lastOui, hasLastOui)) {
-                    DLOG_WARN("STORAGE", "Binary handshake MAC decode failed seg=%lu",
-                              static_cast<unsigned long>(segmentId));
-                    f.close();
-                    return false;
-                }
-
-                if (flags & 0x01) {
-                    if (!_readStringFromBytes(p, end, ssid)) {
-                        f.close();
-                        return false;
-                    }
-                }
-
-                if (!_readUVarintFromBytes(p, end, frameMask)) {
-                    f.close();
-                    return false;
-                }
-
-                root["ap"] = ap;
-                root["sta"] = sta;
-                root["bssid"] = ap;
-                root["client"] = sta;
-                if (flags & 0x01) root["ssid"] = ssid;
-                root["frame_mask"] = frameMask;
-                root["event_type"] = "handshake";
-
-                if (flags & 0x02) {
-                    int32_t rssi = 0;
-                    if (!_readZigZag32FromBytes(p, end, rssi)) {
-                        f.close();
-                        return false;
-                    }
-                    root["rssi"] = rssi;
-                }
-                if (flags & 0x04) {
-                    if (!_readUVarintFromBytes(p, end, messageNumber)) {
-                        f.close();
-                        return false;
-                    }
-                    root["message"] = messageNumber;
-                    root["msg"] = messageNumber;
-                }
-
-            } else if (payloadFamily == BIN_PAYLOAD_DRONE) {
-                String droneId;
-                String mac;
-                String protocol;
-                int32_t latitudeE7 = 0;
-                int32_t longitudeE7 = 0;
-                uint32_t channel = 0;
-                uint8_t lastOui[3] = {0, 0, 0};
-                bool hasLastOui = false;
-
-                if (p >= end) {
-                    f.close();
-                    return false;
-                }
-                const uint8_t flags = *p++;
-
-                if (flags & 0x01) {
-                    if (!_readStringFromBytes(p, end, droneId)) {
-                        f.close();
-                        return false;
-                    }
-                }
-                if (flags & 0x02) {
-                    if (!_readMacFieldFromBytes(p, end, mac, lastOui, hasLastOui)) {
-                        f.close();
-                        return false;
-                    }
-                }
-                if (flags & 0x04) {
-                    int32_t rssi = 0;
-                    if (!_readZigZag32FromBytes(p, end, rssi)) {
-                        f.close();
-                        return false;
-                    }
-                    root["rssi"] = rssi;
-                }
-                if (flags & 0x08) {
-                    if (!_readUVarintFromBytes(p, end, channel)) {
-                        f.close();
-                        return false;
-                    }
-                    root["channel"] = channel;
-                }
-                if (flags & 0x10) {
-                    if (!_readStringFromBytes(p, end, protocol)) {
-                        f.close();
-                        return false;
-                    }
-                    root["protocol"] = protocol;
-                }
-                if (flags & 0x20) {
-                    if (!_readZigZag32FromBytes(p, end, latitudeE7) ||
-                        !_readZigZag32FromBytes(p, end, longitudeE7)) {
-                        f.close();
-                        return false;
-                    }
-                    root["latitude"] = _e7ToFloat(latitudeE7);
-                    root["longitude"] = _e7ToFloat(longitudeE7);
-                }
-                if (flags & 0x40) {
-                    uint32_t altitudeCenti = 0;
-                    if (!_readUVarintFromBytes(p, end, altitudeCenti)) {
-                        f.close();
-                        return false;
-                    }
-                    root["altitude_m"] = _centiToFloat(altitudeCenti);
-                }
-                if (flags & 0x80) {
-                    uint32_t speedCenti = 0;
-                    if (!_readUVarintFromBytes(p, end, speedCenti)) {
-                        f.close();
-                        return false;
-                    }
-                    root["speed"] = _centiToFloat(speedCenti);
-                }
-
-                if (flags & 0x01) root["drone_id"] = droneId;
-                if (flags & 0x02) root["mac"] = mac;
-
-            } else if (payloadFamily == BIN_PAYLOAD_FIELD_MAP) {
-                if (!_readBinaryFieldMapFromBytes(p, end, root)) {
-                    DLOG_WARN("STORAGE", "Binary event field map decode failed seg=%lu",
-                              static_cast<unsigned long>(segmentId));
-                    f.close();
-                    return false;
-                }
-
-            } else if (payloadFamily == BIN_PAYLOAD_JSON_FALLBACK) {
-                // Legacy fallback payload still supported for readback only.
-                if (eventFlags & BIN_EVENT_HAS_PAYLOAD) {
-                    String payloadJson;
-                    if (!_readStringFromBytes(p, end, payloadJson)) {
-                        DLOG_WARN("STORAGE", "Binary event payload decode failed seg=%lu",
-                                  static_cast<unsigned long>(segmentId));
-                        f.close();
-                        return false;
-                    }
-
-                    if (payloadJson.length()) {
-                        JsonDocument payloadDoc;
-                        DeserializationError err = deserializeJson(payloadDoc, payloadJson);
-                        if (err || !payloadDoc.is<JsonObject>()) {
-                            DLOG_WARN("STORAGE", "Binary event payload JSON failed seg=%lu",
-                                      static_cast<unsigned long>(segmentId));
-                            f.close();
-                            return false;
-                        }
-
-                        for (JsonPairConst kv : payloadDoc.as<JsonObjectConst>()) {
-                            root[kv.key().c_str()].set(kv.value());
-                        }
-                    }
-                }
-
-            } else {
-                DLOG_WARN("STORAGE", "Unknown payload family seg=%lu family=%u",
+            if (!_decodeBinaryPayloadBody(p, end, typeStr, payloadFamily,
+                                          eventFlags, root)) {
+                DLOG_WARN("STORAGE",
+                          "Binary payload decode failed seg=%lu family=%u",
                           static_cast<unsigned long>(segmentId),
                           static_cast<unsigned>(payloadFamily));
                 f.close();
@@ -5196,6 +5651,19 @@ bool StorageManager::_scanBinarySegmentRecords(
             root["prio"] = prio;
             root["lane"] = lane;
             root["lane_name"] = _laneText(static_cast<StorageLane>(lane));
+
+            // Re-assert after the extension map, but only when the segment had
+            // a UTC base to project from. _readBinaryFieldMapFromBytes assigns
+            // into root, so without this the stale stored copy clobbers the
+            // reboot-safe value. With epochBase == 0 the computed value is a
+            // projection from a PREVIOUS boot's millis and is meaningless --
+            // there the stored capture-time string, written during the boot
+            // that captured the record, is the better of the two.
+            if (rec.epochUtc != 0 || !root[F_TIMESTAMP_ISO].is<const char*>() ||
+                !(root[F_TIMESTAMP_ISO].as<const char*>()[0])) {
+                root[F_TIMESTAMP_ISO] = tsIsoStr;
+            }
+            _applyDerivedEventFields(root, typeStr, sessionId, sessionTag);
 
             _normalizeCapturedEvent(root);
 
@@ -5394,10 +5862,23 @@ bool StorageManager::_appendSegmentRecord(SpoolSegmentInfo& seg,
             _appendUVarintToBytes(body, recordId);
             _appendUVarintToBytes(body, tsDelta);
 
+            // session_tag rides along with the session string instead of being
+            // repeated on every record: it only costs bytes when the session
+            // (or the tag) actually changes.
+            const String sessionTag = String((const char*)(doc["session_tag"] | ""));
             const String lastSession = _binaryLastSessionBySegment[seg.segmentId];
-            const bool sameSession = (sessionId.length() && sessionId == lastSession);
-            body.push_back(sameSession ? BIN_SESSION_SAME_AS_PREV : BIN_SESSION_INLINE);
-            if (!sameSession) _appendStringToBytes(body, sessionId);
+            const String lastSessionTag = _binaryLastSessionTagBySegment[seg.segmentId];
+            const bool sameSession = (sessionId.length() &&
+                                      sessionId == lastSession &&
+                                      sessionTag == lastSessionTag);
+            if (sameSession) {
+                body.push_back(BIN_SESSION_SAME_AS_PREV);
+            } else {
+                body.push_back(sessionTag.length() ? BIN_SESSION_INLINE_TAGGED
+                                                   : BIN_SESSION_INLINE);
+                _appendStringToBytes(body, sessionId);
+                if (sessionTag.length()) _appendStringToBytes(body, sessionTag);
+            }
 
             const uint8_t typeCode = _binaryEventTypeCodeFromString(typeStr.c_str());
             body.push_back(typeCode);
@@ -5419,7 +5900,8 @@ bool StorageManager::_appendSegmentRecord(SpoolSegmentInfo& seg,
             body.push_back(eventFlags);
 
             const bool isProbeLike =
-                (typeCode == BIN_EVT_PROBE || typeCode == BIN_EVT_DEVICE);
+                (typeCode == BIN_EVT_PROBE || typeCode == BIN_EVT_DEVICE ||
+                 typeCode == BIN_EVT_NETWORK);
             const bool isPmkid = (typeCode == BIN_EVT_PMKID);
             const bool isDrone = (typeCode == BIN_EVT_DRONE);
             const bool isHandshake =
@@ -5433,10 +5915,14 @@ bool StorageManager::_appendSegmentRecord(SpoolSegmentInfo& seg,
             }
 
             if (isProbeLike) {
-                body.push_back(BIN_PAYLOAD_PROBE_DEVICE);
+                body.push_back(BIN_PAYLOAD_PROBE_DEVICE_V2);
                 _recordBinaryStructuredWrite();
 
-                const String mac = String((const char*)(doc["mac"] | ""));
+                // network records key the radio address as "bssid"; probe and
+                // device records call the same thing "mac".
+                const String mac = (typeCode == BIN_EVT_NETWORK)
+                    ? String((const char*)(doc["bssid"] | doc["mac"] | ""))
+                    : String((const char*)(doc["mac"] | ""));
                 const String ssid = (typeStr == "probe")
                     ? String((const char*)(doc["probed_ssid"] | doc["ssid"] | ""))
                     : String((const char*)(doc["ssid"] | ""));
@@ -5450,28 +5936,88 @@ bool StorageManager::_appendSegmentRecord(SpoolSegmentInfo& seg,
                 const bool isRandomMac = (doc["is_random_mac"] | 0) != 0;
                 const bool isBroadcast = (doc["is_broadcast"] | 0) != 0;
 
+                // --- sidecar block (flags2) ---
+                const String security = String((const char*)(doc["security"] | ""));
+                const String trackId = String((const char*)(doc["track_id"] | ""));
+                const bool hasLocalization =
+                    !doc["sample_seq"].isNull() || !doc["sample_frames"].isNull() ||
+                    !doc["rssi_min"].isNull()   || !doc["rssi_max"].isNull();
+
+                uint8_t flags2 = 0;
+                if (security.length()) flags2 |= BIN_PDV2_SECURITY;
+                if (!doc["is_hidden"].isNull()) flags2 |= BIN_PDV2_HIDDEN;
+                if (!doc["has_wps"].isNull()) flags2 |= BIN_PDV2_WPS;
+                if (hasLocalization) flags2 |= BIN_PDV2_LOCALIZATION;
+                if (trackId.length()) flags2 |= BIN_PDV2_TRACK;
+
                 uint8_t flags = 0;
-                if (ssid.length()) flags |= 0x01;
+                if (ssid.length()) flags |= BIN_PDV2_SSID;
                 if (doc["rssi"].is<int>() || doc["rssi"].is<long>() || doc["rssi"].is<float>())
-                    flags |= 0x02;
-                if (!doc["channel"].isNull()) flags |= 0x04;
-                if (ieFingerprint.length()) flags |= 0x08;
-                if (probeSetHash.length()) flags |= 0x10;
-                if (!doc["is_random_mac"].isNull()) flags |= 0x20;
-                if (!doc["is_broadcast"].isNull()) flags |= 0x40;
+                    flags |= BIN_PDV2_RSSI;
+                if (!doc["channel"].isNull()) flags |= BIN_PDV2_CHANNEL;
+                if (ieFingerprint.length()) flags |= BIN_PDV2_IE_FP;
+                if (probeSetHash.length()) flags |= BIN_PDV2_PROBE_HASH;
+                if (!doc["is_random_mac"].isNull()) flags |= BIN_PDV2_RANDOM_MAC;
+                if (!doc["is_broadcast"].isNull()) flags |= BIN_PDV2_BROADCAST;
+                if (flags2) flags |= BIN_PDV2_HAS_FLAGS2;
                 body.push_back(flags);
 
                 uint8_t lastOui[3] = {0};
                 bool hasLastOui = false;
 
                 _appendMacFieldToBytes(body, mac, lastOui, hasLastOui);
-                if (flags & 0x01) _appendStringToBytes(body, ssid);
-                if (flags & 0x02) _appendZigZag32ToBytes(body, rssi);
-                if (flags & 0x04) _appendUVarintToBytes(body, channel);
-                if (flags & 0x08) _appendStringToBytes(body, ieFingerprint);
-                if (flags & 0x10) _appendStringToBytes(body, probeSetHash);
-                if (flags & 0x20) body.push_back(isRandomMac ? 1U : 0U);
-                if (flags & 0x40) body.push_back(isBroadcast ? 1U : 0U);
+                if (flags & BIN_PDV2_SSID) _appendStringToBytes(body, ssid);
+                if (flags & BIN_PDV2_RSSI) _appendZigZag32ToBytes(body, rssi);
+                if (flags & BIN_PDV2_CHANNEL) _appendUVarintToBytes(body, channel);
+                if (flags & BIN_PDV2_IE_FP) _appendStringToBytes(body, ieFingerprint);
+                if (flags & BIN_PDV2_PROBE_HASH) _appendStringToBytes(body, probeSetHash);
+                if (flags & BIN_PDV2_RANDOM_MAC) body.push_back(isRandomMac ? 1U : 0U);
+                if (flags & BIN_PDV2_BROADCAST) body.push_back(isBroadcast ? 1U : 0U);
+
+                if (flags2) {
+                    body.push_back(flags2);
+
+                    if (flags2 & BIN_PDV2_SECURITY) {
+                        const uint8_t secCode =
+                            _binarySecurityCodeFromString(security.c_str());
+                        body.push_back(secCode);
+                        if (secCode == BIN_SEC_LITERAL) {
+                            _appendStringToBytes(body, security);
+                        }
+                    }
+                    if (flags2 & BIN_PDV2_HIDDEN) {
+                        body.push_back((doc["is_hidden"] | 0) != 0 ? 1U : 0U);
+                    }
+                    if (flags2 & BIN_PDV2_WPS) {
+                        body.push_back((doc["has_wps"] | 0) != 0 ? 1U : 0U);
+                    }
+                    if (flags2 & BIN_PDV2_LOCALIZATION) {
+                        _appendUVarintToBytes(body, doc["sample_seq"].as<uint32_t>());
+                        _appendUVarintToBytes(body, doc["sample_frames"].as<uint32_t>());
+                        // rssi_min/rssi_max sit within a few dB of rssi, so
+                        // store the delta rather than the absolute value.
+                        _appendZigZag32ToBytes(body,
+                            doc["rssi_min"].as<int32_t>() - rssi);
+                        _appendZigZag32ToBytes(body,
+                            doc["rssi_max"].as<int32_t>() - rssi);
+                        const String reason =
+                            String((const char*)(doc["sample_reason"] | ""));
+                        const uint8_t reasonCode =
+                            _binarySampleReasonCodeFromString(reason.c_str());
+                        body.push_back(reasonCode);
+                        if (reasonCode == BIN_REASON_LITERAL) {
+                            _appendStringToBytes(body, reason);
+                        }
+                    }
+                    if (flags2 & BIN_PDV2_TRACK) {
+                        const uint8_t trackMode =
+                            _binaryTrackModeFor(trackId, mac, ieFingerprint);
+                        body.push_back(trackMode);
+                        if (trackMode == BIN_TRACK_LITERAL) {
+                            _appendStringToBytes(body, trackId);
+                        }
+                    }
+                }
 
             } else if (isPmkid) {
                 body.push_back(BIN_PAYLOAD_PMKID);
@@ -5685,6 +6231,8 @@ bool StorageManager::_appendSegmentRecord(SpoolSegmentInfo& seg,
             seg.approxBytes = hdr.bodyBytes + sizeof(SpoolBin::SegmentHeaderV2);
 
             _binaryLastSessionBySegment[seg.segmentId] = sessionId;
+            _binaryLastSessionTagBySegment[seg.segmentId] = sessionTag;
+            _rememberSessionTag(sessionId, sessionTag);
 
             if (outEventId) *outEventId = recordId;
             return true;
@@ -6985,6 +7533,21 @@ bool StorageManager::_auditAndRepairSpool(const char* reason,
         _pendingCountDirty = false;
         _spoolIndexDirty = true;
 
+        // The audit scanner rebuilds each segment independently. That yields
+        // the gross enrich-eligible event count, but most field enrichment
+        // deltas live in later append segments. Join the complete delta-ID set
+        // back onto every event segment before persisting, otherwise a harmless
+        // `spool count` resurrects thousands of already-resolved phone jobs.
+        if (!_reconcilePendingEnrichmentSummaries(
+                repair ? "spool_audit_repair" : "manual_count_reconcile")) {
+            requestMaintenance(STORAGE_MAINT_UPLOAD_ENRICH_CURSOR_DIRTY,
+                               "audit_pending_enrich_reconcile_failed");
+            if (out) {
+                *out = audit;
+            }
+            return false;
+        }
+
         for (auto it = _binaryLastSessionBySegment.begin();
              it != _binaryLastSessionBySegment.end();) {
             const bool keep =
@@ -6994,6 +7557,8 @@ bool StorageManager::_auditAndRepairSpool(const char* reason,
                                 return seg.segmentId == it->first;
                             });
             if (!keep) {
+                _binaryLastSessionTagBySegment.erase(it->first);
+                _binaryEnrichCtxBySegment.erase(it->first);
                 it = _binaryLastSessionBySegment.erase(it);
             } else {
                 ++it;
@@ -7422,6 +7987,8 @@ bool StorageManager::_repairBinaryMetaSlice(uint32_t startMs,
                                      body.size(),
                                      prefix.type,
                                      _repairJob.lastSession,
+                                     _repairJob.lastSessionTag,
+                                     _repairJob.enrichCtx,
                                      rec)) {
             _repairJob.audit.invalidRecords++;
             _repairJob.audit.skippedRecords++;
@@ -7453,6 +8020,7 @@ bool StorageManager::_repairBinaryMetaSlice(uint32_t startMs,
                                              body.data(),
                                              body.size(),
                                              hdr.createdMs,
+                                             hdr.createdEpochUtc,
                                              sessionSeed,
                                              decoded)) {
                 _normalizeCapturedEvent(decoded.doc.as<JsonObject>());
@@ -7694,6 +8262,8 @@ bool StorageManager::_finalizeRepairJob() {
                                 return seg.segmentId == it->first;
                             });
             if (!keep) {
+                _binaryLastSessionTagBySegment.erase(it->first);
+                _binaryEnrichCtxBySegment.erase(it->first);
                 it = _binaryLastSessionBySegment.erase(it);
             } else {
                 ++it;
@@ -8539,9 +9109,9 @@ bool StorageManager::runMaintenanceWindow(uint32_t budgetMs,
                           uint32_t minLargestInternal,
                           const char* action) -> bool {
         const uint32_t freeInternal =
-            heap_caps_get_free_size(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
+            heap_caps_get_free_size(SPECTRE_CAP_DRAM);
         const uint32_t largestInternal =
-            heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
+            heap_caps_get_largest_free_block(SPECTRE_CAP_DRAM);
         if (freeInternal >= minFreeInternal &&
             largestInternal >= minLargestInternal) {
             return true;
@@ -9310,6 +9880,10 @@ StorageUiSnapshot StorageManager::_buildStorageUiSnapshot(
 
     snap.summaryValid = true;
     for (const auto& seg : _spoolIndex.segments) {
+        // Header scans reset their work counter per file; without a boundary
+        // yield, many sub-threshold segments plus the final sort can still
+        // exceed the task watchdog as one continuous run.
+        delay(1);
         const bool summaryReady =
             seg.summaryValid &&
             seg.summaryVersion == SPOOL_SEGMENT_SUMMARY_VERSION;
@@ -9806,6 +10380,8 @@ bool StorageManager::wipeNonVaultStorage() {
     _spoolIndexPendingWrites = 0;
     _spoolIndex = {};
     _binaryLastSessionBySegment.clear();
+    _binaryLastSessionTagBySegment.clear();
+    _binaryEnrichCtxBySegment.clear();
     _binaryCheckpointBySegment.clear();
     _backlog.uploadIndexBySession.clear();
     _backlog.uploadEnrichBySession.clear();
@@ -10952,8 +11528,8 @@ bool StorageManager::_auditSpoolBoot(SpoolBootAuditResult& audit) const {
         // the STORAGE_BOOT phase 'pending' slot so a panic/WDT mid-loop pinpoints
         // the offending segment on next boot. Volatile (RTC only) — avoids 1 NVS
         // write per segment for a recovery path that already crashes on power loss.
-        crashCheckpointVolatile(CrashPhase::STORAGE_BOOT, 0,
-                                21000U + (seg.segmentId & 0xFFFFU));
+        crashCheckpointStep(CrashPhase::STORAGE_BOOT, 0,
+                            21000U + (seg.segmentId & 0xFFFFU), false);
 #if BOOT_SEQUENCE_VERBOSE_ACTIVE
         Serial.printf("[STORAGE_BOOT] step=%lu audit_seg seg=%lu records=%lu\r\n",
                       static_cast<unsigned long>(21000U + (seg.segmentId & 0xFFFFU)),
@@ -11694,6 +12270,9 @@ bool StorageManager::_loadUploadIndexSidecarSegment(const SpoolSegmentInfo& seg)
     UploadIndexRecordV1 rec;
     while (indexFile.read(reinterpret_cast<uint8_t*>(&rec), sizeof(rec)) ==
            sizeof(rec)) {
+        if ((recordsRead & 0x3FU) == 0x3FU) {
+            vTaskDelay(1);
+        }
         if (!_validateUploadIndexRecord(rec, seg.segmentId) ||
             rec.sessionId[0] == '\0') {
             indexFile.close();
@@ -11739,8 +12318,12 @@ bool StorageManager::_loadUploadIndexSidecarSegment(const SpoolSegmentInfo& seg)
 
     const uint32_t windowLimit = _backlog.uploadIndexWindowLimit;
     uint32_t loaded = 0;
+    uint32_t recordsVisited = 0;
     while (indexFile.read(reinterpret_cast<uint8_t*>(&rec), sizeof(rec)) ==
            sizeof(rec)) {
+        if ((recordsVisited++ & 0x3FU) == 0x3FU) {
+            vTaskDelay(1);
+        }
         if (windowLimit > 0 &&
             _backlog.uploadIndexStats.indexedEvents >= windowLimit) {
             _backlog.uploadIndexWindowTruncated = true;
@@ -11995,6 +12578,8 @@ bool StorageManager::_rebuildUploadIndexSegment(const SpoolSegmentInfo& seg) {
         }
 
         String lastSession;
+        String lastSessionTag;
+        BinaryEnrichContext enrichCtx;
         while (spool.position() < spool.size()) {
             if (uploadWindowFull()) {
                 _backlog.uploadIndexWindowTruncated = true;
@@ -12032,13 +12617,17 @@ bool StorageManager::_rebuildUploadIndexSegment(const SpoolSegmentInfo& seg) {
 
             if (prefix.type == SpoolBin::REC_ENRICH_DELTA) {
                 String sessionCursor = lastSession;
+                String sessionTagCursor = lastSessionTag;
                 BinaryMetaRecord meta;
                 if (_decodeBinaryMetaRecord(body.data(),
                                             body.size(),
                                             prefix.type,
                                             sessionCursor,
+                                            sessionTagCursor,
+                                            enrichCtx,
                                             meta)) {
                     lastSession = sessionCursor;
+                    lastSessionTag = sessionTagCursor;
                 } else {
                     noteSkippedRecord("enrich_decode_failed",
                                       prefix.type,
@@ -12073,16 +12662,21 @@ bool StorageManager::_rebuildUploadIndexSegment(const SpoolSegmentInfo& seg) {
                                               body.data(),
                                               body.size(),
                                               hdr.createdMs,
+                                              hdr.createdEpochUtc,
                                               sessionSeed,
                                               rec)) {
                 String sessionCursor = lastSession;
+                String sessionTagCursor = lastSessionTag;
                 BinaryMetaRecord meta;
                 if (_decodeBinaryMetaRecord(body.data(),
                                             body.size(),
                                             prefix.type,
                                             sessionCursor,
+                                            sessionTagCursor,
+                                            enrichCtx,
                                             meta)) {
                     lastSession = sessionCursor;
+                    lastSessionTag = sessionTagCursor;
                 }
                 noteSkippedRecord("event_decode_failed",
                                   prefix.type,
@@ -12243,7 +12837,9 @@ bool StorageManager::_rebuildUploadIndexSegment(const SpoolSegmentInfo& seg) {
                 enrichment.lon = rec.doc["lon"] | 0.0f;
                 enrichment.alt = rec.doc["alt"] | 0.0f;
                 enrichment.acc = rec.doc["acc"] | 0.0f;
-                enrichment.tag = String((const char*)(rec.doc["tag"] | ""));
+                strlcpy(enrichment.tag,
+                        (const char*)(rec.doc["tag"] | ""),
+                        sizeof(enrichment.tag));
                 enrichment.ts = rec.doc["ts"] | 0U;
                 enrichment.gpsTs = rec.doc[F_GPS_TS] | 0U;
                 enrichment.noData = rec.doc["enrich_no_data"] | false;
@@ -12330,7 +12926,9 @@ bool StorageManager::_rebuildUploadIndex() {
                     enrichment.lon = rec.doc["lon"] | 0.0f;
                     enrichment.alt = rec.doc["alt"] | 0.0f;
                     enrichment.acc = rec.doc["acc"] | 0.0f;
-                    enrichment.tag = String((const char*)(rec.doc["tag"] | ""));
+                    strlcpy(enrichment.tag,
+                            (const char*)(rec.doc["tag"] | ""),
+                            sizeof(enrichment.tag));
                     enrichment.ts = rec.doc["ts"] | 0U;
                     enrichment.gpsTs = rec.doc[F_GPS_TS] | 0U;
                     enrichment.noData = rec.doc["enrich_no_data"] | false;
@@ -12347,6 +12945,10 @@ bool StorageManager::_rebuildUploadIndex() {
         }
 
         segsScanned++;
+        // Sidecar-only segments do not enter the record scanners, so without
+        // an explicit yield a deep field backlog can starve Core 1's idle task
+        // for the full index build and trip the ~5 second task watchdog.
+        vTaskDelay(1);
         if ((segsScanned % 25U) == 0U) {
             DLOG_INFO("STORAGE",
                       "Upload index rebuild progress segs=%lu indexed=%lu window=%lu heapFree=%lu largest=%lu",
@@ -12439,6 +13041,8 @@ bool StorageManager::_openNewSpoolSegment() {
         _unstampedThisBootSegments.insert(segmentId);
     }
     _binaryLastSessionBySegment.erase(segmentId);
+    _binaryLastSessionTagBySegment.erase(segmentId);
+    _binaryEnrichCtxBySegment.erase(segmentId);
     _binaryCheckpointBySegment.erase(segmentId);
     if (_spoolIndex.oldestSegmentId == 0) {
         _spoolIndex.oldestSegmentId = segmentId;
@@ -12559,11 +13163,11 @@ bool StorageManager::_ensureSpoolReady() {
                       static_cast<unsigned long>(step),
                       label ? label : "-",
                       static_cast<unsigned long>(
-                          heap_caps_get_free_size(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT)),
+                          heap_caps_get_free_size(SPECTRE_CAP_DRAM)),
                       static_cast<unsigned long>(
-                          heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT)));
+                          heap_caps_get_largest_free_block(SPECTRE_CAP_DRAM)));
 #endif
-        crashCheckpoint(CrashPhase::STORAGE_BOOT, 0, step);
+        crashCheckpointStep(CrashPhase::STORAGE_BOOT, 0, step, true);
     };
 
     bootStep(300, "ensure_spool_entry");
@@ -12975,6 +13579,7 @@ bool StorageManager::appendEnrichDeltasBatch(const SpoolEnrichBatchEntry* entrie
     const uint32_t tsBase   = hdr.createdMs;
     tStart = millis();
     lastSession = _binaryLastSessionBySegment[seg->segmentId];
+    BinaryEnrichContext& enrichCtx = _binaryEnrichCtxBySegment[seg->segmentId];
 
     for (size_t i = 0; i < count; ++i) {
         const SpoolEnrichBatchEntry& e = entries[i];
@@ -12994,15 +13599,8 @@ bool StorageManager::appendEnrichDeltasBatch(const SpoolEnrichBatchEntry* entrie
         std::vector<uint8_t> body;
         body.reserve(64);
 
-        _appendUVarintToBytes(body, recordId);
-        _appendUVarintToBytes(body, tsDelta);
-
         const String sessionStr(e.sessionId);
         const bool sameSession = (sessionStr == lastSession);
-        body.push_back(sameSession ? BIN_SESSION_SAME_AS_PREV : BIN_SESSION_INLINE);
-        if (!sameSession) {
-            _appendStringToBytes(body, sessionStr);
-        }
 
         uint8_t enrichFlags = 0;
         const String tagStr(e.tag ? e.tag : "");
@@ -13013,22 +13611,16 @@ bool StorageManager::appendEnrichDeltasBatch(const SpoolEnrichBatchEntry* entrie
         if (e.noData) {
             enrichFlags |= ENRICH_FLAG_NO_DATA;
         }
-        body.push_back(enrichFlags);
 
-        _appendUVarintToBytes(body, e.eventId);
-        _appendZigZag32ToBytes(body, _floatToE7(e.lat));
-        _appendZigZag32ToBytes(body, _floatToE7(e.lon));
-        _appendZigZag32ToBytes(body, _floatToCm(e.alt));
-        _appendUVarintToBytes(body, _floatToDm(e.acc));
-        if (enrichFlags & ENRICH_FLAG_TAG) {
-            _appendStringToBytes(body, tagStr);
-        }
-        if (enrichFlags & ENRICH_FLAG_GPS_TS) {
-            _appendUVarintToBytes(body, e.gpsEpochUtc);
-        }
+        _buildBinaryEnrichDeltaBodyV2(body, enrichCtx, recordId, tsDelta,
+                                      sameSession, sessionStr, String(),
+                                      enrichFlags, e.eventId,
+                                      _floatToE7(e.lat), _floatToE7(e.lon),
+                                      _floatToCm(e.alt), _floatToDm(e.acc),
+                                      tagStr, e.gpsEpochUtc);
 
         if (!SpoolBin::appendRecordToOpen(f,
-                                          static_cast<uint8_t>(SpoolBin::REC_ENRICH_DELTA),
+                                          static_cast<uint8_t>(SpoolBin::REC_ENRICH_DELTA_V2),
                                           body.data(),
                                           static_cast<uint16_t>(body.size()),
                                           recordId,
@@ -13071,6 +13663,8 @@ bool StorageManager::appendEnrichDeltasBatch(const SpoolEnrichBatchEntry* entrie
         seg->summaryVersion = SPOOL_SEGMENT_SUMMARY_VERSION;
         seg->summaryValid   = true;
         _binaryLastSessionBySegment[seg->segmentId] = lastSession;
+        // Batched enrich deltas carry no session_tag either.
+        _binaryLastSessionTagBySegment[seg->segmentId] = "";
         _spoolIndex.nextEventId = _nextEventId;
     }
 
@@ -13275,6 +13869,12 @@ bool StorageManager::_maybeWriteBinarySegmentCheckpoint(SpoolSegmentInfo& seg,
     static constexpr uint32_t CHECKPOINT_RECORD_INTERVAL = 128U;
     static constexpr uint32_t CHECKPOINT_PENDING_DELTA = 4U;
     static constexpr uint32_t CHECKPOINT_CAPTURE_PENDING_DELTA = 64U;
+    // An enrichment drain moves pendingEnrichmentCount by exactly 1 per delta,
+    // so the pending-delta rule degenerates into "checkpoint every 4 records"
+    // and appends an ~84 B sidecar against a ~30 B delta. Monotonic enrichment
+    // progress is fully recoverable by replaying the deltas that follow the
+    // last checkpoint, so it gets its own much coarser threshold.
+    static constexpr uint32_t CHECKPOINT_ENRICH_PENDING_DELTA = 256U;
 
     const auto it = _binaryCheckpointBySegment.find(seg.segmentId);
     const bool haveCheckpoint = (it != _binaryCheckpointBySegment.end());
@@ -13286,7 +13886,11 @@ bool StorageManager::_maybeWriteBinarySegmentCheckpoint(SpoolSegmentInfo& seg,
     const uint32_t currentPendingEnrichment = seg.pendingEnrichmentCount;
 
     uint32_t recordDelta = seg.recordCount;
-    uint32_t pendingDelta = currentPendingUpload + currentPendingEnrichment;
+    // Upload and enrichment pending counts are tracked separately: they move
+    // for different reasons and at wildly different rates, so folding them into
+    // one delta let the fast one dominate the threshold.
+    uint32_t uploadPendingDelta = currentPendingUpload;
+    uint32_t enrichPendingDelta = currentPendingEnrichment;
 
     if (prev) {
         if (seg.recordCount >= prev->recordCount) {
@@ -13295,22 +13899,26 @@ bool StorageManager::_maybeWriteBinarySegmentCheckpoint(SpoolSegmentInfo& seg,
         const uint32_t prevPendingUpload =
             prev->pendingUploadMissionCount + prev->pendingUploadNoiseCount;
         const uint32_t prevPendingEnrichment = prev->pendingEnrichmentCount;
-        pendingDelta =
+        uploadPendingDelta =
             (currentPendingUpload > prevPendingUpload)
                 ? (currentPendingUpload - prevPendingUpload)
                 : (prevPendingUpload - currentPendingUpload);
-        pendingDelta +=
+        enrichPendingDelta =
             (currentPendingEnrichment > prevPendingEnrichment)
                 ? (currentPendingEnrichment - prevPendingEnrichment)
                 : (prevPendingEnrichment - currentPendingEnrichment);
     }
 
+    const uint32_t uploadThreshold =
+        (RADIO_ARB.currentOwner() == RADIO_WIFI_CAPTURE)
+            ? CHECKPOINT_CAPTURE_PENDING_DELTA
+            : CHECKPOINT_PENDING_DELTA;
+
     const bool due =
         force ||
         (recordDelta >= CHECKPOINT_RECORD_INTERVAL) ||
-        (pendingDelta >= ((RADIO_ARB.currentOwner() == RADIO_WIFI_CAPTURE)
-                              ? CHECKPOINT_CAPTURE_PENDING_DELTA
-                              : CHECKPOINT_PENDING_DELTA));
+        (uploadPendingDelta >= uploadThreshold) ||
+        (enrichPendingDelta >= CHECKPOINT_ENRICH_PENDING_DELTA);
 
     if (!due) {
         return true;
@@ -13395,6 +14003,8 @@ bool StorageManager::_maybeWriteBinarySegmentCheckpoint(SpoolSegmentInfo& seg,
     seg.approxBytes = loc.offset + loc.len;
     _binaryCheckpointBySegment[seg.segmentId] = checkpoint;
     _binaryLastSessionBySegment[seg.segmentId] = "";
+    _binaryLastSessionTagBySegment[seg.segmentId] = "";
+    _binaryEnrichCtxBySegment[seg.segmentId] = BinaryEnrichContext{};
     if (seg.segmentId == _spoolIndex.activeSegmentId) {
         _binaryCheckpointDeferred = false;
         _clearMaintenanceFlags(STORAGE_MAINT_BINARY_CHECKPOINT);
@@ -13536,15 +14146,8 @@ bool StorageManager::_appendSpoolEnrichmentDelta(const String& sessionId,
     std::vector<uint8_t> body;
     body.reserve(64);
 
-    _appendUVarintToBytes(body, recordId);
-    _appendUVarintToBytes(body, tsDelta);
-
     const String lastSession = _binaryLastSessionBySegment[seg->segmentId];
     const bool sameSession = (sessionId == lastSession);
-    body.push_back(sameSession ? BIN_SESSION_SAME_AS_PREV : BIN_SESSION_INLINE);
-    if (!sameSession) {
-        _appendStringToBytes(body, sessionId);
-    }
 
     uint8_t enrichFlags = 0;
     const String tagStr = String(tag ? tag : "");
@@ -13554,22 +14157,20 @@ bool StorageManager::_appendSpoolEnrichmentDelta(const String& sessionId,
     if (noData) {
         enrichFlags |= ENRICH_FLAG_NO_DATA;
     }
-    body.push_back(enrichFlags);
 
-    _appendUVarintToBytes(body, eventId);
-    _appendZigZag32ToBytes(body, _floatToE7(lat));
-    _appendZigZag32ToBytes(body, _floatToE7(lon));
-    _appendZigZag32ToBytes(body, _floatToCm(alt));
-    _appendUVarintToBytes(body, _floatToDm(accuracy));
-    if (enrichFlags & ENRICH_FLAG_TAG) {
-        _appendStringToBytes(body, tagStr);
-    }
+    BinaryEnrichContext& enrichCtx = _binaryEnrichCtxBySegment[seg->segmentId];
+    _buildBinaryEnrichDeltaBodyV2(body, enrichCtx, recordId, tsDelta,
+                                  sameSession, sessionId, String(),
+                                  enrichFlags, eventId,
+                                  _floatToE7(lat), _floatToE7(lon),
+                                  _floatToCm(alt), _floatToDm(accuracy),
+                                  tagStr, 0U);
 
     SpoolBin::SegmentHeaderV2 hdr;
     const uint32_t appendStartMs = millis();
     const bool appendOk = SpoolBin::appendRecordV2(
             _spoolBinarySegmentPath(seg->segmentId),
-            static_cast<uint8_t>(SpoolBin::REC_ENRICH_DELTA),
+            static_cast<uint8_t>(SpoolBin::REC_ENRICH_DELTA_V2),
             body.data(),
             static_cast<uint16_t>(body.size()),
             recordId,
@@ -13598,7 +14199,11 @@ bool StorageManager::_appendSpoolEnrichmentDelta(const String& sessionId,
     _markSegmentEnrichmentDelta(*seg, recordId, ts);
     _decrementPendingEnrichmentForEvent(eventId);
 
+    // Enrich deltas never carry a session_tag, so writing an inline session
+    // here clears the sticky tag; otherwise the next event record could emit
+    // SAME_AS_PREV against a tag the reader has already dropped.
     _binaryLastSessionBySegment[seg->segmentId] = sessionId;
+    _binaryLastSessionTagBySegment[seg->segmentId] = "";
 
     const bool rotateAfterAppend = _shouldRotateSegmentAfterAppend(*seg);
     const bool checkpointForce = rotateAfterAppend;
@@ -13753,7 +14358,7 @@ bool StorageManager::_forEachResolvedEventForSession(
                         dst["lon"] = enrichment.lon;
                         dst["alt"] = enrichment.alt;
                         dst["acc"] = enrichment.acc;
-                        if (enrichment.tag.length()) {
+                        if (enrichment.tag[0]) {
                             dst["tag"] = enrichment.tag;
                         }
                         dst["enriched_ts"] = enrichment.ts;
@@ -13912,6 +14517,7 @@ bool StorageManager::_getNextUploadEventForSessionFromIndex(const String& sessio
                                               body.data(),
                                               body.size(),
                                               hdr.createdMs,
+                                              hdr.createdEpochUtc,
                                               String(ptr.sessionId),
                                               rec);
         }
@@ -13995,7 +14601,7 @@ bool StorageManager::_getNextUploadEventForSessionFromIndex(const String& sessio
             dst["lon"] = enrichment->lon;
             dst["alt"] = enrichment->alt;
             dst["acc"] = enrichment->acc;
-            if (enrichment->tag.length()) {
+            if (enrichment->tag[0]) {
                 dst["tag"] = enrichment->tag;
             }
             dst["enriched_ts"] = enrichment->ts;
@@ -14050,7 +14656,7 @@ bool StorageManager::_getUploadEventBatchForSessionFromIndex(const String& sessi
                   sessionId.c_str(),
                   static_cast<unsigned long>(sinceId),
                   maxCount,
-                  static_cast<unsigned long>(heap_caps_get_free_size(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT)),
+                  static_cast<unsigned long>(heap_caps_get_free_size(SPECTRE_CAP_DRAM)),
                   static_cast<unsigned long>(heap_caps_get_free_size(MALLOC_CAP_SPIRAM)));
     }
 
@@ -14173,7 +14779,7 @@ bool StorageManager::_getUploadEventBatchForSessionFromIndex(const String& sessi
                 dst["lon"] = enrichment->lon;
                 dst["alt"] = enrichment->alt;
                 dst["acc"] = enrichment->acc;
-                if (enrichment->tag.length()) {
+                if (enrichment->tag[0]) {
                     dst["tag"] = enrichment->tag;
                 }
                 dst["enriched_ts"] = enrichment->ts;
@@ -14339,6 +14945,7 @@ bool StorageManager::_getUploadEventBatchForSessionFromIndex(const String& sessi
                                                       body.data(),
                                                       body.size(),
                                                       hdr.createdMs,
+                                                      hdr.createdEpochUtc,
                                                       String(ptr.sessionId),
                                                       rec);
                     if (probeFetch) {
@@ -14401,7 +15008,7 @@ bool StorageManager::_getUploadEventBatchForSessionFromIndex(const String& sessi
                           "Upload index fetch probe stage=appended event=%lu batch=%u heapFree=%lu",
                           static_cast<unsigned long>(rec.eventId),
                           static_cast<unsigned>(batch.size()),
-                          static_cast<unsigned long>(heap_caps_get_free_size(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT)));
+                          static_cast<unsigned long>(heap_caps_get_free_size(SPECTRE_CAP_DRAM)));
             }
             DLOG_UPLOAD_TRACE("STORAGE",
                "Upload index batch appended event=%lu size=%u",
@@ -14514,7 +15121,9 @@ bool StorageManager::_getEventBatchForSessionFromSpool(const String& sessionId,
                     enrichment.lon = rec.doc["lon"] | 0.0f;
                     enrichment.alt = rec.doc["alt"] | 0.0f;
                     enrichment.acc = rec.doc["acc"] | 0.0f;
-                    enrichment.tag = String((const char*)(rec.doc["tag"] | ""));
+                    strlcpy(enrichment.tag,
+                            (const char*)(rec.doc["tag"] | ""),
+                            sizeof(enrichment.tag));
                     enrichment.ts = rec.doc["ts"] | 0U;
                     enrichment.gpsTs = rec.doc[F_GPS_TS] | 0U;
                     enrichment.noData = rec.doc["enrich_no_data"] | false;
@@ -14568,7 +15177,7 @@ bool StorageManager::_getEventBatchForSessionFromSpool(const String& sessionId,
                 dst["lon"] = enrichment.lon;
                 dst["alt"] = enrichment.alt;
                 dst["acc"] = enrichment.acc;
-                if (enrichment.tag.length()) {
+                if (enrichment.tag[0]) {
                     dst["tag"] = enrichment.tag;
                 }
                 dst["enriched_ts"] = enrichment.ts;
@@ -14600,6 +15209,7 @@ bool StorageManager::_decodeBinarySpoolRecordBody(uint32_t segmentId,
                                                   const uint8_t* data,
                                                   size_t len,
                                                   uint32_t tsBase,
+                                                  uint32_t epochBase,
                                                   const String& sessionSeed,
                                                   DecodedSpoolRecord& out) const {
     out.recordType = SPOOL_REC_UNKNOWN;
@@ -14623,6 +15233,7 @@ bool StorageManager::_decodeBinarySpoolRecordBody(uint32_t segmentId,
     uint32_t tsDelta = 0;
     uint8_t sessionMode = BIN_SESSION_INLINE;
     String sessionId;
+    String sessionTag;
     uint8_t typeCode = BIN_EVT_CUSTOM;
     String typeStr;
     uint8_t eventFlags = 0;
@@ -14638,12 +15249,14 @@ bool StorageManager::_decodeBinarySpoolRecordBody(uint32_t segmentId,
     if (p >= end) return false;
     sessionMode = *p++;
 
-    if (sessionMode == BIN_SESSION_SAME_AS_PREV) {
-        sessionId = sessionSeed;
-    } else {
-        if (!_readStringFromBytes(p, end, sessionId)) {
+    {
+        String seed = sessionSeed;
+        String seedTag = _lookupSessionTag(sessionSeed);
+        if (!_readBinarySessionField(p, end, sessionMode, seed, seedTag,
+                                     sessionId, sessionTag)) {
             return false;
         }
+        if (!sessionTag.length()) sessionTag = _lookupSessionTag(sessionId);
     }
 
     if (p >= end) return false;
@@ -14668,232 +15281,28 @@ bool StorageManager::_decodeBinarySpoolRecordBody(uint32_t segmentId,
     root["ts"] = ts;
     root["type"] = typeStr;
     root[F_SESSION] = sessionId;
+    // Prefer the reboot-safe persisted epoch (createdEpochUtc + delta/1000);
+    // projecting from a boot-relative millis is wrong for any record carried
+    // across a reboot. This path used to have no epoch base at all and always
+    // took the wrong branch.
+    String tsIsoStr;
     {
         char tsIso[24] = {};
-        TIME_SVC.formatIsoForMillis(ts, tsIso, sizeof(tsIso));
-        root[F_TIMESTAMP_ISO] = tsIso;
+        const uint32_t epochUtc = _epochFromBaseDelta(tsDelta, epochBase);
+        out.epochUtc = epochUtc;
+        if (epochUtc != 0) {
+            TIME_SVC.formatIsoForEpoch(epochUtc, tsIso, sizeof(tsIso));
+        } else {
+            TIME_SVC.formatIsoForMillis(ts, tsIso, sizeof(tsIso));
+        }
+        tsIsoStr = tsIso;
+        root[F_TIMESTAMP_ISO] = tsIsoStr;
     }
 
-    if (payloadFamily == BIN_PAYLOAD_PROBE_DEVICE) {
-        String mac;
-        String ssid;
-        String ieFingerprint;
-        String probeSetHash;
-        int32_t rssi = 0;
-        uint32_t channel = 0;
-        bool isBroadcast = false;
-        bool isRandomMac = false;
-
-        if (p >= end) return false;
-        const uint8_t flags = *p++;
-
-        uint8_t lastOui[3] = {0, 0, 0};
-        bool hasLastOui = false;
-
-        if (!_readMacFieldFromBytes(p, end, mac, lastOui, hasLastOui)) {
-            DLOG_WARN("STORAGE", "Indexed binary probe/device MAC decode failed seg=%lu",
-                      static_cast<unsigned long>(segmentId));
-            return false;
-        }
-
-        if ((flags & 0x01) && !_readStringFromBytes(p, end, ssid)) return false;
-        if ((flags & 0x02) && !_readZigZag32FromBytes(p, end, rssi)) return false;
-
-        root["mac"] = mac;
-        if (flags & 0x01) {
-            if (typeStr == "probe") root["probed_ssid"] = ssid;
-            else root["ssid"] = ssid;
-        }
-        if (flags & 0x02) root["rssi"] = rssi;
-        if (flags & 0x04) {
-            if (!_readUVarintFromBytes(p, end, channel)) return false;
-            root["channel"] = channel;
-        }
-        if (flags & 0x08) {
-            if (!_readStringFromBytes(p, end, ieFingerprint)) return false;
-            root["ie_fingerprint"] = ieFingerprint;
-        }
-        if (flags & 0x10) {
-            if (!_readStringFromBytes(p, end, probeSetHash)) return false;
-            root["probe_set_hash"] = probeSetHash;
-        }
-        if (flags & 0x20) {
-            if (p >= end) return false;
-            isRandomMac = (*p++ != 0);
-            root["is_random_mac"] = isRandomMac ? 1 : 0;
-        }
-        if (flags & 0x40) {
-            if (p >= end) return false;
-            isBroadcast = (*p++ != 0);
-            root["is_broadcast"] = isBroadcast ? 1 : 0;
-        }
-
-    } else if (payloadFamily == BIN_PAYLOAD_PMKID) {
-        String ap;
-        String sta;
-        String ssid;
-        String pmkidHex;
-        String hashcatLine;
-        int32_t rssi = 0;
-
-        if (p >= end) return false;
-        const uint8_t flags = *p++;
-
-        uint8_t lastOui[3] = {0, 0, 0};
-        bool hasLastOui = false;
-
-        if (!_readMacFieldFromBytes(p, end, ap, lastOui, hasLastOui) ||
-            !_readMacFieldFromBytes(p, end, sta, lastOui, hasLastOui)) {
-            DLOG_WARN("STORAGE", "Indexed binary pmkid MAC decode failed seg=%lu",
-                      static_cast<unsigned long>(segmentId));
-            return false;
-        }
-
-        if ((flags & 0x01) && !_readStringFromBytes(p, end, ssid)) return false;
-
-        root["ap"] = ap;
-        root["sta"] = sta;
-        root["bssid"] = ap;
-        root["client_mac"] = sta;
-        if (flags & 0x01) root["ssid"] = ssid;
-
-        if (flags & 0x02) {
-            if (!_readZigZag32FromBytes(p, end, rssi)) return false;
-            root["rssi"] = rssi;
-        }
-        if (flags & 0x04) {
-            if (!_readStringFromBytes(p, end, pmkidHex)) return false;
-            root["pmkid_hex"] = pmkidHex;
-        }
-        if (flags & 0x08) {
-            if (!_readStringFromBytes(p, end, hashcatLine)) return false;
-            root["hashcat_line"] = hashcatLine;
-        }
-
-    } else if (payloadFamily == BIN_PAYLOAD_HANDSHAKE) {
-        String ap;
-        String sta;
-        String ssid;
-        uint32_t frameMask = 0;
-        uint32_t messageNumber = 0;
-
-        if (p >= end) return false;
-        const uint8_t flags = *p++;
-
-        uint8_t lastOui[3] = {0, 0, 0};
-        bool hasLastOui = false;
-
-        if (!_readMacFieldFromBytes(p, end, ap, lastOui, hasLastOui) ||
-            !_readMacFieldFromBytes(p, end, sta, lastOui, hasLastOui)) {
-            DLOG_WARN("STORAGE", "Indexed binary handshake MAC decode failed seg=%lu",
-                      static_cast<unsigned long>(segmentId));
-            return false;
-        }
-
-        if ((flags & 0x01) && !_readStringFromBytes(p, end, ssid)) return false;
-        if (!_readUVarintFromBytes(p, end, frameMask)) return false;
-
-        root["ap"] = ap;
-        root["sta"] = sta;
-        root["bssid"] = ap;
-        root["client"] = sta;
-        if (flags & 0x01) root["ssid"] = ssid;
-        root["frame_mask"] = frameMask;
-        root["event_type"] = "handshake";
-
-        if (flags & 0x02) {
-            int32_t rssi = 0;
-            if (!_readZigZag32FromBytes(p, end, rssi)) return false;
-            root["rssi"] = rssi;
-        }
-        if (flags & 0x04) {
-            if (!_readUVarintFromBytes(p, end, messageNumber)) return false;
-            root["message"] = messageNumber;
-            root["msg"] = messageNumber;
-        }
-
-    } else if (payloadFamily == BIN_PAYLOAD_DRONE) {
-        String droneId;
-        String mac;
-        String protocol;
-        int32_t latitudeE7 = 0;
-        int32_t longitudeE7 = 0;
-        uint32_t channel = 0;
-        uint8_t lastOui[3] = {0, 0, 0};
-        bool hasLastOui = false;
-
-        if (p >= end) return false;
-        const uint8_t flags = *p++;
-
-        if ((flags & 0x01) && !_readStringFromBytes(p, end, droneId)) return false;
-        if ((flags & 0x02) &&
-            !_readMacFieldFromBytes(p, end, mac, lastOui, hasLastOui)) {
-            return false;
-        }
-        if (flags & 0x04) {
-            int32_t rssi = 0;
-            if (!_readZigZag32FromBytes(p, end, rssi)) return false;
-            root["rssi"] = rssi;
-        }
-        if (flags & 0x08) {
-            if (!_readUVarintFromBytes(p, end, channel)) return false;
-            root["channel"] = channel;
-        }
-        if (flags & 0x10) {
-            if (!_readStringFromBytes(p, end, protocol)) return false;
-            root["protocol"] = protocol;
-        }
-        if (flags & 0x20) {
-            if (!_readZigZag32FromBytes(p, end, latitudeE7) ||
-                !_readZigZag32FromBytes(p, end, longitudeE7)) {
-                return false;
-            }
-            root["latitude"] = _e7ToFloat(latitudeE7);
-            root["longitude"] = _e7ToFloat(longitudeE7);
-        }
-        if (flags & 0x40) {
-            uint32_t altitudeCenti = 0;
-            if (!_readUVarintFromBytes(p, end, altitudeCenti)) return false;
-            root["altitude_m"] = _centiToFloat(altitudeCenti);
-        }
-        if (flags & 0x80) {
-            uint32_t speedCenti = 0;
-            if (!_readUVarintFromBytes(p, end, speedCenti)) return false;
-            root["speed"] = _centiToFloat(speedCenti);
-        }
-
-        if (flags & 0x01) root["drone_id"] = droneId;
-        if (flags & 0x02) root["mac"] = mac;
-
-    } else if (payloadFamily == BIN_PAYLOAD_FIELD_MAP) {
-        if (!_readBinaryFieldMapFromBytes(p, end, root)) {
-            DLOG_WARN("STORAGE", "Indexed binary field map decode failed seg=%lu",
-                      static_cast<unsigned long>(segmentId));
-            return false;
-        }
-
-    } else if (payloadFamily == BIN_PAYLOAD_JSON_FALLBACK) {
-        if (eventFlags & BIN_EVENT_HAS_PAYLOAD) {
-            String payloadJson;
-            if (!_readStringFromBytes(p, end, payloadJson)) {
-                return false;
-            }
-
-            if (payloadJson.length()) {
-                JsonDocument payloadDoc;
-                DeserializationError err = deserializeJson(payloadDoc, payloadJson);
-                if (err || !payloadDoc.is<JsonObject>()) {
-                    return false;
-                }
-
-                for (JsonPairConst kv : payloadDoc.as<JsonObjectConst>()) {
-                    root[kv.key().c_str()].set(kv.value());
-                }
-            }
-        }
-
-    } else {
-        DLOG_WARN("STORAGE", "Indexed binary unknown payload family seg=%lu family=%u",
+    if (!_decodeBinaryPayloadBody(p, end, typeStr, payloadFamily,
+                                  eventFlags, root)) {
+        DLOG_WARN("STORAGE",
+                  "Indexed binary payload decode failed seg=%lu family=%u",
                   static_cast<unsigned long>(segmentId),
                   static_cast<unsigned>(payloadFamily));
         return false;
@@ -14923,6 +15332,15 @@ bool StorageManager::_decodeBinarySpoolRecordBody(uint32_t segmentId,
     root["prio"] = prio;
     root["lane"] = lane;
     root["lane_name"] = _laneText(static_cast<StorageLane>(lane));
+
+    // See the matching note in _scanSegmentRecords: the extension map of an
+    // older record can carry a stale ts_iso that must not win -- unless this
+    // segment has no UTC base, in which case the stored value is the better one.
+    if (out.epochUtc != 0 || !root[F_TIMESTAMP_ISO].is<const char*>() ||
+        !(root[F_TIMESTAMP_ISO].as<const char*>()[0])) {
+        root[F_TIMESTAMP_ISO] = tsIsoStr;
+    }
+    _applyDerivedEventFields(root, typeStr, sessionId, sessionTag);
 
     out.recordType = SPOOL_REC_EVENT;
     out.eventId = recordId;
@@ -14970,13 +15388,13 @@ bool StorageManager::_loadSpoolEnrichmentsForSession(
                 out.lon = rec.doc["lon"] | 0.0f;
                 out.alt = rec.doc["alt"] | 0.0f;
                 out.acc = rec.doc["acc"] | 0.0f;
-                out.tag = "";
+                out.tag[0] = '\0';
                 JsonVariantConst tagField = rec.doc["tag"];
                 if (!tagField.isNull()) {
                     if (tagField.is<const char*>()) {
                         const char* tagText = tagField.as<const char*>();
                         if (tagText) {
-                            out.tag = tagText;
+                            strlcpy(out.tag, tagText, sizeof(out.tag));
                         }
                     } else {
                         DLOG_WARN("STORAGE",
@@ -15023,14 +15441,14 @@ bool StorageManager::_loadSpoolEnrichmentIds(
     DLOG_INFO("STORAGE",
               "load_ids_reserve count=%u freeInternal=%lu largest=%lu",
               static_cast<unsigned>(reserveCount),
-              static_cast<unsigned long>(heap_caps_get_free_size(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT)),
-              static_cast<unsigned long>(heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT)));
+              static_cast<unsigned long>(heap_caps_get_free_size(SPECTRE_CAP_DRAM)),
+              static_cast<unsigned long>(heap_caps_get_largest_free_block(SPECTRE_CAP_DRAM)));
     if (reserveCount > 0) {
         enrichedIds.reserve(reserveCount);
     }
     DLOG_INFO("STORAGE",
               "load_ids_reserved freeInternal=%lu",
-              static_cast<unsigned long>(heap_caps_get_free_size(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT)));
+              static_cast<unsigned long>(heap_caps_get_free_size(SPECTRE_CAP_DRAM)));
 
     size_t segsScanned = 0;
     size_t segsSkipped = 0;
@@ -15048,8 +15466,8 @@ bool StorageManager::_loadSpoolEnrichmentIds(
                   "load_ids_scan seg=%u enrichDeltas=%u freeInternal=%lu largest=%lu",
                   static_cast<unsigned>(seg.segmentId),
                   static_cast<unsigned>(seg.enrichDeltaCount),
-                  static_cast<unsigned long>(heap_caps_get_free_size(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT)),
-                  static_cast<unsigned long>(heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT)));
+                  static_cast<unsigned long>(heap_caps_get_free_size(SPECTRE_CAP_DRAM)),
+                  static_cast<unsigned long>(heap_caps_get_largest_free_block(SPECTRE_CAP_DRAM)));
 
         // Use headers-only scan: each ENRICH_DELTA record exposes its
         // targetEventId directly without a JsonDocument materialization.
@@ -15083,15 +15501,78 @@ bool StorageManager::_loadSpoolEnrichmentIds(
               static_cast<unsigned>(segsScanned),
               static_cast<unsigned>(segsSkipped),
               static_cast<unsigned>(enrichedIds.size()),
-              static_cast<unsigned long>(heap_caps_get_free_size(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT)));
+              static_cast<unsigned long>(heap_caps_get_free_size(SPECTRE_CAP_DRAM)));
 
     // Sort + uniq so callers can std::binary_search. Duplicates from re-runs
     // of the same enrichment delta are collapsed here, matching the prior
     // std::map's set semantics.
+    delay(1);
     std::sort(enrichedIds.begin(), enrichedIds.end());
+    delay(1);
     enrichedIds.erase(std::unique(enrichedIds.begin(), enrichedIds.end()),
                       enrichedIds.end());
+    delay(1);
 
+    return true;
+}
+
+bool StorageManager::_reconcilePendingEnrichmentSummaries(const char* reason) {
+    SpiramVector<uint32_t> enrichedIds;
+    if (!_loadSpoolEnrichmentIds(String(), false, enrichedIds)) {
+        DLOG_WARN("STORAGE",
+                  "Pending enrich reconcile failed reason=%s stage=load_ids",
+                  (reason && reason[0]) ? reason : "-");
+        return false;
+    }
+
+    uint32_t pendingTotal = 0;
+    uint32_t changedSegments = 0;
+    for (auto& seg : _spoolIndex.segments) {
+        uint32_t exactPending = 0;
+        if (seg.eventCount > 0) {
+            const bool ok = _scanSegmentRecordHeaders(
+                seg.segmentId,
+                [&](const DecodedSpoolRecordHeader& rec) -> bool {
+                    if (rec.recordType != SPOOL_REC_EVENT ||
+                        rec.eventId == 0 ||
+                        std::binary_search(enrichedIds.begin(),
+                                           enrichedIds.end(),
+                                           rec.eventId)) {
+                        return true;
+                    }
+                    const RAMSpool::CaptureClassification cls =
+                        RAMSpool::classify(rec.typeString.c_str(), "");
+                    if (cls.enrichEligible) {
+                        exactPending++;
+                    }
+                    return true;
+                });
+            if (!ok) {
+                DLOG_WARN("STORAGE",
+                          "Pending enrich reconcile failed reason=%s seg=%lu stage=scan",
+                          (reason && reason[0]) ? reason : "-",
+                          static_cast<unsigned long>(seg.segmentId));
+                return false;
+            }
+        }
+
+        pendingTotal += exactPending;
+        if (seg.pendingEnrichmentCount != exactPending) {
+            seg.pendingEnrichmentCount = exactPending;
+            changedSegments++;
+        }
+        delay(1);
+    }
+
+    if (changedSegments > 0) {
+        _spoolIndexDirty = true;
+    }
+    DLOG_INFO("STORAGE",
+              "Pending enrich reconcile reason=%s ids=%u pending=%lu changedSegs=%lu",
+              (reason && reason[0]) ? reason : "-",
+              static_cast<unsigned>(enrichedIds.size()),
+              static_cast<unsigned long>(pendingTotal),
+              static_cast<unsigned long>(changedSegments));
     return true;
 }
 
@@ -15139,6 +15620,10 @@ uint32_t StorageManager::_pendingEventCountForSessionFromSpool(const String& ses
     const uint32_t watermark = _uploadedWatermarkForSession(sessionId);
 
     for (const auto& seg : _spoolIndex.segments) {
+        // A legacy-session cleanup can call this across the entire spool.  Give
+        // the scheduler a chance between LittleFS files even when summaries
+        // let the individual record scans return quickly.
+        delay(1);
         const bool summaryReady =
             seg.summaryValid &&
             seg.summaryVersion == SPOOL_SEGMENT_SUMMARY_VERSION;
@@ -15450,6 +15935,7 @@ int StorageManager::_cleanupLegacyUploadSidecars() {
     int removed = 0;
     File f = dir.openNextFile();
     while (f) {
+        delay(1);
         if (!f.isDirectory()) {
             String name = String(f.name());
             if (name.startsWith(String(PATH_EVENTS) + "/")) {
@@ -15485,6 +15971,7 @@ int StorageManager::_cleanupLegacyEnrichSidecars() {
     int removed = 0;
     File f = dir.openNextFile();
     while (f) {
+        delay(1);
         if (!f.isDirectory()) {
             String name = String(f.name());
             if (name.startsWith(String(PATH_EVENTS) + "/")) {
@@ -15520,6 +16007,9 @@ int StorageManager::_cleanupLegacyRawSessionFiles() {
     int removed = 0;
     File f = dir.openNextFile();
     while (f) {
+        // Directory iteration plus a per-session spool recount can otherwise
+        // monopolize the storage task long enough to trip the task watchdog.
+        delay(1);
         if (!f.isDirectory()) {
             String name = String(f.name());
             if (name.startsWith(String(PATH_EVENTS) + "/")) {
@@ -15731,6 +16221,9 @@ bool StorageManager::_pruneUploadedSessionState() {
     };
 
     for (const auto& seg : _spoolIndex.segments) {
+        // _scanSegmentRecords() yields while decoding records; this boundary
+        // yield also covers file open/close and summary-only segments.
+        delay(1);
         scannedSegments++;
         const bool ok = _scanSegmentRecords(seg.segmentId,
             [&](const DecodedSpoolRecord& rec) -> bool {
@@ -16111,9 +16604,16 @@ bool StorageManager::compactSpool() {
 
     for (auto& seg : _spoolIndex.segments) {
         _refreshSegmentLifecycle(seg);
+        // Lifecycle refresh performs LittleFS existence checks.  On a large
+        // spool, the file-level work alone can exceed the task watchdog even
+        // though no single operation is slow.
+        delay(1);
     }
 
     for (const auto& seg : _spoolIndex.segments) {
+        // Keep compaction cooperative even for active, grace, and summary-only
+        // segments that bypass the record scanner's internal yield cadence.
+        delay(1);
         const bool isActive = (seg.segmentId == _spoolIndex.activeSegmentId);
 
         if (isActive) {
@@ -16208,17 +16708,6 @@ bool StorageManager::compactSpool() {
         return ok;
     }
 
-    if (!scanFailed && !removeFailed && _pruneUploadedSessionState()) {
-        _spoolAuditRepairRequired = false;
-        const bool ok = _persistSpoolIndex(true, "compact_prune");
-        if (ok) {
-            DLOG_INFO("STORAGE", "Spool compact pruned metadata only");
-            _logSpoolDiagnostics("compact_prune");
-            _checkSpoolInvariants("compact_prune", false);
-        }
-        return ok;
-    }
-
     if (scanFailed || removeFailed) {
         DLOG_WARN("STORAGE",
                   "Spool compact no_change prune_skipped scanFailed=%d removeFailed=%d",
@@ -16234,6 +16723,11 @@ bool StorageManager::compactSpool() {
                                "compact_remove_failed");
         }
     } else {
+        // Session/watermark metadata is prunable only after retained segment
+        // files have actually been removed.  With an unchanged segment set,
+        // _pruneUploadedSessionState() must retain the same sessions and its
+        // full decoded-record scan is guaranteed to be a no-op.  Skipping it
+        // avoids a multi-second display/capture stall on deep field spools.
         _spoolAuditRepairRequired = false;
     }
 
@@ -16664,9 +17158,9 @@ void StorageManager::spoolEnrichToSerial() {
     StorageUiSnapshot snap =
         _buildStorageUiSnapshot(getFreeBytes(), getUsedPercent());
     const uint32_t freeInternal =
-        heap_caps_get_free_size(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
+        heap_caps_get_free_size(SPECTRE_CAP_DRAM);
     const uint32_t largestInternal =
-        heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
+        heap_caps_get_largest_free_block(SPECTRE_CAP_DRAM);
 
     const bool exactPendingCountsAllowed =
         freeInternal >= STORAGE_SPOOL_ENRICH_EXACT_MIN_FREE_INTERNAL &&
@@ -16757,9 +17251,9 @@ void StorageManager::spoolDiagToSerial() {
     StorageUiSnapshot snap =
         _buildStorageUiSnapshot(getFreeBytes(), getUsedPercent());
     const uint32_t freeInternal =
-        heap_caps_get_free_size(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
+        heap_caps_get_free_size(SPECTRE_CAP_DRAM);
     const uint32_t largestInternal =
-        heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
+        heap_caps_get_largest_free_block(SPECTRE_CAP_DRAM);
 
     const bool exactPendingCountsAllowed =
         freeInternal >= STORAGE_SPOOL_ENRICH_EXACT_MIN_FREE_INTERNAL &&
@@ -16909,4 +17403,366 @@ void StorageManager::_initDefaultConfig() {
     _config.mqttUser     = "";
     _config.mqttPassword = "";
     _config.mqttTopicBase = SPECTRE_MQTT_TOPIC_BASE;
+}
+
+// =====================================================================
+// Codec round-trip self-test.
+//
+// The v2 payload moved a dozen fields from keyed pairs into positional slots.
+// A layout mistake there is silent: it does not fail to write, it writes bytes
+// that read back as something else. This drives the real writer and the real
+// reader and diffs every field, so a wire-format regression fails loudly.
+// =====================================================================
+namespace {
+
+struct CodecSelfTestCase {
+    const char* type;
+    const char* subtype;
+};
+
+bool _codecFieldsMatch(JsonObjectConst want, JsonObjectConst got, String& firstBad) {
+    bool ok = true;
+    for (JsonPairConst kv : want) {
+        const char* key = kv.key().c_str();
+        // Fields the storage layer legitimately owns or rewrites.
+        if (strcmp(key, "id") == 0 || strcmp(key, "ts") == 0 ||
+            strcmp(key, "status") == 0 || strcmp(key, F_ENRICH_STATE) == 0 ||
+            strcmp(key, F_TIMESTAMP_ISO) == 0 || strcmp(key, F_SESSION) == 0) {
+            continue;
+        }
+        JsonVariantConst a = kv.value();
+        JsonVariantConst b = got[key];
+        if (b.isNull()) {
+            if (ok) firstBad = String("missing:") + key;
+            ok = false;
+            continue;
+        }
+        // Compare as text: the codec is allowed to change numeric width, but
+        // not value.
+        String as, bs;
+        serializeJson(a, as);
+        serializeJson(b, bs);
+        if (as != bs) {
+            // ints written as 1/0 may read back as true/false and vice versa.
+            const bool boolish =
+                (as == "true" && bs == "1") || (as == "1" && bs == "true") ||
+                (as == "false" && bs == "0") || (as == "0" && bs == "false");
+            if (!boolish) {
+                if (ok) firstBad = String(key) + " want=" + as + " got=" + bs;
+                ok = false;
+            }
+        }
+    }
+    return ok;
+}
+
+}  // namespace
+
+bool StorageManager::spoolCodecSelfTestToSerial() {
+    if (!_ready) {
+        DLOG_WARN("STORAGE", "codec selftest: storage not ready");
+        return false;
+    }
+
+    const CodecSelfTestCase cases[] = {
+        {"probe", ""}, {"device", ""}, {"network", ""},
+        {"pmkid", ""}, {"drone", ""}, {"event", "handshake"},
+    };
+
+    // Sum of live segment bodies -- the delta across one append is that
+    // record's true on-disk cost, prefix included.
+    auto totalSpoolBytes = [this]() -> uint32_t {
+        uint32_t total = 0;
+        for (const auto& seg : _spoolIndex.segments) total += seg.approxBytes;
+        return total;
+    };
+
+    // Vary the radio addresses per run: identical synthetic records would be
+    // dropped by the duplicate suppressor on a second invocation and the test
+    // would report a spurious append failure.
+    const uint32_t nonce = millis();
+    char macA[18], macB[18], macC[18];
+    snprintf(macA, sizeof(macA), "AA:BB:CC:%02X:%02X:%02X",
+             static_cast<unsigned>((nonce >> 16) & 0xFF),
+             static_cast<unsigned>((nonce >> 8) & 0xFF),
+             static_cast<unsigned>(nonce & 0xFF));
+    snprintf(macB, sizeof(macB), "AA:BB:DD:%02X:%02X:%02X",
+             static_cast<unsigned>((nonce >> 16) & 0xFF),
+             static_cast<unsigned>((nonce >> 8) & 0xFF),
+             static_cast<unsigned>(nonce & 0xFF));
+    snprintf(macC, sizeof(macC), "AA:BB:EE:%02X:%02X:%02X",
+             static_cast<unsigned>((nonce >> 16) & 0xFF),
+             static_cast<unsigned>((nonce >> 8) & 0xFF),
+             static_cast<unsigned>(nonce & 0xFF));
+
+    bool allOk = true;
+    std::vector<uint32_t> targetIds;
+    DLOG_INFO("STORAGE",
+              "codec selftest begin -- writes 6 synthetic records to the spool");
+
+    for (const auto& tc : cases) {
+        JsonDocument want;
+        JsonObject w = want.to<JsonObject>();
+        const String type(tc.type);
+
+        // Envelope fields the capture path always supplies.
+        w["sensor"] = SPECTRE_MQTT_SENSOR_ID;
+        w["session_id"] = SESS.getId();
+
+        if (type == "probe" || type == "device" || type == "network") {
+            if (type == "network") {
+                w["bssid"] = macA;
+                w["ssid"] = "SelfTestAP";
+                w["security"] = "WPA2";
+                w["is_hidden"] = 0;
+                w["has_wps"] = 1;
+                w["track_id"] = String("AP:") + macA;
+            } else {
+                w["mac"] = macB;
+                w["ie_fingerprint"] = "8f2a91c4";
+                if (type == "probe") {
+                    w["probed_ssid"] = "SelfTestProbe";
+                    w["is_broadcast"] = 0;
+                    w["track_id"] = "IE:8f2a91c4";
+                } else {
+                    w["probe_set_hash"] = "deadbeef";
+                    w["is_random_mac"] = 1;
+                    w["track_id"] = String("MAC:") + macB;
+                }
+            }
+            w["rssi"] = -67;
+            w["channel"] = 6;
+            w["localization_sample"] = true;
+            w["sample_seq"] = 12;
+            w["sample_frames"] = 34;
+            w["rssi_min"] = -72;
+            w["rssi_max"] = -61;
+            w["sample_reason"] = "signal_delta";
+        } else if (type == "pmkid") {
+            w["ap"] = macA;
+            w["sta"] = macB;
+            w["ssid"] = "SelfTestAP";
+            w["rssi"] = -55;
+            w["pmkid_hex"] = "00112233445566778899aabbccddeeff";
+        } else if (type == "drone") {
+            w["drone_id"] = "SELFTEST-DRONE";
+            w["mac"] = macC;
+            w["rssi"] = -70;
+            w["channel"] = 11;
+            w["protocol"] = "wifi";
+            w["latitude"] = 47.6205;
+            w["longitude"] = -122.3493;
+        } else {  // event/handshake
+            w["event_type"] = "handshake";
+            w["ap"] = macA;
+            w["sta"] = macB;
+            w["ssid"] = "SelfTestAP";
+            w["rssi"] = -60;
+            w["frame_mask"] = 0x0FU;
+            w["message"] = 2;
+        }
+
+        const uint32_t bytesBefore = totalSpoolBytes();
+        const AppendEventResult res =
+            _appendEventDetailedInternal(tc.type, want.as<JsonObjectConst>(),
+                                         nullptr, nullptr, false, true, true,
+                                         nullptr);
+        if (!res.ok()) {
+            DLOG_WARN("STORAGE", "codec selftest type=%s append failed status=%u",
+                      tc.type, static_cast<unsigned>(res.status));
+            allOk = false;
+            continue;
+        }
+        // A rotate or compaction between the two samples can shrink the total,
+        // so the delta is signed; a negative one means the measurement was
+        // spoiled by segment churn rather than that the record was free.
+        targetIds.push_back(res.eventId);
+        const int64_t recordBytesSigned =
+            static_cast<int64_t>(totalSpoolBytes()) - static_cast<int64_t>(bytesBefore);
+
+        // Read it back through the scan decoder. Segments carry their event-id
+        // range, so scan only the one that can hold this record -- walking all
+        // of them costs a full-spool decode per record, which on a real backlog
+        // is minutes, not milliseconds.
+        JsonDocument got;
+        bool found = false;
+        for (const auto& seg : _spoolIndex.segments) {
+            if (found) break;
+            if (seg.lastEventId && seg.lastEventId < res.eventId) continue;
+            if (seg.firstEventId && seg.firstEventId > res.eventId) continue;
+            _scanSegmentRecords(seg.segmentId,
+                [&](const DecodedSpoolRecord& rec) -> bool {
+                    if (rec.recordType != SPOOL_REC_EVENT) return true;
+                    if (rec.eventId != res.eventId) return true;
+                    got.set(rec.doc.as<JsonVariantConst>());
+                    found = true;
+                    return false;
+                });
+        }
+
+        if (!found) {
+            DLOG_WARN("STORAGE", "codec selftest type=%s record %lu not found",
+                      tc.type, static_cast<unsigned long>(res.eventId));
+            allOk = false;
+            continue;
+        }
+
+        String firstBad;
+        const bool match = _codecFieldsMatch(want.as<JsonObjectConst>(),
+                                             got.as<JsonObjectConst>(), firstBad);
+        if (!match) allOk = false;
+
+        char bytesText[16];
+        if (recordBytesSigned >= 0) {
+            snprintf(bytesText, sizeof(bytesText), "%ld",
+                     static_cast<long>(recordBytesSigned));
+        } else {
+            // Segment churn ate the delta; the byte figure is not meaningful.
+            snprintf(bytesText, sizeof(bytesText), "n/a");
+        }
+        DLOG_INFO("STORAGE",
+                  "codec selftest type=%-8s bytes=%-4s %s%s",
+                  tc.type,
+                  bytesText,
+                  match ? "OK" : "MISMATCH ",
+                  match ? "" : firstBad.c_str());
+    }
+
+    // ---------------------------------------------------------------
+    // Enrichment round-trip. REC_ENRICH_DELTA_V2 delta-codes every numeric
+    // field against the previous enrichment in the segment, so a writer/reader
+    // drift does not fail loudly -- it silently returns a position a few metres
+    // wrong, or an event id off by one. Walk a synthetic track and check every
+    // field of every record, including the no-data case whose coordinates are
+    // omitted from the wire entirely.
+    // ---------------------------------------------------------------
+    if (!targetIds.empty()) {
+        struct EnrichCase {
+            double lat, lon, alt, acc;
+            uint32_t gpsEpoch;
+            bool noData;
+        };
+        // Consecutive fixes a few metres apart -- the case the delta coding is
+        // built for -- plus a no-data record in the middle to prove it neither
+        // consumes coordinate bytes nor poisons the running position.
+        const EnrichCase cases[] = {
+            {47.6205000, -122.3493000, 56.25, 4.0, 1787000000U, false},
+            {47.6205400, -122.3492600, 56.75, 3.5, 1787000006U, false},
+            {0.0,          0.0,         0.0,  0.0,          0U, true },
+            {47.6205900, -122.3492100, 57.00, 3.0, 1787000019U, false},
+            {47.6206500, -122.3491500, 57.50, 5.0, 1787000027U, false},
+        };
+        const size_t n = std::min(targetIds.size(),
+                                  sizeof(cases) / sizeof(cases[0]));
+
+        const String sessionId = SESS.getId();
+        std::vector<SpoolEnrichBatchEntry> batch;
+        batch.reserve(n);
+        for (size_t i = 0; i < n; i++) {
+            SpoolEnrichBatchEntry e;
+            e.eventId = targetIds[i];
+            e.sessionId = sessionId.c_str();
+            e.lat = static_cast<float>(cases[i].lat);
+            e.lon = static_cast<float>(cases[i].lon);
+            e.alt = static_cast<float>(cases[i].alt);
+            e.acc = static_cast<float>(cases[i].acc);
+            e.tag = nullptr;
+            e.gpsEpochUtc = cases[i].gpsEpoch;
+            e.noData = cases[i].noData;
+            batch.push_back(e);
+        }
+
+        const uint32_t beforeBytes = totalSpoolBytes();
+        uint32_t applied = 0, failedCount = 0;
+        const bool batchOk =
+            appendEnrichDeltasBatch(batch.data(), batch.size(),
+                                    &applied, &failedCount);
+        const int64_t enrichBytes =
+            static_cast<int64_t>(totalSpoolBytes()) -
+            static_cast<int64_t>(beforeBytes);
+
+        if (!batchOk || applied != n) {
+            DLOG_WARN("STORAGE",
+                      "codec selftest enrich batch applied=%lu of %u ok=%d",
+                      static_cast<unsigned long>(applied),
+                      static_cast<unsigned>(n), batchOk ? 1 : 0);
+            allOk = false;
+        } else {
+            // Read every delta back and match it to its case by target event id.
+            size_t checked = 0;
+            String firstBad;
+            for (const auto& seg : _spoolIndex.segments) {
+                _scanSegmentRecords(seg.segmentId,
+                    [&](const DecodedSpoolRecord& rec) -> bool {
+                        if (rec.recordType != SPOOL_REC_ENRICH_DELTA) return true;
+                        JsonObjectConst o = rec.doc.as<JsonObjectConst>();
+                        const uint32_t target = o["event_id"] | 0U;
+                        for (size_t i = 0; i < n; i++) {
+                            if (targetIds[i] != target) continue;
+                            const EnrichCase& c = cases[i];
+                            const bool noData = (o["enrich_no_data"] | false);
+                            if (noData != c.noData) {
+                                if (!firstBad.length())
+                                    firstBad = String("no_data flag event=") + target;
+                                allOk = false;
+                            } else if (!c.noData) {
+                                // Compare in E7 integer space against what the
+                                // writer would have stored from the same float.
+                                // SpoolEnrichBatchEntry holds lat/lon as float,
+                                // which alone costs ~1e-6 deg -- comparing
+                                // against the original double would be testing
+                                // float32, not the codec. Here the only
+                                // permitted difference is zero.
+                                const int32_t wantLatE7 =
+                                    _floatToE7(static_cast<float>(c.lat));
+                                const int32_t wantLonE7 =
+                                    _floatToE7(static_cast<float>(c.lon));
+                                const int32_t gotLatE7 =
+                                    _floatToE7(o["lat"] | 0.0f);
+                                const int32_t gotLonE7 =
+                                    _floatToE7(o["lon"] | 0.0f);
+                                const double dAlt = fabs((o["alt"] | 0.0) - c.alt);
+                                const uint32_t gps = o[F_GPS_TS] | 0U;
+                                if (gotLatE7 != wantLatE7 || gotLonE7 != wantLonE7) {
+                                    if (!firstBad.length())
+                                        firstBad = String("coords event=") + target +
+                                                   " dLatE7=" + String(gotLatE7 - wantLatE7) +
+                                                   " dLonE7=" + String(gotLonE7 - wantLonE7);
+                                    allOk = false;
+                                } else if (dAlt > 0.02) {
+                                    if (!firstBad.length())
+                                        firstBad = String("alt event=") + target;
+                                    allOk = false;
+                                } else if (gps != c.gpsEpoch) {
+                                    if (!firstBad.length())
+                                        firstBad = String("gps_ts event=") + target +
+                                                   " got=" + gps;
+                                    allOk = false;
+                                }
+                            }
+                            checked++;
+                            break;
+                        }
+                        return true;
+                    });
+            }
+            if (checked != n) {
+                DLOG_WARN("STORAGE",
+                          "codec selftest enrich readback found %u of %u",
+                          static_cast<unsigned>(checked),
+                          static_cast<unsigned>(n));
+                allOk = false;
+            }
+            DLOG_INFO("STORAGE",
+                      "codec selftest enrich n=%u bytes=%ld (%ld B/delta) %s%s",
+                      static_cast<unsigned>(n),
+                      static_cast<long>(enrichBytes),
+                      static_cast<long>(enrichBytes / (n ? n : 1)),
+                      (allOk && checked == n) ? "OK" : "MISMATCH ",
+                      firstBad.c_str());
+        }
+    }
+
+    DLOG_INFO("STORAGE", "codec selftest %s", allOk ? "PASSED" : "FAILED");
+    return allOk;
 }

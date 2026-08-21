@@ -100,7 +100,10 @@ private:
     void _commitOwnerState(RadioOwner owner, uint32_t holdMs, const char* reason);
     bool _startOwner(RadioOwner owner, const char* reason);
     void _stopOwner(RadioOwner owner, const char* reason);
-    bool _switchTo(RadioOwner owner, uint32_t holdMs, const char* reason);
+    bool _switchTo(RadioOwner owner,
+                   uint32_t holdMs,
+                   const char* reason,
+                   bool force = false);
     void _serviceIdleOwner(const char* reason);
     void _queuePending(RadioOwner owner, uint32_t holdMs, const char* reason, bool force);
     void _clearPending();

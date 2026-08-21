@@ -1,0 +1,133 @@
+===== CMD: heap map =====
+[48325][I][STORAGE] load_ids_loop_done scanned=47 skipped=9 idsCollected=4107 freeInternal=59624
+[48330][I][STORAGE] batch_load_ids_done count=4107 capacity=4107 freeInternal=59624
+[48330][I][STORAGE] batch_pending_loop_enter segments=56 maxCount=18 streaming=1 freeInternal=59624
+[48444][I][STORAGE] batch_pending_loop_break_streaming outCount=18 maxCount=18
+[48445][I][STORAGE] batch_pending_loop_done scanned=1 skipped=54 outCount=18 timeHit=0 elapsedMs=115 freeInternal=59624
+[48445][I][BLE] Enrichment pending scan done count=18
+[48446][I][BLE] enrichment request queued count=18 bytes=180
+[48446][I][BLE] Requested enrichment batch count=18 queued=0
+heap map
+[HEAPMAP] free=59624 largest=31732 minFree=52864 blocks free=14 alloc=373 total=387
+[HEAPMAP] region 1 0x600FE060-0x600FFFD8 (8056 B)
+[HEAPMAP] region 2 0x3FCE9710-0x3FCEEE34 (22308 B)
+[HEAPMAP] region 3 0x3FCF0000-0x3FCF8000 (32768 B)
+[HEAPMAP] region 4 0x3FCB6EF0-0x3FCE9710 (206880 B)
+[HEAPMAP] gaps>=1KB listed=3 of 14 total free blocks
+[HEAPMAP] largest allocated blocks (>=1KB, top 36)
+  ALLOC  19456 B @0x3FCC109C
+  ALLOC  15872 B @0x3FCC5CA0
+  ALLOC   9216 B @0x3FCB9648
+  ALLOC   9216 B @0x3FCD48E0
+  ALLOC   8704 B @0x3FCBEE98
+  ALLOC   7936 B @0x3FCDD058
+  ALLOC   7424 B @0x3FCDFB58
+  ALLOC   6400 B @0x3FCCBCB4
+  ALLOC   5376 B @0x3FCEB39C
+  ALLOC   5376 B @0x3FCE1A20
+  ALLOC   4864 B @0x3FCCDE3C
+  ALLOC   4864 B @0x3FCCF690
+  ALLOC   4352 B @0x3FCE9D48
+  ALLOC   4352 B @0x3FCECE54
+  ALLOC   4352 B @0x3FCD0B08
+  ALLOC   4352 B @0x3FCD6CE4
+  ALLOC   4352 B @0x3FCDAC78
+  ALLOC   3584 B @0x3FCD3324
+  ALLOC   3200 B @0x3FCBE040
+  ALLOC   3200 B @0x3FCDC3D4
+  ALLOC   2560 B @0x3FCD83F8
+  ALLOC   2176 B @0x3FCB89BC
+  ALLOC   2176 B @0x3FCBC66C
+  ALLOC   2176 B @0x3FCC9AA4
+  ALLOC   2176 B @0x3FCCA328
+  ALLOC   2176 B @0x3FCCABAC
+  ALLOC   2176 B @0x3FCCB430
+  ALLOC   2176 B @0x3FCCD5B8
+  ALLOC   2176 B @0x3FCDEF5C
+  ALLOC   1920 B @0x3FCD2BA0
+  ALLOC   1280 B @0x3FCD4128
+  ALLOC   1152 B @0x3FCBD450
+  ALLOC   1152 B @0x3FCBDA48
+  ALLOC   1152 B @0x3FCD904C
+  ALLOC   1088 B @0x3FCB7C0C
+  ALLOC   1088 B @0x3FCB81C4
+  FREE   7668 B @0x600FE1E0  preceded by 0 alloc blocks / 0 B
+  FREE  32024 B @0x3FCF02E4  preceded by 0 alloc blocks / 0 B
+  FREE  19672 B @0x3FCE4A34  preceded by 4 alloc blocks / 316 B
+[48466][I][BLE] link ready state=4
+[48467][I][BLE] enrichment send mtu=247 attPayload=244 bytes=180 count=18
+[48515][I][BLE] enrichment batch sent plain=180 sealed=202 count=18 writeOk=1
+[48682][I][BLE] enrichment rx chunk cipher=142 queued=0
+[48754][I][BLE] enrichment rx chunk cipher=142 queued=0
+[48856][I][BLE] enrichment rx chunk cipher=142 queued=0
+[48919][I][BLE] enrichment rx chunk cipher=142 queued=0
+[48991][I][BLE] enrichment rx chunk cipher=142 queued=0
+[49073][I][BLE] enrichment rx chunk cipher=142 queued=0
+[49164][I][BLE] enrichment rx chunk cipher=142 queued=0
+[49236][I][BLE] enrichment rx chunk cipher=28 queued=0
+[49237][I][BLE] enrich_xfer_perf count=18 sendMs=47 waitMs=722 rxBytes=846
+[49237][I][BLE] enrichment batch received count=18 bytes=846
+[49237][I][BLE] enrichment batch consumed count=18
+[49238][I][BLE] Enrich batch queued count=18 queueSize=1
+[49238][I][BLE] Enrichment batch received count=18 claimed=18 queued=1
+[49249][I][BLE] Enrich drain begin count=18 queueSize=1 ageMs=11
+[50916][I][STORAGE] Spool enrich_batch applied=18 failed=0 batchFirstEventId=63061 batchLastEventId=63114 firstRecord=63131 lastRecord=63148 ms=653
+[50917][I][BLE] enrich_perf count=18 applied=18 failed=0 deferred=0 storageMs=1058 pendingUpload=4093
+[50918][I][BLE] Enrich drain done applied=18 failed=0 deferred=0 queueSize=0
+[50919][I][BLE] Enrich torrent done drained=1 remaining=0 tookLease=0 preempt=0 elapsedMs=1670
+[50935][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[50936][I][STORAGE] batch_load_ids_enter freeInternal=64752 segments=56
+[50937][I][STORAGE] load_ids_reserve count=4125 freeInternal=64752 largest=31732
+[50938][I][STORAGE] load_ids_reserved freeInternal=64752
+[54577][I][STORAGE] load_ids_loop_done scanned=48 skipped=8 idsCollected=4125 freeInternal=64752
+[54582][I][STORAGE] batch_load_ids_done count=4125 capacity=4125 freeInternal=64752
+[54583][I][STORAGE] batch_pending_loop_enter segments=56 maxCount=18 streaming=1 freeInternal=64752
+[54687][I][STORAGE] batch_pending_loop_done scanned=1 skipped=55 outCount=10 timeHit=0 elapsedMs=105 freeInternal=64752
+[54688][I][BLE] Enrichment pending scan done count=10
+[54688][I][BLE] enrichment request queued count=10 bytes=100
+[54688][I][BLE] Requested enrichment batch count=10 queued=0
+[54698][W][CORE] TaskHardware loop gap=3768ms owner=BLE_GPS pendingUpload=4093 maintPending=1 suppressed=2
+[54702][I][BLE] enrichment send mtu=247 attPayload=244 bytes=100 count=10
+[54770][I][BLE] enrichment batch sent plain=100 sealed=122 count=10 writeOk=1
+[54942][I][BLE] enrichment rx chunk cipher=142 queued=0
+[55015][I][BLE] enrichment rx chunk cipher=142 queued=0
+[55078][I][BLE] enrichment rx chunk cipher=142 queued=0
+[55159][I][BLE] enrichment rx chunk cipher=132 queued=0
+[55160][I][BLE] enrich_xfer_perf count=10 sendMs=68 waitMs=390 rxBytes=470
+[55160][I][BLE] enrichment batch received count=10 bytes=470
+[55160][I][BLE] enrichment batch consumed count=10
+[55161][I][BLE] Enrich batch queued count=10 queueSize=1
+[55161][I][BLE] Enrichment batch received count=10 claimed=10 queued=1
+[55172][I][BLE] Enrich drain begin count=10 queueSize=1 ageMs=11
+[56862][I][STORAGE] Spool enrich_batch applied=10 failed=0 batchFirstEventId=63122 batchLastEventId=63121 firstRecord=63149 lastRecord=63158 ms=652
+[56863][I][BLE] enrich_perf count=10 applied=10 failed=0 deferred=0 storageMs=1030 pendingUpload=4093
+[56864][I][BLE] Enrich drain done applied=10 failed=0 deferred=0 queueSize=0
+[56865][I][BLE] Enrich torrent done drained=1 remaining=0 tookLease=0 preempt=0 elapsedMs=1693
+[56879][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[56879][I][BLE] Enrichment pending scan done count=0
+[56879][I][BLE] enrich_session_summary requested=28 applied=28 failed=0 deferred=0 batches=2 xferMs=1227 storageMs=2088 totalMs=11869
+[56993][I][BLE] Phone enrichment finished successfully
+[57079][I][BLE] storage snapshot sent pendingUp=0/4093 pendingEnrich=0/0 usedPct=25
+[57079][I][OFFLOAD] automatic handoff opened reason=localization_complete commandWindow=30s active=0
+[57080][I][OFFLOAD] localization complete; bounded handoff pending=4093
+[57080][I][BLE] Enrichment complete; persistent companion link retained
+[60012][I][HEAP] heap free=4470KB min=4442KB largest=4352KB frag=2% internalFree=63KB internalLargest=31KB psramFree=4407KB core=0/29% owner=BLE_GPS nets=9 pendingUpload=4093 pendingEnrich=0
+[HEALTH] time=2026-08-19 07:14:48 src=ntp
+[HEALTH] heap used=3986/8456KB free=4470KB min=4442KB largest=4352KB frag=2%
+[HEALTH] internal used=201/264KB free=63KB min=51KB largest=31KB
+[HEALTH] psram used=3785/8192KB free=4407KB largest=4352KB
+[HEALTH] stack free_min: core0=8KB/15KB core1=3KB/8KB
+[HEALTH] loopTask free_min=3084B/5120B
+[HEALTH] core usage: core0=0% core1=29%
+[HEALTH] power=usb state=usb batt=100% 4739mV trend=126mV/min runtime=0min cap=1100mAh charging=1
+[HEALTH] radio=BLE_GPS wifi=0 ble=1 gps=0 nets=9 pendingUpload=4093 pendingEnrich=0
+[HEALTH] subghz=NONE mode=OFF pkts=0 nodes=0
+[60015][I][STACK] TaskStorage watermark=2448B
+[60015][I][STORAGE] RAMSpool enq=10 cons=10 inflight=0/1024 high=2 pressure=0 drop[full=0 big=0 noise=0 p3Evict=0 p3Drop=0 p2Drop=0 p1Fail=0] free=1024
+[60015][I][STORAGE] RAMSpool enqueue probe[ok=5 drop=0] device[ok=5 drop=0]
+[60016][I][STORAGE] RAMSpool worker probe[ok=5 sup=0 drop=0 fail=0 slow=0] device[ok=5 sup=0 drop=0 fail=0 slow=1] slowTotal=1 maxMs=656
+[60016][I][STORAGE] RAMSpool prioEnq p0=0 p1=0 p2=10 p3=0
+[60016][I][STORAGE] RAMSpool lanes p1=0/0 p2=0/2 p3=0/0
+[61020][I][STACK] TaskButtons watermark=2084B min=2084B
+[61050][I][STACK] TaskHardware watermark=8132B min=8132B
+

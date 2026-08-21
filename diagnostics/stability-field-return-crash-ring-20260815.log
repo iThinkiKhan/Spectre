@@ -1,0 +1,13 @@
+=== reconnecting capture opened 2026-08-15T18:46:34.3151281-05:00 port=COM13 ===
+=== serial connected 2026-08-15T18:46:34.3311785-05:00 attempt=1 ===
+=== send: crash log ===
+crash log
+[BOOT] crash log: 5 entries, seq 0..1399 (oldest first)
+[BOOT] #1 seq=1395 [ok] phase=backlog_probe owner=7 pendingUpload=77 heapFree=54K largest=15K min=14K uptime=161s
+[BOOT] #2 seq=1396 [ok] phase=ble_auth owner=7 pendingUpload=0 heapFree=55K largest=15K min=14K uptime=163s
+[BOOT] #3 seq=1397 [ok] phase=backlog_enrich owner=7 pendingUpload=77 heapFree=54K largest=15K min=14K uptime=164s
+[BOOT] #4 seq=1398 [ok] phase=runtime_health owner=7 pendingUpload=1005 heapFree=54K largest=15K min=14K uptime=180s
+[BOOT] #5 seq=1399 [CRASH?] phase=wifi_capture owner=1 pendingUpload=1005 heapFree=24K largest=11K min=14K uptime=196s
+[200817][W][CORE] crash? seq=1399 phase=wifi_capture owner=1 pendingUpload=1005 heapFree=24K largest=11K min=14K uptime=196s
+[204604][I][STORAGE] worker ui refresh serviced uiRefreshServiceCount=8 uiDeferred=15 uiFlush=8 pressure=0 usedPct=10 pending=1007
+=== reconnecting capture closed 2026-08-15T18:46:42.3396948-05:00 ===

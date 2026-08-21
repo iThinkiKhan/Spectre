@@ -1,0 +1,373 @@
+=== capture opened 2026-08-10T14:23:36.6745386-05:00 ===
+=== send: companion probe ===
+companion probe
+[COMP] manual probe queued
+[67104][I][COMP] Manual probe request received; probe backoff bypassed
+[67105][I][WIFI] Radio paused
+[67266][I][WIFI] Radio suspended
+[67267][I][BLE] BLE payload buffers in PSRAM bytes=6276
+[67342][I][BLE] begin phase=nimble_pre bt=idle/0 heap=103328 largest=31732 stack=10756 devLen=14
+[67342][I][BLE] begin phase=nimble_init
+[67352][I][BLE] begin phase=nimble_init_ok bt=enabled/2 heap=40332 largest=31732 stack=10756
+[67353][I][BLE] BLE SM disabled; app-layer P-256/AES-GCM required
+[67354][I][BLE] begin phase=server_ok
+[67354][I][BLE] scanner configured legacy=1 active=0 interval=30 window=30 srTimeout=200
+[67355][I][BLE] begin phase=scanner_ok
+[67355][I][BLE] begin phase=worker_ok
+[67355][I][BLE] begin ready
+[67355][I][BLE] radio enabled settle=500ms
+[67357][I][BLE] advertising start
+[67358][I][BLE] companion link requested reason=manual_probe mode=fresh_scan timeout=15s settle=500ms cacheAge=0ms rssi=0
+[67363][I][BLE] Phone probe lease granted reason=manual_probe cachedFirst=0 hold=60000ms
+[67373][W][CORE] TaskHardware loop gap=270ms owner=BLE_GPS pendingUpload=2090 maintPending=1 suppressed=0
+[67968][I][BLE] scan start
+[67969][I][BLE] scan start diag=1 deliverDuplicates=1 diagLeft=44388 state=1 window=8000ms weakRecent=0 lastRssi=0
+[68024][I][BLE] target found matchedBy=service cachePeer=0 addr=48:59:53:4c:12:c7 name=SpectrePhone rssi=-56
+[68025][I][BLE] target found matchedBy=service cachePeer=0 addr=48:59:53:4c:12:c7 name=SpectrePhone rssi=-56
+[68120][I][BLE] scan stop; connect pending addr=48:59:53:4c:12:c7
+[68430][I][BLE] connect pending settled addr=48:59:53:4c:12:c7
+[68431][I][BLE] connect attempt addr=48:59:53:4c:12:c7 name=SpectrePhone
+[68431][I][BLE] connect params timeoutMs=45000 scanItvl=16 scanWin=16 addrType=1
+[68545][I][BLE] connect result ok=1 err=0 addr=48:59:53:4c:12:c7
+[68545][I][BLE] BLE link connected; starting app-layer auth watchdog=50000ms
+[68546][I][BLE] remote service lookup begin core=1 internalFree=37660 largest=29684
+[68604][I][BLE] remote service lookup end found=1 err=0
+[68604][I][BLE] remote characteristic discovery begin
+[68783][I][BLE] remote characteristic discovery end count=13 err=0
+[68844][I][BLE] remote descriptor discovery char=auth count=2 err=0
+[68844][I][BLE] auth notify subscribe begin
+[68903][I][BLE] auth notify subscribe end ok=1 err=0
+[69177][I][BLE] auth challenge write bytes=163 mtu=247 attPayload=244 mode=response
+[70151][I][BLE] app secure session ready alg=P-256+ECDH+AES-256-GCM
+[70152][I][BLE] phone auth confirmed; caching peer addr=48:59:53:4c:12:c7 ttl=300000ms rssi=-56
+[70194][I][BLE] remote descriptor discovery char=enrichment count=2 err=0
+[70314][I][BLE] remote descriptor discovery char=command_req count=2 err=0
+[70554][I][BLE] remote bound gps=1 ctrl=1 meta=1 batch=1 enrich=1 auth=1 authReq=1 storage=1 cmdReq=1 cmdResp=1 logStream=1 dashStream=1 notification=1 notify(gps=0 ctrl=0 enrich=1 auth=1 cmdReq=1) mtu=247 a
+[70554][I][BLE] probe_summary seen=1 matchedBy=service rssi=-56 scanMs=2184
+[70554][I][BLE] phone_session_summary auth=ok mtu=247 gps=1 ctrl=1 enrich=1 storage=1
+[70613][I][BLE] storage snapshot sent pendingUp=0/2090 pendingEnrich=0/2076 usedPct=11
+[70619][I][BLE] Phone probe succeeded ??? backoff reset
+[70622][I][BLE] Phone probe promoted to enrichment pendingEnrich=2076 maxBatch=18
+[70623][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[70623][I][STORAGE] batch_load_ids_enter freeInternal=34340 segments=61
+[70624][I][STORAGE] load_ids_reserve count=1967 freeInternal=34340 largest=25588
+[70624][I][STORAGE] load_ids_reserved freeInternal=34340
+[71050][I][STORAGE] load_ids_loop_done scanned=5 skipped=56 idsCollected=1967 freeInternal=33888
+[71052][I][STORAGE] batch_load_ids_done count=1967 capacity=1967 freeInternal=33888
+[71052][I][STORAGE] batch_pending_loop_enter segments=61 maxCount=18 streaming=1 freeInternal=33888
+[72582][I][STORAGE] batch_pending_loop_break_streaming outCount=18 maxCount=18
+[72583][I][STORAGE] batch_pending_loop_done scanned=39 skipped=12 outCount=18 timeHit=0 elapsedMs=1531 freeInternal=33888
+[72583][I][BLE] Enrichment pending scan done count=18
+[72583][I][BLE] enrichment request queued count=18 bytes=180
+[72583][I][BLE] Requested enrichment batch count=18 queued=0
+[72597][I][BLE] link ready state=4
+[72714][I][BLE] enrichment send mtu=247 attPayload=244 bytes=180 count=18
+[72773][I][BLE] enrichment batch sent plain=180 sealed=202 count=18 writeOk=1
+[73050][I][BLE] enrichment rx chunk cipher=142 queued=1
+[73051][I][BLE] enrichment rx chunk cipher=142 queued=0
+[73202][I][BLE] enrichment rx chunk cipher=142 queued=1
+[73203][I][BLE] enrichment rx chunk cipher=142 queued=0
+[73354][I][BLE] enrichment rx chunk cipher=142 queued=1
+[73355][I][BLE] enrichment rx chunk cipher=142 queued=0
+[73505][I][BLE] enrichment rx chunk cipher=142 queued=1
+[73506][I][BLE] enrichment rx chunk cipher=28 queued=0
+[73507][I][BLE] enrich_xfer_perf count=18 sendMs=60 waitMs=734 rxBytes=846
+[73508][I][BLE] enrichment batch received count=18 bytes=846
+[73508][I][BLE] enrichment batch consumed count=18
+[73508][I][BLE] Enrich batch queued count=18 queueSize=1
+[73508][I][BLE] Enrichment batch received count=18 claimed=18 queued=1
+[73519][I][BLE] Enrich drain begin count=18 queueSize=1 ageMs=10
+[74943][I][STORAGE] Spool enrich_batch applied=18 failed=0 batchFirstEventId=32745 batchLastEventId=32739 firstRecord=32895 lastRecord=32912 ms=473
+[74944][I][BLE] enrich_perf count=18 applied=18 failed=0 deferred=0 storageMs=732 pendingUpload=2090
+[74944][I][BLE] Enrich drain done applied=18 failed=0 deferred=0 queueSize=0
+[74945][I][BLE] Enrich torrent done drained=1 remaining=0 tookLease=0 preempt=0 elapsedMs=1427
+[74959][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[74960][I][STORAGE] batch_load_ids_enter freeInternal=38936 segments=61
+[74960][I][STORAGE] load_ids_reserve count=1985 freeInternal=38936 largest=25588
+[74960][I][STORAGE] load_ids_reserved freeInternal=38936
+[75472][I][STORAGE] load_ids_loop_done scanned=6 skipped=55 idsCollected=1985 freeInternal=39008
+[75473][I][STORAGE] batch_load_ids_done count=1985 capacity=1985 freeInternal=39008
+[75474][I][STORAGE] batch_pending_loop_enter segments=61 maxCount=18 streaming=1 freeInternal=39008
+[75525][I][STORAGE] Routine maintenance requests coalesced count=2 latest=dirty_summary source=ramspool_idle flags=dirty_spool_index|dirty_summary|snapshot_lagged
+[77109][I][STORAGE] batch_pending_loop_break_streaming outCount=18 maxCount=18
+[77109][I][STORAGE] batch_pending_loop_done scanned=39 skipped=13 outCount=18 timeHit=0 elapsedMs=1635 freeInternal=39008
+[77110][I][BLE] Enrichment pending scan done count=18
+[77110][I][BLE] enrichment request queued count=18 bytes=180
+[77110][I][BLE] Requested enrichment batch count=18 queued=0
+[77184][I][BLE] enrichment send mtu=247 attPayload=244 bytes=180 count=18
+[77243][I][BLE] enrichment batch sent plain=180 sealed=202 count=18 writeOk=1
+[77276][I][BLE] enrichment batch acknowledged by phone
+[77577][I][BLE] enrichment rx chunk cipher=142 queued=1
+[77578][I][BLE] enrichment rx chunk cipher=142 queued=0
+[77729][I][BLE] enrichment rx chunk cipher=142 queued=1
+[77730][I][BLE] enrichment rx chunk cipher=142 queued=0
+[77881][I][BLE] enrichment rx chunk cipher=142 queued=1
+[77882][I][BLE] enrichment rx chunk cipher=142 queued=0
+[78032][I][BLE] enrichment rx chunk cipher=142 queued=0
+[78186][I][BLE] enrichment rx chunk cipher=28 queued=0
+[78187][I][BLE] enrich_xfer_perf count=18 sendMs=60 waitMs=944 rxBytes=846
+[78188][I][BLE] enrichment batch received count=18 bytes=846
+[78188][I][BLE] enrichment batch consumed count=18
+[78188][I][BLE] Enrich batch queued count=18 queueSize=1
+[78189][I][BLE] Enrichment batch received count=18 claimed=18 queued=1
+[78199][I][BLE] Enrich drain begin count=18 queueSize=1 ageMs=10
+[79615][I][STORAGE] Spool enrich_batch applied=18 failed=0 batchFirstEventId=32771 batchLastEventId=32770 firstRecord=32913 lastRecord=32930 ms=404
+[79615][I][BLE] enrich_perf count=18 applied=18 failed=0 deferred=0 storageMs=708 pendingUpload=2090
+[79616][I][BLE] Enrich drain done applied=18 failed=0 deferred=0 queueSize=0
+[79616][I][BLE] Enrich torrent done drained=1 remaining=0 tookLease=0 preempt=0 elapsedMs=1418
+[79627][W][CORE] TaskHardware loop gap=1429ms owner=BLE_GPS pendingUpload=2090 maintPending=1 suppressed=3
+[79631][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[79632][I][STORAGE] batch_load_ids_enter freeInternal=38936 segments=61
+[79633][I][STORAGE] load_ids_reserve count=2003 freeInternal=38936 largest=25588
+[79633][I][STORAGE] load_ids_reserved freeInternal=38936
+[80161][I][STORAGE] load_ids_loop_done scanned=6 skipped=55 idsCollected=2003 freeInternal=39008
+[80164][I][STORAGE] batch_load_ids_done count=2003 capacity=2003 freeInternal=39008
+[80164][I][STORAGE] batch_pending_loop_enter segments=61 maxCount=18 streaming=1 freeInternal=39008
+[81891][I][STORAGE] batch_pending_loop_break_streaming outCount=18 maxCount=18
+[81892][I][STORAGE] batch_pending_loop_done scanned=40 skipped=15 outCount=18 timeHit=0 elapsedMs=1728 freeInternal=39008
+[81892][I][BLE] Enrichment pending scan done count=18
+[81892][I][BLE] enrichment request queued count=18 bytes=180
+[81892][I][BLE] Requested enrichment batch count=18 queued=0
+[81954][I][BLE] enrichment send mtu=247 attPayload=244 bytes=180 count=18
+[82013][I][BLE] enrichment batch sent plain=180 sealed=202 count=18 writeOk=1
+[82058][I][BLE] enrichment batch acknowledged by phone
+[82358][I][BLE] enrichment rx chunk cipher=142 queued=1
+[82359][I][BLE] enrichment rx chunk cipher=142 queued=0
+[82510][I][BLE] enrichment rx chunk cipher=142 queued=0
+[82661][I][BLE] enrichment rx chunk cipher=142 queued=1
+[82662][I][BLE] enrichment rx chunk cipher=142 queued=0
+[82813][I][BLE] enrichment rx chunk cipher=142 queued=1
+[82814][I][BLE] enrichment rx chunk cipher=142 queued=0
+[82968][I][BLE] enrichment rx chunk cipher=28 queued=0
+[82969][I][BLE] enrich_xfer_perf count=18 sendMs=60 waitMs=956 rxBytes=846
+[82970][I][BLE] enrichment batch received count=18 bytes=846
+[82970][I][BLE] enrichment batch consumed count=18
+[82970][I][BLE] Enrich batch queued count=18 queueSize=1
+[82971][I][BLE] Enrichment batch received count=18 claimed=18 queued=1
+[82981][I][BLE] Enrich drain begin count=18 queueSize=1 ageMs=10
+[84713][I][STORAGE] Spool enrich_batch applied=18 failed=0 batchFirstEventId=32793 batchLastEventId=32790 firstRecord=32931 lastRecord=32948 ms=576
+[84714][I][BLE] enrich_perf count=18 applied=18 failed=0 deferred=0 storageMs=892 pendingUpload=2090
+[84714][I][BLE] Enrich drain done applied=18 failed=0 deferred=0 queueSize=0
+[84715][I][BLE] Enrich torrent done drained=1 remaining=0 tookLease=0 preempt=0 elapsedMs=1734
+[84729][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[84730][I][STORAGE] batch_load_ids_enter freeInternal=38948 segments=61
+[84730][I][STORAGE] load_ids_reserve count=2021 freeInternal=38948 largest=25588
+[84730][I][STORAGE] load_ids_reserved freeInternal=38948
+[85148][I][STORAGE] load_ids_loop_done scanned=6 skipped=55 idsCollected=2021 freeInternal=39012
+[85150][I][STORAGE] batch_load_ids_done count=2021 capacity=2021 freeInternal=39012
+[85150][I][STORAGE] batch_pending_loop_enter segments=61 maxCount=18 streaming=1 freeInternal=39012
+[86648][I][STORAGE] batch_pending_loop_break_streaming outCount=18 maxCount=18
+[86648][I][STORAGE] batch_pending_loop_done scanned=41 skipped=16 outCount=18 timeHit=0 elapsedMs=1498 freeInternal=39016
+[86648][I][BLE] Enrichment pending scan done count=18
+[86649][I][BLE] enrichment request queued count=18 bytes=180
+[86649][I][BLE] Requested enrichment batch count=18 queued=0
+[86664][I][BLE] enrichment send mtu=247 attPayload=244 bytes=180 count=18
+[86723][I][BLE] enrichment batch sent plain=180 sealed=202 count=18 writeOk=1
+[86783][I][BLE] storage snapshot sent pendingUp=0/2090 pendingEnrich=0/2076 usedPct=11
+[86974][I][BLE] enrichment batch acknowledged by phone
+[87124][I][BLE] enrichment rx chunk cipher=142 queued=1
+[87125][I][BLE] enrichment rx chunk cipher=142 queued=0
+[87277][I][BLE] enrichment rx chunk cipher=142 queued=1
+[87278][I][BLE] enrichment rx chunk cipher=142 queued=0
+[87430][I][BLE] enrichment rx chunk cipher=142 queued=1
+[87430][I][BLE] enrichment rx chunk cipher=142 queued=0
+[87581][I][BLE] enrichment rx chunk cipher=142 queued=1
+[87582][I][BLE] enrichment rx chunk cipher=28 queued=0
+[87583][I][BLE] enrich_xfer_perf count=18 sendMs=60 waitMs=860 rxBytes=846
+[87584][I][BLE] enrichment batch received count=18 bytes=846
+[87584][I][BLE] enrichment batch consumed count=18
+[87584][I][BLE] Enrich batch queued count=18 queueSize=1
+[87584][I][BLE] Enrichment batch received count=18 claimed=18 queued=1
+[87595][I][BLE] Enrich drain begin count=18 queueSize=1 ageMs=10
+[88841][I][STORAGE] Spool enrich_batch applied=18 failed=0 batchFirstEventId=32815 batchLastEventId=32813 firstRecord=32949 lastRecord=32966 ms=330
+[88841][I][BLE] enrich_perf count=18 applied=18 failed=0 deferred=0 storageMs=549 pendingUpload=2090
+[88842][I][BLE] Enrich drain done applied=18 failed=0 deferred=0 queueSize=0
+[88842][I][BLE] Enrich torrent done drained=1 remaining=0 tookLease=0 preempt=0 elapsedMs=1248
+[88857][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[88858][I][STORAGE] batch_load_ids_enter freeInternal=38936 segments=61
+[88858][I][STORAGE] load_ids_reserve count=2039 freeInternal=38936 largest=25588
+[88858][I][STORAGE] load_ids_reserved freeInternal=38936
+[89298][I][STORAGE] load_ids_loop_done scanned=6 skipped=55 idsCollected=2039 freeInternal=39008
+[89300][I][STORAGE] batch_load_ids_done count=2039 capacity=2039 freeInternal=39008
+[89300][I][STORAGE] batch_pending_loop_enter segments=61 maxCount=18 streaming=1 freeInternal=39008
+[90880][I][STORAGE] batch_pending_loop_break_streaming outCount=18 maxCount=18
+[90880][I][STORAGE] batch_pending_loop_done scanned=42 skipped=16 outCount=18 timeHit=0 elapsedMs=1580 freeInternal=39008
+[90881][I][BLE] Enrichment pending scan done count=18
+[90881][I][BLE] enrichment request queued count=18 bytes=180
+[90881][I][BLE] Requested enrichment batch count=18 queued=0
+[90892][W][CORE] TaskHardware loop gap=2039ms owner=BLE_GPS pendingUpload=2090 maintPending=1 suppressed=4
+[90954][I][BLE] enrichment send mtu=247 attPayload=244 bytes=180 count=18
+[91013][I][BLE] enrichment batch sent plain=180 sealed=202 count=18 writeOk=1
+[91047][I][BLE] enrichment batch acknowledged by phone
+[91348][I][BLE] enrichment rx chunk cipher=142 queued=1
+[91349][I][BLE] enrichment rx chunk cipher=142 queued=0
+[91601][I][BLE] enrichment rx chunk cipher=142 queued=2
+[91602][I][BLE] enrichment rx chunk cipher=142 queued=1
+[91603][I][BLE] enrichment rx chunk cipher=142 queued=0
+[91615][I][STACK] TaskHardware watermark=10756B min=10756B
+[91617][I][HEAP] heap free=4499KB min=4469KB largest=4352KB frag=3% internalFree=38KB internalLargest=25KB psramFree=4461KB core=54/24% owner=BLE_GPS nets=1 pendingUpload=2090 pendingEnrich=2076
+[HEALTH] time=2026-08-10 14:22:46 src=ntp
+[HEALTH] heap used=3952/8451KB free=4499KB min=4469KB largest=4352KB frag=3%
+[HEALTH] internal used=221/259KB free=38KB min=27KB largest=25KB
+[HEALTH] psram used=3731/8192KB free=4461KB largest=4352KB
+[HEALTH] stack free_min: core0=11KB/22KB core1=13KB/18KB
+[HEALTH] core usage: core0=54% core1=24%
+[HEALTH] power=usb state=usb batt=100% 4771mV trend=49mV/min runtime=0min cap=1100mAh charging=1
+[HEALTH] radio=BLE_GPS wifi=0 ble=1 gps=0 nets=1 pendingUpload=2090 pendingEnrich=2076
+[HEALTH] subghz=NONE mode=OFF pkts=0 nodes=0
+[91620][I][STORAGE] RAMSpool enq=13 cons=13 inflight=0/1024 high=6 pressure=0 drop[full=0 big=0 noise=0 p3Evict=0 p3Drop=0 p2Drop=0 p1Fail=0] free=1024
+[91620][I][STORAGE] RAMSpool enqueue probe[ok=12 drop=0] device[ok=1 drop=0]
+[91620][I][STORAGE] RAMSpool worker probe[ok=1 sup=11 drop=0 fail=0 slow=0] device[ok=1 sup=0 drop=0 fail=0 slow=0] slowTotal=0 maxMs=0
+[91621][I][STORAGE] RAMSpool prioEnq p0=0 p1=0 p2=13 p3=0
+[91621][I][STORAGE] RAMSpool lanes p1=0/0 p2=0/5 p3=0/0
+[91760][I][BLE] enrichment rx chunk cipher=142 queued=1
+[91761][I][BLE] enrichment rx chunk cipher=142 queued=0
+[91916][I][BLE] enrichment rx chunk cipher=28 queued=0
+[91916][I][BLE] enrich_xfer_perf count=18 sendMs=60 waitMs=903 rxBytes=846
+[91917][I][BLE] enrichment batch received count=18 bytes=846
+[91917][I][BLE] enrichment batch consumed count=18
+[91918][I][BLE] Enrich batch queued count=18 queueSize=1
+[91918][I][BLE] Enrichment batch received count=18 claimed=18 queued=1
+[91929][I][BLE] Enrich drain begin count=18 queueSize=1 ageMs=11
+[93239][I][STORAGE] Spool enrich_batch applied=18 failed=0 batchFirstEventId=32827 batchLastEventId=32838 firstRecord=32967 lastRecord=32984 ms=354
+[93240][I][BLE] enrich_perf count=18 applied=18 failed=0 deferred=0 storageMs=587 pendingUpload=2090
+[93240][I][BLE] Enrich drain done applied=18 failed=0 deferred=0 queueSize=0
+[93241][I][BLE] Enrich torrent done drained=1 remaining=0 tookLease=0 preempt=0 elapsedMs=1312
+[93255][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[93256][I][STORAGE] batch_load_ids_enter freeInternal=38936 segments=61
+[93256][I][STORAGE] load_ids_reserve count=2057 freeInternal=38936 largest=25588
+[93256][I][STORAGE] load_ids_reserved freeInternal=38936
+[93702][I][STORAGE] load_ids_loop_done scanned=6 skipped=55 idsCollected=2057 freeInternal=39008
+[93704][I][STORAGE] batch_load_ids_done count=2057 capacity=2057 freeInternal=39008
+[93704][I][STORAGE] batch_pending_loop_enter segments=61 maxCount=18 streaming=1 freeInternal=39008
+[95262][I][STORAGE] batch_pending_loop_break_streaming outCount=18 maxCount=18
+[95262][I][STORAGE] batch_pending_loop_done scanned=41 skipped=17 outCount=18 timeHit=0 elapsedMs=1558 freeInternal=39008
+[95263][I][BLE] Enrichment pending scan done count=18
+[95263][I][BLE] enrichment request queued count=18 bytes=180
+[95263][I][BLE] Requested enrichment batch count=18 queued=0
+[95394][I][BLE] enrichment send mtu=247 attPayload=244 bytes=180 count=18
+[95429][I][BLE] enrichment batch acknowledged by phone
+[95453][I][BLE] enrichment batch sent plain=180 sealed=202 count=18 writeOk=1
+[95729][I][BLE] enrichment rx chunk cipher=142 queued=0
+[95880][I][BLE] enrichment rx chunk cipher=142 queued=1
+[95881][I][BLE] enrichment rx chunk cipher=142 queued=0
+[96033][I][BLE] enrichment rx chunk cipher=142 queued=1
+[96033][I][BLE] enrichment rx chunk cipher=142 queued=0
+[96184][I][BLE] enrichment rx chunk cipher=142 queued=1
+[96185][I][BLE] enrichment rx chunk cipher=142 queued=0
+[96339][I][BLE] enrichment rx chunk cipher=28 queued=0
+[96340][I][BLE] enrich_xfer_perf count=18 sendMs=60 waitMs=887 rxBytes=846
+[96341][I][BLE] enrichment batch received count=18 bytes=846
+[96341][I][BLE] enrichment batch consumed count=18
+[96341][I][BLE] Enrich batch queued count=18 queueSize=1
+[96342][I][BLE] Enrichment batch received count=18 claimed=18 queued=1
+[96352][I][BLE] Enrich drain begin count=18 queueSize=1 ageMs=11
+[97668][I][STORAGE] Spool enrich_batch applied=18 failed=0 batchFirstEventId=32839 batchLastEventId=32856 firstRecord=32985 lastRecord=33002 ms=371
+[97669][I][BLE] enrich_perf count=18 applied=18 failed=0 deferred=0 storageMs=613 pendingUpload=2090
+[97669][I][BLE] Enrich drain done applied=18 failed=0 deferred=0 queueSize=0
+[97669][I][BLE] Enrich torrent done drained=1 remaining=0 tookLease=0 preempt=0 elapsedMs=1317
+[97684][I][BLE] worker stack free=7484B min=7484B
+[97684][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[97685][I][STORAGE] batch_load_ids_enter freeInternal=38948 segments=61
+[97686][I][STORAGE] load_ids_reserve count=2075 freeInternal=38948 largest=25588
+[97686][I][STORAGE] load_ids_reserved freeInternal=38948
+[98148][I][STORAGE] load_ids_loop_done scanned=6 skipped=55 idsCollected=2075 freeInternal=39012
+[98150][I][STORAGE] batch_load_ids_done count=2075 capacity=2075 freeInternal=39012
+[98151][I][STORAGE] batch_pending_loop_enter segments=61 maxCount=18 streaming=1 freeInternal=39012
+[99796][I][STORAGE] batch_pending_loop_break_streaming outCount=18 maxCount=18
+[99796][I][STORAGE] batch_pending_loop_done scanned=42 skipped=18 outCount=18 timeHit=0 elapsedMs=1646 freeInternal=39016
+[99797][I][BLE] Enrichment pending scan done count=18
+[99797][I][BLE] enrichment request queued count=18 bytes=180
+[99797][I][BLE] Requested enrichment batch count=18 queued=0
+[99864][I][BLE] enrichment send mtu=247 attPayload=244 bytes=180 count=18
+[99923][I][BLE] enrichment batch sent plain=180 sealed=202 count=18 writeOk=1
+[99963][I][BLE] enrichment batch acknowledged by phone
+[100264][I][BLE] enrichment rx chunk cipher=142 queued=1
+[100264][I][BLE] enrichment rx chunk cipher=142 queued=0
+[100415][I][BLE] enrichment rx chunk cipher=142 queued=0
+[100566][I][BLE] enrichment rx chunk cipher=142 queued=1
+[100567][I][BLE] enrichment rx chunk cipher=142 queued=0
+[100718][I][BLE] enrichment rx chunk cipher=142 queued=1
+[100719][I][BLE] enrichment rx chunk cipher=142 queued=0
+[100873][I][BLE] enrichment rx chunk cipher=28 queued=0
+[100874][I][BLE] enrich_xfer_perf count=18 sendMs=60 waitMs=951 rxBytes=846
+[100875][I][BLE] enrichment batch received count=18 bytes=846
+[100875][I][BLE] enrichment batch consumed count=18
+[100875][I][BLE] Enrich batch queued count=18 queueSize=1
+[100876][I][BLE] Enrichment batch received count=18 claimed=18 queued=1
+[100887][I][BLE] Enrich drain begin count=18 queueSize=1 ageMs=11
+[102449][I][STORAGE] Spool enrich_batch applied=18 failed=0 batchFirstEventId=32881 batchLastEventId=32861 firstRecord=33003 lastRecord=33020 ms=490
+[102450][I][BLE] enrich_perf count=18 applied=18 failed=0 deferred=0 storageMs=747 pendingUpload=2090
+[102450][I][BLE] Enrich drain done applied=18 failed=0 deferred=0 queueSize=0
+[102450][I][BLE] Enrich torrent done drained=1 remaining=0 tookLease=0 preempt=0 elapsedMs=1564
+[102503][I][BLE] storage snapshot sent pendingUp=0/2090 pendingEnrich=0/2076 usedPct=11
+[102514][W][CORE] TaskHardware loop gap=1628ms owner=BLE_GPS pendingUpload=2090 maintPending=1 suppressed=4
+[102518][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[102519][I][STORAGE] batch_load_ids_enter freeInternal=38952 segments=61
+[102520][I][STORAGE] load_ids_reserve count=2093 freeInternal=38952 largest=25588
+[102520][I][STORAGE] load_ids_reserved freeInternal=38952
+[102989][I][STORAGE] load_ids_loop_done scanned=6 skipped=55 idsCollected=2093 freeInternal=39016
+[102992][I][STORAGE] batch_load_ids_done count=2093 capacity=2093 freeInternal=39016
+[102992][I][STORAGE] batch_pending_loop_enter segments=61 maxCount=18 streaming=1 freeInternal=39016
+[104609][I][STORAGE] batch_pending_loop_done scanned=41 skipped=20 outCount=2 timeHit=0 elapsedMs=1617 freeInternal=39016
+[104610][I][BLE] Enrichment pending scan done count=2
+[104610][I][BLE] enrichment request queued count=2 bytes=20
+[104610][I][BLE] Requested enrichment batch count=2 queued=0
+[104664][I][BLE] enrichment send mtu=247 attPayload=244 bytes=20 count=2
+[104723][I][BLE] enrichment batch sent plain=20 sealed=42 count=2 writeOk=1
+[104776][I][BLE] enrichment batch acknowledged by phone
+[105076][I][BLE] enrichment rx chunk cipher=116 queued=0
+[105077][I][BLE] enrich_xfer_perf count=2 sendMs=60 waitMs=354 rxBytes=94
+[105078][I][BLE] enrichment batch received count=2 bytes=94
+[105078][I][BLE] enrichment batch consumed count=2
+[105078][I][BLE] Enrich batch queued count=2 queueSize=1
+[105079][I][BLE] Enrichment batch received count=2 claimed=2 queued=1
+[105089][I][BLE] Enrich drain begin count=2 queueSize=1 ageMs=10
+[106564][I][STORAGE] Spool enrich_batch applied=2 failed=0 batchFirstEventId=32894 batchLastEventId=32893 firstRecord=33021 lastRecord=33022 ms=431
+[106565][I][BLE] enrich_perf count=2 applied=2 failed=0 deferred=0 storageMs=697 pendingUpload=2090
+[106565][I][BLE] Enrich drain done applied=2 failed=0 deferred=0 queueSize=0
+[106566][I][BLE] Enrich torrent done drained=1 remaining=0 tookLease=0 preempt=0 elapsedMs=1477
+[106580][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[106581][I][STORAGE] batch_load_ids_enter freeInternal=38952 segments=61
+[106581][I][STORAGE] load_ids_reserve count=2095 freeInternal=38952 largest=25588
+[106581][I][STORAGE] load_ids_reserved freeInternal=38952
+[107069][I][STORAGE] load_ids_loop_done scanned=6 skipped=55 idsCollected=2095 freeInternal=39016
+[107071][I][STORAGE] batch_load_ids_done count=2095 capacity=2095 freeInternal=39016
+[107071][I][STORAGE] batch_pending_loop_enter segments=61 maxCount=18 streaming=1 freeInternal=39016
+[108682][I][STORAGE] batch_pending_loop_done scanned=40 skipped=21 outCount=0 timeHit=0 elapsedMs=1611 freeInternal=39016
+[108683][I][BLE] Enrichment pending scan done count=0
+[108683][I][BLE] enrich_session_summary requested=128 applied=128 failed=0 deferred=0 batches=8 xferMs=7069 storageMs=5525 totalMs=38064
+[108796][I][BLE] Phone enrichment finished successfully
+[108797][I][BLE] probe resource release
+[108797][I][BLE] advertising stop
+[108798][I][BLE] client soft drop reason=radio_disabled
+[108798][I][BLE] radio disabled
+[108799][I][BLE] probe_release phase=worker_delete
+[108803][I][BLE] peer disconnect ignored after radio release reason=534
+[108858][I][WIFI] Promiscuous: YES
+[108859][I][WIFI] Promiscuous mode started data=0
+[108921][I][STORAGE] worker ui refresh serviced uiRefreshServiceCount=2 uiDeferred=21 uiFlush=2 pressure=0 usedPct=11 pending=2090
+[114025][I][STORAGE] capture write allowed owner=WIFI_CAPTURE path=/events/counter.txt reason=capture_micro_idle ms=96 ok=1
+[114137][I][STORAGE] capture write allowed owner=WIFI_CAPTURE path=/events/meta.json reason=capture_micro_idle ms=112 ok=1
+[115000][I][STORAGE] capture write allowed owner=WIFI_CAPTURE path=/spool/index.json reason=capture_micro_idle ms=839 ok=1
+[115001][W][STORAGE] worker metadata flush reason=capture_micro_idle ms=1072 ok=1 dirty=0
+[115002][I][STORAGE] worker metadata flush metadataFlushCount=1 reason=capture_micro_idle entryMetadataDirtyPending=1 entryUiRefreshPending=0 metadataDirtyPending=0 uiDeferred=21 uiFlush=2 uiRefreshServiceCount=2
+[115003][W][CORE] TaskHardware slow section=capture_storage_maintenance ms=1073 owner=WIFI_CAPTURE pendingUpload=2090 maintPending=0
+[115013][W][CORE] TaskHardware loop gap=1085ms owner=WIFI_CAPTURE pendingUpload=2090 maintPending=0 suppressed=3
+[121624][I][STACK] TaskHardware watermark=10756B min=10756B
+[121626][I][HEAP] heap free=4476KB min=4417KB largest=4352KB frag=2% internalFree=9KB internalLargest=7KB psramFree=4467KB core=50/19% owner=WIFI_CAPTURE nets=1 pendingUpload=2090 pendingEnrich=1953
+[HEALTH] time=2026-08-10 14:23:17 src=ntp
+[HEALTH] heap used=3975/8451KB free=4476KB min=4417KB largest=4352KB frag=2%
+[HEALTH] internal used=250/259KB free=9KB min=0KB largest=7KB
+[HEALTH] psram used=3725/8192KB free=4467KB largest=4352KB
+[HEALTH] stack free_min: core0=11KB/22KB core1=13KB/18KB
+[HEALTH] core usage: core0=50% core1=19%
+[HEALTH] power=usb state=usb batt=100% 4746mV trend=21mV/min runtime=0min cap=1100mAh charging=1
+[HEALTH] radio=WIFI_CAPTURE wifi=0 ble=0 gps=0 nets=1 pendingUpload=2090 pendingEnrich=1953
+[HEALTH] subghz=NONE mode=OFF pkts=0 nodes=0
+[121628][I][STORAGE] RAMSpool enq=13 cons=13 inflight=0/1024 high=6 pressure=0 drop[full=0 big=0 noise=0 p3Evict=0 p3Drop=0 p2Drop=0 p1Fail=0] free=1024
+[121629][I][STORAGE] RAMSpool enqueue probe[ok=12 drop=0] device[ok=1 drop=0]
+[121629][I][STORAGE] RAMSpool worker probe[ok=1 sup=11 drop=0 fail=0 slow=0] device[ok=1 sup=0 drop=0 fail=0 slow=0] slowTotal=0 maxMs=0
+[121629][I][STORAGE] RAMSpool prioEnq p0=0 p1=0 p2=13 p3=0
+[121629][I][STORAGE] RAMSpool lanes p1=0/0 p2=0/5 p3=0/0
+=== capture closed 2026-08-10T14:24:36.7459830-05:00 ===

@@ -1,5 +1,8 @@
 
 #pragma once
+
+#include "../core/PsramObject.h"
+#include <new>
 #include <Arduino.h>
 #include <LittleFS.h>
 #include <ArduinoJson.h>
@@ -256,8 +259,15 @@ enum class SpoolScanStatus : uint8_t {
 class StorageManager {
 public:
     static StorageManager& getInstance() {
-        static StorageManager instance;
-        return instance;
+        // ~1.6 KB of internal DRAM as a plain function-local static. Storage
+        // work runs on TaskStorage / TaskHardware, never in an ISR, so PSRAM
+        // is safe here. Matches BadUsbManager / PowerManager / MeshtasticManager.
+        static StorageManager* instance = []() {
+            void* storage = allocateManagerStorage(sizeof(StorageManager));
+            configASSERT(storage);
+            return new (storage) StorageManager();
+        }();
+        return *instance;
     }
 
     bool begin();
@@ -438,6 +448,12 @@ public:
     // audit, manual repair, or post-quarantine recovery — never call from
     // a hot path. Returns the recounted value.
     uint32_t recountPendingFromSpool();
+
+    // Codec round-trip self-test. Writes one synthetic record of each capture
+    // type through the real append path, reads it back through the real decode
+    // path, and reports any field that did not survive plus the on-disk byte
+    // cost per record. Returns false if any field mismatched.
+    bool spoolCodecSelfTestToSerial();
     uint32_t getPendingEventCountForSession(const char* sessionId);
     uint32_t getSessionPendingEventCount();
     uint32_t getLastUploadedEventId(const char* sessionId = nullptr);
@@ -704,6 +720,14 @@ private:
     DedupStats             _dedupStats = {};
     DedupFilter            _dedupFilter;
     std::map<uint32_t, String> _binaryLastSessionBySegment;
+    // Sticky session_tag per segment, mirroring _binaryLastSessionBySegment:
+    // the tag is only written when the session string is, so the writer has
+    // to know what the last record in this segment carried.
+    std::map<uint32_t, String> _binaryLastSessionTagBySegment;
+    // Write-side running context for delta-coded enrichment records.
+    // Empty (have=false) after a reboot, which makes the next record
+    // absolute and self-marking -- see ENRICH_FLAG_ABSOLUTE.
+    std::map<uint32_t, BinaryEnrichContext> _binaryEnrichCtxBySegment;
     std::map<uint32_t, SpoolBin::SpoolSegmentCheckpointV1> _binaryCheckpointBySegment;
 
     // All upload + enrichment paged index state, plus the cached
@@ -838,6 +862,10 @@ private:
     bool _loadSpoolEnrichmentIds(const String& sessionId,
                                  bool filterBySession,
                                  SpiramVector<uint32_t>& enrichedIds) const;
+    // Rebuild per-segment pending-enrichment counters after a whole-spool
+    // audit. Enrichment deltas are commonly written in later segments, so a
+    // segment-local recount alone overstates the remaining phone work.
+    bool _reconcilePendingEnrichmentSummaries(const char* reason);
     StorageLaneCounts _getPendingEnrichmentCounts(const String& sessionId,
                                                   bool filterBySession);
     bool _getPendingEnrichmentBatch(const String& sessionId,
@@ -894,6 +922,7 @@ private:
                                       const uint8_t* data,
                                       size_t len,
                                       uint32_t tsBase,
+                                      uint32_t epochBase,
                                       const String& sessionSeed,
                                       DecodedSpoolRecord& out) const;
     bool _forEachResolvedEventForSession(const String& sessionId,

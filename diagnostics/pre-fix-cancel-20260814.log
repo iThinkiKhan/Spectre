@@ -1,0 +1,16 @@
+=== capture opened 2026-08-14T08:54:52.4964323-05:00 ===
+=== send: companion cancel ===
+companion cancel
+[COMP] cancel queued
+[222477][I][BLE] probe resource release
+[222478][I][BLE] advertising stop
+[222479][I][BLE] client soft drop reason=radio_disabled
+[222479][I][BLE] radio disabled
+[222479][I][BLE] probe_release phase=worker_delete
+[222490][I][BLE] peer disconnect ignored after radio release reason=534
+[222541][I][WIFI] Promiscuous: YES
+[222542][I][WIFI] Promiscuous mode started data=0
+[227589][I][STORAGE] Spool rotate index deferred owner=WIFI_CAPTURE reason=capture seg=534 format=bin_v2
+[227614][I][STORAGE] Routine maintenance requests coalesced count=1 latest=snapshot_lagged source=append_metadata_deferred flags=dirty_spool_index|snapshot_lagged|delete_drained
+[227875][I][STORAGE] worker ui refresh serviced uiRefreshServiceCount=1 uiDeferred=2 uiFlush=1 pressure=0 usedPct=5 pending=68
+=== capture closed 2026-08-14T08:55:00.5572972-05:00 ===

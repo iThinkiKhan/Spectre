@@ -1,0 +1,282 @@
+[102168][I][STACK] TaskHardware watermark=9860B min=9860B
+[102175][I][HEAP] heap free=3895KB min=3854KB largest=3776KB frag=3% internalFree=80KB internalLargest=38KB psramFree=3815KB core=66/16% owner=WIFI_UPLOAD nets=0 pendingUpload=2319 pendingEnrich=32
+[HEALTH] time=2026-08-18 15:31:32 src=ntp
+[HEALTH] heap used=4558/8452KB free=3895KB min=3854KB largest=3776KB frag=3%
+[HEALTH] internal used=181/260KB free=80KB min=40KB largest=38KB
+[HEALTH] psram used=4377/8192KB free=3815KB largest=3776KB
+[HEALTH] stack free_min: core0=10KB/18KB core1=7KB/10KB
+[HEALTH] loopTask free_min=3084B/5120B
+[HEALTH] core usage: core0=66% core1=16%
+[HEALTH] power=usb state=usb batt=100% 4592mV trend=6mV/min runtime=0min cap=1100mAh charging=1
+[HEALTH] radio=WIFI_UPLOAD wifi=0 ble=0 gps=0 nets=0 pendingUpload=2319 pendingEnrich=32
+[HEALTH] subghz=NONE mode=OFF pkts=0 nodes=0
+[102178][I][STACK] TaskStorage watermark=3500B
+[102178][I][STORAGE] RAMSpool enq=0 cons=0 inflight=0/1024 high=0 pressure=0 drop[full=0 big=0 noise=0 p3Evict=0 p3Drop=0 p2Drop=0 p1Fail=0] free=1024
+[102179][I][STORAGE] RAMSpool enqueue probe[ok=0 drop=0] device[ok=0 drop=0]
+[102179][I][STORAGE] RAMSpool worker probe[ok=0 sup=0 drop=0 fail=0 slow=0] device[ok=0 sup=0 drop=0 fail=0 slow=0] slowTotal=0 maxMs=0
+[102179][I][STORAGE] RAMSpool prioEnq p0=0 p1=0 p2=0 p3=0
+[102180][I][STORAGE] RAMSpool lanes p1=0/0 p2=0/0 p3=0/0
+[102743][I][STORAGE] Segment lifecycle seg=684 partially_uploaded->fully_uploaded trust=trusted pending=0
+[102761][I][STORAGE] Segment lifecycle seg=685 indexed->partially_uploaded trust=trusted pending=115
+[103757][I][MQTT] Dump progress pub=1344 fail=0 session=3/11 since=50420 leaseMaxEvents=3599
+[104105][W][CORE] TaskHardware loop gap=515ms owner=WIFI_UPLOAD pendingUpload=2255 maintPending=1 suppressed=24
+[105812][I][MQTT] Dump progress pub=1408 fail=0 session=3/11 since=50520 leaseMaxEvents=3599
+[106381][I][STORAGE] Segment lifecycle seg=685 partially_uploaded->fully_uploaded trust=trusted pending=0
+[106400][I][STORAGE] Segment lifecycle seg=686 indexed->partially_uploaded trust=trusted pending=109
+[107690][I][MQTT] Dump progress pub=1472 fail=0 session=3/11 since=50635 leaseMaxEvents=3599
+[109327][I][STORAGE] Segment lifecycle seg=686 partially_uploaded->fully_uploaded trust=trusted pending=0
+[109348][I][STORAGE] Segment lifecycle seg=687 indexed->partially_uploaded trust=trusted pending=109
+[109518][I][MQTT] Dump progress pub=1536 fail=0 session=3/11 since=50762 leaseMaxEvents=3599
+[110214][I][STORAGE] worker ui refresh serviced uiRefreshServiceCount=6 uiDeferred=0 uiFlush=6 pressure=0 usedPct=26 pending=2063
+[112656][I][MQTT] Dump progress pub=1600 fail=0 session=3/11 since=50930 leaseMaxEvents=3599
+[113876][I][STORAGE] Segment lifecycle seg=687 partially_uploaded->fully_uploaded trust=trusted pending=0
+[113930][I][STORAGE] Segment lifecycle seg=688 indexed->partially_uploaded trust=trusted pending=110
+[114313][W][CORE] TaskHardware loop gap=323ms owner=WIFI_UPLOAD pendingUpload=1955 maintPending=1 suppressed=24
+[118915][I][MQTT] Dump progress pub=1728 fail=0 session=3/11 since=51158 leaseMaxEvents=3599
+[119788][I][STORAGE] Segment lifecycle seg=688 partially_uploaded->fully_uploaded trust=trusted pending=0
+[119806][I][STORAGE] Segment lifecycle seg=689 indexed->partially_uploaded trust=trusted pending=114
+[HEAP] integrity check ok
+[120994][I][STACK] TaskButtons watermark=2084B min=2084B
+[121925][I][MQTT] Dump progress pub=1792 fail=0 session=3/11 since=51286 leaseMaxEvents=3599
+[122734][I][STORAGE] worker ui refresh serviced uiRefreshServiceCount=7 uiDeferred=0 uiFlush=7 pressure=0 usedPct=26 pending=1807
+[124385][W][CORE] TaskHardware loop gap=343ms owner=WIFI_UPLOAD pendingUpload=1793 maintPending=1 suppressed=22
+[126272][I][MQTT] Dump progress pub=1856 fail=0 session=3/11 since=51415 leaseMaxEvents=3599
+[126798][I][STORAGE] Segment lifecycle seg=689 partially_uploaded->fully_uploaded trust=trusted pending=0
+[126828][I][STORAGE] Segment lifecycle seg=690 indexed->partially_uploaded trust=trusted pending=108
+[128054][I][MQTT] Dump progress pub=1920 fail=0 session=3/11 since=51525 leaseMaxEvents=3599
+[129627][I][STORAGE] Segment lifecycle seg=690 partially_uploaded->fully_uploaded trust=trusted pending=0
+[129647][I][STORAGE] Segment lifecycle seg=691 indexed->partially_uploaded trust=trusted pending=110
+[129898][I][MQTT] Dump progress pub=1984 fail=0 session=3/11 since=51657 leaseMaxEvents=3599
+[132312][I][STACK] TaskHardware watermark=9840B min=9840B
+[132319][I][HEAP] heap free=3895KB min=3854KB largest=3776KB frag=3% internalFree=80KB internalLargest=38KB psramFree=3815KB core=40/9% owner=WIFI_UPLOAD nets=0 pendingUpload=1559 pendingEnrich=32
+[HEALTH] time=2026-08-18 15:32:04 src=ntp
+[HEALTH] heap used=4558/8452KB free=3895KB min=3854KB largest=3776KB frag=3%
+[HEALTH] internal used=181/260KB free=80KB min=40KB largest=38KB
+[HEALTH] psram used=4377/8192KB free=3815KB largest=3776KB
+[HEALTH] stack free_min: core0=10KB/18KB core1=7KB/10KB
+[HEALTH] loopTask free_min=3084B/5120B
+[HEALTH] core usage: core0=40% core1=9%
+[HEALTH] power=usb state=usb batt=100% 4595mV trend=6mV/min runtime=0min cap=1100mAh charging=1
+[HEALTH] radio=WIFI_UPLOAD wifi=0 ble=0 gps=0 nets=0 pendingUpload=1559 pendingEnrich=32
+[HEALTH] subghz=NONE mode=OFF pkts=0 nodes=0
+[132321][I][STACK] TaskStorage watermark=3500B
+[132321][I][STORAGE] RAMSpool enq=0 cons=0 inflight=0/1024 high=0 pressure=0 drop[full=0 big=0 noise=0 p3Evict=0 p3Drop=0 p2Drop=0 p1Fail=0] free=1024
+[132322][I][STORAGE] RAMSpool enqueue probe[ok=0 drop=0] device[ok=0 drop=0]
+[132322][I][STORAGE] RAMSpool worker probe[ok=0 sup=0 drop=0 fail=0 slow=0] device[ok=0 sup=0 drop=0 fail=0 slow=0] slowTotal=0 maxMs=0
+[132322][I][STORAGE] RAMSpool prioEnq p0=0 p1=0 p2=0 p3=0
+[132323][I][STORAGE] RAMSpool lanes p1=0/0 p2=0/0 p3=0/0
+[132501][I][MQTT] Dump progress pub=2048 fail=0 session=3/11 since=51805 leaseMaxEvents=3599
+[133188][I][STORAGE] worker ui refresh serviced uiRefreshServiceCount=8 uiDeferred=0 uiFlush=8 pressure=0 usedPct=26 pending=1551
+[134573][W][CORE] TaskHardware loop gap=315ms owner=WIFI_UPLOAD pendingUpload=1537 maintPending=1 suppressed=20
+[135016][I][STORAGE] Segment lifecycle seg=691 partially_uploaded->fully_uploaded trust=trusted pending=0
+[135034][I][STORAGE] Segment lifecycle seg=692 indexed->partially_uploaded trust=trusted pending=109
+[135616][I][MQTT] Dump progress pub=2112 fail=0 session=3/11 since=51909 leaseMaxEvents=3599
+[137575][I][MQTT] Dump progress pub=2176 fail=0 session=3/11 since=52045 leaseMaxEvents=3599
+[138356][I][STORAGE] Segment lifecycle seg=692 partially_uploaded->fully_uploaded trust=trusted pending=0
+[138377][I][STORAGE] Segment lifecycle seg=693 indexed->partially_uploaded trust=trusted pending=113
+[139465][I][MQTT] Dump progress pub=2240 fail=0 session=3/11 since=52173 leaseMaxEvents=3599
+[141266][I][MQTT] Dump progress pub=2304 fail=0 session=3/11 since=52288 leaseMaxEvents=3599
+[142148][I][STORAGE] worker ui refresh serviced uiRefreshServiceCount=9 uiDeferred=0 uiFlush=9 pressure=0 usedPct=26 pending=1295
+[143218][I][STORAGE] Segment lifecycle seg=693 partially_uploaded->fully_uploaded trust=trusted pending=0
+[143240][I][STORAGE] Segment lifecycle seg=694 indexed->partially_uploaded trust=trusted pending=111
+[144601][I][MQTT] Dump progress pub=2368 fail=0 session=3/11 since=52441 leaseMaxEvents=3599
+[144973][W][CORE] TaskHardware loop gap=572ms owner=WIFI_UPLOAD pendingUpload=1231 maintPending=1 suppressed=23
+[146103][I][STORAGE] Segment lifecycle seg=694 partially_uploaded->fully_uploaded trust=trusted pending=0
+[146122][I][STORAGE] Segment lifecycle seg=695 indexed->partially_uploaded trust=trusted pending=115
+[146401][I][MQTT] Dump progress pub=2432 fail=0 session=3/11 since=52566 leaseMaxEvents=3599
+[148207][I][MQTT] Dump progress pub=2496 fail=0 session=3/11 since=52682 leaseMaxEvents=3599
+[149436][I][STORAGE] Segment lifecycle seg=695 partially_uploaded->fully_uploaded trust=trusted pending=0
+[149463][I][STORAGE] Segment lifecycle seg=696 indexed->partially_uploaded trust=trusted pending=118
+[150014][I][MQTT] Dump progress pub=2560 fail=0 session=3/11 since=52808 leaseMaxEvents=3599
+[150698][I][STORAGE] worker ui refresh serviced uiRefreshServiceCount=10 uiDeferred=0 uiFlush=10 pressure=0 usedPct=26 pending=1039
+[151010][I][STACK] TaskButtons watermark=1792B min=1792B
+[153318][I][MQTT] Dump progress pub=2624 fail=0 session=3/11 since=52937 leaseMaxEvents=3599
+[154480][I][STORAGE] Segment lifecycle seg=696 partially_uploaded->fully_uploaded trust=trusted pending=0
+[154500][I][STORAGE] Segment lifecycle seg=697 indexed->partially_uploaded trust=trusted pending=24
+[155023][W][CORE] TaskHardware loop gap=315ms owner=WIFI_UPLOAD pendingUpload=921 maintPending=1 suppressed=23
+[155049][I][STORAGE] Segment lifecycle seg=697 partially_uploaded->fully_uploaded trust=trusted pending=0
+[155067][I][STORAGE] Segment lifecycle seg=698 indexed->partially_uploaded trust=trusted pending=128
+[155235][I][MQTT] Dump progress pub=2688 fail=0 session=4/11 since=53080 leaseMaxEvents=3599
+[157016][I][MQTT] Dump progress pub=2752 fail=0 session=4/11 since=53180 leaseMaxEvents=3599
+[158914][I][STORAGE] Segment lifecycle seg=698 partially_uploaded->fully_uploaded trust=trusted pending=0
+[158933][I][STORAGE] Segment lifecycle seg=699 indexed->partially_uploaded trust=trusted pending=124
+[159125][I][MQTT] Dump progress pub=2816 fail=0 session=4/11 since=53316 leaseMaxEvents=3599
+[159805][I][STORAGE] worker ui refresh serviced uiRefreshServiceCount=11 uiDeferred=0 uiFlush=11 pressure=0 usedPct=26 pending=783
+[162638][I][STACK] TaskHardware watermark=9840B min=9840B
+[162645][I][HEAP] heap free=3895KB min=3854KB largest=3776KB frag=3% internalFree=79KB internalLargest=38KB psramFree=3816KB core=70/17% owner=WIFI_UPLOAD nets=0 pendingUpload=719 pendingEnrich=32
+[HEALTH] time=2026-08-18 15:32:34 src=ntp
+[HEALTH] heap used=4557/8452KB free=3895KB min=3854KB largest=3776KB frag=3%
+[HEALTH] internal used=181/260KB free=79KB min=40KB largest=38KB
+[HEALTH] psram used=4376/8192KB free=3816KB largest=3776KB
+[HEALTH] stack free_min: core0=10KB/18KB core1=7KB/10KB
+[HEALTH] loopTask free_min=3084B/5120B
+[HEALTH] core usage: core0=70% core1=17%
+[HEALTH] power=usb state=usb batt=100% 4602mV trend=8mV/min runtime=0min cap=1100mAh charging=1
+[HEALTH] radio=WIFI_UPLOAD wifi=0 ble=0 gps=0 nets=0 pendingUpload=719 pendingEnrich=32
+[HEALTH] subghz=NONE mode=OFF pkts=0 nodes=0
+[162647][I][STACK] TaskStorage watermark=3500B
+[162648][I][STORAGE] RAMSpool enq=0 cons=0 inflight=0/1024 high=0 pressure=0 drop[full=0 big=0 noise=0 p3Evict=0 p3Drop=0 p2Drop=0 p1Fail=0] free=1024
+[162648][I][STORAGE] RAMSpool enqueue probe[ok=0 drop=0] device[ok=0 drop=0]
+[162648][I][STORAGE] RAMSpool worker probe[ok=0 sup=0 drop=0 fail=0 slow=0] device[ok=0 sup=0 drop=0 fail=0 slow=0] slowTotal=0 maxMs=0
+[162648][I][STORAGE] RAMSpool prioEnq p0=0 p1=0 p2=0 p3=0
+[162649][I][STORAGE] RAMSpool lanes p1=0/0 p2=0/0 p3=0/0
+[164223][I][STORAGE] Segment lifecycle seg=699 partially_uploaded->fully_uploaded trust=trusted pending=0
+[164243][I][STORAGE] Segment lifecycle seg=700 indexed->partially_uploaded trust=trusted pending=42
+[164458][I][MQTT] Dump progress pub=2944 fail=0 session=4/11 since=53573 leaseMaxEvents=3599
+[165157][W][CORE] TaskHardware loop gap=329ms owner=WIFI_UPLOAD pendingUpload=641 maintPending=1 suppressed=23
+[165602][I][STORAGE] Segment lifecycle seg=700 partially_uploaded->fully_uploaded trust=trusted pending=0
+[165633][I][STORAGE] Segment lifecycle seg=701 indexed->partially_uploaded trust=trusted pending=113
+[166323][I][MQTT] Dump progress pub=3008 fail=0 session=5/11 since=53676 leaseMaxEvents=3599
+[167995][I][MQTT] Dump progress pub=3072 fail=0 session=5/11 since=53830 leaseMaxEvents=3599
+[168676][I][STORAGE] worker ui refresh serviced uiRefreshServiceCount=12 uiDeferred=0 uiFlush=12 pressure=0 usedPct=26 pending=527
+[170277][I][STORAGE] Segment lifecycle seg=701 partially_uploaded->fully_uploaded trust=trusted pending=0
+[170296][I][STORAGE] Segment lifecycle seg=702 indexed->partially_uploaded trust=trusted pending=112
+[171285][I][MQTT] Dump progress pub=3136 fail=0 session=5/11 since=53933 leaseMaxEvents=3599
+[173007][I][MQTT] Dump progress pub=3200 fail=0 session=5/11 since=54047 leaseMaxEvents=3599
+[173478][I][STORAGE] Segment lifecycle seg=702 partially_uploaded->fully_uploaded trust=trusted pending=0
+[173500][I][STORAGE] Segment lifecycle seg=703 indexed->partially_uploaded trust=trusted pending=100
+[174825][I][MQTT] Dump progress pub=3264 fail=0 session=5/11 since=54200 leaseMaxEvents=3599
+[175228][W][CORE] TaskHardware loop gap=524ms owner=WIFI_UPLOAD pendingUpload=335 maintPending=1 suppressed=23
+[176106][I][STORAGE] Segment lifecycle seg=703 partially_uploaded->fully_uploaded trust=trusted pending=0
+[176125][I][STORAGE] Segment lifecycle seg=704 indexed->partially_uploaded trust=trusted pending=40
+[176838][I][MQTT] Dump progress pub=3328 fail=0 session=5/11 since=54314 leaseMaxEvents=3599
+[177519][I][STORAGE] worker ui refresh serviced uiRefreshServiceCount=13 uiDeferred=0 uiFlush=13 pressure=0 usedPct=26 pending=271
+[178969][I][STORAGE] Segment lifecycle seg=704 partially_uploaded->fully_uploaded trust=trusted pending=0
+[178988][I][STORAGE] Segment lifecycle seg=705 indexed->partially_uploaded trust=trusted pending=11
+[179219][I][STORAGE] Segment lifecycle seg=705 partially_uploaded->fully_uploaded trust=trusted pending=0
+[179237][I][STORAGE] Segment lifecycle seg=706 indexed->partially_uploaded trust=trusted pending=100
+[179964][I][MQTT] Dump progress pub=3392 fail=0 session=7/11 since=54487 leaseMaxEvents=3599
+[181014][I][STACK] TaskButtons watermark=1792B min=1792B
+[183181][I][MQTT] Dump progress pub=3456 fail=0 session=7/11 since=54602 leaseMaxEvents=3599
+[183629][I][STORAGE] Segment lifecycle seg=706 partially_uploaded->fully_uploaded trust=trusted pending=0
+[183657][I][STORAGE] Segment lifecycle seg=707 indexed->partially_uploaded trust=trusted pending=95
+[184954][I][MQTT] Dump progress pub=3520 fail=0 session=7/11 since=54742 leaseMaxEvents=3599
+[185376][W][CORE] TaskHardware loop gap=514ms owner=WIFI_UPLOAD pendingUpload=79 maintPending=1 suppressed=20
+[186084][I][STORAGE] Segment lifecycle seg=707 partially_uploaded->fully_uploaded trust=trusted pending=0
+[186117][I][STORAGE] Segment lifecycle seg=708 indexed->partially_uploaded trust=trusted pending=15
+[186426][I][STORAGE] Segment lifecycle seg=708 partially_uploaded->fully_uploaded trust=trusted pending=0
+[186445][I][STORAGE] Segment lifecycle seg=709 indexed->partially_uploaded trust=trusted pending=14
+[186733][I][MQTT] Dump progress pub=3584 fail=0 session=9/11 since=54857 leaseMaxEvents=3599
+[187525][I][STORAGE] worker ui refresh serviced uiRefreshServiceCount=14 uiDeferred=0 uiFlush=14 pressure=0 usedPct=26 pending=15
+[188422][I][STORAGE] Segment lifecycle seg=709 partially_uploaded->fully_uploaded trust=trusted pending=0
+[188733][I][MQTT] Census publish begin
+[189733][I][MQTT] Census publish end
+[190142][E][STORAGE] Contract violation: spool_index reason=rotate_new_segment
+[190714][I][STORAGE] Spool rotate newSeg=712 format=bin_v2
+[190715][I][STORAGE] Spool diag[rotate] validSegments=38 untrustedSegments=0 invalidSegments=0 activeSegment=712 totalRecords=7141 storedEvents=3639 pendingUpload=0 nextEventId=54883
+[190715][I][STORAGE] Spool compact rotated off fully-uploaded active=711
+[191012][I][STORAGE] Segment lifecycle seg=711 active->fully_uploaded trust=trusted pending=0
+[191021][I][STORAGE] Segment lifecycle seg=673 delete_pending->delete_pending
+[191082][I][STORAGE] Segment lifecycle seg=674 delete_pending->delete_pending
+[191149][I][STORAGE] Segment lifecycle seg=675 delete_pending->delete_pending
+[191213][I][STORAGE] Segment lifecycle seg=676 delete_pending->delete_pending
+[191277][I][STORAGE] Segment lifecycle seg=677 delete_pending->delete_pending
+[191344][I][STORAGE] Segment lifecycle seg=678 delete_pending->delete_pending
+[191411][I][STORAGE] Segment lifecycle seg=679 delete_pending->delete_pending
+[191479][I][STORAGE] Segment lifecycle seg=680 delete_pending->delete_pending
+[191547][I][STORAGE] Segment lifecycle seg=681 delete_pending->delete_pending
+[191617][I][STORAGE] Segment lifecycle seg=683 delete_pending->delete_pending
+[191688][I][STORAGE] Segment lifecycle seg=684 delete_pending->delete_pending
+[191759][I][STORAGE] Segment lifecycle seg=685 delete_pending->delete_pending
+[191830][I][STORAGE] Segment lifecycle seg=686 delete_pending->delete_pending
+[191903][I][STORAGE] Segment lifecycle seg=687 delete_pending->delete_pending
+[191976][I][STORAGE] Segment lifecycle seg=688 delete_pending->delete_pending
+[192421][I][STORAGE] Segment lifecycle seg=689 delete_pending->delete_pending
+[192482][I][STORAGE] Segment lifecycle seg=690 delete_pending->delete_pending
+[192545][I][STORAGE] Segment lifecycle seg=691 delete_pending->delete_pending
+[192609][I][STORAGE] Segment lifecycle seg=692 delete_pending->delete_pending
+[192673][I][STORAGE] Segment lifecycle seg=693 delete_pending->delete_pending
+[192738][I][STORAGE] Segment lifecycle seg=694 delete_pending->delete_pending
+[192804][I][STORAGE] Segment lifecycle seg=695 delete_pending->delete_pending
+[193192][I][STORAGE] Segment lifecycle seg=696 delete_pending->delete_pending
+[193238][I][STORAGE] Segment lifecycle seg=697 delete_pending->delete_pending
+[193285][I][STORAGE] Segment lifecycle seg=698 delete_pending->delete_pending
+[193332][I][STORAGE] Segment lifecycle seg=699 delete_pending->delete_pending
+[193381][I][STORAGE] Segment lifecycle seg=700 delete_pending->delete_pending
+[193430][I][STORAGE] Segment lifecycle seg=701 delete_pending->delete_pending
+[193479][I][STORAGE] Segment lifecycle seg=702 delete_pending->delete_pending
+[193528][I][STORAGE] Segment lifecycle seg=703 delete_pending->delete_pending
+[193580][I][STORAGE] Segment lifecycle seg=704 delete_pending->delete_pending
+[193633][I][STORAGE] Segment lifecycle seg=705 delete_pending->delete_pending
+[193685][I][STORAGE] Segment lifecycle seg=706 delete_pending->delete_pending
+[193738][I][STORAGE] Segment lifecycle seg=707 delete_pending->delete_pending
+[193794][I][STORAGE] Segment lifecycle seg=708 delete_pending->delete_pending
+[193850][I][STORAGE] Segment lifecycle seg=709 delete_pending->delete_pending
+[194063][I][STORAGE] Spool compact pruned sessions=10 watermarks=10 scannedSegs=2 retainedSessions=1 ms=152
+[194256][I][STORAGE] Spool compact removed=36 remaining=2
+[194392][I][STORAGE] Spool diag[compact] validSegments=2 untrustedSegments=0 invalidSegments=0 activeSegment=712 totalRecords=14 storedEvents=14 pendingUpload=0 nextEventId=54883
+[194596][I][STORAGE] Spool compact request session=33e864-7191-c204975f result=1 pendingUpload=0
+[194597][I][MQTT] Compacted uploaded event files for 11 session(s)
+[194598][I][STACK] TaskHardware watermark=9840B min=9840B
+[194604][I][HEAP] heap free=3963KB min=3852KB largest=3840KB frag=3% internalFree=113KB internalLargest=38KB psramFree=3850KB core=68/20% owner=WIFI_UPLOAD nets=0 pendingUpload=0 pendingEnrich=14
+[HEALTH] time=2026-08-18 15:33:02 src=ntp
+[HEALTH] heap used=4489/8452KB free=3963KB min=3852KB largest=3840KB frag=3%
+[HEALTH] internal used=147/260KB free=113KB min=39KB largest=38KB
+[HEALTH] psram used=4342/8192KB free=3850KB largest=3840KB
+[HEALTH] stack free_min: core0=10KB/18KB core1=7KB/10KB
+[HEALTH] loopTask free_min=3084B/5120B
+[HEALTH] core usage: core0=68% core1=20%
+[HEALTH] power=usb state=usb batt=100% 4601mV trend=6mV/min runtime=0min cap=1100mAh charging=1
+[HEALTH] radio=WIFI_UPLOAD wifi=0 ble=0 gps=0 nets=0 pendingUpload=0 pendingEnrich=14
+[HEALTH] subghz=NONE mode=OFF pkts=0 nodes=0
+[194607][I][STACK] TaskStorage watermark=3500B
+[194607][I][STORAGE] RAMSpool enq=0 cons=0 inflight=0/1024 high=0 pressure=0 drop[full=0 big=0 noise=0 p3Evict=0 p3Drop=0 p2Drop=0 p1Fail=0] free=1024
+[194607][I][STORAGE] RAMSpool enqueue probe[ok=0 drop=0] device[ok=0 drop=0]
+[194608][I][STORAGE] RAMSpool worker probe[ok=0 sup=0 drop=0 fail=0 slow=0] device[ok=0 sup=0 drop=0 fail=0 slow=0] slowTotal=0 maxMs=0
+[194608][I][STORAGE] RAMSpool prioEnq p0=0 p1=0 p2=0 p3=0
+[194608][I][STORAGE] RAMSpool lanes p1=0/0 p2=0/0 p3=0/0
+[194853][I][MQTT] Transient files purged after successful dump
+[194915][I][STORAGE] Maintenance requested reason=fs_audit source=post_upload flags=upload_enrich_cursor_dirty|fs_audit
+[194916][I][MQTT] upload_session_summary pub=3599 acked=3599 failed=0 remain=0 leaseMs=1200000
+[194927][I][MQTT] Dump complete
+[195214][I][STORAGE] Maintenance requested reason=upload_enrich_cursor_dirty source=upload_end flags=upload_enrich_cursor_dirty|fs_audit
+[195215][I][STORAGE] Maintenance requested reason=dirty_spool_index source=upload_end flags=dirty_spool_index|upload_enrich_cursor_dirty|fs_audit
+[195215][I][STORAGE] Maintenance requested reason=delete_drained source=upload_end flags=dirty_spool_index|upload_enrich_cursor_dirty|delete_drained|fs_audit
+[195216][I][STORAGE] Routine maintenance requests coalesced count=1 latest=snapshot_lagged source=upload_end flags=dirty_spool_index|snapshot_lagged|upload_enrich_cursor_dirty|delete_drained|fs_audit
+[195216][I][STORAGE] Upload batch closed; maintenance queued dirty=1 sidecar=0 flags=dirty_spool_index|snapshot_lagged|upload_enrich_cursor_dirty|delete_drained|fs_audit
+[195234][I][STORAGE] Upload index released reason=upload_batch_end indexed=3599 sessions=11
+[195313][I][STORAGE] Segment lifecycle seg=711 delete_pending->delete_pending
+[195421][I][STORAGE] Spool compact pruned sessions=1 watermarks=1 scannedSegs=1 retainedSessions=0 ms=63
+[195829][I][STORAGE] Spool compact removed=1 remaining=1
+[196004][I][STORAGE] Spool diag[compact] validSegments=1 untrustedSegments=0 invalidSegments=0 activeSegment=712 totalRecords=0 storedEvents=0 pendingUpload=0 nextEventId=54883
+[196016][I][STORAGE] RAMSpool worker resumed
+[196016][I][STORAGE] Exclusive window end kind=upload result=done reason=upload_stream
+[196175][I][WIFI] Radio suspended
+[196176][W][STACK] TaskHardware upload watermark result=done before=12800B after=9840B drop=2960B
+[196186][W][CORE] TaskHardware loop gap=1260ms owner=STORAGE_MAINT pendingUpload=0 maintPending=1 suppressed=9
+[196191][I][STORAGE] RAMSpool worker paused inflight=0 lastInflight=0
+[196191][I][STORAGE] Exclusive window begin kind=maintenance reason=radio_owner_window workerPaused=1 displaySuspended=1
+[196192][I][STORAGE] Maintenance start reason=radio_owner_window budgetMs=5000 flags=dirty_spool_index|dirty_summary|snapshot_lagged|upload_enrich_cursor_dirty|delete_drained|fs_audit captureSafe=1
+[196193][I][STORAGE] worker ui refresh serviced uiRefreshServiceCount=15 uiDeferred=1 uiFlush=16 pressure=0 usedPct=4 pending=0
+[196203][I][STORAGE] Spool compact no_change
+[196204][I][STORAGE] Spool diag[compact_noop] validSegments=1 untrustedSegments=0 invalidSegments=0 activeSegment=712 totalRecords=0 storedEvents=0 pendingUpload=0 nextEventId=54883
+[196747][I][FSAUDIT] pass done files=17 dirs=14 valid=17 invalid=0 legacy=0 forensic=0 tmp=0 unknown=0 vaulted=0 missing=0 skipped=0 actions del=0 quar=0 rebuild=0 salv=0 evict=0 skip=0 fail=0 spool_seg=1 maxSegI
+[196855][I][STORAGE] fs_audit done mode=1 complete=1 files=17 invalid=0 tmp=0 missing=0 del=0 quar=0 rebuild=0 salv=0 evict=0 skip=0 fail=0 drift=0 ms=542
+[197177][I][STORAGE] Maintenance continuity log wrote clean=1 reason=radio_owner_window completed=dirty_spool_index|dirty_summary|boot_safe_deferred_persist|snapshot_lagged|upload_enrich_cursor_dirty|delete_drain
+[197178][I][STORAGE] Maintenance done reason=radio_owner_window actions=dirty_spool_index|dirty_summary|boot_safe_deferred_persist|snapshot_lagged|upload_enrich_cursor_dirty|delete_drained|fs_audit|continuity_pas
+[197178][I][STORAGE] RAMSpool worker resumed
+[197178][I][STORAGE] Exclusive window end kind=maintenance result=capture_safe reason=radio_owner_window
+[197179][I][STORAGE] maintenance owner window ms=989 captureSafe=1 remaining=none
+[197241][I][WIFI] Promiscuous: YES
+[197241][I][WIFI] Promiscuous mode started data=0
+[211014][I][STACK] TaskButtons watermark=1792B min=1792B
+[224603][I][STACK] TaskHardware watermark=6672B min=6672B
+[224605][I][HEAP] heap free=4511KB min=3852KB largest=4352KB frag=3% internalFree=87KB internalLargest=38KB psramFree=4424KB core=0/3% owner=WIFI_CAPTURE nets=9 pendingUpload=6 pendingEnrich=0
+[HEALTH] time=2026-08-18 15:33:37 src=ntp
+[HEALTH] heap used=3941/8452KB free=4511KB min=3852KB largest=4352KB frag=3%
+[HEALTH] internal used=173/260KB free=87KB min=39KB largest=38KB
+[HEALTH] psram used=3768/8192KB free=4424KB largest=4352KB
+[HEALTH] stack free_min: core0=7KB/18KB core1=5KB/10KB
+[HEALTH] loopTask free_min=3084B/5120B
+[HEALTH] core usage: core0=0% core1=3%
+[HEALTH] power=usb state=usb batt=100% 4685mV trend=30mV/min runtime=0min cap=1100mAh charging=1
+[HEALTH] radio=WIFI_CAPTURE wifi=0 ble=0 gps=0 nets=9 pendingUpload=6 pendingEnrich=0
+[HEALTH] subghz=NONE mode=OFF pkts=0 nodes=0
+[224607][I][STACK] TaskStorage watermark=1944B
+[224607][I][STORAGE] RAMSpool enq=6 cons=6 inflight=0/1024 high=2 pressure=0 drop[full=0 big=0 noise=0 p3Evict=0 p3Drop=0 p2Drop=0 p1Fail=0] free=1024
+[224608][I][STORAGE] RAMSpool enqueue probe[ok=3 drop=0] device[ok=3 drop=0]
+[224608][I][STORAGE] RAMSpool worker probe[ok=3 sup=0 drop=0 fail=0 slow=0] device[ok=3 sup=0 drop=0 fail=0 slow=0] slowTotal=0 maxMs=0
+[224608][I][STORAGE] RAMSpool prioEnq p0=0 p1=0 p2=6 p3=0
+[224608][I][STORAGE] RAMSpool lanes p1=0/0 p2=0/1 p3=0/0
+[241014][I][STACK] TaskButtons watermark=1792B min=1792B
+

@@ -32,6 +32,12 @@ struct SpoolRepairJob {
     uint32_t segmentValidEventRecords = 0;
     uint32_t segmentValidEnrichDeltas = 0;
     String lastSession;
+    // Sticky session_tag cursor: the tag is only written alongside an
+    // inline session, so a resumable scan has to carry it across slices.
+    String lastSessionTag;
+    // Delta-coded enrichment records resolve against the previous one in
+    // the segment, so a resumable repair scan carries the context too.
+    BinaryEnrichContext enrichCtx;
     bool scanningSegment = false;
     bool segmentChanged = false;
 };

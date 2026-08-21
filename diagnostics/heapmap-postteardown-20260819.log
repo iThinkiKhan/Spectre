@@ -1,0 +1,13 @@
+===== CMD: heap map =====
+heap map
+[HEAPMAP] free=65056 largest=31732 minFree=12916 blocks free=17 alloc=371 total=388
+[HEAPMAP] region 1 0x600FE060-0x600FFFD8 (8056 B)
+[HEAPMAP] region 2 0x3FCE9710-0x3FCEEE34 (22308 B)
+[HEAPMAP] region 3 0x3FCF0000-0x3FCF8000 (32768 B)
+[HEAPMAP] region 4 0x3FCB6BF0-0x3FCE9710 (207648 B)
+[HEAPMAP] gaps>=1KB listed=4 of 17 total free blocks
+  FREE   7668 B @0x600FE1E0  preceded by 0 alloc blocks / 0 B
+  FREE  32024 B @0x3FCF02E4  preceded by 0 alloc blocks / 0 B
+  FREE   4352 B @0x3FCD2898  preceded by 5 alloc blocks / 1164 B
+  FREE  19632 B @0x3FCDC9F8  preceded by 12 alloc blocks / 13448 B
+

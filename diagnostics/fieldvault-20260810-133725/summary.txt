@@ -1,0 +1,6 @@
+Spectre FieldVault analysis
+Records: 0; parse errors: 0
+Sequence: ..; gaps: 0; duplicates: 0
+Boot records: 0; ready samples: 0; slow ready (>=8 s): 0; BLE-adjacent boot evidence: 0
+Crashes: 0; audit problem records: 0
+USB power samples: 0; range: .. mV

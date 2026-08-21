@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {useState} from 'react';
 import {Pressable, ScrollView, StyleSheet, Text, View} from 'react-native';
 
 import {FieldPanel} from '../components/FieldPanel';
@@ -29,6 +29,7 @@ function ReadinessRow({label, value, detail, good}: {label: string; value: strin
 
 export function MissionScreen() {
   const spectre = useSpectre();
+  const [uploadRequestState, setUploadRequestState] = useState<'idle' | 'sending' | 'queued' | 'error'>('idle');
   const missionRunning = spectre.gpsRecording && spectre.peripheralState.running;
   const gpsFresh = !!spectre.activeLocation && Date.now() - spectre.activeLocation.timestamp < 90_000;
   const phoneReady = spectre.peripheralState.running && spectre.peripheralState.advertising;
@@ -42,6 +43,7 @@ export function MissionScreen() {
     ? storage.pendingEnrichMission + storage.pendingEnrichNoise
     : 0;
   const pendingPhone = spectre.relayStatus.pending;
+  const deviceUploadActive = !!storage?.uploadActive;
   const locatedTargets = spectre.localization.targets.filter(target => target.estimate).length;
   const heading = !missionRunning
     ? 'Ready when you are'
@@ -127,6 +129,32 @@ export function MissionScreen() {
         </View>
         <Text style={styles.body}>{spectre.fieldTransfer.message}</Text>
         <View style={styles.buttonRow}>
+          <Pressable
+            disabled={!linked || !spectre.commandService || pendingSpectre === 0 || deviceUploadActive || uploadRequestState === 'sending'}
+            style={[
+              styles.primaryButton,
+              (!linked || !spectre.commandService || pendingSpectre === 0 || deviceUploadActive || uploadRequestState === 'sending')
+                ? styles.disabled
+                : null,
+            ]}
+            onPress={() => {
+              const service = spectre.commandService;
+              if (!service) return;
+              setUploadRequestState('sending');
+              service.uploadNow()
+                .then(() => setUploadRequestState('queued'))
+                .catch(() => setUploadRequestState('error'));
+            }}>
+            <Text style={styles.primaryText}>
+              {deviceUploadActive
+                ? 'Uploading to broker'
+                : uploadRequestState === 'sending'
+                  ? 'Queuing upload'
+                  : pendingSpectre === 0
+                    ? 'Nothing to upload'
+                    : 'Upload to broker'}
+            </Text>
+          </Pressable>
           {linked && pendingSpectre > 0 && pendingEnrichment === 0 && (
             <Pressable
               disabled={spectre.fieldTransfer.phase === 'copying'}
@@ -144,6 +172,12 @@ export function MissionScreen() {
             <Text style={styles.secondaryText}>Refresh targets</Text>
           </Pressable>
         </View>
+        {uploadRequestState === 'queued' && (
+          <Text style={styles.actionStatus}>Upload queued on Spectre.</Text>
+        )}
+        {uploadRequestState === 'error' && (
+          <Text style={[styles.actionStatus, styles.actionError]}>Upload request failed. Re-link and try again.</Text>
+        )}
       </FieldPanel>
 
       {spectre.notifications.length > 0 && (
@@ -189,6 +223,8 @@ const styles = StyleSheet.create({
   primaryText: {color: theme.colors.textOnAccent, fontSize: 12, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.7},
   secondaryButton: {backgroundColor: theme.colors.bg, borderColor: theme.colors.panelEdgeBright, borderWidth: 1, borderRadius: theme.radius.md, paddingHorizontal: theme.spacing.md, paddingVertical: 12},
   secondaryText: {color: theme.colors.textSoft, fontSize: 12, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.7},
+  actionStatus: {color: theme.colors.lime, fontSize: 12, lineHeight: 17},
+  actionError: {color: theme.colors.red},
   activityRow: {borderBottomColor: theme.colors.panelEdge, borderBottomWidth: 1, paddingVertical: 8, gap: 3},
   activityText: {color: theme.colors.text, fontSize: 13},
   activityTime: {color: theme.colors.textDim, fontSize: 10},

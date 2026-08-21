@@ -1,0 +1,15 @@
+=== capture opened 2026-08-11T14:12:25.9026581-05:00 ===
+=== send: companion status ===
+companion status
+[COMP] enabled=1
+[COMP] external accessory=0 bleProxy=0 phoneConnected=0 phone=unknown rssi=0 ageMs=0
+[COMP] wio link=idle sx1262=0 textInput=0
+[COMP] phone=UNKNOWN work=PROBING
+[COMP] bleBegun=1 bleRadio=1 bleState=CONNECTING
+[COMP] ready link=0 gps=0 freshGps=0 ctrl=0 enrich=0
+[COMP] bleInitAgeMs=24079 scanStartAgeMs=23564 disconnReason=0
+[COMP] pendingEnrichMission=0 pendingEnrichNoise=0 pendingEnrichTotal=0
+[COMP] lastProbeAgeMs=24066 lastEnrichAgeMs=0
+[COMP] radioOwner=ble_gps
+[40265][I][BLE] worker stack free=8152B min=8152B
+=== capture closed 2026-08-11T14:12:34.0022842-05:00 ===

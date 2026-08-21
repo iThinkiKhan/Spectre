@@ -2,6 +2,7 @@
 #include "BootInfo.h"
 
 #include <Preferences.h>
+#include <esp_idf_version.h>
 #include <esp_system.h>
 
 namespace BootInfo {
@@ -27,6 +28,14 @@ const char* _rrName(uint8_t r) {
         case ESP_RST_WDT:       return "WDT";
         case ESP_RST_BROWNOUT:  return "BROWNOUT";
         case ESP_RST_SDIO:      return "SDIO";
+#if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 1, 0)
+        // Names must fit the 100px header slot on the Boot Summary screen.
+        case ESP_RST_USB:        return "USB";
+        case ESP_RST_JTAG:       return "JTAG";
+        case ESP_RST_EFUSE:      return "EFUSE";
+        case ESP_RST_PWR_GLITCH: return "PWRGLITCH";
+        case ESP_RST_CPU_LOCKUP: return "LOCKUP";
+#endif
         default:                return "UNKNOWN";
     }
 }
@@ -64,6 +73,13 @@ bool resetWasCleanish() {
         case ESP_RST_SW:
         case ESP_RST_DEEPSLEEP:
         case ESP_RST_EXT:
+#if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 1, 0)
+        // Host-initiated resets, not faults. The 1200bps-touch flash and any
+        // USB replug land here; before these cases existed they fell to the
+        // default and painted the Boot Summary header red on every flash.
+        case ESP_RST_USB:
+        case ESP_RST_JTAG:
+#endif
             return true;
         default:
             return false;

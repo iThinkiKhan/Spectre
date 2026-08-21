@@ -13,8 +13,8 @@ import android.location.LocationManager
 import android.os.Build
 import android.os.Bundle
 import android.os.Handler
+import android.os.HandlerThread
 import android.os.IBinder
-import android.os.Looper
 import android.util.Log
 import androidx.core.content.ContextCompat
 import com.google.android.gms.common.ConnectionResult
@@ -37,7 +37,14 @@ import org.json.JSONObject
 /** Field Mode GPS recorder writing the same buckets JS reads on startup. */
 class SpectreLocationService : Service(), LocationListener {
 
-  private val handler = Handler(Looper.getMainLooper())
+  // Everything below — fix ingestion, bucket bookkeeping and persistence —
+  // runs on this worker looper, never on the main thread. Fixes arrive here
+  // because both provider registrations are given this looper, so the whole
+  // pipeline is single-threaded and needs no locking. Previously a day's worth
+  // of history was re-serialised to JSON on the UI thread every 30 seconds.
+  private lateinit var worker: HandlerThread
+  private lateinit var handler: Handler
+
   private val prefs: SharedPreferences by lazy {
     applicationContext.getSharedPreferences("spectre_companion_store", Context.MODE_PRIVATE)
   }
@@ -64,6 +71,9 @@ class SpectreLocationService : Service(), LocationListener {
 
   override fun onCreate() {
     super.onCreate()
+    worker = HandlerThread("SpectreLocationSvc", android.os.Process.THREAD_PRIORITY_BACKGROUND)
+    worker.start()
+    handler = Handler(worker.looper)
     SpectreFieldService.ensureNotificationChannel(this)
   }
 
@@ -74,6 +84,23 @@ class SpectreLocationService : Service(), LocationListener {
       return START_NOT_STICKY
     }
 
+    if (intent?.action == ACTION_SET_LIVE) {
+      val wasLive = liveMode()
+      when (intent.getStringExtra(EXTRA_LIVE_SOURCE)) {
+        LIVE_SOURCE_LINK -> liveLinked = intent.getBooleanExtra(EXTRA_LIVE, false)
+        LIVE_SOURCE_FOREGROUND -> liveForeground = intent.getBooleanExtra(EXTRA_LIVE, false)
+      }
+      // Only pay for a re-registration when the effective mode actually flips.
+      if (active && liveMode() != wasLive) {
+        Log.i(LOG_TAG, "event=live_mode_changed live=${liveMode()} linked=$liveLinked fg=$liveForeground")
+        handler.post {
+          removeUpdates()
+          registerListeners()
+        }
+      }
+      return START_NOT_STICKY
+    }
+
     // Plain service: SpectreFieldService owns the foreground notification.
     active = true
     if (!hasLocationPermission()) {
@@ -81,14 +108,19 @@ class SpectreLocationService : Service(), LocationListener {
       return START_NOT_STICKY
     }
 
-    registerListeners()
+    handler.post { registerListeners() }
     return START_NOT_STICKY
   }
 
   override fun onDestroy() {
     active = false
-    removeUpdates()
-    flushNow()
+    // Drain on the worker so the final flush sees a consistent bucket map,
+    // then let the looper exit once that work has run.
+    handler.post {
+      removeUpdates()
+      flushNow()
+    }
+    worker.quitSafely()
     super.onDestroy()
   }
 
@@ -166,11 +198,19 @@ class SpectreLocationService : Service(), LocationListener {
     return try {
       val client = LocationServices.getFusedLocationProviderClient(this)
       // Slow, batched, high-accuracy fixes save wakeups without coarsening data.
+      // Accuracy is non-negotiable for enrichment, so priority and interval are
+      // fixed. Batching is where the power goes instead: a wide max-update
+      // delay lets the GNSS hardware buffer fixes and wake the AP once per
+      // window rather than every 20s. Fixes keep their true timestamps, so
+      // history and enrichment are unaffected — only delivery is deferred, and
+      // that is narrowed back down whenever something is actually watching.
+      val batchDelayMs =
+          if (liveMode()) REQUEST_MAX_BATCH_DELAY_LIVE_MS else REQUEST_MAX_BATCH_DELAY_IDLE_MS
       val request =
           LocationRequest.Builder(REQUEST_PRIORITY, REQUEST_INTERVAL_MS)
               .setMinUpdateIntervalMillis(REQUEST_INTERVAL_MS)
               .setMinUpdateDistanceMeters(REQUEST_MIN_DISTANCE_M)
-              .setMaxUpdateDelayMillis(REQUEST_MAX_BATCH_DELAY_MS)
+              .setMaxUpdateDelayMillis(batchDelayMs)
               .setWaitForAccurateLocation(false)
               .build()
       val callback =
@@ -181,12 +221,12 @@ class SpectreLocationService : Service(), LocationListener {
               }
             }
           }
-      client.requestLocationUpdates(request, callback, Looper.getMainLooper())
+      client.requestLocationUpdates(request, callback, handler.looper)
       fusedClient = client
       fusedCallback = callback
       Log.i(
           LOG_TAG,
-          "event=fused_registered intervalMs=$REQUEST_INTERVAL_MS minDistanceM=$REQUEST_MIN_DISTANCE_M maxBatchMs=$REQUEST_MAX_BATCH_DELAY_MS",
+          "event=fused_registered intervalMs=$REQUEST_INTERVAL_MS minDistanceM=$REQUEST_MIN_DISTANCE_M maxBatchMs=$batchDelayMs live=${liveMode()}",
       )
       true
     } catch (error: SecurityException) {
@@ -210,7 +250,7 @@ class SpectreLocationService : Service(), LocationListener {
             REQUEST_INTERVAL_MS,
             REQUEST_MIN_DISTANCE_M,
             this,
-            Looper.getMainLooper(),
+            handler.looper,
         )
         Log.i(
             LOG_TAG,
@@ -379,6 +419,8 @@ class SpectreLocationService : Service(), LocationListener {
         }
         val bucket = buckets.getOrPut(bucketId) { mutableListOf() }
         bucket.add(marker)
+        totalSamples += 1
+        rememberMarker(marker, source)
         dirtyBuckets.add(bucketId)
         activeAcc.anchorTimestamp = timestamp
         enforceCaps()
@@ -397,17 +439,36 @@ class SpectreLocationService : Service(), LocationListener {
     stationaryAccumulator = null
     val bucket = buckets.getOrPut(bucketId) { mutableListOf() }
     bucket.add(fix)
+    totalSamples += 1
+    rememberMarker(fix, source)
     dirtyBuckets.add(bucketId)
     enforceCaps()
     return true
   }
 
+  // The marker this source last wrote. Fixes arrive newest-last, so the answer
+  // is nearly always the entry we appended on the previous call; the full scan
+  // below allocated a filtered, sorted copy of every bucket key on every fix
+  // just to rediscover that.
+  private var cachedMarker: JSONObject? = null
+  private var cachedMarkerSource: String? = null
+
+  private fun rememberMarker(marker: JSONObject, source: String) {
+    cachedMarker = marker
+    cachedMarkerSource = source
+  }
+
   private fun findPreviousMarker(currentBucketId: Long, source: String): JSONObject? {
+    cachedMarker?.let { marker ->
+      if (cachedMarkerSource == source) return marker
+    }
+
     val ids = buckets.keys.filter { it <= currentBucketId }.sortedDescending()
     for (id in ids) {
       val list = buckets[id] ?: continue
       for (i in list.indices.reversed()) {
         if (list[i].optString("source") == source) {
+          rememberMarker(list[i], source)
           return list[i]
         }
       }
@@ -415,21 +476,27 @@ class SpectreLocationService : Service(), LocationListener {
     return null
   }
 
+  // Running total, maintained by the callers below. Summing every bucket on
+  // every fix made ingestion O(total samples) against a 200k cap.
+  private var totalSamples = 0
+
   private fun enforceCaps() {
     val cutoff = System.currentTimeMillis() - MAX_AGE_MS
     val cutoffBucket = cutoff / DAY_MS
     val expired = buckets.keys.filter { it < cutoffBucket - 1 }.toList()
     for (id in expired) {
-      buckets.remove(id)
+      totalSamples -= buckets.remove(id)?.size ?: 0
       dirtyBuckets.add(id)
     }
 
-    var total = 0
-    for (list in buckets.values) total += list.size
-    if (total <= MAX_SAMPLES) return
+    if (totalSamples <= MAX_SAMPLES) {
+      // Verify the cache only when something was actually dropped; the check
+      // scans a bucket, and this runs on every fix.
+      if (expired.isNotEmpty()) dropCachedMarkerIfEvicted()
+      return
+    }
 
-    val excess = total - MAX_SAMPLES
-    var remaining = excess
+    var remaining = totalSamples - MAX_SAMPLES
     val sortedIds = buckets.keys.sorted()
     for (id in sortedIds) {
       if (remaining <= 0) break
@@ -441,7 +508,21 @@ class SpectreLocationService : Service(), LocationListener {
         for (i in 0 until drop) list.removeAt(0)
       }
       dirtyBuckets.add(id)
+      totalSamples -= drop
       remaining -= drop
+    }
+    dropCachedMarkerIfEvicted()
+  }
+
+  // Eviction takes the oldest samples and the cached marker is the newest, so
+  // this practically never fires — but a stale pointer into a dropped bucket
+  // would silently corrupt stationary averaging, so verify rather than assume.
+  private fun dropCachedMarkerIfEvicted() {
+    val marker = cachedMarker ?: return
+    val bucketId = marker.optLong("timestamp", 0L) / DAY_MS
+    if (buckets[bucketId]?.contains(marker) != true) {
+      cachedMarker = null
+      cachedMarkerSource = null
     }
   }
 
@@ -461,6 +542,7 @@ class SpectreLocationService : Service(), LocationListener {
         }
         if (list.isNotEmpty()) {
           buckets[id] = list
+          totalSamples += list.size
         }
       }
       val summary = summarizeBuckets()
@@ -524,10 +606,11 @@ class SpectreLocationService : Service(), LocationListener {
       editor.putString(INDEX_KEY, arr.toString())
     }
     editor.apply()
-    val summary = summarizeBuckets()
+    // Uses the running total rather than summarizeBuckets(): walking every
+    // sample once per flush purely to log a count is not worth it.
     Log.i(
         LOG_TAG,
-        "event=flush buckets=${buckets.size} dirty=$dirtyCount samples=${summary.samples} oldest=${summary.oldest} newest=${summary.newest}",
+        "event=flush buckets=${buckets.size} dirty=$dirtyCount samples=$totalSamples",
     )
   }
 
@@ -567,8 +650,47 @@ class SpectreLocationService : Service(), LocationListener {
 
   companion object {
     const val ACTION_STOP = "com.spectre.companion.action.STOP_LOCATION_RECORDER"
+    const val ACTION_SET_LIVE = "com.spectre.companion.action.SET_LOCATION_LIVE"
+    const val EXTRA_LIVE = "com.spectre.companion.extra.LIVE"
+    const val EXTRA_LIVE_SOURCE = "com.spectre.companion.extra.LIVE_SOURCE"
+    const val LIVE_SOURCE_LINK = "link"
+    const val LIVE_SOURCE_FOREGROUND = "foreground"
     private const val LOG_TAG = "SpectreLocationSvc"
     @Volatile private var active = false
+
+    // Either input is enough to want prompt delivery.
+    @Volatile private var liveLinked = false
+    @Volatile private var liveForeground = false
+
+    private fun liveMode(): Boolean = liveLinked || liveForeground
+
+    /** A Spectre device attached or detached. */
+    fun setLinked(context: Context, linked: Boolean) {
+      setLive(context, LIVE_SOURCE_LINK, linked)
+    }
+
+    /** The app moved to or from the foreground. */
+    fun setForeground(context: Context, foreground: Boolean) {
+      setLive(context, LIVE_SOURCE_FOREGROUND, foreground)
+    }
+
+    private fun setLive(context: Context, source: String, live: Boolean) {
+      if (!active) {
+        // Nothing running yet; latch it so the next start picks it up.
+        when (source) {
+          LIVE_SOURCE_LINK -> liveLinked = live
+          LIVE_SOURCE_FOREGROUND -> liveForeground = live
+        }
+        return
+      }
+      val intent =
+          Intent(context, SpectreLocationService::class.java).apply {
+            action = ACTION_SET_LIVE
+            putExtra(EXTRA_LIVE_SOURCE, source)
+            putExtra(EXTRA_LIVE, live)
+          }
+      runCatching { context.startService(intent) }
+    }
 
     // Mirrors LOCATION_HISTORY_* constants in LocationHistoryStore.ts.
     private const val DAY_MS = 24L * 60 * 60 * 1000
@@ -583,7 +705,11 @@ class SpectreLocationService : Service(), LocationListener {
     private const val REQUEST_INTERVAL_MS = 20_000L
     private const val REQUEST_MIN_DISTANCE_M = 0f
     // Fused-only batch window; keep priority high for enrichment quality.
-    private const val REQUEST_MAX_BATCH_DELAY_MS = 60_000L
+    // Live = a device is linked or the app is in front and something is being
+    // watched, so fixes must land promptly. Idle = nothing is reading them
+    // right now, so let the GNSS hardware buffer and wake the AP far less.
+    private const val REQUEST_MAX_BATCH_DELAY_LIVE_MS = 60_000L
+    private const val REQUEST_MAX_BATCH_DELAY_IDLE_MS = 5 * 60_000L
     private val REQUEST_PRIORITY = Priority.PRIORITY_HIGH_ACCURACY
     private const val STATIONARY_HEARTBEAT_MS = 60_000L
     private const val PERSIST_DEBOUNCE_MS = 30_000L

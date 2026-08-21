@@ -6,6 +6,7 @@
 #include "../core/DebugLog.h"
 #include "../core/EventBus.h"
 #include "../core/ScreenEnum.h"
+#include "../core/ScreenNavigation.h"
 #include "../core/SpectreState.h"
 #include "BLEManager.h"
 #include "DashboardStreamer.h"
@@ -27,6 +28,7 @@ constexpr const char* TAG = "CMD";
 // the storage characteristic, just request-driven here.
 extern PhoneStorageFrameV1 _buildPhoneStorageFrame();
 extern void companionRequestEnrichNow();
+extern void companionRequestUploadNow();
 
 bool CommandDispatcher::dispatch(const uint8_t* request,
                                  size_t requestLen,
@@ -320,7 +322,7 @@ int CommandDispatcher::handleStatus(uint8_t* payload, size_t cap) {
     out.uptimeMs = millis();
 
     uint8_t missionProfile = 0;
-    Screen  currentScreen  = SCREEN_LORA;
+    Screen  currentScreen  = DEFAULT_GENERAL_SCREEN;
     STATE_READ_BEGIN();
     missionProfile = g_state.activeMissionProfile;
     currentScreen  = g_state.currentScreen;
@@ -409,7 +411,7 @@ bool CommandDispatcher::populateDashboardSnapshot(CmdDashboardSnapshotV1& out) {
     // Single read pass under the state lock so the snapshot is internally
     // consistent.
     uint8_t  missionProfile = 0;
-    Screen   currentScreen = SCREEN_LORA;
+    Screen   currentScreen = DEFAULT_GENERAL_SCREEN;
     uint8_t  companionEnabled = 0;
     uint8_t  companionPhone = 0;
     uint8_t  companionWork = 0;
@@ -529,12 +531,11 @@ bool CommandDispatcher::handleEnrichNow() {
 }
 
 bool CommandDispatcher::handleUploadNow() {
-    // Resume any phone- or operator-initiated upload pause.  If the upload
-    // pipeline is already active, this is a no-op.  We do not "force" an
-    // upload mid-cycle — that's owned by the scheduler.
-    const bool ok = MQTT_MGR.requestUploadResume("phone_upload_now");
-    DLOG_INFO(TAG, "phone upload-now resume=%d", ok ? 1 : 0);
-    return true;  // resume request is best-effort; never fail the command
+    // Defer until after the encrypted response has been written. TaskHardware
+    // then closes the companion link, builds the upload index, and takes Wi-Fi.
+    companionRequestUploadNow();
+    DLOG_INFO(TAG, "phone upload-now accepted");
+    return true;
 }
 
 bool CommandDispatcher::handleTagSession(const uint8_t* payload, size_t len) {

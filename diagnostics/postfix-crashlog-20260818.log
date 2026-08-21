@@ -1,0 +1,52 @@
+===== CMD: crash log =====
+crash log
+[BOOT] crash log: 10 entries, seq 0..2288 (oldest first)
+[BOOT] #1 seq=1957 [CRASH?] phase=backlog_enrich owner=7 pendingUpload=31 heapFree=66K largest=30K min=62K uptime=15s
+[304196][W][CORE] crash? seq=1957 phase=backlog_enrich owner=7 pendingUpload=31 heapFree=66K largest=30K min=62K uptime=15s
+[BOOT] #2 seq=1992 [CRASH?] phase=backlog_enrich owner=7 pendingUpload=31 heapFree=66K largest=30K min=62K uptime=14s
+[304197][W][CORE] crash? seq=1992 phase=backlog_enrich owner=7 pendingUpload=31 heapFree=66K largest=30K min=62K uptime=14s
+[BOOT] #3 seq=2027 [CRASH?] phase=backlog_enrich owner=7 pendingUpload=31 heapFree=66K largest=30K min=62K uptime=14s
+[304197][W][CORE] crash? seq=2027 phase=backlog_enrich owner=7 pendingUpload=31 heapFree=66K largest=30K min=62K uptime=14s
+[BOOT] #4 seq=2062 [CRASH?] phase=backlog_enrich owner=7 pendingUpload=31 heapFree=66K largest=30K min=62K uptime=14s
+[304198][W][CORE] crash? seq=2062 phase=backlog_enrich owner=7 pendingUpload=31 heapFree=66K largest=30K min=62K uptime=14s
+[BOOT] #5 seq=2097 [CRASH?] phase=backlog_enrich owner=7 pendingUpload=31 heapFree=66K largest=30K min=63K uptime=14s
+[304199][W][CORE] crash? seq=2097 phase=backlog_enrich owner=7 pendingUpload=31 heapFree=66K largest=30K min=63K uptime=14s
+[BOOT] #6 seq=2132 [CRASH?] phase=backlog_enrich owner=7 pendingUpload=31 heapFree=66K largest=30K min=63K uptime=15s
+[304199][W][CORE] crash? seq=2132 phase=backlog_enrich owner=7 pendingUpload=31 heapFree=66K largest=30K min=63K uptime=15s
+[BOOT] #7 seq=2167 [CRASH?] phase=backlog_enrich owner=7 pendingUpload=31 heapFree=66K largest=30K min=63K uptime=15s
+[304200][W][CORE] crash? seq=2167 phase=backlog_enrich owner=7 pendingUpload=31 heapFree=66K largest=30K min=63K uptime=15s
+[BOOT] #8 seq=2202 [CRASH?] phase=backlog_enrich owner=7 pendingUpload=31 heapFree=66K largest=30K min=62K uptime=14s
+[304201][W][CORE] crash? seq=2202 phase=backlog_enrich owner=7 pendingUpload=31 heapFree=66K largest=30K min=62K uptime=14s
+[BOOT] #9 seq=2287 [CRASH?] phase=wifi_capture owner=1 pendingUpload=150 heapFree=35K largest=24K min=17K uptime=294s
+[304201][W][CORE] crash? seq=2287 phase=wifi_capture owner=1 pendingUpload=150 heapFree=35K largest=24K min=17K uptime=294s
+[BOOT] #10 seq=2288 [ok] phase=runtime_health owner=1 pendingUpload=150 heapFree=35K largest=24K min=17K uptime=300s
+[312937][I][STORAGE] Routine maintenance requests coalesced count=2 latest=snapshot_lagged source=append_metadata_deferred flags=dirty_spool_index|snapshot_lagged
+[313193][I][STORAGE] worker ui refresh serviced uiRefreshServiceCount=19 uiDeferred=30 uiFlush=18 pressure=0 usedPct=3 pending=151
+===== CMD: heap status =====
+heap status
+[HEAP] 8bit total=8457KB free=4438KB largest=4352KB
+[HEAP] internal total=265KB free=30KB largest=18KB
+[HEAP] psram total=8192KB free=4407KB largest=4352KB
+[HEAP] uploadIndex=0 enrichWindow=0 maint=dirty_spool_index|snapshot_lagged owner=WIFI_CAPTURE
+[323628][I][STORAGE] worker ui refresh serviced uiRefreshServiceCount=20 uiDeferred=31 uiFlush=19 pressure=0 usedPct=3 pending=152
+[330053][I][HEAP] heap free=4438KB min=4424KB largest=4352KB frag=1% internalFree=30KB internalLargest=18KB psramFree=4407KB core=1/1% owner=WIFI_CAPTURE nets=10 pendingUpload=153 pendingEnrich=2
+[HEALTH] time=2026-08-18 16:32:24 src=ntp
+[HEALTH] heap used=4020/8457KB free=4438KB min=4424KB largest=4352KB frag=1%
+[HEALTH] internal used=235/265KB free=30KB min=17KB largest=18KB
+[HEALTH] psram used=3785/8192KB free=4407KB largest=4352KB
+[HEALTH] stack free_min: core0=8KB/15KB core1=3KB/8KB
+[HEALTH] loopTask free_min=3084B/5120B
+[HEALTH] core usage: core0=1% core1=1%
+[HEALTH] power=usb state=usb batt=100% 4742mV trend=-1mV/min runtime=0min cap=1100mAh charging=0
+[HEALTH] radio=WIFI_CAPTURE wifi=0 ble=0 gps=0 nets=10 pendingUpload=153 pendingEnrich=2
+[HEALTH] subghz=NONE mode=OFF pkts=0 nodes=0
+[330056][I][STACK] TaskStorage watermark=2456B
+[330056][I][STORAGE] RAMSpool enq=28 cons=28 inflight=0/1024 high=2 pressure=0 drop[full=0 big=0 noise=0 p3Evict=0 p3Drop=0 p2Drop=0 p1Fail=0] free=1024
+[330057][I][STORAGE] RAMSpool enqueue probe[ok=20 drop=0] device[ok=8 drop=0]
+[330057][I][STORAGE] RAMSpool worker probe[ok=20 sup=0 drop=0 fail=0 slow=0] device[ok=8 sup=0 drop=0 fail=0 slow=0] slowTotal=0 maxMs=0
+[330057][I][STORAGE] RAMSpool prioEnq p0=0 p1=0 p2=28 p3=0
+[330057][I][STORAGE] RAMSpool lanes p1=0/0 p2=0/1 p3=0/0
+[330196][I][STORAGE] worker ui refresh serviced uiRefreshServiceCount=21 uiDeferred=32 uiFlush=20 pressure=0 usedPct=3 pending=153
+[331013][I][STACK] TaskButtons watermark=2084B min=2084B
+[331116][I][STACK] TaskHardware watermark=8064B min=8064B
+

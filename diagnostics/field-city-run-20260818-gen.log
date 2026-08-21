@@ -1,0 +1,50 @@
+===== CMD: crash log =====
+[30373][I][ENTITY] Rebuild complete entities=146 observations=5155 ms=22659
+[30374][I][ENTITY] Ready entities=146 observations=5155 links=98304 psram=3088KB selftest=pass rebuild=ok
+[30374][I][BOOTSTEP] entity ready
+[30398][I][PWNY] PMKID capture index loaded count=0
+[30399][I][WIFI] WiFiManager initialized
+[30399][I][BOOTSTEP] wifi manager ready allocated=1
+[30399][I][BOOTSTEP] radio arbiter ready
+[30399][I][BOOTSTEP] presentation sync begin
+[30400][I][BOOTSTEP] presentation sync ready
+[30707][I][WIFI] Allocation: OK
+[30815][I][WIFI] Promiscuous: YES
+[30815][I][WIFI] Promiscuous mode started data=0
+[30820][I][CORE] Hardware ready
+[31022][I][STACK] TaskButtons watermark=2084B min=2084B
+crash log
+[BOOT] crash log: 5 entries, seq 0..24 (oldest first)
+[BOOT] #1 seq=19 [CRASH?] phase=storage_boot owner=0 pendingUpload=361 heapFree=161K largest=115K min=132K uptime=2s
+[31043][W][CORE] crash? seq=19 phase=storage_boot owner=0 pendingUpload=361 heapFree=161K largest=115K min=132K uptime=2s
+[BOOT] #2 seq=20 [CRASH?] phase=storage_boot owner=0 pendingUpload=390 heapFree=161K largest=115K min=132K uptime=2s
+[31045][W][CORE] crash? seq=20 phase=storage_boot owner=0 pendingUpload=390 heapFree=161K largest=115K min=132K uptime=2s
+[BOOT] #3 seq=21 [CRASH?] phase=storage_boot owner=0 pendingUpload=200 heapFree=161K largest=115K min=132K uptime=2s
+[31046][W][CORE] crash? seq=21 phase=storage_boot owner=0 pendingUpload=200 heapFree=161K largest=115K min=132K uptime=2s
+[BOOT] #4 seq=22 [CRASH?] phase=storage_boot owner=0 pendingUpload=210 heapFree=161K largest=115K min=132K uptime=2s
+[31048][W][CORE] crash? seq=22 phase=storage_boot owner=0 pendingUpload=210 heapFree=161K largest=115K min=132K uptime=2s
+[BOOT] #5 seq=24 [CRASH?] phase=wifi_capture owner=1 pendingUpload=4944 heapFree=93K largest=53K min=93K uptime=30s
+[31049][W][CORE] crash? seq=24 phase=wifi_capture owner=1 pendingUpload=4944 heapFree=93K largest=53K min=93K uptime=30s
+[31053][I][STACK] TaskHardware watermark=12808B min=12808B
+[31056][I][HEAP] heap free=4565KB min=4560KB largest=4352KB frag=4% internalFree=94KB internalLargest=54KB psramFree=4471KB core=0/0% owner=WIFI_CAPTURE nets=0 pendingUpload=4944 pendingEnrich=10
+[HEALTH] time=2026-08-18 15:07:38 src=ntp
+[HEALTH] heap used=3887/8452KB free=4565KB min=4560KB largest=4352KB frag=4%
+[HEALTH] internal used=166/260KB free=94KB min=89KB largest=54KB
+[HEALTH] psram used=3721/8192KB free=4471KB largest=4352KB
+[HEALTH] stack free_min: core0=13KB/18KB core1=7KB/10KB
+[HEALTH] loopTask free_min=3084B/5120B
+[HEALTH] core usage: core0=0% core1=0%
+[HEALTH] power=usb state=usb batt=100% 4524mV trend=0mV/min runtime=0min cap=1100mAh charging=0
+[HEALTH] radio=WIFI_CAPTURE wifi=0 ble=0 gps=0 nets=0 pendingUpload=4944 pendingEnrich=10
+[HEALTH] subghz=NONE mode=OFF pkts=0 nodes=0
+[31062][I][STACK] TaskStorage watermark=3496B
+[31062][I][STORAGE] RAMSpool enq=0 cons=0 inflight=0/1024 high=0 pressure=0 drop[full=0 big=0 noise=0 p3Evict=0 p3Drop=0 p2Drop=0 p1Fail=0] free=1024
+[31063][I][STORAGE] RAMSpool enqueue probe[ok=0 drop=0] device[ok=0 drop=0]
+[31063][I][STORAGE] RAMSpool worker probe[ok=0 sup=0 drop=0 fail=0 slow=0] device[ok=0 sup=0 drop=0 fail=0 slow=0] slowTotal=0 maxMs=0
+[31063][I][STORAGE] RAMSpool prioEnq p0=0 p1=0 p2=0 p3=0
+[31064][I][STORAGE] RAMSpool lanes p1=0/0 p2=0/0 p3=0/0
+[31073][W][CORE] TaskHardware loop gap=253ms owner=WIFI_CAPTURE pendingUpload=4944 maintPending=0 suppressed=0
+[33609][I][STORAGE] Spool rotate index deferred owner=WIFI_CAPTURE reason=capture seg=709 format=bin_v2
+[33645][I][STORAGE] Routine maintenance requests coalesced count=1 latest=snapshot_lagged source=append_metadata_deferred flags=dirty_spool_index|snapshot_lagged
+[33967][I][STORAGE] worker ui refresh serviced uiRefreshServiceCount=1 uiDeferred=2 uiFlush=1 pressure=0 usedPct=31 pending=4946
+

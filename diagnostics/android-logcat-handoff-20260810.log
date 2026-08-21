@@ -1,0 +1,198 @@
+
+08-10 13:07:04.304 31770 31883 D WM-PackageManagerHelper: Skipping component enablement for androidx.work.impl.background.systemalarm.RescheduleReceiver
+08-10 13:07:04.341  5626  5626 D AvailableGridTilesViewModel: loadAllTiles() 68: [Wi-Fi, Bluetooth, Autorotate, Airplanemode, Flashlight, Mobiledata, MobileHotspot, Location, Eye comfort shield, Do not disturb, Camera access, Microphone access, Sync, Take screenshot, Extra dim, High contrast fonts, 
+Color inversion, Color filter, Color correction, Bluetooth hearing aids, Music Share, Audio broadcast, Live Caption, Song Search, Sound Notifications, Live Transcribe, Always OnDisplay, Interpreter, Quick Share, Screen recorder, Secure Wi-Fi, Multi control, Kids, Power saving, Battery protection, 
+Performance profile, Wireless power sharing, Call & text on other devices, Link to Windows, NFC, SecureFolder, Scan QR code, Finder, Wireless DeX, Emergency sharing, DolbyAtmos, Wi-Fi Calling, AliExpress ScreenShop, In-Store Code, Search, Lens, Wallet, TV Remote, ChatGPT, Create note, Diagnostics, 
+Teleport, WireGuard, Autofill, Password generator, My vault, BrightBarWithTile, VolumeBarWithTile, MediaPlayer, Nearby devices, SmartThings, Smart View, Modes]
+08-10 13:07:04.341  5626  5815 I TileFeatureChecker: isAvailableCustomTile C(com.android.settings/com.samsung.android.settings.bluetooth.BluetoothCastTile)  com.android.settings/com.samsung.android.settings.bluetooth.BluetoothCastTile
+08-10 13:07:04.341  5626  5815 D AvailableCustomTileRepository: Available installed tile, ComponentInfo{com.android.settings/com.samsung.android.settings.bluetooth.BluetoothCastTile}
+08-10 13:07:04.341  5626  5815 I TileFeatureChecker: isAvailableCustomTile C(com.android.settings/com.samsung.android.settings.bluetooth.audiobroadcast.SecAuracastTile)  com.android.settings/com.samsung.android.settings.bluetooth.audiobroadcast.SecAuracastTile
+08-10 13:07:04.341  5626  5815 D AvailableCustomTileRepository: Available installed tile, ComponentInfo{com.android.settings/com.samsung.android.settings.bluetooth.audiobroadcast.SecAuracastTile}
+08-10 13:07:04.341  5626  5815 I TileFeatureChecker: isAvailableCustomTile C(com.google.android.as/com.google.android.apps.miphone.aiai.captions.quicksetting.CaptionsTileService)  com.google.android.as/com.google.android.apps.miphone.aiai.captions.quicksetting.CaptionsTileService
+08-10 13:07:04.341  5626  5815 D AvailableCustomTileRepository: Available installed tile, ComponentInfo{com.google.android.as/com.google.android.apps.miphone.aiai.captions.quicksetting.CaptionsTileService}
+08-10 13:07:04.341  5626  5815 I TileFeatureChecker: isAvailableCustomTile C(com.google.android.googlequicksearchbox/com.google.android.apps.search.soundsearch.quicksettings.SoundSearchTileService)  
+com.google.android.googlequicksearchbox/com.google.android.apps.search.soundsearch.quicksettings.SoundSearchTileService
+08-10 13:07:04.341  5626  5815 D AvailableCustomTileRepository: Available installed tile, ComponentInfo{com.google.android.googlequicksearchbox/com.google.android.apps.search.soundsearch.quicksettings.SoundSearchTileService}
+08-10 13:07:04.341  5626  5815 I TileFeatureChecker: isAvailableCustomTile C(com.google.audio.hearing.visualization.accessibility.scribe/com.google.audio.hearing.visualization.accessibility.dolphin.service.DolphinTileService)  
+com.google.audio.hearing.visualization.accessibility.scribe/com.google.audio.hearing.visualization.accessibility.dolphin.service.DolphinTileService
+08-10 13:07:04.341  5626  5815 D AvailableCustomTileRepository: Available installed tile, ComponentInfo{com.google.audio.hearing.visualization.accessibility.scribe/com.google.audio.hearing.visualization.accessibility.dolphin.service.DolphinTileService}
+08-10 13:07:04.341  5626  5815 I TileFeatureChecker: isAvailableCustomTile C(com.google.audio.hearing.visualization.accessibility.scribe/.service.ScribeTileService)  com.google.audio.hearing.visualization.accessibility.scribe/.service.ScribeTileService
+08-10 13:07:04.341  5626  5815 D AvailableCustomTileRepository: Available installed tile, ComponentInfo{com.google.audio.hearing.visualization.accessibility.scribe/com.google.audio.hearing.visualization.accessibility.scribe.service.ScribeTileService}
+08-10 13:07:04.341  5626  5815 I TileFeatureChecker: isAvailableCustomTile C(com.samsung.android.app.aodservice/.settings.AODTileService)  com.samsung.android.app.aodservice/.settings.AODTileService
+08-10 13:07:04.341  5626  5815 D AvailableCustomTileRepository: Available installed tile, ComponentInfo{com.samsung.android.app.aodservice/com.samsung.android.app.aodservice.settings.AODTileService}
+08-10 13:07:04.341  5626  5815 I TileFeatureChecker: isAvailableCustomTile C(com.samsung.android.app.interpreter/.interpretation.view.InterpreterQuickTileService)  com.samsung.android.app.interpreter/.interpretation.view.InterpreterQuickTileService
+08-10 13:07:04.341  5626  5815 D AvailableCustomTileRepository: Available installed tile, ComponentInfo{com.samsung.android.app.interpreter/com.samsung.android.app.interpreter.interpretation.view.InterpreterQuickTileService}
+08-10 13:07:04.341  5626  5815 I TileFeatureChecker: isAvailableCustomTile C(com.samsung.android.app.routines/.LifestyleModeTile)  com.samsung.android.app.routines/.LifestyleModeTile
+08-10 13:07:04.341  5626  5815 D AvailableCustomTileRepository: Available installed tile, ComponentInfo{com.samsung.android.app.routines/com.samsung.android.app.routines.LifestyleModeTile}
+08-10 13:07:04.341  5626  5815 I TileFeatureChecker: isAvailableCustomTile C(com.samsung.android.app.sharelive/.presentation.quickpanel.DeviceVisibilityTileService)  com.samsung.android.app.sharelive/.presentation.quickpanel.DeviceVisibilityTileService
+08-10 13:07:04.341  5626  5815 D AvailableCustomTileRepository: Available installed tile, ComponentInfo{com.samsung.android.app.sharelive/com.samsung.android.app.sharelive.presentation.quickpanel.DeviceVisibilityTileService}
+08-10 13:07:04.341  5626  5815 I TileFeatureChecker: isAvailableCustomTile C(com.samsung.android.app.smartcapture/com.samsung.android.app.screenrecorder.view.RecordScreenTile)  com.samsung.android.app.smartcapture/com.samsung.android.app.screenrecorder.view.RecordScreenTile
+08-10 13:07:04.341  5626  5815 D AvailableCustomTileRepository: Available installed tile, ComponentInfo{com.samsung.android.app.smartcapture/com.samsung.android.app.screenrecorder.view.RecordScreenTile}
+08-10 13:07:04.341  5626  5815 D AvailableCustomTileRepository: tileForDexMode, ComponentInfo{com.samsung.android.app.smartcapture/com.samsung.android.app.screenrecorder.view.DexRecordScreenTile}
+08-10 13:07:04.341  5626  5815 I TileFeatureChecker: isAvailableCustomTile C(com.samsung.android.fast/.quicksetting.SecureWifiTile)  com.samsung.android.fast/.quicksetting.SecureWifiTile
+08-10 13:07:04.341  5626  5815 D AvailableCustomTileRepository: Available installed tile, ComponentInfo{com.samsung.android.fast/com.samsung.android.fast.quicksetting.SecureWifiTile}
+08-10 13:07:04.341  5626  5815 I TileFeatureChecker: isAvailableCustomTile C(com.samsung.android.inputshare/.settings.MCTileService)  com.samsung.android.inputshare/.settings.MCTileService
+08-10 13:07:04.341  5626  5815 D AvailableCustomTileRepository: Available installed tile, ComponentInfo{com.samsung.android.inputshare/com.samsung.android.inputshare.settings.MCTileService}
+08-10 13:07:04.341  5626  5815 I TileFeatureChecker: isAvailableCustomTile C(com.samsung.android.kidsinstaller/.quickpanel.service.KidsTileService)  com.samsung.android.kidsinstaller/.quickpanel.service.KidsTileService
+08-10 13:07:04.341  5626  5815 D AvailableCustomTileRepository: Available installed tile, ComponentInfo{com.samsung.android.kidsinstaller/com.samsung.android.kidsinstaller.quickpanel.service.KidsTileService}
+08-10 13:07:04.341  5626  5815 I TileFeatureChecker: isAvailableCustomTile C(com.samsung.android.lool/com.samsung.android.sm.battery.ui.mode.BatteryModeTile)  com.samsung.android.lool/com.samsung.android.sm.battery.ui.mode.BatteryModeTile
+08-10 13:07:04.341  5626  5815 D AvailableCustomTileRepository: Available installed tile, ComponentInfo{com.samsung.android.lool/com.samsung.android.sm.battery.ui.mode.BatteryModeTile}
+08-10 13:07:04.342  5626  5815 I TileFeatureChecker: isAvailableCustomTile C(com.samsung.android.lool/com.samsung.android.sm.battery.ui.setting.tile.BatteryProtectionTile)  com.samsung.android.lool/com.samsung.android.sm.battery.ui.setting.tile.BatteryProtectionTile
+08-10 13:07:04.342  5626  5815 D AvailableCustomTileRepository: Available installed tile, ComponentInfo{com.samsung.android.lool/com.samsung.android.sm.battery.ui.setting.tile.BatteryProtectionTile}
+08-10 13:07:04.342  5626  5815 I TileFeatureChecker: isAvailableCustomTile C(com.samsung.android.lool/com.samsung.android.sm.perfopt.PerfOptTile)  com.samsung.android.lool/com.samsung.android.sm.perfopt.PerfOptTile
+08-10 13:07:04.342  5626  5815 D AvailableCustomTileRepository: Available installed tile, ComponentInfo{com.samsung.android.lool/com.samsung.android.sm.perfopt.PerfOptTile}
+08-10 13:07:04.342  5626  5815 I TileFeatureChecker: isAvailableCustomTile C(com.samsung.android.lool/com.samsung.android.sm.powershare.PowerShareTileService)  com.samsung.android.lool/com.samsung.android.sm.powershare.PowerShareTileService
+08-10 13:07:04.342  5626  5815 D AvailableCustomTileRepository: Available installed tile, ComponentInfo{com.samsung.android.lool/com.samsung.android.sm.powershare.PowerShareTileService}
+08-10 13:07:04.342  5626  5815 I TileFeatureChecker: isAvailableCustomTile C(com.samsung.android.mdecservice/com.samsung.android.cmcsettings.UI.qstiles.MdecServiceTiles)  com.samsung.android.mdecservice/com.samsung.android.cmcsettings.UI.qstiles.MdecServiceTiles
+08-10 13:07:04.342  5626  5815 D AvailableCustomTileRepository: Available installed tile, ComponentInfo{com.samsung.android.mdecservice/com.samsung.android.cmcsettings.UI.qstiles.MdecServiceTiles}
+08-10 13:07:04.342  5626  5815 I TileFeatureChecker: isAvailableCustomTile C(com.samsung.android.mdx/.windowslink.tileservice.SeYourPhoneTileService)  com.samsung.android.mdx/.windowslink.tileservice.SeYourPhoneTileService
+08-10 13:07:04.342  5626  5815 D AvailableCustomTileRepository: Available installed tile, ComponentInfo{com.samsung.android.mdx/com.samsung.android.mdx.windowslink.tileservice.SeYourPhoneTileService}
+08-10 13:07:04.342  5626  5815 I TileFeatureChecker: isAvailableCustomTile C(com.samsung.android.mydevice/.quicksettings.MyDeviceTileService)  com.samsung.android.mydevice/.quicksettings.MyDeviceTileService
+08-10 13:07:04.342  5626  5815 D AvailableCustomTileRepository: Available installed tile, ComponentInfo{com.samsung.android.mydevice/com.samsung.android.mydevice.quicksettings.MyDeviceTileService}
+08-10 13:07:04.342  5626  5815 I TileFeatureChecker: isAvailableCustomTile C(com.samsung.android.nfc/.quicktile.NfcTile)  com.samsung.android.nfc/.quicktile.NfcTile
+08-10 13:07:04.342  5626  5815 D AvailableCustomTileRepository: Available installed tile, ComponentInfo{com.samsung.android.nfc/com.samsung.android.nfc.quicktile.NfcTile}
+08-10 13:07:04.342  5626  5815 I TileFeatureChecker: isAvailableCustomTile C(com.samsung.android.smartmirroring/.tile.SmartMirroringTile)  com.samsung.android.smartmirroring/.tile.SmartMirroringTile
+08-10 13:07:04.342  5626  5815 D AvailableCustomTileRepository: Available installed tile, ComponentInfo{com.samsung.android.smartmirroring/com.samsung.android.smartmirroring.tile.SmartMirroringTile}
+08-10 13:07:04.342  5626  5815 I TileFeatureChecker: isAvailableCustomTile C(com.samsung.knox.securefolder/.switcher.SecureFolderTile)  com.samsung.knox.securefolder/.switcher.SecureFolderTile
+08-10 13:07:04.342  5626  5815 D AvailableCustomTileRepository: Available installed tile, ComponentInfo{com.samsung.knox.securefolder/com.samsung.knox.securefolder.switcher.SecureFolderTile}
+08-10 13:07:04.342  5626  5815 I TileFeatureChecker: isAvailableCustomTile C(com.sec.android.app.camera/.service.QrTileService)  com.sec.android.app.camera/.service.QrTileService
+08-10 13:07:04.342  5626  5815 D AvailableCustomTileRepository: Available installed tile, ComponentInfo{com.sec.android.app.camera/com.sec.android.app.camera.service.QrTileService}
+08-10 13:07:04.342  5626  5815 I TileFeatureChecker: isAvailableCustomTile C(com.sec.android.app.launcher/.search.SearchTileService)  com.sec.android.app.launcher/.search.SearchTileService
+08-10 13:07:04.342  5626  5815 D AvailableCustomTileRepository: Available installed tile, ComponentInfo{com.sec.android.app.launcher/com.sec.android.app.launcher.search.SearchTileService}
+08-10 13:07:04.342  5626  5815 I TileFeatureChecker: isAvailableCustomTile C(com.sec.android.app.launcher/com.honeyspace.dexservice.DesktopModeTile)  com.sec.android.app.launcher/com.honeyspace.dexservice.DesktopModeTile
+08-10 13:07:04.342  5626  5815 D AvailableCustomTileRepository: Available installed tile, ComponentInfo{com.sec.android.app.launcher/com.honeyspace.dexservice.DesktopModeTile}
+08-10 13:07:04.342  5626  5815 I TileFeatureChecker: isAvailableCustomTile C(com.sec.android.app.safetyassurance/.core.EmergencySharingTileService)  com.sec.android.app.safetyassurance/.core.EmergencySharingTileService
+08-10 13:07:04.342  5626  5815 D AvailableCustomTileRepository: Available installed tile, ComponentInfo{com.sec.android.app.safetyassurance/com.sec.android.app.safetyassurance.core.EmergencySharingTileService}
+08-10 13:07:04.342  5626  5815 I TileFeatureChecker: isAvailableCustomTile C(com.sec.android.app.soundalive/.DolbyTile)  com.sec.android.app.soundalive/.DolbyTile
+08-10 13:07:04.342  5626  5815 D AvailableCustomTileRepository: Available installed tile, ComponentInfo{com.sec.android.app.soundalive/com.sec.android.app.soundalive.DolbyTile}
+08-10 13:07:04.342  5626  5815 I TileFeatureChecker: isAvailableCustomTile C(com.sec.unifiedwfc/.ux.quicksettings.WFCQSTileService)  com.sec.unifiedwfc/.ux.quicksettings.WFCQSTileService
+08-10 13:07:04.342  5626  5815 D AvailableCustomTileRepository: Available installed tile, ComponentInfo{com.sec.unifiedwfc/com.sec.unifiedwfc.ux.quicksettings.WFCQSTileService}
+08-10 13:07:04.342  5626  5815 I TileFeatureChecker: isAvailableCustomTile C(com.alibaba.aliexpresshd/com.aliexpress.module.imagesearch.quicksetting.ScreenShotService)  com.alibaba.aliexpresshd/com.aliexpress.module.imagesearch.quicksetting.ScreenShotService
+08-10 13:07:04.342  5626  5815 D AvailableCustomTileRepository: Available installed tile, ComponentInfo{com.alibaba.aliexpresshd/com.aliexpress.module.imagesearch.quicksetting.ScreenShotService}
+08-10 13:07:04.342  5626  5815 I TileFeatureChecker: isAvailableCustomTile C(com.amazon.mShop.android.shopping/com.amazon.mShop.shortcut.tiles.InStoreCodeIngressTileService)  com.amazon.mShop.android.shopping/com.amazon.mShop.shortcut.tiles.InStoreCodeIngressTileService
+08-10 13:07:04.342  5626  5815 D AvailableCustomTileRepository: Available installed tile, ComponentInfo{com.amazon.mShop.android.shopping/com.amazon.mShop.shortcut.tiles.InStoreCodeIngressTileService}
+08-10 13:07:04.342  5626  5815 I TileFeatureChecker: isAvailableCustomTile C(com.amazon.mShop.android.shopping/com.amazon.mShop.shortcut.tiles.SearchIngressTileService)  com.amazon.mShop.android.shopping/com.amazon.mShop.shortcut.tiles.SearchIngressTileService
+08-10 13:07:04.342  5626  5815 D AvailableCustomTileRepository: Available installed tile, ComponentInfo{com.amazon.mShop.android.shopping/com.amazon.mShop.shortcut.tiles.SearchIngressTileService}
+08-10 13:07:04.342  5626  5815 I TileFeatureChecker: isAvailableCustomTile C(com.amazon.mShop.android.shopping/com.amazon.mShop.shortcut.tiles.LensTileService)  com.amazon.mShop.android.shopping/com.amazon.mShop.shortcut.tiles.LensTileService
+08-10 13:07:04.342  5626  5815 D AvailableCustomTileRepository: Available installed tile, ComponentInfo{com.amazon.mShop.android.shopping/com.amazon.mShop.shortcut.tiles.LensTileService}
+08-10 13:07:04.342  5626  5815 I TileFeatureChecker: isAvailableCustomTile C(com.google.android.apps.walletnfcrel/com.google.android.apps.wallet.quicksettings.WalletTileService)  com.google.android.apps.walletnfcrel/com.google.android.apps.wallet.quicksettings.WalletTileService
+08-10 13:07:04.342  5626  5815 D AvailableCustomTileRepository: Available installed tile, ComponentInfo{com.google.android.apps.walletnfcrel/com.google.android.apps.wallet.quicksettings.WalletTileService}
+08-10 13:07:04.342  5626  5815 I TileFeatureChecker: isAvailableCustomTile C(com.google.android.videos/com.google.android.apps.googletv.app.device.virtualremote.ui.QuickSettingTileService)  com.google.android.videos/com.google.android.apps.googletv.app.device.virtualremote.ui.QuickSettingTileService
+08-10 13:07:04.342  5626  5815 D AvailableCustomTileRepository: Available installed tile, ComponentInfo{com.google.android.videos/com.google.android.apps.googletv.app.device.virtualremote.ui.QuickSettingTileService}
+08-10 13:07:04.342  5626  5815 I TileFeatureChecker: isAvailableCustomTile C(com.openai.chatgpt/com.openai.feature.voice.impl.quicktile.QuickTileService)  com.openai.chatgpt/com.openai.feature.voice.impl.quicktile.QuickTileService
+08-10 13:07:04.342  5626  5815 D AvailableCustomTileRepository: Available installed tile, ComponentInfo{com.openai.chatgpt/com.openai.feature.voice.impl.quicktile.QuickTileService}
+08-10 13:07:04.342  5626  5815 I TileFeatureChecker: isAvailableCustomTile C(com.samsung.android.app.notes/com.samsung.android.support.senl.nt.app.quicknote.QuickNoteTileService)  com.samsung.android.app.notes/com.samsung.android.support.senl.nt.app.quicknote.QuickNoteTileService
+08-10 13:07:04.342  5626  5815 D AvailableCustomTileRepository: Available installed tile, ComponentInfo{com.samsung.android.app.notes/com.samsung.android.support.senl.nt.app.quicknote.QuickNoteTileService}
+08-10 13:07:04.342  5626  5815 I TileFeatureChecker: isAvailableCustomTile C(com.samsung.android.voc/.diagnosis.service.DiagnosticsTileService)  com.samsung.android.voc/.diagnosis.service.DiagnosticsTileService
+08-10 13:07:04.342  5626  5815 D AvailableCustomTileRepository: Available installed tile, ComponentInfo{com.samsung.android.voc/com.samsung.android.voc.diagnosis.service.DiagnosticsTileService}
+08-10 13:07:04.342  5626  5815 I TileFeatureChecker: isAvailableCustomTile C(com.ubnt.usurvey/com.ui.wifiman.quicksettings.TeleportTileService)  com.ubnt.usurvey/com.ui.wifiman.quicksettings.TeleportTileService
+08-10 13:07:04.342  5626  5815 D AvailableCustomTileRepository: Available installed tile, ComponentInfo{com.ubnt.usurvey/com.ui.wifiman.quicksettings.TeleportTileService}
+08-10 13:07:04.342  5626  5815 I TileFeatureChecker: isAvailableCustomTile C(com.wireguard.android/.QuickTileService)  com.wireguard.android/.QuickTileService
+08-10 13:07:04.342  5626  5815 D AvailableCustomTileRepository: Available installed tile, ComponentInfo{com.wireguard.android/com.wireguard.android.QuickTileService}
+08-10 13:07:04.342  5626  5815 I TileFeatureChecker: isAvailableCustomTile C(com.x8bit.bitwarden/.AutofillTileService)  com.x8bit.bitwarden/.AutofillTileService
+08-10 13:07:04.342  5626  5815 D AvailableCustomTileRepository: Available installed tile, ComponentInfo{com.x8bit.bitwarden/com.x8bit.bitwarden.AutofillTileService}
+08-10 13:07:04.342  5626  5815 I TileFeatureChecker: isAvailableCustomTile C(com.x8bit.bitwarden/.GeneratorTileService)  com.x8bit.bitwarden/.GeneratorTileService
+08-10 13:07:04.342  5626  5815 D AvailableCustomTileRepository: Available installed tile, ComponentInfo{com.x8bit.bitwarden/com.x8bit.bitwarden.GeneratorTileService}
+08-10 13:07:04.342  5626  5815 I TileFeatureChecker: isAvailableCustomTile C(com.x8bit.bitwarden/.MyVaultTileService)  com.x8bit.bitwarden/.MyVaultTileService
+08-10 13:07:04.342  5626  5815 D AvailableCustomTileRepository: Available installed tile, ComponentInfo{com.x8bit.bitwarden/com.x8bit.bitwarden.MyVaultTileService}
+08-10 13:07:04.352  5626  5626 D AvailableGridTilesViewModel: allTilesSize updated: 68
+08-10 13:07:04.352  5626  5626 D AvailableGridTilesViewModel: BoxItems 19: [RotationLock, AirplaneMode, Flashlight, MobileData, Hotspot, BatteryMode, Location, WindowsLink, ScreenRecorder, ShareLive, DesktopMode, BlueLightFilter, Dnd, WifiCalling, QRScanner, Translator, MultiControl, SecureFolder, 
+Auracast]
+08-10 13:07:04.352  5626  5626 D AvailableGridTilesViewModel: PanelItems 9: [Wifi, Bluetooth, BrightBarWithTile, VolumeBarWithTile, MediaPlayer, AllShareCast, LifestyleMode, NearByDevice, DeviceControl]
+08-10 13:07:04.352  5626  5626 D AvailableGridTilesViewModel: ActiveTiles 28: [RotationLock, AirplaneMode, Flashlight, MobileData, Hotspot, BatteryMode, Location, WindowsLink, ScreenRecorder, ShareLive, DesktopMode, BlueLightFilter, Dnd, WifiCalling, QRScanner, Translator, MultiControl, 
+SecureFolder, Auracast, Wifi, Bluetooth, BrightBarWithTile, VolumeBarWithTile, MediaPlayer, AllShareCast, LifestyleMode, NearByDevice, DeviceControl]
+08-10 13:07:04.408 31765 31821 I SLPASVC : { iccid=8662 profileClass=1 profileState=0 enabledOnEsimPort=0 serviceProviderName=AT&T profileName=Bootstrap V1.0 mccMnc=130083 }[at com.samsung.euicc.lpaService.gsma.phase2.es10.Es10Base.$r8$lambda$dU_EuvjB7Cxx4FJggtcj8I47Gv8(Es10Base.java:401)]
+08-10 13:07:04.408 31765 31821 I SLPASVC : { iccid=777F profileClass=2 profileState=1 enabledOnEsimPort=0 serviceProviderName=T-Mobile profileName=CONVSIM5G_Adaptive mccMnc=130062 }[at com.samsung.euicc.lpaService.gsma.phase2.es10.Es10Base.$r8$lambda$dU_EuvjB7Cxx4FJggtcj8I47Gv8(Es10Base.java:401)]
+08-10 13:07:04.410 31765 31808 W Bundle  : 	at android.os.Bundle.getParcelable(Bundle.java:1121)
+08-10 13:07:04.410 31765 31808 W Bundle  : 	at android.os.Bundle.getParcelable(Bundle.java:1121)
+08-10 13:07:04.411 31765 31840 I SLPASVC : { iccid=8662 profileClass=1 profileState=0 enabledOnEsimPort=0 serviceProviderName=AT&T profileName=Bootstrap V1.0 mccMnc=130083 }[at 
+com.samsung.euicc.lpaService.gsma.phase2.state.ProfileManagement.$r8$lambda$lga_TAtIBAv2hWPLl4BT_4jZSAY(ProfileManagement.java:123)]
+08-10 13:07:04.411 31765 31840 I SLPASVC : { iccid=777F profileClass=2 profileState=1 enabledOnEsimPort=0 serviceProviderName=T-Mobile profileName=CONVSIM5G_Adaptive mccMnc=130062 }[at 
+com.samsung.euicc.lpaService.gsma.phase2.state.ProfileManagement.$r8$lambda$lga_TAtIBAv2hWPLl4BT_4jZSAY(ProfileManagement.java:123)]
+08-10 13:07:04.447  6325 21806 I SearchableManager: invalidate: com.google.android.apps.walletnfcrel
+08-10 13:07:04.448  6325 31676 I HoneySpace.ShortcutDataSourceImpl: shortcut updated. ShortcutInfo {id=***, flags=0x489 [DynIc-fStrRets], packageName=com.google.android.apps.walletnfcrel, 
+activity=ComponentInfo{com.google.android.apps.walletnfcrel/com.google.commerce.tapandpay.android.wallet.WalletActivity}, shortLabel=***, resId=0[null], longLabel=***, resId=0[null], disabledMessage=***, resId=0[null], disabledReason=[Not disabled], categories=null, persons=null, icon=null, rank=0, 
+timestamp=1777935547822, intents=null, extras=null}
+08-10 13:07:04.448  6325 31676 I HoneySpace.ShortcutDataSourceImpl: shortcut updated. ShortcutInfo {id=***, flags=0x489 [DynIc-fStrRets], packageName=com.google.android.apps.walletnfcrel, 
+activity=ComponentInfo{com.google.android.apps.walletnfcrel/com.google.commerce.tapandpay.android.wallet.WalletActivity}, shortLabel=***, resId=0[null], longLabel=***, resId=0[null], disabledMessage=***, resId=0[null], disabledReason=[Not disabled], categories=null, persons=null, icon=null, rank=1, 
+timestamp=1777935547871, intents=null, extras=null}
+08-10 13:07:04.448  2845  5828 D ApplicationPolicy: getApplicationUninstallationEnabled
+08-10 13:07:04.448  2845  5828 D ApplicationPolicy: getApplicationUninstallationEnabled :  enabled true
+08-10 13:07:04.448  2845  5828 D ApplicationPolicy: getApplicationUninstallationEnabled
+08-10 13:07:04.448  2845  5828 D ApplicationPolicy: getApplicationUninstallationEnabled :  enabled true
+08-10 13:07:04.848  6325 31228 I SearchEngine: isComponentInApps() packageName : com.netflix.mediaclient / className : com.netflix.mediaclient.ui.launch.UIWebViewActivity / userId : 0 / enable true / enabledSetting 0
+08-10 13:07:04.848  6325 31228 I SearchEngine: isComponentInApps() packageName : com.google.android.calendar / className : com.android.calendar.AllInOneActivity / userId : 0 / enable true / enabledSetting 0
+08-10 13:07:04.848  6325 31228 I SearchEngine: isComponentInApps() packageName : com.google.android.calendar / className : com.android.calendar.AllInOneActivity / userId : 0 / enable true / enabledSetting 0
+08-10 13:07:04.849  6325 31228 I SearchEngine: isComponentInApps() packageName : com.samsung.android.app.notes / className : com.samsung.android.app.notes.memolist.MemoListActivity / userId : 0 / enable true / enabledSetting 0
+08-10 13:07:04.849  6325 31228 I SearchEngine: isComponentInApps() packageName : com.google.android.apps.tachyon / className : com.google.android.apps.tachyon.MainActivity / userId : 0 / enable true / enabledSetting 0
+08-10 13:07:04.849  6325 31228 I SearchEngine: isComponentInApps() packageName : com.android.vending / className : com.android.vending.AssetBrowserActivity / userId : 0 / enable true / enabledSetting 1
+08-10 13:07:04.849  6325 31228 I SearchEngine: isComponentInApps() packageName : com.ck.alertops / className : com.ck.alertops.MainActivity / userId : 0 / enable true / enabledSetting 0
+08-10 13:07:04.849  6325 31228 I SearchEngine: isComponentInApps() packageName : com.samsung.android.app.notes / className : com.samsung.android.app.notes.memolist.MemoListActivity / userId : 0 / enable true / enabledSetting 0
+08-10 13:07:04.849  6325 31228 I SearchEngine: isComponentInApps() packageName : com.android.settings / className : com.android.settings.Settings / userId : 0 / enable true / enabledSetting 0
+08-10 13:07:04.850  6325 31228 I SearchEngine: isComponentInApps() packageName : com.sec.android.app.myfiles / className : com.sec.android.app.myfiles.ui.MainActivity / userId : 0 / enable true / enabledSetting 0
+08-10 13:07:04.850  6325 31228 I SearchEngine: isComponentInApps() packageName : com.dd.doordash / className : com.doordash.consumer.ui.login.LauncherActivity / userId : 0 / enable true / enabledSetting 0
+08-10 13:07:04.850  6325 31228 I SearchEngine: isComponentInApps() packageName : com.google.android.apps.nbu.paisa.user / className : com.google.nbu.paisa.flutter.gpay.app.LauncherActivity / userId : 0 / enable true / enabledSetting 4
+08-10 13:07:04.850  6325 31228 I SearchEngine: isComponentInApps() packageName : com.sec.android.app.clockpackage / className : com.sec.android.app.clockpackage.ClockPackage / userId : 0 / enable true / enabledSetting 0
+08-10 13:07:04.850  6325 31228 I SearchEngine: isComponentInApps() packageName : com.google.android.youtube / className : com.google.android.youtube.app.honeycomb.Shell$HomeActivity / userId : 0 / enable true / enabledSetting 1
+08-10 13:07:04.850  6325 31228 I SearchEngine: isComponentInApps() packageName : net.cozic.joplin / className : net.cozic.joplin.MainActivity / userId : 0 / enable true / enabledSetting 0
+08-10 13:07:04.851  6325 31228 I SearchEngine: isComponentInApps() packageName : com.sec.android.app.popupcalculator / className : com.sec.android.app.popupcalculator.Calculator / userId : 0 / enable true / enabledSetting 4
+08-10 13:07:04.851  6325 31228 I SearchEngine: isComponentInApps() packageName : org.fdroid.fdroid / className : org.fdroid.fdroid.views.main.MainActivity / userId : 0 / enable true / enabledSetting 4
+08-10 13:07:04.851  6325 31228 I SearchEngine: isComponentInApps() packageName : com.termux / className : com.termux.app.TermuxActivity / userId : 0 / enable true / enabledSetting 0
+08-10 13:07:04.851  6325 31228 I SearchEngine: isComponentInApps() packageName : com.google.android.apps.bard / className : com.google.android.apps.bard.shellapp.BardEntryPointActivity / userId : 0 / enable true / enabledSetting 1
+08-10 13:07:04.851  6325 31228 I SearchEngine: isComponentInApps() packageName : com.android.chrome / className : com.google.android.apps.chrome.Main / userId : 0 / enable true / enabledSetting 0
+08-10 13:07:04.988  5125 24464 I NearbyDiscovery: (REDACTED) ApFastPairScanner: isScreenOn=%s, isLocationEnabled=%s, disableLocationRequirement=%s, isDiscoveryScanningEnabled=%s, during24GhzWifiWarmingUpPeriod=%s
+08-10 13:07:04.988  5125 24464 D BluetoothAdapter: isLeEnabled(): ON
+08-10 13:07:04.988  5125 24464 I NearbyDiscovery: (REDACTED) ApFastPairScanner: eventType=%s, intReq=%s, scanning=%s, scanAllowed=%s, bleEnabled=%s, lockScanRate=%s, startScanningByLowPowerMode=%s
+08-10 13:07:04.988  5125 24464 D BluetoothAdapter: isLeEnabled(): ON
+08-10 13:07:04.990  5125 24464 I NearbyDiscovery: (REDACTED) ApFastPairScanner: isScreenOn=%s, isLocationEnabled=%s, disableLocationRequirement=%s, isDiscoveryScanningEnabled=%s, during24GhzWifiWarmingUpPeriod=%s
+08-10 13:07:04.990  5125 24464 D BluetoothAdapter: isLeEnabled(): ON
+08-10 13:07:04.991  5565  6952 W BLE_GAP : SCAN_STOP :: appName: com.google.android.gms, scannerId: 2, reportDelayMillis=0
+08-10 13:07:04.992  5565  6952 W BLE_GAP : SCAN_START :: appName: com.google.android.gms, scannerId: 2, reportDelayMillis=0
+08-10 13:07:04.992  5565  6952 I bt_shim_scanner: system/main/shim/le_scanning_manager.cc:260 ScanFilterEnable: in shim layer
+08-10 13:07:05.061  2845  6206 W Binder  : java.lang.Throwable
+08-10 13:07:05.061  2845  6206 W Binder  : 	at android.bluetooth.IBluetoothGatt$Stub$Proxy.getAdvertisingSetUids(IBluetoothGatt.java:992)
+08-10 13:07:05.073  2845  6206 I PowerManagerService: [PWL] SetWakeLockEnableDisable uid = 10382 , disable= true
+08-10 13:07:05.237 31765 31917 I SLPASVC : provisioning profile disabled or no exist                                                           [at com.samsung.euicc.message.DisableProvisioningProfile.lambda$execute$2(DisableProvisioningProfile.java:64)]
+08-10 13:07:05.469  2845  6206 I PowerManagerService: [PWL] SetWakeLockEnableDisable uid = 10405 , disable= true
+08-10 13:07:06.094  5125 31312 D BluetoothAdapter: isLeEnabled(): ON
+08-10 13:07:06.098  5125 31312 D BluetoothAdapter: isLeEnabled(): ON
+08-10 13:07:06.100  5565  6952 W BLE_GAP : SCAN_STOP :: appName: com.google.android.gms, scannerId: 9, reportDelayMillis=0
+08-10 13:07:06.102  5565  6952 W BLE_GAP : SCAN_START :: appName: com.google.android.gms, scannerId: 9, reportDelayMillis=0
+08-10 13:07:06.102  5565  6952 I bt_shim_scanner: system/main/shim/le_scanning_manager.cc:260 ScanFilterEnable: in shim layer
+08-10 13:07:06.621  9073 10534 W RemoteWorkerFactory: [RemoteWorkerFactory] ID=028c658b-5cad-4fd6-b061-099b7eb982d9, TAG=[com.samsung.android.smartsuggestions.search.data.apps.AppsDataWorker, CMD_UPDATE_LIST], WorkerClassName: androidx.work.multiprocess.RemoteListenableDelegatingWorker, 
+RunAttemptCount=0
+08-10 13:07:07.560  6325  6422 I HoneySpace.StatusIconTracker: invokeEvent() called with: event = PrivacyInfo(visible=false)
+08-10 13:07:07.562  5626  5626 W RefactorFlag: New code path expects SceneContainerFlag to be enabled.
+08-10 13:07:08.545  2845  5521 D SLocation: GeopointLastLocation - last location still available 9428 / 9223372036854775807
+08-10 13:07:08.551  6325  6422 I HoneySpace.StatusIconTracker: invokeEvent() called with: event = PrivacyInfo(visible=false)
+08-10 13:07:08.554  6325  6422 I HoneySpace.StatusIconTracker: invokeEvent() called with: event = PrivacyInfo(visible=false)
+08-10 13:07:08.559  5626  5626 W RefactorFlag: New code path expects SceneContainerFlag to be enabled.
+08-10 13:07:08.945  5552  5850 D SatelliteController: isInCarrierRoamingNbIotNtn: satellite is disabled
+08-10 13:07:08.949  6056  6056 I EPDG-1 [CellularProfiler]: onSignalStrengthsChanged: SignalStrength:{mCdma=Invalid,mGsm=Invalid,mWcdma=Invalid,mTdscdma=Invalid,mLte=Invalid,mNr=CellSignalStrengthNr:{ csiRsrp = 2147483647 csiRsrq = 2147483647 csiCqiTableIndex = 2147483647 csiCqiReport = [] ssRsrp = 
+-96 ssRsrq = -11 ssSinr = 20 level = 1 parametersUseForLevel = 0 timingAdvance = 2147483647 },SignalBarInfo{ nrLevel=5 },rat=20,primary=CellSignalStrengthNr}
+08-10 13:07:10.105  5125 31312 I NearbyMediums: Found BLE GATT Advertisements :
+08-10 13:07:10.105  5125 31312 I NearbyMediums: BleAdvertisement { version=2, socketVersion=2, isFast=false, serviceIdHash=[ 0xfc 0x9f 0x5e ], data=[ 0x23 0xfc 0x9f 0x5e 0x5a 0x4a 0x57 0x4c 0x1a 0x06 0x28 0xdf 0x5a 0x3e 0x93 0x8a 0x77 0x80 0xb6 0x8f 0xe0 0xc5 0xaf 0x57 0x42 0x2e 0x08 0x4a 0x69 0x6d 
+0x27 0x73 0x20 0x50 0x43 0x5c 0xb2 0x6d 0x6e 0xf1 0xcb 0x00 0x00 ], deviceToken=[ 0xc7 0xb3 ], rxAdvertisement=null } : 33 times.
+08-10 13:07:10.105  5125 31312 I NearbyMediums: Total 33 GATT advertisements from 1 unique advertisers.
+08-10 13:07:12.613 16474 16474 W [-0500]oneconnect[1.8.47.24_01][CORE]: P2pReceiver.handleScanResultsAvailableAction - No Permission
+08-10 13:07:13.128  6325  6422 I HoneySpace.StatusIconTracker: invokeEvent() called with: event = PrivacyInfo(visible=false)
+08-10 13:07:13.130  5626  5626 W RefactorFlag: New code path expects SceneContainerFlag to be enabled.
+08-10 13:07:18.134  6325  6422 I HoneySpace.StatusIconTracker: invokeEvent() called with: event = PrivacyInfo(visible=false)
+08-10 13:07:18.139  5626  5626 W RefactorFlag: New code path expects SceneContainerFlag to be enabled.
+08-10 13:07:19.221  2845  3409 D PowerManagerService: [api] BrightnessLimitRunnable done
+08-10 13:07:20.107  5125 31607 I NearbyMediums: Found BLE GATT Advertisements :
+08-10 13:07:20.107  5125 31607 I NearbyMediums: BleAdvertisement { version=2, socketVersion=2, isFast=false, serviceIdHash=[ 0xfc 0x9f 0x5e ], data=[ 0x23 0xfc 0x9f 0x5e 0x5a 0x4a 0x57 0x4c 0x1a 0x06 0x28 0xdf 0x5a 0x3e 0x93 0x8a 0x77 0x80 0xb6 0x8f 0xe0 0xc5 0xaf 0x57 0x42 0x2e 0x08 0x4a 0x69 0x6d 
+0x27 0x73 0x20 0x50 0x43 0x5c 0xb2 0x6d 0x6e 0xf1 0xcb 0x00 0x00 ], deviceToken=[ 0xc7 0xb3 ], rxAdvertisement=null } : 8 times.
+08-10 13:07:20.107  5125 31607 I NearbyMediums: Total 8 GATT advertisements from 1 unique advertisers.
+08-10 13:07:22.542  5604  5965 I RegistrationRatDecider<1>: getAvailableMobileNetwork: network=20 mobileDataType=20 => rat=20
+08-10 13:07:22.543  5604  5965 I PdnController<1>: isNetworkAvailable: isEpdgConnected=false getDataNetworkType()=20
+08-10 13:07:29.272  2845  3409 D PowerManagerService: [api] BrightnessLimitRunnable done
+08-10 13:07:30.112  5125 31312 I NearbyMediums: Found BLE GATT Advertisements :
+08-10 13:07:30.112  5125 31312 I NearbyMediums: BleAdvertisement { version=2, socketVersion=2, isFast=false, serviceIdHash=[ 0xfc 0x9f 0x5e ], data=[ 0x23 0xfc 0x9f 0x5e 0x5a 0x4a 0x57 0x4c 0x1a 0x06 0x28 0xdf 0x5a 0x3e 0x93 0x8a 0x77 0x80 0xb6 0x8f 0xe0 0xc5 0xaf 0x57 0x42 0x2e 0x08 0x4a 0x69 0x6d 
+0x27 0x73 0x20 0x50 0x43 0x5c 0xb2 0x6d 0x6e 0xf1 0xcb 0x00 0x00 ], deviceToken=[ 0xc7 0xb3 ], rxAdvertisement=null } : 8 times.
+08-10 13:07:30.112  5125 31312 I NearbyMediums: Total 8 GATT advertisements from 1 unique advertisers.
+08-10 13:07:32.560 16474 16474 W [-0500]oneconnect[1.8.47.24_01][CORE]: P2pReceiver.handleScanResultsAvailableAction - No Permission
+08-10 13:07:33.078  6325  6422 I HoneySpace.StatusIconTracker: invokeEvent() called with: event = PrivacyInfo(visible=false)
+08-10 13:07:33.082  5626  5626 W RefactorFlag: New code path expects SceneContainerFlag to be enabled.
+
+

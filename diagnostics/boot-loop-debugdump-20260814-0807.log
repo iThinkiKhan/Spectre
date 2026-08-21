@@ -1,0 +1,360 @@
+=== capture opened 2026-08-14T08:06:32.2099613-05:00 ===
+=== send: debug dump ===
+debug dump
+=== DEBUG LOG ===
+LE] worker stack free=9444B min=9444B
+[1770681][I][BLE] probe resource release
+[1770682][I][BLE] advertising stop
+[1770682][I][BLE] client soft drop reason=radio_disabled
+[1770682][I][BLE] radio disabled
+[1770682][I][BLE] probe release scan stop settle=300ms
+[1770982][I][BLE] probe_release phase=worker_delete
+[1770985][I][STACK] TaskButtons watermark=1060B
+[1771140][I][WIFI] Radio suspended
+[1771150][W][CORE] TaskHardware loop gap=470ms owner=STORAGE_MAINT pendingUpload=66 maintPending=1 suppressed=0
+[1771256][W][BLE] probe_summary seen=0 result=not_seen stage=3 miss=24 nextIn=300s
+[1771424][I][WIFI] Radio suspended
+[1771424][I][BLE] begin phase=worker_ok
+[1771424][I][BLE] radio enabled settle=500ms
+[1771425][I][BLE] advertising start
+[1771425][I][BLE] companion link requested reason=offload_prep mode=fresh_scan timeout=15s settle=500ms cacheAge=0ms rssi=0
+[1771431][I][BLE] Phone probe lease granted reason=offload_prep cachedFirst=1 hold=60000ms
+[1771431][I][STACK] TaskHardware watermark=6816B min=6816B
+[1771932][I][BLE] scan start
+[1771932][I][BLE] scan start diag=1 deliverDuplicates=1 diagLeft=44492 state=1 window=8000ms weakRecent=0 lastRssi=0
+[1779943][I][BLE] scan window ended window=8000ms weakRecent=0 lastRssi=0
+[1780205][I][BLE] scan start
+[1780205][I][BLE] scan start diag=1 deliverDuplicates=1 diagLeft=36219 state=1 window=8000ms weakRecent=0 lastRssi=0
+[1788206][I][BLE] scan window ended window=8000ms weakRecent=0 lastRssi=0
+[1788467][I][BLE] scan start
+[1788467][I][BLE] scan start diag=1 deliverDuplicates=1 diagLeft=27957 state=1 window=8000ms weakRecent=0 lastRssi=0
+[1796468][I][BLE] scan window ended window=8000ms weakRecent=0 lastRssi=0
+[1796729][I][BLE] scan start
+[1796729][I][BLE] scan start diag=1 deliverDuplicates=1 diagLeft=19695 state=1 window=8000ms weakRecent=0 lastRssi=0
+[1800499][I][HEAP] heap free=4475KB min=4433KB largest=4352KB frag=2% internalFree=58KB internalLargest=19KB psramFree=4417KB core=1/0% owner=BLE_GPS nets=16 pendingUpload=66 pendingEnrich=34
+ree=4454KB min=4431KB largest=4352KB frag=2% internalFree=59KB internalLargest=31KB psramFree=4396KB core=0/0% owner=BLE_GPS nets=5 pendingUpload=66 pendingEnrich=0
+[60003][I][STACK] TaskStorage watermark=2240B
+[60003][I][STORAGE] RAMSpool enq=0 cons=0 inflight=0/1024 high=0 pressure=0 drop[full=0 big=0 noise=0 p3Evict=0 p3Drop=0 p2Drop=0 p1Fail=0] free=1024
+[60003][I][STORAGE] RAMSpool enqueue probe[ok=0 drop=0] device[ok=0 drop=0]
+[60003][I][STORAGE] RAMSpool worker probe[ok=0 sup=0 drop=0 fail=0 slow=0] device[ok=0 sup=0 drop=0 fail=0 slow=0] slowTotal=0 maxMs=0
+[60003][I][STORAGE] RAMSpool prioEnq p0=0 p1=0 p2=0 p3=0
+[60003][I][STORAGE] RAMSpool lanes p1=0/0 p2=0/0 p3=0/0
+[60985][I][STACK] TaskButtons watermark=1060B
+[61027][I][STACK] TaskHardware watermark=8144B min=8144B
+[70268][I][BLE] worker stack free=7380B min=7380B
+[84131][I][POWER] Source BATTERY -> USB (4009mV trend=42)
+[84131][I][POWER] State BAT_NORMAL -> USB (84% 4009mV runtime=0min charge=1)
+[90010][I][HEAP] heap free=4454KB min=4431KB largest=4352KB frag=2% internalFree=59KB internalLargest=31KB psramFree=4396KB core=0/0% owner=BLE_GPS nets=5 pendingUpload=66 pendingEnrich=0
+[90011][I][STACK] TaskStorage watermark=2240B
+[90011][I][STORAGE] RAMSpool enq=0 cons=0 inflight=0/1024 high=0 pressure=0 drop[full=0 big=0 noise=0 p3Evict=0 p3Drop=0 p2Drop=0 p1Fail=0] free=1024
+[90011][I][STORAGE] RAMSpool enqueue probe[ok=0 drop=0] device[ok=0 drop=0]
+[90011][I][STORAGE] RAMSpool worker probe[ok=0 sup=0 drop=0 fail=0 slow=0] device[ok=0 sup=0 drop=0 fail=0 slow=0] slowTotal=0 maxMs=0
+[90011][I][STORAGE] RAMSpool prioEnq p0=0 p1=0 p2=0 p3=0
+[90011][I][STORAGE] RAMSpool lanes p1=0/0 p2=0/0 p3=0/0
+[90985][I][STACK] TaskButtons watermark=1060B
+[91034][I][STACK] TaskHardware watermark=8144B min=8144B
+[100285][I][BLE] worker stack free=7380B min=7380B
+[120017][I][HEAP] heap free=4454KB min=4431KB largest=4352KB frag=2% internalFree=59KB internalLargest=31KB psramFree=4396KB core=0/0% owner=BLE_GPS nets=5 pendingUpload=66 pendingEnrich=0
+0mV trend=0)
+[160317][I][POWER] State USB -> BAT_NORMAL (84% 4010mV runtime=174min charge=0)
+[180028][I][HEAP] heap free=4454KB min=4431KB largest=4352KB frag=2% internalFree=59KB internalLargest=31KB psramFree=4396KB core=0/0% owner=BLE_GPS nets=5 pendingUpload=66 pendingEnrich=0
+[180029][I][STACK] TaskStorage watermark=2240B
+[180029][I][STORAGE] RAMSpool enq=0 cons=0 inflight=0/1024 high=0 pressure=0 drop[full=0 big=0 noise=0 p3Evict=0 p3Drop=0 p2Drop=0 p1Fail=0] free=1024
+[180029][I][STORAGE] RAMSpool enqueue probe[ok=0 drop=0] device[ok=0 drop=0]
+[180029][I][STORAGE] RAMSpool worker probe[ok=0 sup=0 drop=0 fail=0 slow=0] device[ok=0 sup=0 drop=0 fail=0 slow=0] slowTotal=0 maxMs=0
+[180029][I][STORAGE] RAMSpool prioEnq p0=0 p1=0 p2=0 p3=0
+[180029][I][STORAGE] RAMSpool lanes p1=0/0 p2=0/0 p3=0/0
+[180985][I][STACK] TaskButtons watermark=1060B
+[181052][I][STACK] TaskHardware watermark=6960B min=6960B
+[190314][I][BLE] worker stack free=7380B min=7380B
+[210031][I][HEAP] heap free=4454KB min=4431KB largest=4352KB frag=2% internalFree=59KB internalLargest=31KB psramFree=4396KB core=0/0% owner=BLE_GPS nets=5 pendingUpload=66 pendingEnrich=0
+[210032][I][STACK] TaskStorage watermark=2240B
+[210032][I][STORAGE] RAMSpool enq=0 cons=0 inflight=0/1024 high=0 pressure=0 drop[full=0 big=0 noise=0 p3Evict=0 p3Drop=0 p2Drop=0 p1Fail=0] free=1024
+[210032][I][STORAGE] RAMSpool enqueue probe[ok=0 drop=0] device[ok=0 drop=0]
+[210032][I][STORAGE] RAMSpool worker probe[ok=0 sup=0 drop=0 fail=0 slow=0] device[ok=0 sup=0 drop=0 fail=0 slow=0] slowTotal=0 maxMs=0
+[210032][I][STORAGE] RAMSpool prioEnq p0=0 p1=0 p2=0 p3=0
+[210032][I][STORAGE] RAMSpool lanes p1=0/0 p2=0/0 p3=0/0
+[210985][I][STACK] TaskButtons watermark=1060B
+[211056][I][STACK] TaskHardware watermark=6960B min=6960B
+[220319][I][BLE] worker stack free=7380B min=7380B
+[240038][I][HEAP] heap free=4454KB min=4431KB largest=4352KB frag=2% internalFree=59KB internalLargest=31KB psramFree=4396KB core=0/0% owner=BLE_GPS nets=5 pendingUpload=66 pendingEnrich=0
+K] TaskHardware watermark=6960B min=6960B
+[280340][I][BLE] worker stack free=7380B min=7380B
+[300049][I][HEAP] heap free=4454KB min=4431KB largest=4352KB frag=2% internalFree=59KB internalLargest=31KB psramFree=4396KB core=0/0% owner=BLE_GPS nets=5 pendingUpload=66 pendingEnrich=0
+[300050][I][STACK] TaskStorage watermark=2240B
+[300050][I][STORAGE] RAMSpool enq=0 cons=0 inflight=0/1024 high=0 pressure=0 drop[full=0 big=0 noise=0 p3Evict=0 p3Drop=0 p2Drop=0 p1Fail=0] free=1024
+[300050][I][STORAGE] RAMSpool enqueue probe[ok=0 drop=0] device[ok=0 drop=0]
+[300050][I][STORAGE] RAMSpool worker probe[ok=0 sup=0 drop=0 fail=0 slow=0] device[ok=0 sup=0 drop=0 fail=0 slow=0] slowTotal=0 maxMs=0
+[300050][I][STORAGE] RAMSpool prioEnq p0=0 p1=0 p2=0 p3=0
+[300050][I][STORAGE] RAMSpool lanes p1=0/0 p2=0/0 p3=0/0
+[300985][I][STACK] TaskButtons watermark=1060B
+[301063][I][STACK] TaskHardware watermark=6960B min=6960B
+[310357][I][BLE] worker stack free=7380B min=7380B
+[330052][I][HEAP] heap free=4454KB min=4431KB largest=4352KB frag=2% internalFree=59KB internalLargest=31KB psramFree=4396KB core=0/0% owner=BLE_GPS nets=5 pendingUpload=66 pendingEnrich=0
+[330053][I][STACK] TaskStorage watermark=2240B
+[330053][I][STORAGE] RAMSpool enq=0 cons=0 inflight=0/1024 high=0 pressure=0 drop[full=0 big=0 noise=0 p3Evict=0 p3Drop=0 p2Drop=0 p1Fail=0] free=1024
+[330053][I][STORAGE] RAMSpool enqueue probe[ok=0 drop=0] device[ok=0 drop=0]
+[330053][I][STORAGE] RAMSpool worker probe[ok=0 sup=0 drop=0 fail=0 slow=0] device[ok=0 sup=0 drop=0 fail=0 slow=0] slowTotal=0 maxMs=0
+[330053][I][STORAGE] RAMSpool prioEnq p0=0 p1=0 p2=0 p3=0
+[330053][I][STORAGE] RAMSpool lanes p1=0/0 p2=0/0 p3=0/0
+[330985][I][STACK] TaskButtons watermark=1060B
+[331066][I][STACK] TaskHardware watermark=6960B min=6960B
+[340366][I][BLE] worker stack free=7380B min=7380B
+[360053][I][HEAP] heap free=4454KB min=4431KB largest=4352KB frag=2% internalFree=59KB internalLargest=31KB psramFree=4396KB core=0/0% owner=BLE_GPS nets=5 pendingUpload=66 pendingEnrich=0
+ramFree=4417KB core=0/0% owner=BLE_GPS nets=0 pendingUpload=66 pendingEnrich=0
+[60007][I][STACK] TaskStorage watermark=2240B
+[60007][I][STORAGE] RAMSpool enq=0 cons=0 inflight=0/1024 high=0 pressure=0 drop[full=0 big=0 noise=0 p3Evict=0 p3Drop=0 p2Drop=0 p1Fail=0] free=1024
+[60007][I][STORAGE] RAMSpool enqueue probe[ok=0 drop=0] device[ok=0 drop=0]
+[60007][I][STORAGE] RAMSpool worker probe[ok=0 sup=0 drop=0 fail=0 slow=0] device[ok=0 sup=0 drop=0 fail=0 slow=0] slowTotal=0 maxMs=0
+[60008][I][STORAGE] RAMSpool prioEnq p0=0 p1=0 p2=0 p3=0
+[60008][I][STORAGE] RAMSpool lanes p1=0/0 p2=0/0 p3=0/0
+[60987][I][STACK] TaskButtons watermark=1056B
+[61031][I][STACK] TaskHardware watermark=7972B min=7972B
+[71917][W][FIELDVAULT] rotation demoting unsent tail bytes=65638 cursor=0 size=65638
+[72329][I][BLE] worker stack free=7380B min=7380B
+[84064][I][POWER] Source BATTERY -> USB (3998mV trend=25)
+[84065][I][POWER] State BAT_NORMAL -> USB (82% 3998mV runtime=0min charge=1)
+[90015][I][HEAP] heap free=4478KB min=4471KB largest=4352KB frag=2% internalFree=61KB internalLargest=31KB psramFree=4417KB core=0/0% owner=BLE_GPS nets=0 pendingUpload=66 pendingEnrich=0
+[90016][I][STACK] TaskStorage watermark=2240B
+[90016][I][STORAGE] RAMSpool enq=0 cons=0 inflight=0/1024 high=0 pressure=0 drop[full=0 big=0 noise=0 p3Evict=0 p3Drop=0 p2Drop=0 p1Fail=0] free=1024
+[90016][I][STORAGE] RAMSpool enqueue probe[ok=0 drop=0] device[ok=0 drop=0]
+[90016][I][STORAGE] RAMSpool worker probe[ok=0 sup=0 drop=0 fail=0 slow=0] device[ok=0 sup=0 drop=0 fail=0 slow=0] slowTotal=0 maxMs=0
+[90016][I][STORAGE] RAMSpool prioEnq p0=0 p1=0 p2=0 p3=0
+[90016][I][STORAGE] RAMSpool lanes p1=0/0 p2=0/0 p3=0/0
+[90987][I][STACK] TaskButtons watermark=1056B
+[91039][I][STACK] TaskHardware watermark=7972B min=7972B
+[102333][I][BLE] worker stack free=7380B min=7380B
+[120019][I][HEAP] heap free=4478KB min=4471KB largest=4352KB frag=2% internalFree=61KB internalLargest=31KB psramFree=4417KB core=0/0% owner=BLE_GPS nets=0 pendingUpload=66 pendingEnrich=0
+RMAL (82% 3997mV runtime=169min charge=0)
+[162369][I][BLE] worker stack free=7380B min=7380B
+[180025][I][HEAP] heap free=4478KB min=4471KB largest=4352KB frag=2% internalFree=61KB internalLargest=31KB psramFree=4417KB core=0/0% owner=BLE_GPS nets=0 pendingUpload=66 pendingEnrich=0
+[180025][I][STACK] TaskStorage watermark=2240B
+[180026][I][STORAGE] RAMSpool enq=0 cons=0 inflight=0/1024 high=0 pressure=0 drop[full=0 big=0 noise=0 p3Evict=0 p3Drop=0 p2Drop=0 p1Fail=0] free=1024
+[180026][I][STORAGE] RAMSpool enqueue probe[ok=0 drop=0] device[ok=0 drop=0]
+[180026][I][STORAGE] RAMSpool worker probe[ok=0 sup=0 drop=0 fail=0 slow=0] device[ok=0 sup=0 drop=0 fail=0 slow=0] slowTotal=0 maxMs=0
+[180026][I][STORAGE] RAMSpool prioEnq p0=0 p1=0 p2=0 p3=0
+[180026][I][STORAGE] RAMSpool lanes p1=0/0 p2=0/0 p3=0/0
+[180987][I][STACK] TaskButtons watermark=1056B
+[181059][I][STACK] TaskHardware watermark=6960B min=6960B
+[192374][I][BLE] worker stack free=7380B min=7380B
+[210032][I][HEAP] heap free=4478KB min=4471KB largest=4352KB frag=2% internalFree=61KB internalLargest=31KB psramFree=4417KB core=0/0% owner=BLE_GPS nets=0 pendingUpload=66 pendingEnrich=0
+[210033][I][STACK] TaskStorage watermark=2240B
+[210033][I][STORAGE] RAMSpool enq=0 cons=0 inflight=0/1024 high=0 pressure=0 drop[full=0 big=0 noise=0 p3Evict=0 p3Drop=0 p2Drop=0 p1Fail=0] free=1024
+[210033][I][STORAGE] RAMSpool enqueue probe[ok=0 drop=0] device[ok=0 drop=0]
+[210033][I][STORAGE] RAMSpool worker probe[ok=0 sup=0 drop=0 fail=0 slow=0] device[ok=0 sup=0 drop=0 fail=0 slow=0] slowTotal=0 maxMs=0
+[210033][I][STORAGE] RAMSpool prioEnq p0=0 p1=0 p2=0 p3=0
+[210033][I][STORAGE] RAMSpool lanes p1=0/0 p2=0/0 p3=0/0
+[210987][I][STACK] TaskButtons watermark=1056B
+[211066][I][STACK] TaskHardware watermark=6960B min=6960B
+[222380][I][BLE] worker stack free=7380B min=7380B
+[240036][I][HEAP] heap free=4478KB min=4471KB largest=4352KB frag=2% internalFree=61KB internalLargest=31KB psramFree=4417KB core=0/0% owner=BLE_GPS nets=0 pendingUpload=66 pendingEnrich=0
+K] TaskHardware watermark=6960B min=6960B
+[282397][I][BLE] worker stack free=7380B min=7380B
+[300046][I][HEAP] heap free=4478KB min=4471KB largest=4352KB frag=2% internalFree=61KB internalLargest=31KB psramFree=4417KB core=0/0% owner=BLE_GPS nets=0 pendingUpload=66 pendingEnrich=0
+[300046][I][STACK] TaskStorage watermark=2240B
+[300047][I][STORAGE] RAMSpool enq=0 cons=0 inflight=0/1024 high=0 pressure=0 drop[full=0 big=0 noise=0 p3Evict=0 p3Drop=0 p2Drop=0 p1Fail=0] free=1024
+[300047][I][STORAGE] RAMSpool enqueue probe[ok=0 drop=0] device[ok=0 drop=0]
+[300047][I][STORAGE] RAMSpool worker probe[ok=0 sup=0 drop=0 fail=0 slow=0] device[ok=0 sup=0 drop=0 fail=0 slow=0] slowTotal=0 maxMs=0
+[300047][I][STORAGE] RAMSpool prioEnq p0=0 p1=0 p2=0 p3=0
+[300047][I][STORAGE] RAMSpool lanes p1=0/0 p2=0/0 p3=0/0
+[300987][I][STACK] TaskButtons watermark=1056B
+[301080][I][STACK] TaskHardware watermark=6960B min=6960B
+[312412][I][BLE] worker stack free=7380B min=7380B
+[330052][I][HEAP] heap free=4478KB min=4471KB largest=4352KB frag=2% internalFree=61KB internalLargest=31KB psramFree=4417KB core=0/0% owner=BLE_GPS nets=0 pendingUpload=66 pendingEnrich=0
+[330053][I][STACK] TaskStorage watermark=2240B
+[330053][I][STORAGE] RAMSpool enq=0 cons=0 inflight=0/1024 high=0 pressure=0 drop[full=0 big=0 noise=0 p3Evict=0 p3Drop=0 p2Drop=0 p1Fail=0] free=1024
+[330053][I][STORAGE] RAMSpool enqueue probe[ok=0 drop=0] device[ok=0 drop=0]
+[330053][I][STORAGE] RAMSpool worker probe[ok=0 sup=0 drop=0 fail=0 slow=0] device[ok=0 sup=0 drop=0 fail=0 slow=0] slowTotal=0 maxMs=0
+[330053][I][STORAGE] RAMSpool prioEnq p0=0 p1=0 p2=0 p3=0
+[330053][I][STORAGE] RAMSpool lanes p1=0/0 p2=0/0 p3=0/0
+[330987][I][STACK] TaskButtons watermark=1056B
+[331086][I][STACK] TaskHardware watermark=6960B min=6960B
+[342430][I][BLE] worker stack free=7380B min=7380B
+[360059][I][HEAP] heap free=4478KB min=4471KB largest=4352KB frag=2% internalFree=61KB internalLargest=31KB psramFree=4417KB core=0/0% owner=BLE_GPS nets=0 pendingUpload=66 pendingEnrich=0
+ree=4478KB min=4471KB largest=4352KB frag=2% internalFree=61KB internalLargest=31KB psramFree=4417KB core=0/0% owner=BLE_GPS nets=6 pendingUpload=66 pendingEnrich=0
+[60018][I][STACK] TaskStorage watermark=2248B
+[60018][I][STORAGE] RAMSpool enq=0 cons=0 inflight=0/1024 high=0 pressure=0 drop[full=0 big=0 noise=0 p3Evict=0 p3Drop=0 p2Drop=0 p1Fail=0] free=1024
+[60018][I][STORAGE] RAMSpool enqueue probe[ok=0 drop=0] device[ok=0 drop=0]
+[60018][I][STORAGE] RAMSpool worker probe[ok=0 sup=0 drop=0 fail=0 slow=0] device[ok=0 sup=0 drop=0 fail=0 slow=0] slowTotal=0 maxMs=0
+[60018][I][STORAGE] RAMSpool prioEnq p0=0 p1=0 p2=0 p3=0
+[60018][I][STORAGE] RAMSpool lanes p1=0/0 p2=0/0 p3=0/0
+[60987][I][STACK] TaskButtons watermark=1056B
+[61031][I][STACK] TaskHardware watermark=8852B min=8852B
+[70271][I][BLE] worker stack free=7460B min=7460B
+[82467][I][POWER] Source BATTERY -> USB (3980mV trend=48)
+[82468][I][POWER] State BAT_NORMAL -> USB (79% 3980mV runtime=0min charge=1)
+[90024][I][HEAP] heap free=4478KB min=4471KB largest=4352KB frag=2% internalFree=61KB internalLargest=31KB psramFree=4417KB core=0/0% owner=BLE_GPS nets=6 pendingUpload=66 pendingEnrich=0
+[90024][I][STACK] TaskStorage watermark=2248B
+[90025][I][STORAGE] RAMSpool enq=0 cons=0 inflight=0/1024 high=0 pressure=0 drop[full=0 big=0 noise=0 p3Evict=0 p3Drop=0 p2Drop=0 p1Fail=0] free=1024
+[90025][I][STORAGE] RAMSpool enqueue probe[ok=0 drop=0] device[ok=0 drop=0]
+[90025][I][STORAGE] RAMSpool worker probe[ok=0 sup=0 drop=0 fail=0 slow=0] device[ok=0 sup=0 drop=0 fail=0 slow=0] slowTotal=0 maxMs=0
+[90025][I][STORAGE] RAMSpool prioEnq p0=0 p1=0 p2=0 p3=0
+[90025][I][STORAGE] RAMSpool lanes p1=0/0 p2=0/0 p3=0/0
+[90987][I][STACK] TaskButtons watermark=1056B
+[91038][I][STACK] TaskHardware watermark=8852B min=8852B
+[100287][I][BLE] worker stack free=7460B min=7460B
+[120030][I][HEAP] heap free=4478KB min=4471KB largest=4352KB frag=2% internalFree=61KB internalLargest=31KB psramFree=4417KB core=0/0% owner=BLE_GPS nets=6 pendingUpload=66 pendingEnrich=0
+K] TaskHardware watermark=6960B min=6960B
+[160306][I][BLE] worker stack free=7460B min=7460B
+[180041][I][HEAP] heap free=4478KB min=4471KB largest=4352KB frag=2% internalFree=61KB internalLargest=31KB psramFree=4417KB core=0/0% owner=BLE_GPS nets=6 pendingUpload=66 pendingEnrich=0
+[180041][I][STACK] TaskStorage watermark=2248B
+[180041][I][STORAGE] RAMSpool enq=0 cons=0 inflight=0/1024 high=0 pressure=0 drop[full=0 big=0 noise=0 p3Evict=0 p3Drop=0 p2Drop=0 p1Fail=0] free=1024
+[180042][I][STORAGE] RAMSpool enqueue probe[ok=0 drop=0] device[ok=0 drop=0]
+[180042][I][STORAGE] RAMSpool worker probe[ok=0 sup=0 drop=0 fail=0 slow=0] device[ok=0 sup=0 drop=0 fail=0 slow=0] slowTotal=0 maxMs=0
+[180042][I][STORAGE] RAMSpool prioEnq p0=0 p1=0 p2=0 p3=0
+[180042][I][STORAGE] RAMSpool lanes p1=0/0 p2=0/0 p3=0/0
+[180987][I][STACK] TaskButtons watermark=1056B
+[181054][I][STACK] TaskHardware watermark=6960B min=6960B
+[190313][I][BLE] worker stack free=7460B min=7460B
+[210046][I][HEAP] heap free=4478KB min=4471KB largest=4352KB frag=2% internalFree=61KB internalLargest=31KB psramFree=4417KB core=0/0% owner=BLE_GPS nets=6 pendingUpload=66 pendingEnrich=0
+[210047][I][STACK] TaskStorage watermark=2248B
+[210047][I][STORAGE] RAMSpool enq=0 cons=0 inflight=0/1024 high=0 pressure=0 drop[full=0 big=0 noise=0 p3Evict=0 p3Drop=0 p2Drop=0 p1Fail=0] free=1024
+[210047][I][STORAGE] RAMSpool enqueue probe[ok=0 drop=0] device[ok=0 drop=0]
+[210047][I][STORAGE] RAMSpool worker probe[ok=0 sup=0 drop=0 fail=0 slow=0] device[ok=0 sup=0 drop=0 fail=0 slow=0] slowTotal=0 maxMs=0
+[210047][I][STORAGE] RAMSpool prioEnq p0=0 p1=0 p2=0 p3=0
+[210047][I][STORAGE] RAMSpool lanes p1=0/0 p2=0/0 p3=0/0
+[210987][I][STACK] TaskButtons watermark=1056B
+[211060][I][STACK] TaskHardware watermark=6960B min=6960B
+[220319][I][BLE] worker stack free=7460B min=7460B
+[240052][I][HEAP] heap free=4478KB min=4471KB largest=4352KB frag=2% internalFree=61KB internalLargest=31KB psramFree=4417KB core=0/0% owner=BLE_GPS nets=6 pendingUpload=66 pendingEnrich=0
+K] TaskHardware watermark=6960B min=6960B
+[280336][I][BLE] worker stack free=7460B min=7460B
+[300055][I][HEAP] heap free=4478KB min=4471KB largest=4352KB frag=2% internalFree=61KB internalLargest=31KB psramFree=4417KB core=0/0% owner=BLE_GPS nets=6 pendingUpload=66 pendingEnrich=0
+[300055][I][STACK] TaskStorage watermark=2248B
+[300056][I][STORAGE] RAMSpool enq=0 cons=0 inflight=0/1024 high=0 pressure=0 drop[full=0 big=0 noise=0 p3Evict=0 p3Drop=0 p2Drop=0 p1Fail=0] free=1024
+[300056][I][STORAGE] RAMSpool enqueue probe[ok=0 drop=0] device[ok=0 drop=0]
+[300056][I][STORAGE] RAMSpool worker probe[ok=0 sup=0 drop=0 fail=0 slow=0] device[ok=0 sup=0 drop=0 fail=0 slow=0] slowTotal=0 maxMs=0
+[300056][I][STORAGE] RAMSpool prioEnq p0=0 p1=0 p2=0 p3=0
+[300056][I][STORAGE] RAMSpool lanes p1=0/0 p2=0/0 p3=0/0
+[300987][I][STACK] TaskButtons watermark=1056B
+[301078][I][STACK] TaskHardware watermark=6960B min=6960B
+[310373][I][BLE] worker stack free=7460B min=7460B
+[330059][I][HEAP] heap free=4478KB min=4471KB largest=4352KB frag=2% internalFree=61KB internalLargest=31KB psramFree=4417KB core=0/0% owner=BLE_GPS nets=6 pendingUpload=66 pendingEnrich=0
+[330059][I][STACK] TaskStorage watermark=2248B
+[330060][I][STORAGE] RAMSpool enq=0 cons=0 inflight=0/1024 high=0 pressure=0 drop[full=0 big=0 noise=0 p3Evict=0 p3Drop=0 p2Drop=0 p1Fail=0] free=1024
+[330060][I][STORAGE] RAMSpool enqueue probe[ok=0 drop=0] device[ok=0 drop=0]
+[330060][I][STORAGE] RAMSpool worker probe[ok=0 sup=0 drop=0 fail=0 slow=0] device[ok=0 sup=0 drop=0 fail=0 slow=0] slowTotal=0 maxMs=0
+[330060][I][STORAGE] RAMSpool prioEnq p0=0 p1=0 p2=0 p3=0
+[330060][I][STORAGE] RAMSpool lanes p1=0/0 p2=0/0 p3=0/0
+[330987][I][STACK] TaskButtons watermark=1056B
+[331083][I][STACK] TaskHardware watermark=6960B min=6960B
+[340382][I][BLE] worker stack free=7460B min=7460B
+[360065][I][HEAP] heap free=4478KB min=4471KB largest=4352KB frag=2% internalFree=61KB internalLargest=31KB psramFree=4417KB core=0/0% owner=BLE_GPS nets=6 pendingUpload=66 pendingEnrich=0
+ free=4472KB min=4466KB largest=4352KB frag=2% internalFree=55KB internalLargest=31KB psramFree=4417KB core=0/0% owner=BLE_GPS nets=3 pendingUpload=70 pendingEnrich=0
+[60010][I][STACK] TaskStorage watermark=960B
+[60010][I][STORAGE] RAMSpool enq=4 cons=4 inflight=0/1024 high=2 pressure=0 drop[full=0 big=0 noise=0 p3Evict=0 p3Drop=0 p2Drop=0 p1Fail=0] free=1024
+[60010][I][STORAGE] RAMSpool enqueue probe[ok=2 drop=0] device[ok=2 drop=0]
+[60010][I][STORAGE] RAMSpool worker probe[ok=2 sup=0 drop=0 fail=0 slow=0] device[ok=2 sup=0 drop=0 fail=0 slow=0] slowTotal=0 maxMs=0
+[60010][I][STORAGE] RAMSpool prioEnq p0=0 p1=0 p2=4 p3=0
+[60010][I][STORAGE] RAMSpool lanes p1=0/0 p2=0/1 p3=0/0
+[60986][I][STACK] TaskButtons watermark=1060B
+[61033][I][STACK] TaskHardware watermark=8848B min=8848B
+[70293][I][BLE] worker stack free=7384B min=7384B
+[82481][I][POWER] Source BATTERY -> USB (3963mV trend=49)
+[82482][I][POWER] State BAT_NORMAL -> USB (76% 3963mV runtime=0min charge=1)
+[90016][I][HEAP] heap free=4472KB min=4466KB largest=4352KB frag=2% internalFree=55KB internalLargest=31KB psramFree=4417KB core=0/0% owner=BLE_GPS nets=3 pendingUpload=70 pendingEnrich=0
+[90017][I][STACK] TaskStorage watermark=960B
+[90017][I][STORAGE] RAMSpool enq=4 cons=4 inflight=0/1024 high=2 pressure=0 drop[full=0 big=0 noise=0 p3Evict=0 p3Drop=0 p2Drop=0 p1Fail=0] free=1024
+[90017][I][STORAGE] RAMSpool enqueue probe[ok=2 drop=0] device[ok=2 drop=0]
+[90017][I][STORAGE] RAMSpool worker probe[ok=2 sup=0 drop=0 fail=0 slow=0] device[ok=2 sup=0 drop=0 fail=0 slow=0] slowTotal=0 maxMs=0
+[90017][I][STORAGE] RAMSpool prioEnq p0=0 p1=0 p2=4 p3=0
+[90017][I][STORAGE] RAMSpool lanes p1=0/0 p2=0/1 p3=0/0
+[90986][I][STACK] TaskButtons watermark=1060B
+[91040][I][STACK] TaskHardware watermark=8848B min=8848B
+[100312][I][BLE] worker stack free=7384B min=7384B
+[120019][I][HEAP] heap free=4472KB min=4466KB largest=4352KB frag=2% internalFree=55KB internalLargest=31KB psramFree=4417KB core=0/0% owner=BLE_GPS nets=3 pendingUpload=70 pendingEnrich=0
+ACK] TaskHardware watermark=6960B min=6960B
+[160344][I][BLE] worker stack free=7384B min=7384B
+[180027][I][HEAP] heap free=4472KB min=4466KB largest=4352KB frag=2% internalFree=55KB internalLargest=31KB psramFree=4417KB core=0/0% owner=BLE_GPS nets=3 pendingUpload=70 pendingEnrich=0
+[180028][I][STACK] TaskStorage watermark=960B
+[180028][I][STORAGE] RAMSpool enq=4 cons=4 inflight=0/1024 high=2 pressure=0 drop[full=0 big=0 noise=0 p3Evict=0 p3Drop=0 p2Drop=0 p1Fail=0] free=1024
+[180028][I][STORAGE] RAMSpool enqueue probe[ok=2 drop=0] device[ok=2 drop=0]
+[180028][I][STORAGE] RAMSpool worker probe[ok=2 sup=0 drop=0 fail=0 slow=0] device[ok=2 sup=0 drop=0 fail=0 slow=0] slowTotal=0 maxMs=0
+[180028][I][STORAGE] RAMSpool prioEnq p0=0 p1=0 p2=4 p3=0
+[180028][I][STORAGE] RAMSpool lanes p1=0/0 p2=0/1 p3=0/0
+[180986][I][STACK] TaskButtons watermark=1060B
+[181061][I][STACK] TaskHardware watermark=6960B min=6960B
+[190353][I][BLE] worker stack free=7384B min=7384B
+[210030][I][HEAP] heap free=4472KB min=4466KB largest=4352KB frag=2% internalFree=55KB internalLargest=31KB psramFree=4417KB core=0/0% owner=BLE_GPS nets=3 pendingUpload=70 pendingEnrich=0
+[210031][I][STACK] TaskStorage watermark=960B
+[210031][I][STORAGE] RAMSpool enq=4 cons=4 inflight=0/1024 high=2 pressure=0 drop[full=0 big=0 noise=0 p3Evict=0 p3Drop=0 p2Drop=0 p1Fail=0] free=1024
+[210031][I][STORAGE] RAMSpool enqueue probe[ok=2 drop=0] device[ok=2 drop=0]
+[210031][I][STORAGE] RAMSpool worker probe[ok=2 sup=0 drop=0 fail=0 slow=0] device[ok=2 sup=0 drop=0 fail=0 slow=0] slowTotal=0 maxMs=0
+[210031][I][STORAGE] RAMSpool prioEnq p0=0 p1=0 p2=4 p3=0
+[210031][I][STORAGE] RAMSpool lanes p1=0/0 p2=0/1 p3=0/0
+[210986][I][STACK] TaskButtons watermark=1060B
+[211065][I][STACK] TaskHardware watermark=6960B min=6960B
+[220365][I][BLE] worker stack free=7384B min=7384B
+[240034][I][HEAP] heap free=4472KB min=4466KB largest=4352KB frag=2% internalFree=55KB internalLargest=31KB psramFree=4417KB core=0/0% owner=BLE_GPS nets=3 pendingUpload=70 pendingEnrich=0
+ACK] TaskHardware watermark=6960B min=6960B
+[280386][I][BLE] worker stack free=7384B min=7384B
+[300051][I][HEAP] heap free=4472KB min=4466KB largest=4352KB frag=2% internalFree=55KB internalLargest=31KB psramFree=4417KB core=0/0% owner=BLE_GPS nets=3 pendingUpload=70 pendingEnrich=0
+[300051][I][STACK] TaskStorage watermark=960B
+[300052][I][STORAGE] RAMSpool enq=4 cons=4 inflight=0/1024 high=2 pressure=0 drop[full=0 big=0 noise=0 p3Evict=0 p3Drop=0 p2Drop=0 p1Fail=0] free=1024
+[300052][I][STORAGE] RAMSpool enqueue probe[ok=2 drop=0] device[ok=2 drop=0]
+[300052][I][STORAGE] RAMSpool worker probe[ok=2 sup=0 drop=0 fail=0 slow=0] device[ok=2 sup=0 drop=0 fail=0 slow=0] slowTotal=0 maxMs=0
+[300052][I][STORAGE] RAMSpool prioEnq p0=0 p1=0 p2=4 p3=0
+[300052][I][STORAGE] RAMSpool lanes p1=0/0 p2=0/1 p3=0/0
+[300986][I][STACK] TaskButtons watermark=1060B
+[301076][I][STACK] TaskHardware watermark=6960B min=6960B
+[310396][I][BLE] worker stack free=7384B min=7384B
+[330053][I][HEAP] heap free=4472KB min=4466KB largest=4352KB frag=2% internalFree=55KB internalLargest=31KB psramFree=4417KB core=0/0% owner=BLE_GPS nets=3 pendingUpload=70 pendingEnrich=0
+[330054][I][STACK] TaskStorage watermark=960B
+[330054][I][STORAGE] RAMSpool enq=4 cons=4 inflight=0/1024 high=2 pressure=0 drop[full=0 big=0 noise=0 p3Evict=0 p3Drop=0 p2Drop=0 p1Fail=0] free=1024
+[330054][I][STORAGE] RAMSpool enqueue probe[ok=2 drop=0] device[ok=2 drop=0]
+[330054][I][STORAGE] RAMSpool worker probe[ok=2 sup=0 drop=0 fail=0 slow=0] device[ok=2 sup=0 drop=0 fail=0 slow=0] slowTotal=0 maxMs=0
+[330054][I][STORAGE] RAMSpool prioEnq p0=0 p1=0 p2=4 p3=0
+[330054][I][STORAGE] RAMSpool lanes p1=0/0 p2=0/1 p3=0/0
+[330986][I][STACK] TaskButtons watermark=1060B
+[331078][I][STACK] TaskHardware watermark=6960B min=6960B
+[340409][I][BLE] worker stack free=7384B min=7384B
+[360059][I][HEAP] heap free=4472KB min=4466KB largest=4352KB frag=2% internalFree=55KB internalLargest=31KB psramFree=4417KB core=0/0% owner=BLE_GPS nets=3 pendingUpload=70 pendingEnrich=0
+--- PENDING BUFFER ---
+pool prioEnq p0=0 p1=0 p2=0 p3=0
+[30007][I][STORAGE] RAMSpool lanes p1=0/0 p2=0/0 p3=0/0
+[30991][I][STACK] TaskButtons watermark=1068B
+[31003][I][STACK] TaskDisplay watermark=5020B min=5020B
+[31027][I][STACK] TaskHardware watermark=7968B min=7968B
+[40266][I][BLE] worker stack free=7432B min=7432B
+[60010][I][HEAP] heap free=4478KB min=4472KB largest=4352KB frag=2% internalFree=61KB internalLargest=31KB psramFree=4417KB core=0/0% owner=BLE_GPS nets=3 pendingUpload=66 pendingEnrich=0
+[60011][I][STACK] TaskStorage watermark=2248B
+[60011][I][STORAGE] RAMSpool enq=0 cons=0 inflight=0/1024 high=0 pressure=0 drop[full=0 big=0 noise=0 p3Evict=0 p3Drop=0 p2Drop=0 p1Fail=0] free=1024
+[60011][I][STORAGE] RAMSpool enqueue probe[ok=0 drop=0] device[ok=0 drop=0]
+[60011][I][STORAGE] RAMSpool worker probe[ok=0 sup=0 drop=0 fail=0 slow=0] device[ok=0 sup=0 drop=0 fail=0 slow=0] slowTotal=0 maxMs=0
+[60011][I][STORAGE] RAMSpool prioEnq p0=0 p1=0 p2=0 p3=0
+[60011][I][STORAGE] RAMSpool lanes p1=0/0 p2=0/0 p3=0/0
+[60991][I][STACK] TaskButtons watermark=1068B
+[61034][I][STACK] TaskHardware watermark=7968B min=7968B
+[70273][I][BLE] worker stack free=7432B min=7432B
+[90018][I][HEAP] heap free=4478KB min=4472KB largest=4352KB frag=2% internalFree=61KB internalLargest=31KB psramFree=4417KB core=0/0% owner=BLE_GPS nets=3 pendingUpload=66 pendingEnrich=0
+[90019][I][STACK] TaskStorage watermark=2248B
+[90019][I][STORAGE] RAMSpool enq=0 cons=0 inflight=0/1024 high=0 pressure=0 drop[full=0 big=0 noise=0 p3Evict=0 p3Drop=0 p2Drop=0 p1Fail=0] free=1024
+[90019][I][STORAGE] RAMSpool enqueue probe[ok=0 drop=0] device[ok=0 drop=0]
+[90019][I][STORAGE] RAMSpool worker probe[ok=0 sup=0 drop=0 fail=0 slow=0] device[ok=0 sup=0 drop=0 fail=0 slow=0] slowTotal=0 maxMs=0
+[90019][I][STORAGE] RAMSpool prioEnq p0=0 p1=0 p2=0 p3=0
+[90019][I][STORAGE] RAMSpool lanes p1=0/0 p2=0/0 p3=0/0
+[90991][I][STACK] TaskButtons watermark=1068B
+[91042][I][STACK] TaskHardware watermark=7968B min=7968B
+[100290][I][BLE] worker stack free=7432B min=7432B
+=== END LOG ===
+[111255][W][CORE] TaskHardware loop gap=2157ms owner=BLE_GPS pendingUpload=66 maintPending=1 suppressed=0
+[120019][I][HEAP] heap free=4478KB min=4472KB largest=4352KB frag=2% internalFree=61KB internalLargest=31KB psramFree=4417KB core=7/2% owner=BLE_GPS nets=3 pendingUpload=66 pendingEnrich=0
+[HEALTH] time=2026-08-14 08:06:08 src=gps
+[HEALTH] heap used=3973/8451KB free=4478KB min=4472KB largest=4352KB frag=2%
+[HEALTH] internal used=198/259KB free=61KB min=55KB largest=31KB
+[HEALTH] psram used=3775/8192KB free=4417KB largest=4352KB
+[HEALTH] stack free_min: core0=8KB/14KB core1=5KB/10KB
+[HEALTH] loopTask free_min=3080B/5120B
+[HEALTH] core usage: core0=7% core1=2%
+[HEALTH] power=usb state=usb batt=100% 4677mV trend=50mV/min runtime=0min cap=1100mAh charging=1
+[HEALTH] radio=BLE_GPS wifi=0 ble=1 gps=0 nets=3 pendingUpload=66 pendingEnrich=0
+[HEALTH] subghz=NONE mode=OFF pkts=0 nodes=0
+[120159][I][STACK] TaskStorage watermark=2248B
+[120159][I][STORAGE] RAMSpool enq=0 cons=0 inflight=0/1024 high=0 pressure=0 drop[full=0 big=0 noise=0 p3Evict=0 p3Drop=0 p2Drop=0 p1Fail=0] free=1024
+[120160][I][STORAGE] RAMSpool enqueue probe[ok=0 drop=0] device[ok=0 drop=0]
+[120160][I][STORAGE] RAMSpool worker probe[ok=0 sup=0 drop=0 fail=0 slow=0] device[ok=0 sup=0 drop=0 fail=0 slow=0] slowTotal=0 maxMs=0
+[120160][I][STORAGE] RAMSpool prioEnq p0=0 p1=0 p2=0 p3=0
+[120161][I][STORAGE] RAMSpool lanes p1=0/0 p2=0/0 p3=0/0
+[120991][I][STACK] TaskButtons watermark=1068B
+[121043][I][STACK] TaskHardware watermark=7040B min=7040B
+=== capture closed 2026-08-14T08:06:52.2938704-05:00 ===

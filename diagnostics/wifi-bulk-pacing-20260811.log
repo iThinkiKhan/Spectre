@@ -1,0 +1,47 @@
+=== capture opened 2026-08-11T14:05:18.0347994-05:00 ===
+=== send: status ===
+status
+[USB] unknown command: status
+[USB] Commands:
+[USB]   debug on | debug off
+[USB]   debug status | debug dump
+[USB]   debug level d|i|w|e
+[USB]   debug focus ops|all|radio,wifi,mqtt
+[USB]   debug focus add <areas> | remove <areas>
+[USB]   debug focus +wifi -ble (mixed +/-)
+[USB]   debug focus list
+[USB]   wio status
+[USB]   wio hello | wio ble start | wio ble status | wio drop
+[USB]   wio probe | wio enrich
+[USB]   wio text <prompt> | wio text cancel
+[USB]   wio raw <line>  (send exact UART line to WIO)
+[USB]   companion status
+[USB]   companion link    (hold secure BLE link until cancel)
+[USB]   companion probe   (one-shot manual BLE probe)
+[USB]   companion enrich  (manual enrichment; probes first if needed)
+[USB]   companion cancel  (clear all pending companion requests)
+[USB]   time | time sync   (clock status; 'sync' forces NTP now)
+[USB]   heap status      (internal/PSRAM heap snapshot)
+[USB]   entity status    (PSRAM Entity working-set summary)
+[USB]   spool audit       (read-only spool scan, prints mismatches)
+[USB]   spool count       (exact total record count + spool stats)
+[USB]   spool enrich      (pending vs already enriched counts)
+[USB]   spool repair      (audit + repair counters, quarantine bad segs)
+[USB]   spool diag        (segment list, counters, flags)
+[USB]   spool quarantine list  (list /spool_bad files)
+[USB]   spool quarantine meta  (print quarantine JSON records)
+[USB]   spool quarantine clear (delete all quarantine files)
+[USB]   fieldvault dump    (print FieldVault records, keep them)
+[USB]   fieldvault clear   (delete retained FieldVault records)
+[USB]   fieldvault upload  (upload pending FieldVault records only)
+[USB]   crash log         (print retained crash breadcrumb ring)
+[USB]   ble rxdiag        (print retained BLE receive crash stage)
+[USB]   upload now         (manual MQTT upload of pending records)
+[USB]   upload stop        (safely stop the active MQTT upload)
+[USB]   upload resume      (allow MQTT uploads again)
+[USB]   upload rewind [id] (re-offer uploaded records; 0/blank = all)
+[USB]   mesh status        (Meshtastic client state + counters)
+[USB]   mesh on | mesh off (take/release SX1262 for Meshtastic)
+[USB]   mesh nodes         (list heard mesh nodes)
+[USB]   mesh send <text>   (broadcast a text message)
+[USB]   ble smoke         (suspend WiFi, init/deinit NimBLE, resume promisc)

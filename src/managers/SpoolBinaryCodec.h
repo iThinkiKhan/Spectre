@@ -38,7 +38,14 @@ enum RecordType : uint8_t {
     REC_EVENT = 1,
     REC_ENRICH_DELTA = 2,
     REC_DICT_ADD = 3,
-    REC_CHECKPOINT = 4
+    REC_CHECKPOINT = 4,
+    // Delta-coded enrichment record. Same one-record-per-enrichment cardinality
+    // as REC_ENRICH_DELTA -- every segment counter, event-id range and audit
+    // path is unchanged -- but each numeric field is stored as a delta from the
+    // previous enrichment record in the same segment. Safe because enrich
+    // deltas are only ever read by sequential scan; the random-access decoder
+    // rejects any record that is not REC_EVENT.
+    REC_ENRICH_DELTA_V2 = 5
 };
 
 struct RecordPrefix {

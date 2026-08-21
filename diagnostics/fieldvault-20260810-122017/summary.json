@@ -1,0 +1,296 @@
+{
+  "generatedAt": "2026-08-10T17:20:43.7504262Z",
+  "source": "serial:COM13",
+  "nonDestructive": true,
+  "recordCount": 463,
+  "parseErrorCount": 0,
+  "sequence": {
+    "first": 3360,
+    "last": 3822,
+    "gaps": [],
+    "duplicates": []
+  },
+  "typeCounts": {
+    "boot": 22,
+    "crash": 17,
+    "fs_audit_summary": 7,
+    "power_sample": 100,
+    "reset_crash": 1,
+    "run_sample": 316
+  },
+  "boot": {
+    "count": 22,
+    "slowCount": 22,
+    "slowThresholdMs": 5000,
+    "slow": [
+      {
+        "seq": 3409,
+        "startupMs": 6414,
+        "reset": "unknown",
+        "resetCode": 11
+      },
+      {
+        "seq": 3483,
+        "startupMs": 6364,
+        "reset": "unknown",
+        "resetCode": 11
+      },
+      {
+        "seq": 3495,
+        "startupMs": 6398,
+        "reset": "unknown",
+        "resetCode": 11
+      },
+      {
+        "seq": 3508,
+        "startupMs": 6650,
+        "reset": "unknown",
+        "resetCode": 11
+      },
+      {
+        "seq": 3513,
+        "startupMs": 6646,
+        "reset": "unknown",
+        "resetCode": 11
+      },
+      {
+        "seq": 3527,
+        "startupMs": 6796,
+        "reset": "unknown",
+        "resetCode": 11
+      },
+      {
+        "seq": 3532,
+        "startupMs": 6844,
+        "reset": "unknown",
+        "resetCode": 11
+      },
+      {
+        "seq": 3537,
+        "startupMs": 7161,
+        "reset": "power_on",
+        "resetCode": 1
+      },
+      {
+        "seq": 3541,
+        "startupMs": 8506,
+        "reset": "unknown",
+        "resetCode": 11
+      },
+      {
+        "seq": 3598,
+        "startupMs": 9540,
+        "reset": "unknown",
+        "resetCode": 11
+      },
+      {
+        "seq": 3602,
+        "startupMs": 8840,
+        "reset": "unknown",
+        "resetCode": 11
+      },
+      {
+        "seq": 3608,
+        "startupMs": 9063,
+        "reset": "unknown",
+        "resetCode": 11
+      },
+      {
+        "seq": 3614,
+        "startupMs": 9319,
+        "reset": "unknown",
+        "resetCode": 11
+      },
+      {
+        "seq": 3620,
+        "startupMs": 8608,
+        "reset": "unknown",
+        "resetCode": 11
+      },
+      {
+        "seq": 3624,
+        "startupMs": 8752,
+        "reset": "unknown",
+        "resetCode": 11
+      },
+      {
+        "seq": 3631,
+        "startupMs": 9150,
+        "reset": "task_wdt",
+        "resetCode": 6
+      },
+      {
+        "seq": 3640,
+        "startupMs": 9432,
+        "reset": "unknown",
+        "resetCode": 11
+      },
+      {
+        "seq": 3646,
+        "startupMs": 9696,
+        "reset": "unknown",
+        "resetCode": 11
+      },
+      {
+        "seq": 3696,
+        "startupMs": 9399,
+        "reset": "power_on",
+        "resetCode": 1
+      },
+      {
+        "seq": 3701,
+        "startupMs": 10077,
+        "reset": "power_on",
+        "resetCode": 1
+      },
+      {
+        "seq": 3805,
+        "startupMs": 15965,
+        "reset": "power_on",
+        "resetCode": 1
+      },
+      {
+        "seq": 3810,
+        "startupMs": 11792,
+        "reset": "power_on",
+        "resetCode": 1
+      }
+    ],
+    "bleAdjacent": [
+      {
+        "bootSeq": 3815,
+        "priorRunSeq": 3814,
+        "priorPending": 1764,
+        "priorInternalHeapKb": 18
+      },
+      {
+        "bootSeq": 3819,
+        "priorRunSeq": 3818,
+        "priorPending": 1778,
+        "priorInternalHeapKb": 19
+      }
+    ]
+  },
+  "crash": {
+    "count": 17,
+    "records": [
+      {
+        "seq": 3408,
+        "phase": "storage_boot",
+        "reason": "reset during storage_boot",
+        "reset": "unknown"
+      },
+      {
+        "seq": 3482,
+        "phase": "storage_boot",
+        "reason": "reset during storage_boot",
+        "reset": "unknown"
+      },
+      {
+        "seq": 3494,
+        "phase": "storage_boot",
+        "reason": "reset during storage_boot",
+        "reset": "unknown"
+      },
+      {
+        "seq": 3507,
+        "phase": "storage_boot",
+        "reason": "reset during storage_boot",
+        "reset": "unknown"
+      },
+      {
+        "seq": 3512,
+        "phase": "storage_boot",
+        "reason": "reset during storage_boot",
+        "reset": "unknown"
+      },
+      {
+        "seq": 3526,
+        "phase": "storage_boot",
+        "reason": "reset during storage_boot",
+        "reset": "unknown"
+      },
+      {
+        "seq": 3531,
+        "phase": "storage_boot",
+        "reason": "reset during storage_boot",
+        "reset": "unknown"
+      },
+      {
+        "seq": 3540,
+        "phase": "storage_boot",
+        "reason": "reset during storage_boot",
+        "reset": "unknown"
+      },
+      {
+        "seq": 3597,
+        "phase": "storage_boot",
+        "reason": "reset during storage_boot",
+        "reset": "unknown"
+      },
+      {
+        "seq": 3601,
+        "phase": "storage_boot",
+        "reason": "reset during storage_boot",
+        "reset": "unknown"
+      },
+      {
+        "seq": 3607,
+        "phase": "storage_boot",
+        "reason": "reset during storage_boot",
+        "reset": "unknown"
+      },
+      {
+        "seq": 3613,
+        "phase": "storage_boot",
+        "reason": "reset during storage_boot",
+        "reset": "unknown"
+      },
+      {
+        "seq": 3619,
+        "phase": "storage_boot",
+        "reason": "reset during storage_boot",
+        "reset": "unknown"
+      },
+      {
+        "seq": 3623,
+        "phase": "storage_boot",
+        "reason": "reset during storage_boot",
+        "reset": "unknown"
+      },
+      {
+        "seq": 3630,
+        "phase": "storage_boot",
+        "reason": "task watchdog during storage_boot",
+        "reset": "task_wdt"
+      },
+      {
+        "seq": 3639,
+        "phase": "storage_boot",
+        "reason": "reset during storage_boot",
+        "reset": "unknown"
+      },
+      {
+        "seq": 3645,
+        "phase": "storage_boot",
+        "reason": "reset during storage_boot",
+        "reset": "unknown"
+      }
+    ]
+  },
+  "power": {
+    "sampleCount": 100,
+    "usbSampleCount": 85,
+    "minUsbMv": 3803,
+    "maxUsbMv": 4766
+  },
+  "latestRun": {
+    "seq": 3822,
+    "uptimeSeconds": 306,
+    "owner": 1,
+    "pendingUpload": 1800,
+    "pendingEnrichment": 1800,
+    "internalHeapKb": 53
+  },
+  "auditProblemCount": 0
+}

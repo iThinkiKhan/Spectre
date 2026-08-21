@@ -8,6 +8,11 @@
 #
 # NOTE: only ever open the MI_01 interface (the app CDC). Opening the MI_00
 # USB-JTAG port with DTR/RTS asserted resets the S3 into ROM download mode.
+#
+# NOTE: open with BOTH DtrEnable and RtsEnable true. Opening the app CDC with
+# RTS deasserted drops the S3 straight into ROM download mode — the app CDC
+# (MI_01) vanishes and the ROM's MI_00 + MI_02 pair appears in its place, so
+# every subsequent command fails with "port not found" until esptool resets it.
 
 function Get-SpectrePort {
     $dev = Get-CimInstance Win32_PnPEntity | Where-Object {

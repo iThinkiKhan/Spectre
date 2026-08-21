@@ -1,0 +1,57 @@
+=== capture opened 2026-08-11T15:15:38.1951303-05:00 ===
+[13224][I][BLE] target found matchedBy=service cachePeer=0 addr=4e:62:6f:d5:aa:4f name=SpectrePhone rssi=-53
+[13225][I][BLE] target found matchedBy=service cachePeer=0 addr=4e:62:6f:d5:aa:4f name=SpectrePhone rssi=-53
+[13247][I][BLE] scan stop; connect pending addr=4e:62:6f:d5:aa:4f
+[13507][I][BLE] connect pending settled addr=4e:62:6f:d5:aa:4f
+[13508][I][BLE] connect attempt addr=4e:62:6f:d5:aa:4f name=SpectrePhone
+[13508][I][BLE] connect params timeoutMs=45000 scanItvl=16 scanWin=16 addrType=1
+[13692][I][BLE] connect result ok=1 err=0 addr=4e:62:6f:d5:aa:4f
+[13692][I][BLE] BLE link connected; starting app-layer auth watchdog=50000ms
+[13693][I][BLE] remote service lookup begin core=1 internalFree=41276 largest=31732
+[13721][I][BLE] remote service lookup end found=1 err=0
+[13721][I][BLE] remote characteristic discovery begin
+[13810][I][BLE] remote characteristic discovery end count=13 err=0
+[13841][I][BLE] remote descriptor discovery char=auth count=2 err=0
+[13841][I][BLE] auth notify subscribe begin
+[13870][I][BLE] auth notify subscribe end ok=1 err=0
+[14145][I][BLE] auth challenge write bytes=163 mtu=247 attPayload=244 mode=response
+[14640][I][BLE] app secure session ready alg=P-256+ECDH+AES-256-GCM
+[14640][I][BLE] phone auth confirmed; caching peer addr=4e:62:6f:d5:aa:4f ttl=300000ms rssi=-53
+[14681][I][BLE] remote descriptor discovery char=enrichment count=2 err=0
+[14742][I][BLE] remote descriptor discovery char=command_req count=2 err=0
+[14861][I][BLE] remote bound gps=1 ctrl=1 meta=1 batch=1 enrich=1 auth=1 authReq=1 storage=1 cmdReq=1 cmdResp=1 logStream=1 dashStream=1 notification=1 notify(gps=0 ctrl=0 enrich=1 auth=1 cmdReq=1) mtu=247 a
+[14863][I][BLE] probe_summary seen=1 matchedBy=service rssi=-53 scanMs=3870
+[14863][I][BLE] phone_session_summary auth=ok mtu=247 gps=1 ctrl=1 enrich=1 storage=1
+[14890][I][BLE] storage snapshot sent pendingUp=0/36 pendingEnrich=0/0 usedPct=4
+[14896][I][BLE] Phone probe succeeded ??? backoff reset
+[14899][I][BLE] Phone probe promoted to enrichment pendingEnrich=0 maxBatch=18
+[14900][I][BLE] Enrichment pending scan begin claimed=0 max=18
+[14900][I][BLE] Enrichment pending scan done count=0
+[14900][I][BLE] Phone enrichment finished successfully
+[14920][I][BLE] storage snapshot sent pendingUp=0/36 pendingEnrich=0/0 usedPct=4
+[14921][I][BLE] Localization complete; retaining phone link for offload pending=36
+[14921][I][BLE] Enrichment complete; persistent companion link retained
+[14940][I][BLE] link ready state=4
+[14942][I][OFFLOAD] begin preparing index asynchronously
+[14943][I][CMD] op=0x30 reqid=1 status=4 payload=0 elapsedMs=0
+[14982][I][STORAGE] RAMSpool worker paused inflight=0 lastInflight=0
+[14982][I][STORAGE] Exclusive window begin kind=enrichment reason=phone_offload_prepare workerPaused=1 displaySuspended=1
+[14983][I][STORAGE] Upload index rebuild begin pending=36 window=8192 heapFree=4599212 largest=4456436
+[15327][I][STORAGE] Upload window rebuild accepted indexed=36 window=8192 pending=36 sessions=4 skipped=0 failedSegs=0 sidecarLoaded=10 sidecarStale=0 truncated=0 heapFree=4585444 largest=4456436
+[15328][I][STORAGE] Upload stream prepare index built ok=1 resident=1 ms=346
+[15328][I][STORAGE] Upload stream prepare ready=1 pending=36 budgetMs=45000 ms=346 internalFree=27868 internalLargest=12788 psramFree=4557576
+[15330][I][STORAGE] RAMSpool worker resumed
+[15330][I][STORAGE] Exclusive window end kind=enrichment result=index_ready reason=phone_offload_prepare
+[15331][I][OFFLOAD] index preparation complete ok=1 resident=1
+[15743][I][STORAGE] Upload batch open; deferring watermark flush
+[15743][I][OFFLOAD] begin transfer=1 pending=36 indexed=36 sessions=4 truncated=0
+[15744][I][CMD] op=0x30 reqid=2 status=0 payload=12 elapsedMs=1
+[15787][I][OFFLOAD] wifi bulk armed transfer=1 pending=36 ssidLen=16 port=38845
+[15788][I][CMD] op=0x34 reqid=3 status=0 payload=0 elapsedMs=1
+[16541][I][BLE] probe resource release
+[16542][I][BLE] advertising stop
+[16544][I][BLE] client soft drop reason=radio_disabled
+[16544][I][BLE] radio disabled
+[16545][I][BLE] probe_release phase=worker_delete
+[16556][I][BLE] BLE disconnect preserved active Wi-Fi bulk transfer
+[16556][I][BLE] peer disconnect ignored after radio release reason=534

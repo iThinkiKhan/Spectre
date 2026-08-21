@@ -1,0 +1,28 @@
+# Post-drain 16MB layout. NOT ACTIVE YET -- platformio.ini still points at
+# partitions.csv. Switch board_build.partitions to this file only after the
+# device has been drained and /config/vault has been backed up, because moving
+# spiffs DESTROYS the existing LittleFS filesystem.
+#
+# What changes vs partitions.csv:
+#   - app1 (0x3F0000) is gone. The project has no OTA path, so the second app
+#     slot was 3.94MB of flash that could never be written.
+#   - coredump moves from 0x800000 up to 0x410000, directly after app0, so the
+#     freed space is contiguous with the tail of flash.
+#   - spiffs starts at 0x420000 and runs to the end of the 16MB part:
+#     0x1000000 - 0x420000 = 0xBE0000 = 11.87MB, up from 7.94MB (+49%).
+#
+# What survives: nvs (all SettingsManager Preferences).
+# What is lost: everything on LittleFS -- the spool, /config/vault/known_
+# locations.json, BadUSB scripts, /exports, /pmkids.
+#
+# Boot note: otadata is kept and app0 stays subtype ota_0, so the bootloader
+# behaves exactly as it does today. With ota_1 absent, flash the image with a
+# full chip erase so a stale otadata entry cannot select a partition that is
+# no longer there.
+#
+# Name,   Type, SubType, Offset,   Size,     Flags
+nvs,      data, nvs,     0x9000,   0x5000,
+otadata,  data, ota,     0xe000,   0x2000,
+app0,     app,  ota_0,   0x10000,  0x400000,
+coredump, data, coredump,0x410000, 0x10000,
+spiffs,   data, spiffs,  0x420000, 0xBE0000,

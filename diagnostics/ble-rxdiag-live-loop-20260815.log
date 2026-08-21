@@ -1,0 +1,129 @@
+=== reconnecting capture opened 2026-08-15T20:40:22.0586622-05:00 port=COM13 ===
+=== serial connected 2026-08-15T20:40:22.0946945-05:00 attempt=1 ===
+[13009][I][ENTITY] Rebuild complete entities=73 observations=1280 ms=6043
+[13009][I][ENTITY] Ready entities=73 observations=1280 links=98304 psram=3088KB selftest=pass rebuild=ok
+[13021][I][PWNY] PMKID capture index loaded count=0
+[13022][I][WIFI] WiFiManager initialized
+[13163][I][WIFI] Allocation: OK
+[13268][I][WIFI] Promiscuous: YES
+[13268][I][WIFI] Promiscuous mode started data=0
+[13273][I][CORE] Hardware ready
+[13457][I][COMP] Automatic phone offload recovery requested
+[13457][I][WIFI] Radio paused
+[13617][I][WIFI] Radio suspended
+[13618][I][BLE] BLE payload buffers in PSRAM bytes=6276
+[13694][I][BLE] begin phase=nimble_pre bt=idle/0 heap=125936 largest=55284 stack=12864 devLen=14
+[13694][I][BLE] begin phase=nimble_init
+[13707][I][BLE] begin phase=nimble_init_ok bt=enabled/2 heap=62940 largest=31732 stack=12864
+[13708][I][BLE] BLE SM disabled; app-layer P-256/AES-GCM required
+[13709][I][BLE] begin phase=server_ok
+[13710][I][BLE] scanner configured legacy=1 active=0 interval=30 window=30 srTimeout=200
+[13710][I][BLE] begin phase=scanner_ok
+[13711][I][BLE] begin phase=worker_ok
+[13712][I][BLE] begin ready
+[13713][I][BLE] radio enabled settle=500ms
+[13715][I][BLE] advertising start
+[13716][I][BLE] companion link requested reason=offload_prep mode=fresh_scan timeout=15s settle=500ms cacheAge=0ms rssi=0
+[13721][I][BLE] Phone probe lease granted reason=offload_prep cachedFirst=1 hold=60000ms
+[13732][W][CORE] TaskHardware loop gap=459ms owner=BLE_GPS pendingUpload=1261 maintPending=0 suppressed=0
+[14236][I][BLE] scan start
+[14237][I][BLE] scan start diag=1 deliverDuplicates=1 diagLeft=44477 state=1 window=8000ms weakRecent=0 lastRssi=0
+[14266][I][BLE] target found matchedBy=service cachePeer=0 addr=59:f1:1c:75:63:81 name=SpectrePhone rssi=-100
+[14267][I][BLE] target found matchedBy=service cachePeer=0 addr=59:f1:1c:75:63:81 name=SpectrePhone rssi=-100
+[14284][I][BLE] scan stop; connect pending addr=59:f1:1c:75:63:81
+[14537][I][BLE] connect pending settled addr=59:f1:1c:75:63:81
+[14538][I][BLE] connect attempt addr=59:f1:1c:75:63:81 name=SpectrePhone
+[14541][I][BLE] connect params timeoutMs=15000 scanItvl=16 scanWin=16 addrType=1
+[17342][I][BLE] connect result ok=1 err=0 addr=59:f1:1c:75:63:81
+[17342][I][BLE] BLE link connected; starting app-layer auth watchdog=50000ms
+[17343][I][BLE] remote service lookup begin core=1 internalFree=60288 largest=31732
+[17373][I][BLE] remote service lookup end found=1 err=0
+[17373][I][BLE] remote characteristic discovery begin
+[17972][I][BLE] remote characteristic discovery end count=13 err=0
+[18016][I][BLE] remote descriptor discovery char=auth count=2 err=0
+[18016][I][BLE] auth notify subscribe begin
+[18045][I][BLE] auth notify subscribe end ok=1 err=0
+[18401][I][BLE] auth challenge write bytes=163 mtu=247 attPayload=244 mode=response
+[19053][I][BLE] app secure session ready alg=P-256+ECDH+AES-256-GCM
+[19053][I][BLE] phone auth confirmed; caching peer addr=59:f1:1c:75:63:81 ttl=300000ms rssi=-100
+[19096][I][BLE] remote descriptor discovery char=enrichment count=2 err=0
+[19261][I][BLE] remote descriptor discovery char=command_req count=2 err=0
+[19411][I][BLE] remote bound gps=1 ctrl=1 meta=1 batch=1 enrich=1 auth=1 authReq=1 storage=1 cmdReq=1 cmdResp=1 logStream=1 dashStream=1 notification=1 notify(gps=0 ctrl=0 enrich=1 auth=1 cmdReq=1) mtu=247 a
+[19412][I][BLE] probe_summary seen=1 matchedBy=service rssi=-100 scanMs=4818
+[19412][I][BLE] phone_session_summary auth=ok mtu=247 gps=1 ctrl=1 enrich=1 storage=1
+[19414][I][BLE] link ready state=4
+[19485][I][BLE] storage snapshot sent pendingUp=0/1261 pendingEnrich=0/0 usedPct=13
+[19550][I][BLE] Phone probe succeeded ??? backoff reset
+[19575][I][BLE] storage snapshot sent pendingUp=0/1261 pendingEnrich=0/0 usedPct=13
+[19576][I][OFFLOAD] automatic handoff opened reason=upload_only_probe_ready commandWindow=30s active=0
+=== serial connected 2026-08-15T20:40:41.2186955-05:00 attempt=2 ===
+[984][I][SYS] Booting
+[984][I][CORE] Idle hooks core0=1 core1=1
+[984][I][SYS] Starting tasks
+[985][I][CORE] Button input task started
+[985][I][STACK] TaskButtons watermark=2092B
+[985][I][CORE] Display task started
+[986][I][STACK] TaskDisplay watermark=7660B
+[1020][I][SYS] Tasks launched
+[1020][I][CORE] Hardware task started
+[1020][I][STACK] loopTask setup watermark=3080B
+[1021][I][STACK] TaskHardware watermark=14628B
+[1033][I][POWER] Source UNKNOWN -> USB (4666mV trend=0)
+[1034][I][POWER] State BAT_NORMAL -> USB (100% 4666mV runtime=0min charge=0)
+[1034][I][POWER] Power manager ready
+[1034][I][CORE] Settings=OK Time=OK
+[1034][I][CORE] Display ready=1 before storage init
+[1035][I][CORE] Storage begin start heapFree=167672 largest=118772
+=== send: ble rxdiag ===
+[2400][I][STORAGE] Counter trust=trusted reason=metadata_generation_match gen=9392 pending=1261 nextEventId=38394
+[2404][I][STORAGE] Spool diag[ensure_ready_pre_rescan] validSegments=31 untrustedSegments=0 invalidSegments=0 activeSegment=609 totalRecords=2574 storedEvents=1280
+[2421][I][STORAGE] Maintenance continuity log loaded clean=1 remaining=none gen=9392 pending=1261
+[2601][I][STORAGE] Fast boot: repair not required pending=1261 summary=0 dirty=0
+[2606][I][STORAGE] Config synced from settings for: Spectre
+[2827][I][STORAGE] Ready. Used=1096KB / 8128KB Free=7032KB / 8128KB
+[2828][I][STORAGE] Spool diag[ensure_ready] validSegments=31 untrustedSegments=0 invalidSegments=0 activeSegment=609 totalRecords=2574 storedEvents=1280 pendingUpload=1261 nextEventId=38394
+[2834][I][CORE] Storage begin done ok=1 ready=1 pending=1261 heapFree=164268 largest=118772
+[2848][I][STORAGE] RAMSpool ready slots=1024 slotBytes=416 total=416KB core=1
+[2848][I][STORAGE] RAMSpool worker started on core 1
+[2857][I][DLOG] DebugLog started - build Aug 15 2026 18:41:31
+[3374][I][STOR] Loaded 0 known locations
+[3395][I][MQTT] Backlog loaded: 1261 records
+[3539][I][BADUSB] Loaded 0 scripts
+[3539][I][BADUSB] IDLE
+[3541][I][WIO] UART1 begin tx=1 rx=2 baud=115200
+[6041][I][WIO] Accessory not detected within 2500ms
+[6041][I][XPORT] transport=internal_ble previous=internal_ble reason=initial wio.available=0 wio.proxy=0 ble.begun=0 ble.state=0 transitions=0
+[6042][I][WIO_SX] SX1262 not present; backend idle (Reyax fallback)
+[6643][I][MESH] Meshtastic client ready node=0x334B7A38 chanHash=0x08 (disabled)
+[6825][I][ENTITY] Boot selftest accepted=1 idempotent=1 result=pass
+[12957][I][ENTITY] Rebuild complete entities=73 observations=1280 ms=6041
+[12958][I][ENTITY] Ready entities=73 observations=1280 links=98304 psram=3088KB selftest=pass rebuild=ok
+[12970][I][PWNY] PMKID capture index loaded count=0
+[12970][I][WIFI] WiFiManager initialized
+[13215][I][WIFI] Allocation: OK
+[13321][I][WIFI] Promiscuous: YES
+[13321][I][WIFI] Promiscuous mode started data=0
+[13384][I][CORE] Hardware ready
+ble rxdiag
+[BLE] rxdiag stage=121 len=0 uptimeMs=29463
+[13584][I][COMP] Automatic phone offload recovery requested
+[13585][I][WIFI] Radio paused
+[13747][I][WIFI] Radio suspended
+[13748][I][BLE] BLE payload buffers in PSRAM bytes=6276
+[13824][I][BLE] begin phase=nimble_pre bt=idle/0 heap=126088 largest=55284 stack=12820 devLen=14
+[13824][I][BLE] begin phase=nimble_init
+[13836][I][BLE] begin phase=nimble_init_ok bt=enabled/2 heap=63112 largest=31732 stack=12820
+[13837][I][BLE] BLE SM disabled; app-layer P-256/AES-GCM required
+[13839][I][BLE] begin phase=server_ok
+[13839][I][BLE] scanner configured legacy=1 active=0 interval=30 window=30 srTimeout=200
+[13839][I][BLE] begin phase=scanner_ok
+[13840][I][BLE] begin phase=worker_ok
+[13840][I][BLE] begin ready
+[13840][I][BLE] radio enabled settle=500ms
+[13842][I][BLE] advertising start
+[13843][I][BLE] companion link requested reason=offload_prep mode=fresh_scan timeout=15s settle=500ms cacheAge=0ms rssi=0
+[13849][I][BLE] Phone probe lease granted reason=offload_prep cachedFirst=1 hold=60000ms
+[13859][W][CORE] TaskHardware loop gap=474ms owner=BLE_GPS pendingUpload=1261 maintPending=0 suppressed=0
+[14351][I][BLE] scan start
+[14352][I][BLE] scan start diag=1 deliverDuplicates=1 diagLeft=44488 state=1 window=8000ms weakRecent=0 lastRssi=0
+=== reconnecting capture closed 2026-08-15T20:40:57.0696729-05:00 ===

@@ -70,10 +70,15 @@ public:
     void setRadioEnabled(bool enabled);
     bool isBegun() const { return _begun; }
     bool isRadioEnabled() const { return _radioEnabled; }
+    // WiFi must not be restarted while the BLE worker is still inside a
+    // blocking NimBLE call or while the controller-disconnect settle window is
+    // active. RadioArbiter polls this after releasing a BLE lease.
+    bool readyForWifiHandoff() const;
     bool isAdvertising() const { return _advertisingActive; }
     bool isInboundConnected() const { return _serverConnected; }
     int8_t getLastTargetRssi() const { return _lastTargetRssi; }
     void printRxCrashDiag() const;
+    void latchRxCrashDiag();
 
     void setTargetDeviceName(const char* deviceName);
     void setTargetServiceUUID(const char* serviceUuid);
@@ -210,10 +215,21 @@ private:
     void _checkTimeouts();
     void _queueWorker(uint32_t bits);
     void _ensureAdvertising(bool enable);
+    void _finishRadioDisable();
 
     bool _ensureWorkerTask();
     bool _ensurePayloadBuffers();
-    void _releaseWorkerTask(const char* phase);
+    // Destroy the per-session NimBLE object graph (clients, services,
+    // advertising payload) while the host is still running.
+    void _teardownSessionObjects();
+
+    // Disable + deinit the BT controller. NimBLEDevice::deinit() never does
+    // this in this build, so it must be done explicitly to reclaim its ~33 KB.
+    void _deinitBtController();
+
+    // Returns true when no worker task remains (deleted, or never existed).
+    // False means the worker is mid-NimBLE-call and must not be torn down.
+    bool _releaseWorkerTask(const char* phase);
     static void _workerTaskEntry(void* arg);
     void _workerLoop();
     void _doConnectJob();
@@ -323,7 +339,11 @@ private:
 
     LinkState _state = BLE_IDLE;
     bool      _begun = false;
-    bool      _radioEnabled = false;
+    volatile bool _radioEnabled = false;
+    volatile bool _workerBusy = false;
+    volatile bool _radioDisablePending = false;
+    volatile bool _probeResetPending = false;
+    uint32_t  _wifiHandoffReadyAtMs = 0;
 
     bool      _scanActive = false;
     bool      _targetFound = false;
