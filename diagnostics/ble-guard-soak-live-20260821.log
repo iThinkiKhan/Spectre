@@ -1,0 +1,547 @@
+[session] port=COM13
+[session] waiting up to 60s for firmware ready
+[133573][I][STORAGE] worker ui refresh serviced uiRefreshServiceCount=2 uiDeferred=4 uiFlush=2 pressure=0 usedPct=4 pending=2347
+[136879][I][WIFI] Radio paused
+[137042][I][WIFI] Radio suspended
+[137182][I][BLE] begin phase=nimble_pre bt=idle/0 heap=122100 largest=31732 stack=3648 devLen=14
+[137182][I][BLE] begin phase=nimble_init
+[137191][I][BLE] begin phase=nimble_init_ok bt=enabled/2 heap=59140 largest=26612 stack=3648
+[137192][I][BLE] BLE SM disabled; app-layer P-256/AES-GCM required
+[137193][I][BLE] begin phase=server_ok
+[137194][I][BLE] scanner configured legacy=1 active=0 interval=30 window=30 srTimeout=200
+[137194][I][BLE] begin phase=scanner_ok
+[137194][I][BLE] begin phase=worker_ok
+[137197][I][BLE] begin ready
+[137197][I][BLE] radio enabled settle=500ms
+[137199][I][BLE] advertising start
+[137200][I][BLE] companion link requested reason=backlog_probe mode=fresh_scan timeout=15s settle=500ms cacheAge=0ms rssi=0
+[137206][I][BLE] Phone probe lease granted reason=backlog_probe cachedFirst=1 hold=60000ms
+[137217][W][CORE] TaskHardware loop gap=338ms owner=BLE_GPS pendingUpload=2347 maintPending=1 suppressed=1
+[137712][I][BLE] scan start
+[137712][I][BLE] scan start diag=1 deliverDuplicates=1 diagLeft=44485 state=1 window=8000ms weakRecent=0 lastRssi=0
+[145713][I][BLE] scan window ended window=8000ms weakRecent=0 lastRssi=0
+[session] no boot banner; app already running
+[145975][I][BLE] scan start
+[145975][I][BLE] scan start diag=1 deliverDuplicates=1 diagLeft=36222 state=1 window=8000ms weakRecent=0 lastRssi=0
+[session] ready=True — sending 1 command(s)
+[session] >>> stack audit
+stack audit
+[STACK] TaskHardware     base=0x3fcc659c internal
+[STACK] IDLE1            base=0x3fcbdb44 internal
+[STACK] IDLE0            base=0x3fcbd54c internal
+[STACK] TaskButtons      base=0x3fcece5c internal
+[STACK] tiT              base=0x3fcce7b4 internal
+[STACK] TaskStorage      base=0x3fccc5b0 internal
+[STACK] TaskDisplay      base=0x3fcbef94 internal
+[STACK] loopTask         base=0x3fceb3a4 internal
+[STACK] ipc0             base=0x3fcb7d4c internal
+[STACK] BLEWorker        base=0x3fcdba0c internal
+[STACK] arduino_events   base=0x3fcd1480 internal
+[STACK] ipc1             base=0x3fcb8304 internal
+[STACK] esp_timer        base=0x3fcb9788 internal
+[STACK] nimble_host      base=0x3fcda394 internal
+[STACK] btController     base=0x3fcd5214 internal
+[STACK] usbd             base=0x3fce9d50 internal
+[STACK] arduino_usb_eve  base=0x3fcb8afc internal
+[STACK] Tmr Svc          base=0x3fcbe13c internal
+[STACK] sys_evt          base=0x3fcd0008 internal
+[STACK] all 19 task stacks internal
+[150031][I][HEAP] heap free=4470KB min=4428KB largest=4352KB frag=2% internalFree=45KB internalLargest=15KB psramFree=4417KB core=1/1% owner=BLE_GPS nets=6 pendingUpload=2347 pendingEnrich=2299
+[HEALTH] time=2026-08-21 06:33:18 src=ntp
+[HEALTH] heap used=3986/8455KB free=4470KB min=4428KB largest=4352KB frag=2%
+[HEALTH] internal used=218/263KB free=45KB min=12KB largest=15KB
+[HEALTH] psram used=3775/8192KB free=4417KB largest=4352KB
+[HEALTH] stack free_min: core0=4KB/15KB core1=5KB/10KB
+[HEALTH] loopTask free_min=2780B/5120B
+[HEALTH] core usage: core0=1% core1=1%
+[HEALTH] power=usb state=usb batt=100% 4724mV trend=10mV/min runtime=0min cap=1100mAh charging=1
+[HEALTH] radio=BLE_GPS wifi=0 ble=0 gps=0 nets=6 pendingUpload=2347 pendingEnrich=2299
+[HEALTH] subghz=NONE mode=OFF pkts=0 nodes=0
+[150034][I][STACK] TaskStorage watermark=4460B
+[150034][I][STORAGE] RAMSpool enq=4 cons=4 inflight=0/1024 high=2 pressure=0 drop[full=0 big=0 noise=0 p3Evict=0 p3Drop=0 p2Drop=0 p1Fail=0] free=1024
+[150034][I][STORAGE] RAMSpool enqueue probe[ok=2 drop=0] device[ok=2 drop=0]
+[150035][I][STORAGE] RAMSpool worker probe[ok=2 sup=0 drop=0 fail=0 slow=0] device[ok=2 sup=0 drop=0 fail=0 slow=0] slowTotal=0 maxMs=0
+[150035][I][STORAGE] RAMSpool prioEnq p0=0 p1=0 p2=4 p3=0
+[150035][I][STORAGE] RAMSpool lanes p1=0/0 p2=0/1 p3=0/0
+[151016][I][STACK] TaskButtons watermark=2084B min=2084B
+[151075][I][STACK] TaskHardware watermark=3648B min=3648B
+[153980][I][BLE] scan window ended window=8000ms weakRecent=0 lastRssi=0
+[154241][I][BLE] scan start
+[154241][I][BLE] scan start diag=1 deliverDuplicates=1 diagLeft=27956 state=1 window=8000ms weakRecent=0 lastRssi=0
+[162246][I][BLE] scan window ended window=8000ms weakRecent=0 lastRssi=0
+[162510][I][BLE] scan start
+[162510][I][BLE] scan start diag=1 deliverDuplicates=1 diagLeft=19687 state=1 window=8000ms weakRecent=0 lastRssi=0
+[167211][I][BLE] worker stack free=9440B min=9440B
+[170514][I][BLE] scan window ended window=8000ms weakRecent=0 lastRssi=0
+[170776][I][BLE] scan start
+[170776][I][BLE] scan start diag=1 deliverDuplicates=1 diagLeft=11421 state=1 window=8000ms weakRecent=0 lastRssi=0
+[178784][I][BLE] scan window ended window=8000ms weakRecent=0 lastRssi=0
+[179045][I][BLE] scan start
+[179045][I][BLE] scan start diag=1 deliverDuplicates=1 diagLeft=3152 state=1 window=8000ms weakRecent=0 lastRssi=0
+[180033][I][HEAP] heap free=4470KB min=4428KB largest=4352KB frag=2% internalFree=45KB internalLargest=15KB psramFree=4417KB core=1/0% owner=BLE_GPS nets=6 pendingUpload=2347 pendingEnrich=2299
+[HEALTH] time=2026-08-21 06:33:48 src=ntp
+[HEALTH] heap used=3986/8455KB free=4470KB min=4428KB largest=4352KB frag=2%
+[HEALTH] internal used=218/263KB free=45KB min=12KB largest=15KB
+[HEALTH] psram used=3775/8192KB free=4417KB largest=4352KB
+[HEALTH] stack free_min: core0=4KB/15KB core1=5KB/10KB
+[HEALTH] loopTask free_min=2780B/5120B
+[HEALTH] core usage: core0=1% core1=0%
+[HEALTH] power=usb state=usb batt=100% 4721mV trend=7mV/min runtime=0min cap=1100mAh charging=1
+[HEALTH] radio=BLE_GPS wifi=0 ble=0 gps=0 nets=6 pendingUpload=2347 pendingEnrich=2299
+[HEALTH] subghz=NONE mode=OFF pkts=0 nodes=0
+[180036][I][STACK] TaskStorage watermark=4460B
+[180036][I][STORAGE] RAMSpool enq=4 cons=4 inflight=0/1024 high=2 pressure=0 drop[full=0 big=0 noise=0 p3Evict=0 p3Drop=0 p2Drop=0 p1Fail=0] free=1024
+[180036][I][STORAGE] RAMSpool enqueue probe[ok=2 drop=0] device[ok=2 drop=0]
+[180037][I][STORAGE] RAMSpool worker probe[ok=2 sup=0 drop=0 fail=0 slow=0] device[ok=2 sup=0 drop=0 fail=0 slow=0] slowTotal=0 maxMs=0
+[180037][I][STORAGE] RAMSpool prioEnq p0=0 p1=0 p2=4 p3=0
+[180037][I][STORAGE] RAMSpool lanes p1=0/0 p2=0/1 p3=0/0
+[181016][I][STACK] TaskButtons watermark=2084B min=2084B
+[181081][I][STACK] TaskHardware watermark=3648B min=3648B
+[184217][I][BTN] evt=B_SHORT consumed as display wake
+[BTN] evt=B_SHORT consumed as display wake
+[184405][I][CORE] Display resumed and refreshed
+[184406][I][STACK] TaskDisplay watermark=4936B min=4936B
+[185774][I][BTN] evt=B_SHORT screen=RECON overlay=NONE action=SCREEN_NEXT label=NEXT handled=1
+[BTN] evt=B_SHORT screen=RECON overlay=NONE action=SCREEN_NEXT label=NEXT handled=1
+[186510][I][BTN] evt=B_SHORT screen=WIFI overlay=NONE action=SCREEN_NEXT label=NEXT handled=1
+[BTN] evt=B_SHORT screen=WIFI overlay=NONE action=SCREEN_NEXT label=NEXT handled=1
+[187056][I][BLE] scan window ended window=8000ms weakRecent=0 lastRssi=0
+[187322][I][BLE] scan start
+[187322][I][BLE] scan start diag=0 deliverDuplicates=0 diagLeft=0 state=1 window=8000ms weakRecent=0 lastRssi=0
+[187353][I][BTN] evt=B_SHORT screen=LORA overlay=NONE action=SCREEN_NEXT label=NEXT handled=1
+[BTN] evt=B_SHORT screen=LORA overlay=NONE action=SCREEN_NEXT label=NEXT handled=1
+[188361][I][BTN] evt=B_SHORT screen=MESHTASTIC overlay=NONE action=SCREEN_NEXT label=NEXT handled=1
+[BTN] evt=B_SHORT screen=MESHTASTIC overlay=NONE action=SCREEN_NEXT label=NEXT handled=1
+[189935][I][BTN] evt=B_SHORT screen=BLE overlay=NONE action=SCREEN_NEXT label=NEXT handled=1
+[BTN] evt=B_SHORT screen=BLE overlay=NONE action=SCREEN_NEXT label=NEXT handled=1
+[195322][I][BLE] scan window ended window=8000ms weakRecent=0 lastRssi=0
+[195590][I][BLE] scan start
+[195590][I][BLE] scan start diag=0 deliverDuplicates=0 diagLeft=0 state=1 window=8000ms weakRecent=0 lastRssi=0
+[197197][I][BLE] probe resource release
+[197198][I][BLE] advertising stop
+[197199][I][BLE] client soft drop reason=radio_disabled
+[197199][I][BLE] radio disabled handoffSettle=300ms workerRetained=1
+[197199][I][BLE] probe release waiting for BLE handoff settle
+[197358][I][WIFI] Radio suspended
+[197368][I][STORAGE] RAMSpool worker paused inflight=0 lastInflight=0
+[197369][I][STORAGE] Exclusive window begin kind=maintenance reason=radio_owner_window workerPaused=1 displaySuspended=1
+[197369][I][STORAGE] Maintenance start reason=radio_owner_window budgetMs=5000 flags=dirty_spool_index|snapshot_lagged captureSafe=1
+[197967][W][STORAGE] worker metadata flush reason=radio_owner_window ms=594 ok=1 dirty=0
+[197967][I][STORAGE] worker metadata flush metadataFlushCount=1 reason=radio_owner_window entryMetadataDirtyPending=1 entryUiRefreshPending=0 metadataDirtyPending=0 uiDeferred=4 uiFlush=2 uiRefreshServiceCount=2 
+[198207][I][STORAGE] Maintenance continuity log wrote clean=1 reason=radio_owner_window completed=dirty_spool_index|boot_safe_deferred_persist|snapshot_lagged|upload_enrich_cursor_dirty remaining=none gen=4713
+[198208][I][STORAGE] Maintenance done reason=radio_owner_window actions=dirty_spool_index|boot_safe_deferred_persist|snapshot_lagged|upload_enrich_cursor_dirty|continuity_pass skipped=none remaining=none elapsedM
+[198208][I][STORAGE] RAMSpool worker resumed
+[198208][I][STORAGE] Exclusive window end kind=maintenance result=capture_safe reason=radio_owner_window
+[198209][I][STORAGE] maintenance owner window ms=841 captureSafe=1 remaining=none
+[198270][I][WIFI] Promiscuous: YES
+[198270][I][WIFI] Promiscuous mode started data=0
+[198278][W][CORE] TaskHardware loop gap=911ms owner=WIFI_CAPTURE pendingUpload=2347 maintPending=0 suppressed=0
+[198289][W][BLE] probe_summary seen=0 result=not_seen stage=1 miss=1 nextIn=60s
+[198697][I][BTN] evt=B_SHORT screen=SYSTEM overlay=NONE action=SCREEN_NEXT label=NEXT handled=1
+[BTN] evt=B_SHORT screen=SYSTEM overlay=NONE action=SCREEN_NEXT label=NEXT handled=1
+[198764][I][STORAGE] Routine maintenance requests coalesced count=1 latest=snapshot_lagged source=append_metadata_deferred flags=dirty_spool_index|snapshot_lagged
+[198764][W][CORE] capture heap guard: free=11520B largest=11252B floor=12288B/6144B trips=1
+[198772][I][WIFI] Radio paused
+[198928][I][WIFI] Radio suspended
+[198990][I][WIFI] Promiscuous: YES
+[198991][I][WIFI] Promiscuous mode started data=0
+[198998][W][CORE] capture heap guard recycled driver: free 11520B -> 45952B
+[199209][I][STORAGE] worker ui refresh serviced uiRefreshServiceCount=3 uiDeferred=5 uiFlush=3 pressure=0 usedPct=4 pending=2348
+[200009][I][BTN] evt=B_SHORT screen=BADUSB overlay=NONE action=SCREEN_NEXT label=NEXT handled=1
+[BTN] evt=B_SHORT screen=BADUSB overlay=NONE action=SCREEN_NEXT label=NEXT handled=1
+[203293][I][BLE] shutdown
+[203294][I][BLE] shutdown phase=worker_delete
+[203294][I][BLE] shutdown phase=nimble_deinit
+[203296][I][BLE] shutdown phase=nimble_deinit_ok
+[203297][I][BLE] controller released 0B (91380B -> 91380B) status=idle
+[203298][W][CORE] idle BLE teardown reclaimed 75740B internal (15640B -> 91380B)
+[210040][I][HEAP] heap free=4510KB min=4427KB largest=4352KB frag=3% internalFree=89KB internalLargest=16KB psramFree=4413KB core=6/30% owner=WIFI_CAPTURE nets=9 pendingUpload=2348 pendingEnrich=2300
+[HEALTH] time=2026-08-21 06:34:18 src=ntp
+[HEALTH] heap used=3946/8455KB free=4510KB min=4427KB largest=4352KB frag=3%
+[HEALTH] internal used=174/263KB free=89KB min=10KB largest=16KB
+[HEALTH] psram used=3779/8192KB free=4413KB largest=4352KB
+[HEALTH] stack free_min: core0=4KB/15KB core1=4KB/10KB
+[HEALTH] loopTask free_min=2780B/5120B
+[HEALTH] core usage: core0=6% core1=30%
+[HEALTH] power=usb state=usb batt=100% 4666mV trend=-1mV/min runtime=0min cap=1100mAh charging=0
+[HEALTH] radio=WIFI_CAPTURE wifi=0 ble=0 gps=0 nets=9 pendingUpload=2348 pendingEnrich=2300
+[HEALTH] subghz=NONE mode=OFF pkts=0 nodes=0
+[210045][I][STACK] TaskStorage watermark=4460B
+[210046][I][STORAGE] RAMSpool enq=5 cons=5 inflight=0/1024 high=2 pressure=0 drop[full=0 big=0 noise=0 p3Evict=0 p3Drop=0 p2Drop=0 p1Fail=0] free=1024
+[210047][I][STORAGE] RAMSpool enqueue probe[ok=3 drop=0] device[ok=2 drop=0]
+[210048][I][STORAGE] RAMSpool worker probe[ok=3 sup=0 drop=0 fail=0 slow=0] device[ok=2 sup=0 drop=0 fail=0 slow=0] slowTotal=0 maxMs=0
+[210049][I][STORAGE] RAMSpool prioEnq p0=0 p1=0 p2=5 p3=0
+[210049][I][STORAGE] RAMSpool lanes p1=0/0 p2=0/1 p3=0/0
+[211016][I][STACK] TaskButtons watermark=2084B min=2084B
+[211082][I][STACK] TaskHardware watermark=3648B min=3648B
+[214308][I][STACK] TaskDisplay watermark=4600B min=4600B
+[218751][I][STORAGE] worker ui refresh serviced uiRefreshServiceCount=4 uiDeferred=6 uiFlush=4 pressure=0 usedPct=4 pending=2349
+[240044][I][HEAP] heap free=4510KB min=4427KB largest=4352KB frag=3% internalFree=89KB internalLargest=16KB psramFree=4413KB core=2/19% owner=WIFI_CAPTURE nets=9 pendingUpload=2349 pendingEnrich=2301
+[HEALTH] time=2026-08-21 06:34:48 src=ntp
+[HEALTH] heap used=3946/8455KB free=4510KB min=4427KB largest=4352KB frag=3%
+[HEALTH] internal used=174/263KB free=89KB min=10KB largest=16KB
+[HEALTH] psram used=3779/8192KB free=4413KB largest=4352KB
+[HEALTH] stack free_min: core0=4KB/15KB core1=4KB/10KB
+[HEALTH] loopTask free_min=2780B/5120B
+[HEALTH] core usage: core0=2% core1=19%
+[HEALTH] power=usb state=usb batt=100% 4716mV trend=-3mV/min runtime=0min cap=1100mAh charging=0
+[HEALTH] radio=WIFI_CAPTURE wifi=0 ble=0 gps=0 nets=9 pendingUpload=2349 pendingEnrich=2301
+[HEALTH] subghz=NONE mode=OFF pkts=0 nodes=0
+[240047][I][STACK] TaskStorage watermark=4460B
+[240047][I][STORAGE] RAMSpool enq=6 cons=6 inflight=0/1024 high=2 pressure=0 drop[full=0 big=0 noise=0 p3Evict=0 p3Drop=0 p2Drop=0 p1Fail=0] free=1024
+[240047][I][STORAGE] RAMSpool enqueue probe[ok=4 drop=0] device[ok=2 drop=0]
+[240048][I][STORAGE] RAMSpool worker probe[ok=4 sup=0 drop=0 fail=0 slow=0] device[ok=2 sup=0 drop=0 fail=0 slow=0] slowTotal=0 maxMs=0
+[240048][I][STORAGE] RAMSpool prioEnq p0=0 p1=0 p2=6 p3=0
+[240048][I][STORAGE] RAMSpool lanes p1=0/0 p2=0/1 p3=0/0
+[241016][I][STACK] TaskButtons watermark=2084B min=2084B
+[241087][I][STACK] TaskHardware watermark=3648B min=3648B
+[248974][I][STORAGE] worker ui refresh serviced uiRefreshServiceCount=5 uiDeferred=8 uiFlush=5 pressure=0 usedPct=4 pending=2351
+[254014][I][STORAGE] worker ui refresh serviced uiRefreshServiceCount=6 uiDeferred=12 uiFlush=6 pressure=0 usedPct=4 pending=2355
+[258291][I][WIFI] Radio paused
+[258453][I][WIFI] Radio suspended
+[258652][W][BLE] begin deferred: internal DRAM too low free=129344 need=97280 largest=16372 need=20480
+[258653][W][STORAGE] Spool audit[ui_count_refresh] worker active with open append file; counts are a floor, reconcile suppressed
+[259401][W][STORAGE] Spool audit slow reason=ui_count_refresh segs=11 recs=2400 ms=749
+[259402][I][STORAGE] Spool audit[ui_count_refresh] scannedSegs=11 scannedRecords=2400 validEvents=2347 uploadedRetained=0 validEnrichDeltas=53 invalidRecords=0 skippedRecords=0 quarantined=0 unreadable=0 pendingU
+[259489][W][CORE] TaskHardware slow section=ui_refresh ms=837 owner=NONE pendingUpload=2355 maintPending=1
+[259648][I][WIFI] Radio suspended
+[259658][W][CORE] TaskHardware loop gap=1367ms owner=STORAGE_MAINT pendingUpload=2355 maintPending=1 suppressed=0
+[259661][I][STORAGE] RAMSpool worker paused inflight=0 lastInflight=0
+[259662][I][STORAGE] Exclusive window begin kind=maintenance reason=radio_owner_window workerPaused=1 displaySuspended=1
+[259662][I][STORAGE] Maintenance start reason=radio_owner_window budgetMs=5000 flags=dirty_spool_index|snapshot_lagged captureSafe=1
+[260275][I][STORAGE] worker ui refresh serviced uiRefreshServiceCount=7 uiDeferred=12 uiFlush=6 pressure=0 usedPct=4 pending=2355
+[260560][I][STORAGE] Maintenance continuity log wrote clean=1 reason=radio_owner_window completed=dirty_spool_index|boot_safe_deferred_persist|snapshot_lagged|upload_enrich_cursor_dirty remaining=none gen=4729
+[260560][I][STORAGE] Maintenance done reason=radio_owner_window actions=dirty_spool_index|boot_safe_deferred_persist|snapshot_lagged|upload_enrich_cursor_dirty|continuity_pass skipped=none remaining=none elapsedM
+[260561][I][STORAGE] RAMSpool worker resumed
+[260561][I][STORAGE] Exclusive window end kind=maintenance result=capture_safe reason=radio_owner_window
+[260562][I][STORAGE] maintenance owner window ms=900 captureSafe=1 remaining=none
+[260622][I][WIFI] Promiscuous: YES
+[260622][I][WIFI] Promiscuous mode started data=0
+[260697][I][WIFI] Radio paused
+[260860][I][WIFI] Radio suspended
+[260935][W][BLE] begin deferred: internal DRAM too low free=129356 need=97280 largest=16372 need=20480
+[261104][I][WIFI] Radio suspended
+[261179][W][BLE] begin deferred: internal DRAM too low free=129356 need=97280 largest=16372 need=20480
+[261347][I][WIFI] Radio suspended
+[261422][W][BLE] begin deferred: internal DRAM too low free=129356 need=97280 largest=16372 need=20480
+[261590][I][WIFI] Radio suspended
+[261665][W][BLE] begin deferred: internal DRAM too low free=129356 need=97280 largest=16372 need=20480
+[261833][I][WIFI] Radio suspended
+[261908][W][BLE] begin deferred: internal DRAM too low free=129356 need=97280 largest=16372 need=20480
+[262079][I][WIFI] Radio suspended
+[262154][W][BLE] begin deferred: internal DRAM too low free=129356 need=97280 largest=16372 need=20480
+[262322][I][WIFI] Radio suspended
+[262397][W][BLE] begin deferred: internal DRAM too low free=129356 need=97280 largest=16372 need=20480
+[262565][I][WIFI] Radio suspended
+[262640][W][BLE] begin deferred: internal DRAM too low free=129356 need=97280 largest=16372 need=20480
+[262808][I][WIFI] Radio suspended
+[262883][W][BLE] begin deferred: internal DRAM too low free=129356 need=97280 largest=16372 need=20480
+[263051][I][WIFI] Radio suspended
+[263126][W][BLE] begin deferred: internal DRAM too low free=129356 need=97280 largest=16372 need=20480
+[263297][I][WIFI] Radio suspended
+[263372][W][BLE] begin deferred: internal DRAM too low free=129356 need=97280 largest=16372 need=20480
+[263541][I][WIFI] Radio suspended
+[263616][W][BLE] begin deferred: internal DRAM too low free=129356 need=97280 largest=16372 need=20480
+[263784][I][WIFI] Radio suspended
+[263859][W][BLE] begin deferred: internal DRAM too low free=129356 need=97280 largest=16372 need=20480
+[264027][I][WIFI] Radio suspended
+[264102][W][BLE] begin deferred: internal DRAM too low free=129356 need=97280 largest=16372 need=20480
+[264270][I][WIFI] Radio suspended
+[264345][W][BLE] begin deferred: internal DRAM too low free=129356 need=97280 largest=16372 need=20480
+[264516][I][WIFI] Radio suspended
+[264591][W][BLE] begin deferred: internal DRAM too low free=129356 need=97280 largest=16372 need=20480
+[264760][I][WIFI] Radio suspended
+[264835][W][BLE] begin deferred: internal DRAM too low free=129356 need=97280 largest=16372 need=20480
+[265003][I][WIFI] Radio suspended
+[265078][W][BLE] begin deferred: internal DRAM too low free=129356 need=97280 largest=16372 need=20480
+[265246][I][WIFI] Radio suspended
+[265321][W][BLE] begin deferred: internal DRAM too low free=129356 need=97280 largest=16372 need=20480
+[265489][I][WIFI] Radio suspended
+[265564][W][BLE] begin deferred: internal DRAM too low free=129356 need=97280 largest=16372 need=20480
+[265735][I][WIFI] Radio suspended
+[265810][W][BLE] begin deferred: internal DRAM too low free=129356 need=97280 largest=16372 need=20480
+[265979][I][WIFI] Radio suspended
+[266054][W][BLE] begin deferred: internal DRAM too low free=129356 need=97280 largest=16372 need=20480
+[266222][I][WIFI] Radio suspended
+[266297][W][BLE] begin deferred: internal DRAM too low free=129356 need=97280 largest=16372 need=20480
+[266465][I][WIFI] Radio suspended
+[266540][W][BLE] begin deferred: internal DRAM too low free=129356 need=97280 largest=16372 need=20480
+[266708][I][WIFI] Radio suspended
+[266783][W][BLE] begin deferred: internal DRAM too low free=129356 need=97280 largest=16372 need=20480
+[266954][I][WIFI] Radio suspended
+[267029][W][BLE] begin deferred: internal DRAM too low free=129356 need=97280 largest=16372 need=20480
+[267198][I][WIFI] Radio suspended
+[267273][W][BLE] begin deferred: internal DRAM too low free=129356 need=97280 largest=16372 need=20480
+[267441][I][WIFI] Radio suspended
+[267516][W][BLE] begin deferred: internal DRAM too low free=129356 need=97280 largest=16372 need=20480
+[267684][I][WIFI] Radio suspended
+[267759][W][BLE] begin deferred: internal DRAM too low free=129356 need=97280 largest=16372 need=20480
+[267927][I][WIFI] Radio suspended
+[268002][W][BLE] begin deferred: internal DRAM too low free=129356 need=97280 largest=16372 need=20480
+[268173][I][WIFI] Radio suspended
+[268248][W][BLE] begin deferred: internal DRAM too low free=129356 need=97280 largest=16372 need=20480
+[268417][I][WIFI] Radio suspended
+[268492][W][BLE] begin deferred: internal DRAM too low free=129356 need=97280 largest=16372 need=20480
+[268660][I][WIFI] Radio suspended
+[268735][W][BLE] begin deferred: internal DRAM too low free=129356 need=97280 largest=16372 need=20480
+[268903][I][WIFI] Radio suspended
+[268978][W][BLE] begin deferred: internal DRAM too low free=129356 need=97280 largest=16372 need=20480
+[269146][I][WIFI] Radio suspended
+[269221][W][BLE] begin deferred: internal DRAM too low free=129356 need=97280 largest=16372 need=20480
+[269392][I][WIFI] Radio suspended
+[269467][W][BLE] begin deferred: internal DRAM too low free=129356 need=97280 largest=16372 need=20480
+[269636][I][WIFI] Radio suspended
+[269711][W][BLE] begin deferred: internal DRAM too low free=129356 need=97280 largest=16372 need=20480
+[269879][I][WIFI] Radio suspended
+[269954][W][BLE] begin deferred: internal DRAM too low free=129356 need=97280 largest=16372 need=20480
+[270122][I][WIFI] Radio suspended
+[270197][W][BLE] begin deferred: internal DRAM too low free=129356 need=97280 largest=16372 need=20480
+[270199][I][HEAP] heap free=4544KB min=4427KB largest=4352KB frag=4% internalFree=119KB internalLargest=16KB psramFree=4417KB core=5/4% owner=NONE nets=9 pendingUpload=2355 pendingEnrich=2307
+[HEALTH] time=2026-08-21 06:35:18 src=ntp
+[HEALTH] heap used=3912/8455KB free=4544KB min=4427KB largest=4352KB frag=4%
+[HEALTH] internal used=145/263KB free=119KB min=10KB largest=16KB
+[HEALTH] psram used=3775/8192KB free=4417KB largest=4352KB
+[HEALTH] stack free_min: core0=4KB/15KB core1=4KB/10KB
+[HEALTH] loopTask free_min=2780B/5120B
+[HEALTH] core usage: core0=5% core1=4%
+[HEALTH] power=usb state=usb batt=100% 4760mV trend=14mV/min runtime=0min cap=1100mAh charging=1
+[HEALTH] radio=NONE wifi=0 ble=0 gps=0 nets=9 pendingUpload=2355 pendingEnrich=2307
+[HEALTH] subghz=NONE mode=OFF pkts=0 nodes=0
+[270201][I][STACK] TaskStorage watermark=4460B
+[270201][I][STORAGE] RAMSpool enq=12 cons=12 inflight=0/1024 high=2 pressure=0 drop[full=0 big=0 noise=0 p3Evict=0 p3Drop=0 p2Drop=0 p1Fail=0] free=1024
+[270202][I][STORAGE] RAMSpool enqueue probe[ok=7 drop=0] device[ok=5 drop=0]
+[270202][I][STORAGE] RAMSpool worker probe[ok=7 sup=0 drop=0 fail=0 slow=0] device[ok=5 sup=0 drop=0 fail=0 slow=0] slowTotal=0 maxMs=0
+[270202][I][STORAGE] RAMSpool prioEnq p0=0 p1=0 p2=12 p3=0
+[270202][I][STORAGE] RAMSpool lanes p1=0/0 p2=0/1 p3=0/0
+[270371][I][WIFI] Radio suspended
+[270446][W][BLE] begin deferred: internal DRAM too low free=129356 need=97280 largest=16372 need=20480
+[270617][I][WIFI] Radio suspended
+[270692][W][BLE] begin deferred: internal DRAM too low free=129356 need=97280 largest=16372 need=20480
+[270861][I][WIFI] Radio suspended
+[270936][W][BLE] begin deferred: internal DRAM too low free=129356 need=97280 largest=16372 need=20480
+[271016][I][STACK] TaskButtons watermark=2084B min=2084B
+[271104][I][WIFI] Radio suspended
+[271179][W][BLE] begin deferred: internal DRAM too low free=129356 need=97280 largest=16372 need=20480
+[271180][I][STACK] TaskHardware watermark=3648B min=3648B
+[271348][I][WIFI] Radio suspended
+[271423][W][BLE] begin deferred: internal DRAM too low free=129356 need=97280 largest=16372 need=20480
+[271591][I][WIFI] Radio suspended
+[271666][W][BLE] begin deferred: internal DRAM too low free=129356 need=97280 largest=16372 need=20480
+[271837][I][WIFI] Radio suspended
+[271912][W][BLE] begin deferred: internal DRAM too low free=129356 need=97280 largest=16372 need=20480
+[272081][I][WIFI] Radio suspended
+[272156][W][BLE] begin deferred: internal DRAM too low free=129356 need=97280 largest=16372 need=20480
+[272324][I][WIFI] Radio suspended
+[272399][W][BLE] begin deferred: internal DRAM too low free=129356 need=97280 largest=16372 need=20480
+[272567][I][WIFI] Radio suspended
+[272642][W][BLE] begin deferred: internal DRAM too low free=129356 need=97280 largest=16372 need=20480
+[272810][I][WIFI] Radio suspended
+[272885][W][BLE] begin deferred: internal DRAM too low free=129356 need=97280 largest=16372 need=20480
+[273056][I][WIFI] Radio suspended
+[273131][W][BLE] begin deferred: internal DRAM too low free=129356 need=97280 largest=16372 need=20480
+[273300][I][WIFI] Radio suspended
+[273375][W][BLE] begin deferred: internal DRAM too low free=129356 need=97280 largest=16372 need=20480
+[273543][I][WIFI] Radio suspended
+[273618][W][BLE] begin deferred: internal DRAM too low free=129356 need=97280 largest=16372 need=20480
+[273786][I][WIFI] Radio suspended
+[273861][W][BLE] begin deferred: internal DRAM too low free=129356 need=97280 largest=16372 need=20480
+[274029][I][WIFI] Radio suspended
+[274104][W][BLE] begin deferred: internal DRAM too low free=129356 need=97280 largest=16372 need=20480
+[274275][I][WIFI] Radio suspended
+[274350][W][BLE] begin deferred: internal DRAM too low free=129356 need=97280 largest=16372 need=20480
+[274518][I][WIFI] Radio suspended
+[274593][W][BLE] begin deferred: internal DRAM too low free=129356 need=97280 largest=16372 need=20480
+[274761][I][WIFI] Radio suspended
+[274836][W][BLE] begin deferred: internal DRAM too low free=129356 need=97280 largest=16372 need=20480
+[275004][I][WIFI] Radio suspended
+[275079][W][BLE] begin deferred: internal DRAM too low free=129356 need=97280 largest=16372 need=20480
+[275247][I][WIFI] Radio suspended
+[275322][W][BLE] begin deferred: internal DRAM too low free=129356 need=97280 largest=16372 need=20480
+[275493][I][WIFI] Radio suspended
+[275568][W][BLE] begin deferred: internal DRAM too low free=129356 need=97280 largest=16372 need=20480
+[275737][I][WIFI] Radio suspended
+[275812][W][BLE] begin deferred: internal DRAM too low free=129356 need=97280 largest=16372 need=20480
+[275980][I][WIFI] Radio suspended
+[276055][W][BLE] begin deferred: internal DRAM too low free=129356 need=97280 largest=16372 need=20480
+[276223][I][WIFI] Radio suspended
+[276298][W][BLE] begin deferred: internal DRAM too low free=129356 need=97280 largest=16372 need=20480
+[276466][I][WIFI] Radio suspended
+[276541][W][BLE] begin deferred: internal DRAM too low free=129356 need=97280 largest=16372 need=20480
+[276712][I][WIFI] Radio suspended
+[276787][W][BLE] begin deferred: internal DRAM too low free=129356 need=97280 largest=16372 need=20480
+[276956][I][WIFI] Radio suspended
+[277031][W][BLE] begin deferred: internal DRAM too low free=129356 need=97280 largest=16372 need=20480
+[277199][I][WIFI] Radio suspended
+[277274][W][BLE] begin deferred: internal DRAM too low free=129356 need=97280 largest=16372 need=20480
+[277442][I][WIFI] Radio suspended
+[277517][W][BLE] begin deferred: internal DRAM too low free=129356 need=97280 largest=16372 need=20480
+[277685][I][WIFI] Radio suspended
+[277760][W][BLE] begin deferred: internal DRAM too low free=129356 need=97280 largest=16372 need=20480
+[277931][I][WIFI] Radio suspended
+[278006][W][BLE] begin deferred: internal DRAM too low free=129356 need=97280 largest=16372 need=20480
+[278175][I][WIFI] Radio suspended
+[278250][W][BLE] begin deferred: internal DRAM too low free=129356 need=97280 largest=16372 need=20480
+[278418][I][WIFI] Radio suspended
+[278493][W][BLE] begin deferred: internal DRAM too low free=129356 need=97280 largest=16372 need=20480
+[278661][I][WIFI] Radio suspended
+[278736][W][BLE] begin deferred: internal DRAM too low free=129356 need=97280 largest=16372 need=20480
+[278904][I][WIFI] Radio suspended
+[278979][W][BLE] begin deferred: internal DRAM too low free=129356 need=97280 largest=16372 need=20480
+[279150][I][WIFI] Radio suspended
+[279225][W][BLE] begin deferred: internal DRAM too low free=129356 need=97280 largest=16372 need=20480
+[279394][I][WIFI] Radio suspended
+[279469][W][BLE] begin deferred: internal DRAM too low free=129356 need=97280 largest=16372 need=20480
+[279637][I][WIFI] Radio suspended
+[279712][W][BLE] begin deferred: internal DRAM too low free=129356 need=97280 largest=16372 need=20480
+[279880][I][WIFI] Radio suspended
+[279955][W][BLE] begin deferred: internal DRAM too low free=129356 need=97280 largest=16372 need=20480
+[280123][I][WIFI] Radio suspended
+[280198][W][BLE] begin deferred: internal DRAM too low free=129356 need=97280 largest=16372 need=20480
+[280369][I][WIFI] Radio suspended
+[280444][W][BLE] begin deferred: internal DRAM too low free=129356 need=97280 largest=16372 need=20480
+[280613][I][WIFI] Radio suspended
+[280688][W][BLE] begin deferred: internal DRAM too low free=129356 need=97280 largest=16372 need=20480
+[280856][I][WIFI] Radio suspended
+[280931][W][BLE] begin deferred: internal DRAM too low free=129356 need=97280 largest=16372 need=20480
+[281099][I][WIFI] Radio suspended
+[281174][W][BLE] begin deferred: internal DRAM too low free=129356 need=97280 largest=16372 need=20480
+[281342][I][WIFI] Radio suspended
+[281417][W][BLE] begin deferred: internal DRAM too low free=129356 need=97280 largest=16372 need=20480
+[281588][I][WIFI] Radio suspended
+[281663][W][BLE] begin deferred: internal DRAM too low free=129356 need=97280 largest=16372 need=20480
+[281832][I][WIFI] Radio suspended
+[281907][W][BLE] begin deferred: internal DRAM too low free=129356 need=97280 largest=16372 need=20480
+[282075][I][WIFI] Radio suspended
+[282150][W][BLE] begin deferred: internal DRAM too low free=129356 need=97280 largest=16372 need=20480
+[282318][I][WIFI] Radio suspended
+[282393][W][BLE] begin deferred: internal DRAM too low free=129356 need=97280 largest=16372 need=20480
+[282561][I][WIFI] Radio suspended
+[282636][W][BLE] begin deferred: internal DRAM too low free=129356 need=97280 largest=16372 need=20480
+[282807][I][WIFI] Radio suspended
+[282882][W][BLE] begin deferred: internal DRAM too low free=129356 need=97280 largest=16372 need=20480
+[283051][I][WIFI] Radio suspended
+[283126][W][BLE] begin deferred: internal DRAM too low free=129356 need=97280 largest=16372 need=20480
+[283294][I][WIFI] Radio suspended
+[283369][W][BLE] begin deferred: internal DRAM too low free=129356 need=97280 largest=16372 need=20480
+[283537][I][WIFI] Radio suspended
+[283612][W][BLE] begin deferred: internal DRAM too low free=129356 need=97280 largest=16372 need=20480
+[283780][I][WIFI] Radio suspended
+[283855][W][BLE] begin deferred: internal DRAM too low free=129356 need=97280 largest=16372 need=20480
+[284026][I][WIFI] Radio suspended
+[284101][W][BLE] begin deferred: internal DRAM too low free=129356 need=97280 largest=16372 need=20480
+[284269][I][WIFI] Radio suspended
+[284344][W][BLE] begin deferred: internal DRAM too low free=129356 need=97280 largest=16372 need=20480
+[284512][I][WIFI] Radio suspended
+[284587][W][BLE] begin deferred: internal DRAM too low free=129356 need=97280 largest=16372 need=20480
+[284755][I][WIFI] Radio suspended
+[284830][W][BLE] begin deferred: internal DRAM too low free=129356 need=97280 largest=16372 need=20480
+[284998][I][WIFI] Radio suspended
+[285073][W][BLE] begin deferred: internal DRAM too low free=129356 need=97280 largest=16372 need=20480
+[285244][I][WIFI] Radio suspended
+[285319][W][BLE] begin deferred: internal DRAM too low free=129356 need=97280 largest=16372 need=20480
+[285488][I][WIFI] Radio suspended
+[285563][W][BLE] begin deferred: internal DRAM too low free=129356 need=97280 largest=16372 need=20480
+[285731][I][WIFI] Radio suspended
+[285806][W][BLE] begin deferred: internal DRAM too low free=129356 need=97280 largest=16372 need=20480
+[285974][I][WIFI] Radio suspended
+[286049][W][BLE] begin deferred: internal DRAM too low free=129356 need=97280 largest=16372 need=20480
+[286217][I][WIFI] Radio suspended
+[286292][W][BLE] begin deferred: internal DRAM too low free=129356 need=97280 largest=16372 need=20480
+[286463][I][WIFI] Radio suspended
+[286538][W][BLE] begin deferred: internal DRAM too low free=129356 need=97280 largest=16372 need=20480
+[286707][I][WIFI] Radio suspended
+[286782][W][BLE] begin deferred: internal DRAM too low free=129356 need=97280 largest=16372 need=20480
+[286950][I][WIFI] Radio suspended
+[287025][W][BLE] begin deferred: internal DRAM too low free=129356 need=97280 largest=16372 need=20480
+[287193][I][WIFI] Radio suspended
+[287268][W][BLE] begin deferred: internal DRAM too low free=129356 need=97280 largest=16372 need=20480
+[287436][I][WIFI] Radio suspended
+[287511][W][BLE] begin deferred: internal DRAM too low free=129356 need=97280 largest=16372 need=20480
+[287682][I][WIFI] Radio suspended
+[287757][W][BLE] begin deferred: internal DRAM too low free=129356 need=97280 largest=16372 need=20480
+[287926][I][WIFI] Radio suspended
+[288001][W][BLE] begin deferred: internal DRAM too low free=129356 need=97280 largest=16372 need=20480
+[288169][I][WIFI] Radio suspended
+[288244][W][BLE] begin deferred: internal DRAM too low free=129356 need=97280 largest=16372 need=20480
+[288412][I][WIFI] Radio suspended
+[288487][W][BLE] begin deferred: internal DRAM too low free=129356 need=97280 largest=16372 need=20480
+[288655][I][WIFI] Radio suspended
+[288730][W][BLE] begin deferred: internal DRAM too low free=129356 need=97280 largest=16372 need=20480
+[288901][I][WIFI] Radio suspended
+[288976][W][BLE] begin deferred: internal DRAM too low free=129356 need=97280 largest=16372 need=20480
+[288976][W][STORAGE] Spool audit[ui_count_refresh] worker active with open append file; counts are a floor, reconcile suppressed
+[289832][W][STORAGE] Spool audit slow reason=ui_count_refresh segs=11 recs=2408 ms=856
+[289832][I][STORAGE] Spool audit[ui_count_refresh] scannedSegs=11 scannedRecords=2408 validEvents=2355 uploadedRetained=0 validEnrichDeltas=53 invalidRecords=0 skippedRecords=0 quarantined=0 unreadable=0 pendingU
+[289906][W][CORE] TaskHardware slow section=ui_refresh ms=930 owner=NONE pendingUpload=2355 maintPending=0
+[289916][W][CORE] TaskHardware loop gap=1176ms owner=NONE pendingUpload=2355 maintPending=0 suppressed=2
+[290077][I][WIFI] Radio suspended
+[290152][W][BLE] begin deferred: internal DRAM too low free=129356 need=97280 largest=16372 need=20480
+[290321][I][WIFI] Radio suspended
+[290396][W][BLE] begin deferred: internal DRAM too low free=129356 need=97280 largest=16372 need=20480
+[290564][I][WIFI] Radio suspended
+[290639][W][BLE] begin deferred: internal DRAM too low free=129356 need=97280 largest=16372 need=20480
+[290807][I][WIFI] Radio suspended
+[290882][W][BLE] begin deferred: internal DRAM too low free=129356 need=97280 largest=16372 need=20480
+[291050][I][WIFI] Radio suspended
+[291125][W][BLE] begin deferred: internal DRAM too low free=129356 need=97280 largest=16372 need=20480
+[291296][I][WIFI] Radio suspended
+[291371][W][BLE] begin deferred: internal DRAM too low free=129356 need=97280 largest=16372 need=20480
+[291540][I][WIFI] Radio suspended
+[291615][W][BLE] begin deferred: internal DRAM too low free=129356 need=97280 largest=16372 need=20480
+[291783][I][WIFI] Radio suspended
+[291858][W][BLE] begin deferred: internal DRAM too low free=129356 need=97280 largest=16372 need=20480
+[292026][I][WIFI] Radio suspended
+[292101][W][BLE] begin deferred: internal DRAM too low free=129356 need=97280 largest=16372 need=20480
+[292269][I][WIFI] Radio suspended
+[292344][W][BLE] begin deferred: internal DRAM too low free=129356 need=97280 largest=16372 need=20480
+[292515][I][WIFI] Radio suspended
+[292590][W][BLE] begin deferred: internal DRAM too low free=129356 need=97280 largest=16372 need=20480
+[292759][I][WIFI] Radio suspended
+[292834][W][BLE] begin deferred: internal DRAM too low free=129356 need=97280 largest=16372 need=20480
+[293002][I][WIFI] Radio suspended
+[293077][W][BLE] begin deferred: internal DRAM too low free=129356 need=97280 largest=16372 need=20480
+[293245][I][WIFI] Radio suspended
+[293320][W][BLE] begin deferred: internal DRAM too low free=129356 need=97280 largest=16372 need=20480
+[293488][I][WIFI] Radio suspended
+[293563][W][BLE] begin deferred: internal DRAM too low free=129356 need=97280 largest=16372 need=20480
+[293734][I][WIFI] Radio suspended
+[293809][W][BLE] begin deferred: internal DRAM too low free=129356 need=97280 largest=16372 need=20480
+[293978][I][WIFI] Radio suspended
+[294053][W][BLE] begin deferred: internal DRAM too low free=129356 need=97280 largest=16372 need=20480
+[294221][I][WIFI] Radio suspended
+[294296][W][BLE] begin deferred: internal DRAM too low free=129356 need=97280 largest=16372 need=20480
+[294464][I][WIFI] Radio suspended
+[294539][W][BLE] begin deferred: internal DRAM too low free=129356 need=97280 largest=16372 need=20480
+[294707][I][WIFI] Radio suspended
+[294782][W][BLE] begin deferred: internal DRAM too low free=129356 need=97280 largest=16372 need=20480
+[294953][I][WIFI] Radio suspended
+[295028][W][BLE] begin deferred: internal DRAM too low free=129356 need=97280 largest=16372 need=20480
+[295197][I][WIFI] Radio suspended
+[295272][W][BLE] begin deferred: internal DRAM too low free=129356 need=97280 largest=16372 need=20480
+[295440][I][WIFI] Radio suspended
+[295515][W][BLE] begin deferred: internal DRAM too low free=129356 need=97280 largest=16372 need=20480
+[295683][I][WIFI] Radio suspended
+[295758][W][BLE] begin deferred: internal DRAM too low free=129356 need=97280 largest=16372 need=20480
+[295926][I][WIFI] Radio suspended
+[296001][W][BLE] begin deferred: internal DRAM too low free=129356 need=97280 largest=16372 need=20480
+[296172][I][WIFI] Radio suspended
+[296247][W][BLE] begin deferred: internal DRAM too low free=129356 need=97280 largest=16372 need=20480
+[296415][I][WIFI] Radio suspended
+[296490][W][BLE] begin deferred: internal DRAM too low free=129356 need=97280 largest=16372 need=20480
+[296658][I][WIFI] Radio suspended
+[296733][W][BLE] begin deferred: internal DRAM too low free=129356 need=97280 largest=16372 need=20480
+[296901][I][WIFI] Radio suspended
+[296976][W][BLE] begin deferred: internal DRAM too low free=129356 need=97280 largest=16372 need=20480
+[297144][I][WIFI] Radio suspended
+[297219][W][BLE] begin deferred: internal DRAM too low free=129356 need=97280 largest=16372 need=20480
+[297390][I][WIFI] Radio suspended
+[297465][W][BLE] begin deferred: internal DRAM too low free=129356 need=97280 largest=16372 need=20480
+[297634][I][WIFI] Radio suspended
+[297709][W][BLE] begin deferred: internal DRAM too low free=129356 need=97280 largest=16372 need=20480
+[297877][I][WIFI] Radio suspended
+[297952][W][BLE] begin deferred: internal DRAM too low free=129356 need=97280 largest=16372 need=20480
+[298120][I][WIFI] Radio suspended
+[298195][W][BLE] begin deferred: internal DRAM too low free=129356 need=97280 largest=16372 need=20480
+[298363][I][WIFI] Radio suspended
+[298438][W][BLE] begin deferred: internal DRAM too low free=129356 need=97280 largest=16372 need=20480
+[298609][I][WIFI] Radio suspended

@@ -2,6 +2,7 @@
 
 
 #include "BLEManager.h"
+#include "../core/TaskStackAudit.h"
 #include "CommandDispatcher.h"
 #include "PhoneOffloadManager.h"
 #include "TimeService.h"
@@ -39,6 +40,23 @@ constexpr uint32_t SCAN_RESPONSE_TIMEOUT_MS  = 200UL;
 constexpr uint32_t BLE_RADIO_SETTLE_MS       = 500UL;
 constexpr uint32_t BLE_SCAN_STOP_SETTLE_MS   = 300UL;
 constexpr uint32_t BLE_PRE_INIT_SETTLE_MS    = 75UL;
+
+// Internal-DRAM admission thresholds for bringing NimBLE up. Derived from 145
+// observed starts — see the long note at the gate in begin(). 95 KB sits in an
+// empty band between the two modes of the measured distribution; the largest-
+// block floor is a contiguity backstop (the observed minimum was 21 KB, so it
+// does not fire on its own in any run seen so far).
+constexpr uint32_t BLE_MIN_INTERNAL_FREE_BYTES    = 95UL * 1024UL;
+// Contiguity backstop only. The first value tried here was 20 KB, taken from
+// the minimum `largest` seen across 145 logged starts -- but that sample could
+// only contain states in which a start actually happened, so it never showed
+// the fragmented-but-roomy case. In the field the device sits at ~126 KB free
+// with a largest block of ~16 KB and a 20 KB floor rejected it forever: 10
+// deferrals to 1 admission, which is worse than the fault being guarded
+// against. NimBLE's individual stacks are a few KB, so the floor only needs to
+// exclude pathological fragmentation; the post-init PSRAM audit below is the
+// real guard.
+constexpr uint32_t BLE_MIN_INTERNAL_LARGEST_BYTES = 8UL * 1024UL;
 constexpr uint16_t CONNECT_SCAN_INTERVAL     = 16;  // 10 ms units used by NimBLE initiator
 constexpr uint16_t CONNECT_SCAN_WINDOW       = 16;
 constexpr uint32_t CONNECT_TIMEOUT_MS        = 8000UL;  // modest increase; was 6 s
@@ -414,6 +432,53 @@ bool BLEManager::begin() {
         delay(BLE_PRE_INIT_SETTLE_MS);
     }
 
+    // ---- internal-DRAM admission gate -------------------------------------
+    //
+    // NimBLE init costs a measured ~63 KB of internal DRAM, and it brings up
+    // nimble_host and btController while it does. If internal DRAM is already
+    // tight those stacks fall back to PSRAM (see core/TaskStackAudit.h), which
+    // is a DoubleException hours later rather than a failure here.
+    //
+    // The threshold is empirical, not a guess. Across 145 observed starts the
+    // pre-init free-heap distribution is cleanly bimodal with an EMPTY BAND
+    // between 88 KB and 96 KB:
+    //
+    //     64-88 KB   40 starts   -> ~9-10 KB left after init   (both overnight
+    //                               panics recorded heap_kb=10)
+    //     88-96 KB    0 starts
+    //     96-136 KB  105 starts  -> 33+ KB left after init
+    //
+    // Anything in that empty band splits the two modes identically, so 95 KB
+    // rejects the whole dangerous mode and admits the whole safe one.
+    //
+    // This defers, it does not cancel: the caller retries, and the low mode is
+    // transient (memory the WiFi driver has not handed back yet), so a deferred
+    // probe generally succeeds on a later attempt.
+    {
+        const uint32_t freeInternal =
+            heap_caps_get_free_size(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
+        const uint32_t largestInternal =
+            heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
+        if (freeInternal < BLE_MIN_INTERNAL_FREE_BYTES ||
+            largestInternal < BLE_MIN_INTERNAL_LARGEST_BYTES) {
+            // The caller retries several times a second; log the first
+            // deferral and then at most one line every 10 s.
+            static uint32_t s_lastDeferLogMs = 0;
+            const uint32_t nowMs = millis();
+            const bool logIt = (s_lastDeferLogMs == 0) ||
+                               (nowMs - s_lastDeferLogMs >= 10000UL);
+            if (logIt) s_lastDeferLogMs = nowMs;
+            if (logIt) DLOG_WARN(TAG,
+                      "begin deferred: internal DRAM too low free=%u need=%u "
+                      "largest=%u need=%u",
+                      static_cast<unsigned>(freeInternal),
+                      static_cast<unsigned>(BLE_MIN_INTERNAL_FREE_BYTES),
+                      static_cast<unsigned>(largestInternal),
+                      static_cast<unsigned>(BLE_MIN_INTERNAL_LARGEST_BYTES));
+            return false;
+        }
+    }
+
     const esp_bt_controller_status_t btStatus = esp_bt_controller_get_status();
     DLOG_INFO(TAG,
               "begin phase=nimble_pre bt=%s/%d heap=%u largest=%u stack=%u devLen=%u",
@@ -475,6 +540,28 @@ bool BLEManager::begin() {
     _workerMinFreeStackBytes = 0;
     _radioEnabled = false;
     _lastBeginMs = millis();
+
+    // Backstop for what the admission gate cannot see: NimBLE creates
+    // nimble_host and btController during init, and a plain task create falls
+    // back to PSRAM silently when internal DRAM cannot satisfy it. If that
+    // happened we are now holding a live DoubleException that will fire on the
+    // next flash write with the cache disabled — hours from now, with no
+    // backtrace on the app CDC. Tear BLE straight back down instead; the caller
+    // retries, and the next attempt gets a fresh allocation.
+    {
+        const TaskStackAudit::Result audit =
+            TaskStackAudit::run(/*verbose=*/false, nullptr);
+        if (audit.offenders > 0) {
+            DLOG_ERROR(TAG,
+                       "begin aborted: %lu task stack(s) landed in PSRAM after "
+                       "NimBLE init (DoubleException risk); tearing down",
+                       static_cast<unsigned long>(audit.offenders));
+            _begun = true;          // let shutdown() run its normal teardown path
+            shutdown();
+            return false;
+        }
+    }
+
     _begun = true;
     DLOG_INFO(TAG, "begin ready");
     return true;

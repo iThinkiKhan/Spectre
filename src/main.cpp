@@ -25,6 +25,7 @@
 #include "config.h"
 #include "core/BootInfo.h"
 #include "core/CrashBreadcrumb.h"
+#include "core/TaskStackAudit.h"
 #include "core/PsramObject.h"
 #include <esp_bt.h>
 #include "core/EventBus.h"
@@ -8501,41 +8502,7 @@ void _checkLocationTag() {
 //
 // Returns the number of offending tasks. `verbose` also lists the clean ones.
 static uint32_t _auditTaskStackPlacement(bool verbose) {
-    const UBaseType_t count = uxTaskGetNumberOfTasks();
-    TaskStatus_t* tasks = static_cast<TaskStatus_t*>(
-        heap_caps_calloc(count, sizeof(TaskStatus_t),
-                         MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT));
-    if (!tasks) {
-        Serial.println("[STACK] audit skipped (no internal memory for snapshot)");
-        return 0;
-    }
-
-    const UBaseType_t got = uxTaskGetSystemState(tasks, count, nullptr);
-    uint32_t offenders = 0;
-    for (UBaseType_t i = 0; i < got; i++) {
-        const void* base = static_cast<const void*>(tasks[i].pxStackBase);
-        const bool internal = esp_ptr_internal(base);
-        if (!internal) offenders++;
-        if (!internal || verbose) {
-            Serial.printf("[STACK] %-16s base=%p %s\r\n",
-                          tasks[i].pcTaskName ? tasks[i].pcTaskName : "?",
-                          base,
-                          internal ? "internal" : "*** EXTERNAL (PSRAM) ***");
-        }
-    }
-
-    if (offenders > 0) {
-        Serial.printf("[STACK] *** %lu task stack(s) in PSRAM — DoubleException risk ***\r\n",
-                      static_cast<unsigned long>(offenders));
-        DLOG_WARN("CORE", "%lu task stack(s) in PSRAM — DoubleException risk",
-                  static_cast<unsigned long>(offenders));
-    } else if (verbose) {
-        Serial.printf("[STACK] all %lu task stacks internal\r\n",
-                      static_cast<unsigned long>(got));
-    }
-
-    heap_caps_free(tasks);
-    return offenders;
+    return TaskStackAudit::run(verbose).offenders;
 }
 
 static const char* _resetReasonName(esp_reset_reason_t r) {
