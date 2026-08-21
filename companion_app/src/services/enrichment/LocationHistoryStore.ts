@@ -321,6 +321,103 @@ export function buildLocationCandidates(
   };
 }
 
+// Metres per degree of latitude. Longitude is scaled by cos(lat) at use.
+const METERS_PER_DEG_LAT = 111_320;
+
+/**
+ * Position of the observer AT the event, not at the nearest GPS fix.
+ *
+ * Fixes arrive every ~20 s, so snapping an event to the nearest one leaves up
+ * to ~10 s of unmodelled motion: about 14 m walking, 150 m in a vehicle. That
+ * error lands directly on the observer position a trilateration solve is
+ * anchored to, and it dwarfs the RF-side error budget.
+ *
+ * When the event falls between two fixes we interpolate along the segment
+ * instead. The residual is then only the deviation from a straight line over
+ * one sampling interval, not the whole distance travelled.
+ *
+ * `accuracy` is widened to carry what is actually unknown: the GPS accuracy of
+ * the bracketing fixes combined with the motion-derived uncertainty. Consumers
+ * already weight by accuracy, so the uncertainty propagates without a format
+ * change - and a stale or badly bracketed match now says so instead of
+ * reporting a confident-looking fix.
+ */
+function interpolateFix(
+  before: LocationHistoryFix,
+  after: LocationHistoryFix,
+  eventUnixMs: number,
+): LocationHistoryFix {
+  const span = after.timestamp - before.timestamp;
+  if (span <= 0) {
+    return before;
+  }
+  const t = Math.min(1, Math.max(0, (eventUnixMs - before.timestamp) / span));
+
+  const lat = before.lat + (after.lat - before.lat) * t;
+  const lon = before.lon + (after.lon - before.lon) * t;
+  const alt = before.alt + (after.alt - before.alt) * t;
+
+  // Straight-line distance covered across the bracketing segment.
+  const latScale = METERS_PER_DEG_LAT;
+  const lonScale = METERS_PER_DEG_LAT * Math.cos((lat * Math.PI) / 180);
+  const dx = (after.lon - before.lon) * lonScale;
+  const dy = (after.lat - before.lat) * latScale;
+  const segmentM = Math.sqrt(dx * dx + dy * dy);
+
+  // The path between two fixes is not necessarily straight. Charge a quarter
+  // of the segment length as path-shape uncertainty - generous for a walk,
+  // honest for a turn taken between samples.
+  const pathUncertaintyM = segmentM * 0.25;
+  const gpsAccuracyM = Math.max(before.accuracy, after.accuracy);
+
+  return {
+    lat,
+    lon,
+    alt,
+    accuracy: Math.sqrt(
+      gpsAccuracyM * gpsAccuracyM + pathUncertaintyM * pathUncertaintyM,
+    ),
+    // Report the EVENT time: this position is an estimate for that instant,
+    // not an observation made at either bracketing fix.
+    timestamp: eventUnixMs,
+    source: before.source,
+    provider: before.provider,
+  };
+}
+
+/** Nearest-fix fallback, with the unmodelled motion folded into accuracy. */
+function widenForDrift(
+  fix: LocationHistoryFix,
+  eventUnixMs: number,
+  neighbourForSpeed: LocationHistoryFix | null,
+): LocationHistoryFix {
+  const driftMs = Math.abs(fix.timestamp - eventUnixMs);
+  if (driftMs <= 0) {
+    return fix;
+  }
+
+  // Estimate speed from the nearest neighbouring fix when there is one;
+  // otherwise assume a walking pace rather than pretending drift is free.
+  let speedMps = 1.4;
+  if (neighbourForSpeed) {
+    const dtMs = Math.abs(neighbourForSpeed.timestamp - fix.timestamp);
+    if (dtMs > 0) {
+      const latScale = METERS_PER_DEG_LAT;
+      const lonScale = METERS_PER_DEG_LAT * Math.cos((fix.lat * Math.PI) / 180);
+      const dx = (neighbourForSpeed.lon - fix.lon) * lonScale;
+      const dy = (neighbourForSpeed.lat - fix.lat) * latScale;
+      speedMps = Math.sqrt(dx * dx + dy * dy) / (dtMs / 1000);
+    }
+  }
+
+  const motionM = speedMps * (driftMs / 1000);
+  return {
+    ...fix,
+    accuracy: Math.sqrt(fix.accuracy * fix.accuracy + motionM * motionM),
+    timestamp: eventUnixMs,
+  };
+}
+
 export function locationForUnixMsFromCandidates(
   eventUnixMs: number,
   set: LocationCandidateSet,
@@ -335,6 +432,29 @@ export function locationForUnixMsFromCandidates(
 
   const candidates = set.deviceCandidates;
 
+  // Bracketing pair, if the event falls inside the recorded track.
+  {
+    let before: LocationHistoryFix | null = null;
+    let after: LocationHistoryFix | null = null;
+    for (const candidate of candidates) {
+      if (candidate.timestamp <= eventUnixMs) {
+        if (!before || candidate.timestamp > before.timestamp) {
+          before = candidate;
+        }
+      } else if (!after || candidate.timestamp < after.timestamp) {
+        after = candidate;
+      }
+    }
+    if (
+      before &&
+      after &&
+      eventUnixMs - before.timestamp <= LOCATION_BOOTSTRAP_MAX_DRIFT_MS &&
+      after.timestamp - eventUnixMs <= LOCATION_BOOTSTRAP_MAX_DRIFT_MS
+    ) {
+      return interpolateFix(before, after, eventUnixMs);
+    }
+  }
+
   let nearest: LocationHistoryFix | null = null;
   let nearestDrift = Number.MAX_SAFE_INTEGER;
   for (const candidate of candidates) {
@@ -348,9 +468,25 @@ export function locationForUnixMsFromCandidates(
     }
   }
 
-  return nearest && nearestDrift <= LOCATION_BOOTSTRAP_MAX_DRIFT_MS
-    ? nearest
-    : null;
+  if (!nearest || nearestDrift > LOCATION_BOOTSTRAP_MAX_DRIFT_MS) {
+    return null;
+  }
+
+  // Only one side of the event has a fix (start or end of a track, or a GPS
+  // outage). Keep it, but say how uncertain it is rather than reporting the
+  // fix's own accuracy as if it applied at the event.
+  let neighbour: LocationHistoryFix | null = null;
+  for (const candidate of candidates) {
+    if (candidate === nearest) continue;
+    if (
+      !neighbour ||
+      Math.abs(candidate.timestamp - nearest.timestamp) <
+        Math.abs(neighbour.timestamp - nearest.timestamp)
+    ) {
+      neighbour = candidate;
+    }
+  }
+  return widenForDrift(nearest, eventUnixMs, neighbour);
 }
 
 export function nearestLocationDriftFromCandidates(
