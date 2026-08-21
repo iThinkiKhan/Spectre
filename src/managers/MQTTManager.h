@@ -124,7 +124,8 @@ public:
                       const char* trackId, uint16_t sampleSeq,
                       uint16_t sampleFrames, int8_t rssiMin,
                       int8_t rssiMax, const char* sampleReason,
-                      int8_t noiseFloor);
+                      int8_t noiseFloor,
+                      int8_t txPowerDbm, uint8_t txPowerSrc);
     void queueDrone(const char* droneID, float lat, float lon,
                     float alt, const char* mac, int8_t rssi,
                     uint8_t channel, const char* protocol);

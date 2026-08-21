@@ -647,7 +647,16 @@ bool enqueue(const char* type,
                                     sizeof(encodedPayload),
                                     encodedLen) ||
         encodedLen > MAX_PAYLOAD) {
-        __atomic_add_fetch(&s_droppedTooLarge, 1, __ATOMIC_RELAXED);
+        // Loud on the first one: an oversized record is real capture lost, and
+        // a bare counter in a periodic stats line is easy to never notice.
+        if (__atomic_add_fetch(&s_droppedTooLarge, 1, __ATOMIC_RELAXED) == 1) {
+            DLOG_WARN("STORAGE",
+                      "capture DROPPED: encoded payload %u B exceeds MAX_PAYLOAD %u B "
+                      "(type=%s) - raise MAX_PAYLOAD or shorten the record",
+                      static_cast<unsigned>(encodedLen),
+                      static_cast<unsigned>(MAX_PAYLOAD),
+                      type ? type : "?");
+        }
         switch (slotKind) {
             case SLOT_PROBE:
                 __atomic_add_fetch(&s_producerProbeDrop, 1, __ATOMIC_RELAXED);

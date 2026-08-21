@@ -2838,7 +2838,8 @@ void MQTTManager::queueNetwork(const char* bssid, const char* ssid,
                                uint16_t sampleSeq, uint16_t sampleFrames,
                                int8_t rssiMin, int8_t rssiMax,
                                const char* sampleReason,
-                               int8_t noiseFloor) {
+                               int8_t noiseFloor,
+                               int8_t txPowerDbm, uint8_t txPowerSrc) {
     if (!bssid || !bssid[0]) return;
 
     JsonDocument doc;
@@ -2862,6 +2863,13 @@ void MQTTManager::queueNetwork(const char* bssid, const char* ssid,
     // required to compare observations across time, place and hardware.
     if (noiseFloor != 0) doc["noise_floor"] = noiseFloor;
     doc["ant_gain_q2"] = SETTINGS.get().antennaGainQ2;
+    // Advertised transmit power closes the path-loss equation. tx_power_src
+    // says whether it is a measured report or a regulatory ceiling, which the
+    // solver needs in order to weight it.
+    if (txPowerSrc != 0) {
+        doc["tx_power"] = txPowerDbm;
+        doc["tx_power_src"] = txPowerSrc;
+    }
     doc["sample_reason"] = sampleReason ? sampleReason : "interval";
     const RAMSpool::CaptureClassification networkCls =
         RAMSpool::classify("network", doc.as<JsonObjectConst>());
@@ -2891,6 +2899,10 @@ void MQTTManager::queueDevice(const char* mac,
     doc["source"]         = "spectre_field";
     doc["track_id"]       = trackId ? trackId : "";
     doc["physical_device_id"] = physicalDeviceId;
+    // Any record carrying an RSSI has to say which antenna that RSSI was
+    // referenced to, inventory records included -- otherwise the same device
+    // measured before and after an antenna swap reads as having moved.
+    doc["ant_gain_q2"] = SETTINGS.get().antennaGainQ2;
     const RAMSpool::CaptureClassification deviceCls =
         RAMSpool::classify("device", doc.as<JsonObjectConst>());
     const bool queued = RAMSpool::enqueue("device",

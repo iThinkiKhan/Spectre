@@ -30,7 +30,14 @@ constexpr size_t POOL_SIZE   = 1024;
 // Localization samples carry a stable track id plus a compact RSSI window.
 // The extra 48 bytes live in PSRAM (about 48 KB across the full pool) and keep
 // those bounded measurements on the normal asynchronous storage path.
-constexpr size_t MAX_PAYLOAD = 384;  // binary field-map payload bytes per slot
+// Binary field-map payload bytes per slot. This is the PRE-storage keyed
+// encoding, which is much larger than the packed v2 record it becomes, so the
+// cap has to be sized against the keyed form. A probe with the RF-context
+// fields measures ~369 B, and a maximum-length SSID (32) plus session tag (24)
+// plus a literal track_id adds ~40 B more -- which overran the old 384 B cap
+// and dropped the record with nothing but a counter to show for it. The pool
+// is PSRAM (1024 slots), so the headroom costs external memory only.
+constexpr size_t MAX_PAYLOAD = 512;
 
 struct EventSlot {
     uint32_t enqueueSeq;

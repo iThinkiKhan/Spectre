@@ -63,20 +63,20 @@ void _queueWiFiNotification(uint8_t type, const char* text) {
 // plain array index, no powf(). Index is (dBm + 128) so the whole int8 range is
 // covered. Units are arbitrary but consistent (1.0 == 0 dBm), which is all a
 // mean-then-convert needs.
-static const float* _dbmLinearTable() {
-    static float tbl[256];
-    static bool built = false;
-    if (!built) {
+struct DbmLinearTable {
+    float v[256];
+    DbmLinearTable() {
         for (int i = 0; i < 256; i++) {
-            tbl[i] = powf(10.0f, static_cast<float>(i - 128) / 10.0f);
+            v[i] = powf(10.0f, static_cast<float>(i - 128) / 10.0f);
         }
-        built = true;
     }
-    return tbl;
-}
+};
 
 static inline float _dbmToLinear(int8_t dbm) {
-    return _dbmLinearTable()[static_cast<uint8_t>(static_cast<int>(dbm) + 128)];
+    // Function-local static: C++11 guarantees the initialisation is run once
+    // and is thread-safe, unlike a hand-rolled `static bool built` flag.
+    static const DbmLinearTable table;
+    return table.v[static_cast<uint8_t>(static_cast<int>(dbm) + 128)];
 }
 
 static inline int8_t _linearToDbm(float linear) {
@@ -280,6 +280,22 @@ void WiFiManager::tick() {
                   depth, drops,
                   static_cast<int>(_frameNoiseFloor),
                   static_cast<double>(SETTINGS.get().antennaGainQ2) / 4.0);
+        // How many tracked APs actually advertise a transmit power, and by
+        // which source. Without this the tx-power path is invisible: an empty
+        // result looks identical to a parser that never runs.
+        uint16_t txTpc = 0, txCapped = 0, txMax = 0;
+        for (int i = 0; i < _networkCount; i++) {
+            switch (_networks[i].txPowerSrc) {
+                case TXPWR_TPC_REPORT:     txTpc++;    break;
+                case TXPWR_COUNTRY_CAPPED: txCapped++; break;
+                case TXPWR_COUNTRY_MAX:    txMax++;    break;
+                default: break;
+            }
+        }
+        DLOG_INFO("WIFI",
+                  "txpower nets=%d tpc=%u countryCapped=%u countryMax=%u none=%u",
+                  _networkCount, txTpc, txCapped, txMax,
+                  static_cast<unsigned>(_networkCount - txTpc - txCapped - txMax));
         lastQueueLog = millis();
     }
 
@@ -374,6 +390,12 @@ void WiFiManager::tick() {
     if (_mode == WIFI_OP_SCAN) {
         int n = WiFi.scanComplete();
         if (n >= 0) {
+            // An active-scan result carries no per-frame radio metadata, so it
+            // must not inherit the noise floor of whatever promiscuous frame
+            // happened to be processed last. Zero means "unknown" and the
+            // accumulator skips it; leaving it set silently folded an unrelated
+            // measurement into these networks' SNR.
+            _frameNoiseFloor = 0;
             for (int i = 0; i < n &&
                  i < WIFI_MAX_NETWORKS; i++) {
                 _findOrCreateNetwork(
@@ -738,7 +760,7 @@ void WiFiManager::handleFrame(void* buf,
     }
 
     DeferredFrame& f = _deferredQueue[_deferredHead];
-    if (copyLen > 128) copyLen = 128;
+    if (copyLen > 256) copyLen = 256;
     memcpy(f.payload, pkt->payload, copyLen);
     f.len          = copyLen;
     f.rssi         = pkt->rx_ctrl.rssi;
@@ -913,6 +935,15 @@ void WiFiManager::_processBeacon(const uint8_t* p,
     bool hasWPS   = false;
 
     char security[12] = "OPEN";
+    // Advertised transmit power, best source wins. Tags 7/32/35 all sort ahead
+    // of RSN(48) in a well-formed beacon, so they land inside the captured
+    // prefix even when the tail is truncated.
+    int8_t  txPowerDbm = 0;
+    uint8_t txPowerSrc = TXPWR_NONE;
+    int8_t  countryMaxDbm = 0;
+    bool    haveCountryMax = false;
+    int8_t  powerConstraintDb = 0;
+    bool    havePowerConstraint = false;
     int pos = 0;
     while (pos + 2 <= tagLen) {
         uint8_t tagID = tags[pos];
@@ -926,6 +957,34 @@ void WiFiManager::_processBeacon(const uint8_t* p,
                 memcpy(ssid, tags + pos + 2, tagSz);
                 ssid[tagSz] = '\0';
             }
+        } else if (tagID == 7 && tagSz >= 6) {
+            // Country IE: 3-byte country string, then {first channel,
+            // channel count, max tx power} triplets. Take the max power of the
+            // triplet covering this channel; fall back to the first triplet.
+            const uint8_t* body = tags + pos + 2;
+            for (int t = 3; t + 3 <= tagSz; t += 3) {
+                const uint8_t firstCh = body[t];
+                const uint8_t nCh     = body[t + 1];
+                const int8_t  maxPwr  = static_cast<int8_t>(body[t + 2]);
+                // Skip the 201+ "operating triplet" extension encoding.
+                if (firstCh >= 201) continue;
+                const bool covers = (ch >= firstCh && ch < firstCh + nCh);
+                if (covers || !haveCountryMax) {
+                    countryMaxDbm = maxPwr;
+                    haveCountryMax = true;
+                    if (covers) break;
+                }
+            }
+        } else if (tagID == 32 && tagSz >= 1) {
+            // Power Constraint: a REDUCTION in dB from the regulatory max.
+            powerConstraintDb = static_cast<int8_t>(tags[pos + 2]);
+            havePowerConstraint = true;
+        } else if (tagID == 35 && tagSz >= 2) {
+            // TPC Report: actual transmit power of this frame, plus link
+            // margin. This is the only source that reports what was really
+            // transmitted rather than what is permitted, so it always wins.
+            txPowerDbm = static_cast<int8_t>(tags[pos + 2]);
+            txPowerSrc = TXPWR_TPC_REPORT;
         } else if (tagID == 48) {
             // RSN IE — WPA2/WPA3
             strlcpy(security, "WPA2", sizeof(security));
@@ -958,6 +1017,20 @@ void WiFiManager::_processBeacon(const uint8_t* p,
         pos += 2 + tagSz;
     }
 
+    // Resolve the transmit power now the whole tag list has been walked. A TPC
+    // Report already won during the walk; otherwise fall back to the Country
+    // ceiling, reduced by any Power Constraint. Both fallbacks are what the AP
+    // is ALLOWED to emit, not what it did, hence the separate source code.
+    if (txPowerSrc == TXPWR_NONE && haveCountryMax) {
+        if (havePowerConstraint) {
+            txPowerDbm = static_cast<int8_t>(countryMaxDbm - powerConstraintDb);
+            txPowerSrc = TXPWR_COUNTRY_CAPPED;
+        } else {
+            txPowerDbm = countryMaxDbm;
+            txPowerSrc = TXPWR_COUNTRY_MAX;
+        }
+    }
+
     const bool whitelisted = _isTrustedSSID(ssid);
     if (whitelisted) {
         _findOrCreateNetwork(ssid, bssid, rssi, ch);
@@ -971,6 +1044,10 @@ void WiFiManager::_processBeacon(const uint8_t* p,
 
         net->isHidden = isHidden;
         net->hasWPS   = hasWPS;
+        if (txPowerSrc != TXPWR_NONE) {
+            net->txPowerDbm = txPowerDbm;
+            net->txPowerSrc = txPowerSrc;
+        }
         strlcpy(net->security, security,
                 sizeof(net->security));
         net->lastSeen = millis();
@@ -994,7 +1071,8 @@ void WiFiManager::_processBeacon(const uint8_t* p,
                 net->localizationRssiMin,
                 net->localizationRssiMax,
                 _localizationSampleReason(*net, rssi, now),
-                _localizationAverageNoise(*net));
+                _localizationAverageNoise(*net),
+                net->txPowerDbm, net->txPowerSrc);
             _finishLocalizationSample(*net, averageRssi, now);
         }
 

@@ -228,7 +228,9 @@ enum BinaryProbeV2Flags2 : uint8_t {
     BIN_PDV2_TRACK        = 0x10,
     // Receiver RF context: noise floor and the gain of the antenna fitted.
     // Two bytes that make an RSSI interpretable rather than merely recorded.
-    BIN_PDV2_RFCTX        = 0x20
+    BIN_PDV2_RFCTX        = 0x20,
+    // Advertised transmit power plus the source it came from.
+    BIN_PDV2_TXPWR        = 0x40
 };
 
 // track_id is always one of three literal prefixes glued to a value the record
@@ -636,7 +638,9 @@ static bool _isDecoderDerivedEventKey(const char* key) {
 // Localization sidecar fields carried positionally by the v2 probe/device/
 // network payload. Keyed, these cost ~120 B/record; positional, ~7 B.
 static bool _isLocalizationSidecarKey(const char* key) {
-    return strcmp(key, "noise_floor") == 0 ||
+    return strcmp(key, "tx_power") == 0 ||
+           strcmp(key, "tx_power_src") == 0 ||
+           strcmp(key, "noise_floor") == 0 ||
            strcmp(key, "ant_gain_q2") == 0 ||
            strcmp(key, "track_id") == 0 ||
            strcmp(key, "localization_sample") == 0 ||
@@ -1384,6 +1388,13 @@ static bool _decodeBinaryPayloadBody(const uint8_t*& p,
             const String trackId =
                 _binaryTrackIdFromMode(trackMode, mac, ieFingerprint, literal);
             if (trackId.length()) root["track_id"] = trackId;
+        }
+        if (flags2 & BIN_PDV2_TXPWR) {
+            if (static_cast<size_t>(end - p) < 2) return false;
+            const int8_t txPower = static_cast<int8_t>(*p++);
+            const uint8_t txSrc  = *p++;
+            root["tx_power"] = txPower;
+            root["tx_power_src"] = txSrc;
         }
         if (flags2 & BIN_PDV2_RFCTX) {
             if (static_cast<size_t>(end - p) < 2) return false;
@@ -5958,8 +5969,11 @@ bool StorageManager::_appendSegmentRecord(SpoolSegmentInfo& seg,
                 const bool hasRfCtx =
                     !doc["noise_floor"].isNull() || !doc["ant_gain_q2"].isNull();
 
+                const bool hasTxPwr = !doc["tx_power_src"].isNull();
+
                 uint8_t flags2 = 0;
                 if (hasRfCtx) flags2 |= BIN_PDV2_RFCTX;
+                if (hasTxPwr) flags2 |= BIN_PDV2_TXPWR;
                 if (security.length()) flags2 |= BIN_PDV2_SECURITY;
                 if (!doc["is_hidden"].isNull()) flags2 |= BIN_PDV2_HIDDEN;
                 if (!doc["has_wps"].isNull()) flags2 |= BIN_PDV2_WPS;
@@ -6032,6 +6046,12 @@ bool StorageManager::_appendSegmentRecord(SpoolSegmentInfo& seg,
                         if (trackMode == BIN_TRACK_LITERAL) {
                             _appendStringToBytes(body, trackId);
                         }
+                    }
+                    if (flags2 & BIN_PDV2_TXPWR) {
+                        body.push_back(static_cast<uint8_t>(
+                            static_cast<int8_t>(doc["tx_power"].as<int32_t>())));
+                        body.push_back(static_cast<uint8_t>(
+                            doc["tx_power_src"].as<uint32_t>() & 0xFFU));
                     }
                     if (flags2 & BIN_PDV2_RFCTX) {
                         // Both are plain signed bytes: noise floor in dBm,
@@ -17542,6 +17562,10 @@ bool StorageManager::spoolCodecSelfTestToSerial() {
                 w["is_hidden"] = 0;
                 w["has_wps"] = 1;
                 w["track_id"] = String("AP:") + macA;
+                // Only APs advertise transmit power, so cover it on the
+                // network case where it actually occurs.
+                w["tx_power"] = 20;
+                w["tx_power_src"] = 1;   // TPC report
             } else {
                 w["mac"] = macB;
                 w["ie_fingerprint"] = "8f2a91c4";

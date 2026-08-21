@@ -84,6 +84,12 @@ struct WiFiNetwork {
     bool     hasPMKID;
     bool     pmkidChecked;        // true after storage has been queried once
     char     security[12];       // WPA2 / WPA3 / OPEN etc.
+    // Advertised transmit power in dBm, and where it came from. RSSI alone
+    // cannot give a distance: path loss is (tx power - rx power), and real
+    // devices span roughly 10-30 dBm. txPowerSrc matters as much as the value,
+    // because a regulatory ceiling is not the same claim as a measured report.
+    int8_t   txPowerDbm;
+    uint8_t  txPowerSrc;         // TxPowerSource
     bool     isHidden;           // beacon with empty SSID
     bool     hasWPS;             // WPS IE present
     uint32_t firstSeen;          // millis() when first observed
@@ -319,7 +325,7 @@ private:
 
     // Deferred frame queue — callback deposits here, tick() processes
     struct DeferredFrame {
-        uint8_t  payload[128];  // truncated copy
+        uint8_t  payload[256];  // truncated copy
         int      len;
         int8_t   rssi;
         uint8_t  channel;
@@ -344,6 +350,14 @@ private:
     // handlers that have no other interest in it; safe because the deferred
     // queue is drained single-threaded from tick().
     int8_t _frameNoiseFloor = 0;
+    // Where an advertised transmit power came from. Ordered by how much a
+    // solver should trust it.
+    enum TxPowerSource : uint8_t {
+        TXPWR_NONE            = 0,
+        TXPWR_TPC_REPORT      = 1,  // 802.11 TPC Report IE - actual tx power
+        TXPWR_COUNTRY_CAPPED  = 2,  // Country max minus Power Constraint
+        TXPWR_COUNTRY_MAX     = 3   // Country max only - a regulatory ceiling
+    };
     static const int DEFERRED_QUEUE_SIZE = 128;
     DeferredFrame* _deferredQueue = nullptr;
     volatile int  _deferredHead = 0;
