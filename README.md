@@ -31,6 +31,8 @@ The purpose of this project is embedded engineering, wireless research, RF mappi
 
 ## What is Spectre?
 
+Updates, 8/24/26. Spectre has quickly grown into a real field device locator, capable of syncing to the home database and displaying real time locations of wireless devices over the phone. 
+
 Spectre is a pocket-sized field intelligence platform for extending a stationary RF sensor network into the real world.
 
 It collects wireless activity in the field, tags it with location and mission context, stores it locally, and syncs it back home to enrich a larger RF database. With the companion phone app, Spectre can use GPS, relay storage, provide operator input, and bridge data through MQTT during extended missions. Back at base, collected data can feed map overlays, trilateration workflows, drone tracking, and long-term RF environment analysis.
