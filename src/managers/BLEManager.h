@@ -90,6 +90,11 @@ public:
     bool requestEnrichmentBatch(const EventBatchRecord* records, size_t count);
     bool consumeEnrichmentBatch(PendingEnrichment* out, size_t maxCount, size_t& outCount);
     bool consumeEnrichmentFailure();
+    // A phone cancel that arrives while an enrichment exchange is in flight
+    // means "I have no GPS sample near these capture times", not "the link
+    // broke". Callers consume it before consumeEnrichmentFailure() so the
+    // batch can be deferred without tearing down a healthy companion link.
+    bool consumeEnrichmentDeclined();
     uint32_t getLastEnrichmentTransferMs() const { return _enrichmentXferMs; }
 
     // Granular companion readiness checks.
@@ -333,6 +338,7 @@ private:
     bool      _enrichmentInFlight = false;
     bool      _enrichmentReady = false;
     bool      _enrichmentFailed = false;
+    bool      _enrichmentDeclinedByPhone = false;
     bool      _enrichmentNotifyEnabled = false;
     bool      _enrichmentSendQueued = false;
     bool      _enrichmentBatchAcked = false;

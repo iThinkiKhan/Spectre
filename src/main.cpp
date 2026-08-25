@@ -617,6 +617,41 @@ static size_t    enrichQueueSize  = 0;
 static uint32_t  enrichClaimedEventIds[ENRICH_CLAIM_MAX];
 static size_t    enrichClaimedCount = 0;
 
+// Enrichment deferral list.
+//
+// The phone answers a batch only for events it can place: it looks up a GPS
+// sample near each capture time and silently drops the rest (all of them ->
+// a cancel pulse). Those events stay pending-enrichment forever, and the
+// pending scan is ordered by lane/priority/value/age, so the same
+// unplaceable head is re-offered on every pass. Without a deferral list one
+// gap in phone GPS coverage - device capturing before the app links, the app
+// killed mid-run - blocks enrichment of every record captured after it for
+// the rest of the session.
+//
+// Declined event IDs are parked here and excluded from batch selection until
+// the TTL expires (or nothing is pending at all), which bounds the damage of a
+// gap to one retry window instead of the whole run. RAM-only: a reboot retries
+// everything.
+static constexpr size_t   ENRICH_DEFER_MAX    = 512;
+static constexpr uint32_t ENRICH_DEFER_TTL_MS = 10UL * 60UL * 1000UL;
+static uint32_t  enrichDeferredEventIds[ENRICH_DEFER_MAX];
+static size_t    enrichDeferredCount = 0;
+static uint32_t  enrichDeferredSinceMs = 0;
+
+// Event IDs of the batch currently in flight, kept so the ones the phone does
+// not answer for can be deferred.
+static uint32_t  enrichRequestedEventIds[PHONE_ENRICH_BATCH_MAX];
+static size_t    enrichRequestedCount = 0;
+
+// Scratch exclusion set handed to the spool scan: claimed (in flight or
+// queued) plus deferred.
+static uint32_t  enrichExcludeScratch[ENRICH_CLAIM_MAX + ENRICH_DEFER_MAX];
+
+// Defined with the rest of the enrichment queue helpers, below.
+static void   enrichExpireDeferralsIfDue();
+static void   enrichClearDeferrals(const char* reason);
+static size_t enrichBuildExcludeSet();
+
 static bool companionHasPriorityReason(const CompanionScheduler& cs) {
     return cs.manualProbeRequested ||
            cs.manualEnrichRequested ||
@@ -1119,16 +1154,21 @@ static bool _buildPendingEnrichmentBatch(EventBatchRecord* out,
 
     const StorageLaneCounts pendingCounts = STORAGE.getPendingEnrichmentCounts();
     if (pendingCounts.total() == 0) {
+        enrichClearDeferrals("nothing_pending");
         return true;
     }
 
-    DLOG_INFO("BLE", "Enrichment pending scan begin claimed=%u max=%u",
+    enrichExpireDeferralsIfDue();
+
+    DLOG_INFO("BLE", "Enrichment pending scan begin claimed=%u deferred=%u max=%u",
               static_cast<unsigned>(enrichClaimedCount),
+              static_cast<unsigned>(enrichDeferredCount),
               static_cast<unsigned>(maxCount));
 
     PendingEventDescriptor pendingBatch[PHONE_ENRICH_BATCH_MAX] = {};
+    const size_t excludeCount = enrichBuildExcludeSet();
     if (!STORAGE.getPendingEnrichmentBatchExcluding(
-            enrichClaimedEventIds, enrichClaimedCount,
+            enrichExcludeScratch, excludeCount,
             pendingBatch, maxCount, outCount)) {
         DLOG_WARN("BLE", "Failed to read spool enrichment backlog batch");
         return false;
@@ -1311,6 +1351,11 @@ static void initEnrichQueue() {
     enrichQueueSize  = 0;
     enrichClaimedCount = 0;
     memset(enrichClaimedEventIds, 0, sizeof(enrichClaimedEventIds));
+    enrichDeferredCount = 0;
+    enrichDeferredSinceMs = 0;
+    memset(enrichDeferredEventIds, 0, sizeof(enrichDeferredEventIds));
+    enrichRequestedCount = 0;
+    memset(enrichRequestedEventIds, 0, sizeof(enrichRequestedEventIds));
     for (size_t i = 0; i < ENRICH_QUEUE_DEPTH; ++i) {
         enrichQueue[i].count    = 0;
         enrichQueue[i].queuedMs = 0;
@@ -1330,6 +1375,104 @@ static void enrichClaimReceived(const PendingEnrichment* recs, size_t count) {
 static void enrichClearAllClaims() {
     enrichClaimedCount = 0;
     memset(enrichClaimedEventIds, 0, sizeof(enrichClaimedEventIds));
+}
+
+// Deferrals deliberately outlive claims and companion sessions — clearing them
+// with the claims would put the unplaceable head straight back in front of the
+// scan on the next session.
+static void enrichClearDeferrals(const char* reason) {
+    if (enrichDeferredCount == 0) {
+        enrichDeferredSinceMs = 0;
+        return;
+    }
+
+    DLOG_INFO("BLE", "Enrichment deferrals cleared count=%u reason=%s",
+              static_cast<unsigned>(enrichDeferredCount),
+              reason ? reason : "-");
+    enrichDeferredCount = 0;
+    enrichDeferredSinceMs = 0;
+    memset(enrichDeferredEventIds, 0, sizeof(enrichDeferredEventIds));
+}
+
+static void enrichExpireDeferralsIfDue() {
+    if (enrichDeferredCount == 0 || enrichDeferredSinceMs == 0) {
+        return;
+    }
+    if ((millis() - enrichDeferredSinceMs) >= ENRICH_DEFER_TTL_MS) {
+        enrichClearDeferrals("ttl");
+    }
+}
+
+static bool enrichIsDeferred(uint32_t eventId) {
+    for (size_t i = 0; i < enrichDeferredCount; ++i) {
+        if (enrichDeferredEventIds[i] == eventId) return true;
+    }
+    return false;
+}
+
+static void enrichDeferEventId(uint32_t eventId) {
+    if (eventId == 0 || enrichIsDeferred(eventId)) return;
+
+    if (enrichDeferredCount >= ENRICH_DEFER_MAX) {
+        // Full. Drop the list and start over rather than pinning a stale set:
+        // the scan makes progress again on the next pass either way.
+        enrichClearDeferrals("overflow");
+    }
+
+    if (enrichDeferredCount == 0) {
+        enrichDeferredSinceMs = millis();
+    }
+    enrichDeferredEventIds[enrichDeferredCount++] = eventId;
+}
+
+static void enrichNoteRequested(const EventBatchRecord* batch, size_t count) {
+    enrichRequestedCount = 0;
+    if (!batch) return;
+    for (size_t i = 0; i < count && i < PHONE_ENRICH_BATCH_MAX; ++i) {
+        enrichRequestedEventIds[enrichRequestedCount++] = batch[i].eventId;
+    }
+}
+
+static void enrichDeferAllRequested() {
+    for (size_t i = 0; i < enrichRequestedCount; ++i) {
+        enrichDeferEventId(enrichRequestedEventIds[i]);
+    }
+    enrichRequestedCount = 0;
+}
+
+// Events the phone left out of its answer are the ones it could not place.
+static void enrichDeferRequestedNotReturned(const PendingEnrichment* answered,
+                                            size_t answeredCount) {
+    for (size_t i = 0; i < enrichRequestedCount; ++i) {
+        const uint32_t requestedId = enrichRequestedEventIds[i];
+        if (requestedId == 0) continue;
+
+        bool returned = false;
+        for (size_t j = 0; j < answeredCount; ++j) {
+            if (answered[j].eventId == requestedId) {
+                returned = true;
+                break;
+            }
+        }
+        if (!returned) {
+            enrichDeferEventId(requestedId);
+        }
+    }
+    enrichRequestedCount = 0;
+}
+
+// Claimed + deferred, in one buffer for the spool scan.
+static size_t enrichBuildExcludeSet() {
+    size_t n = 0;
+    for (size_t i = 0; i < enrichClaimedCount &&
+                       n < (sizeof(enrichExcludeScratch) / sizeof(enrichExcludeScratch[0])); ++i) {
+        enrichExcludeScratch[n++] = enrichClaimedEventIds[i];
+    }
+    for (size_t i = 0; i < enrichDeferredCount &&
+                       n < (sizeof(enrichExcludeScratch) / sizeof(enrichExcludeScratch[0])); ++i) {
+        enrichExcludeScratch[n++] = enrichDeferredEventIds[i];
+    }
+    return n;
 }
 
 static void enrichRemoveClaims(const PendingEnrichment* records, size_t count) {
@@ -1413,8 +1556,21 @@ static void serviceEnrichmentPipeline(CompanionScheduler& cs) {
 
         // Consume any in-flight BLE response.
         if (cs.enrichmentRequestIssued) {
-            if (BLE_MGR.consumeEnrichmentFailure()) {
+            // Check the decline latch first: the phone answered "no GPS sample
+            // near these capture times", so the link is fine and only this
+            // batch is unusable. Park those IDs and let the loop below ask for
+            // the next batch on this same lease — otherwise the scan re-offers
+            // the same unplaceable head on every future session.
+            if (BLE_MGR.consumeEnrichmentDeclined()) {
+                enrichDeferAllRequested();
+                cs.enrichmentRequestIssued = false;
+                cs.lastRequestedEnrichmentCount = 0;
+                DLOG_WARN("BLE",
+                          "Enrichment batch declined by phone; deferred=%u",
+                          static_cast<unsigned>(enrichDeferredCount));
+            } else if (BLE_MGR.consumeEnrichmentFailure()) {
                 DLOG_WARN("BLE", "BLE enrichment exchange failed");
+                enrichRequestedCount = 0;
                 enrichClearAllClaims();
                 _finishPhoneEnrichment(cs, false);
                 return;
@@ -1430,6 +1586,7 @@ static void serviceEnrichmentPipeline(CompanionScheduler& cs) {
                 // call excludes these IDs while they sit in the queue.
                 if (enqueueEnrichBatch(enrichments, outCount)) {
                     enrichClaimReceived(enrichments, outCount);
+                    enrichDeferRequestedNotReturned(enrichments, outCount);
                     cs.enrichmentSessionBatches++;
                     cs.enrichmentSessionXferMs += BLE_MGR.getLastEnrichmentTransferMs();
                     cs.enrichmentRequestIssued = false;
@@ -1481,12 +1638,16 @@ static void serviceEnrichmentPipeline(CompanionScheduler& cs) {
                     _finishPhoneEnrichment(cs, false);
                 }
             } else if (batchCount == 0) {
-                // No unclaimed pending events; finish when queue fully drained.
+                // No selectable pending events; finish when the queue is fully
+                // drained. Anything still deferred waits for the TTL — retrying
+                // it here would just re-offer, be declined, and re-defer in a
+                // tight loop for as long as the lease is held.
                 if (enrichQueueSize == 0) {
                     enrichClearAllClaims();
                     _finishPhoneEnrichment(cs, true);
                 }
             } else if (BLE_MGR.requestEnrichmentBatch(batch, batchCount)) {
+                enrichNoteRequested(batch, batchCount);
                 cs.enrichmentRequestIssued = true;
                 cs.lastRequestedEnrichmentCount = batchCount;
                 cs.enrichmentSessionRequested +=
@@ -1505,6 +1666,7 @@ static void serviceEnrichmentPipeline(CompanionScheduler& cs) {
         }
     } else if (!RADIO_ARB.isOwner(RADIO_BLE_GPS)) {
         enrichClearAllClaims();
+        enrichRequestedCount = 0;
         cs.phoneState = COMPANION_PHONE_UNAVAILABLE;
         cs.workState  = COMPANION_WORK_IDLE;
         cs.enrichmentRequestIssued = false;
@@ -1841,6 +2003,13 @@ void _handleUsbConsoleLine(const char* rawLine) {
         Serial.printf("[COMP] lastProbeAgeMs=%lu lastEnrichAgeMs=%lu\r\n",
                       static_cast<unsigned long>(s.lastProbeAgeMs),
                       static_cast<unsigned long>(s.lastEnrichAgeMs));
+        // Deferred = events the phone could not place against its GPS history.
+        // A number that keeps climbing means the phone was not tracking while
+        // those events were captured.
+        Serial.printf("[COMP] enrichDeferred=%u deferredAgeMs=%lu\r\n",
+                      static_cast<unsigned>(enrichDeferredCount),
+                      static_cast<unsigned long>(
+                          enrichDeferredSinceMs ? (now - enrichDeferredSinceMs) : 0));
         Serial.printf("[COMP] radioOwner=%s\r\n",
                       radioOwnerName(s.radioOwner));
         return;

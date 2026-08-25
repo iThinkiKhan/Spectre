@@ -973,6 +973,7 @@ bool BLEManager::requestEnrichmentBatch(const EventBatchRecord* records, size_t 
     _enrichmentInFlight = false;
     _enrichmentReady = false;
     _enrichmentFailed = false;
+    _enrichmentDeclinedByPhone = false;
     _enrichmentSendQueued = false;
     _enrichmentBatchAcked = false;
     _enrichmentSendMs = 0;
@@ -1074,6 +1075,20 @@ bool BLEManager::consumeEnrichmentBatch(PendingEnrichment* out,
 
     DLOG_INFO(TAG, "enrichment batch consumed count=%u",
               static_cast<unsigned>(count));
+    return true;
+}
+
+bool BLEManager::consumeEnrichmentDeclined() {
+    if (!_enrichmentDeclinedByPhone) {
+        return false;
+    }
+
+    // The phone answered; the link is healthy. Clear the paired failure latch
+    // so consumeEnrichmentFailure() does not also hard-drop the client, and
+    // reset only the exchange state so the next batch can go out immediately.
+    _enrichmentDeclinedByPhone = false;
+    _enrichmentFailed = false;
+    _resetEnrichmentExchangeState(false);
     return true;
 }
 
@@ -1255,6 +1270,7 @@ void BLEManager::_resetState() {
     _enrichmentInFlight = false;
     _enrichmentReady = false;
     _enrichmentFailed = false;
+    _enrichmentDeclinedByPhone = false;
     _enrichmentNotifyEnabled = false;
     _enrichmentSendQueued = false;
     _enrichmentBatchAcked = false;
@@ -3021,6 +3037,9 @@ void BLEManager::_handleControlPayload(const uint8_t* data, size_t len) {
         if (_enrichmentRequestPending || _enrichmentInFlight) {
             DLOG_WARN(TAG, "enrichment cancelled by phone");
             _failEnrichment("phone_cancel");
+            // Latch after _failEnrichment(): it resets the exchange state and
+            // would otherwise clear the flag we just set.
+            _enrichmentDeclinedByPhone = true;
             return;
         }
 
